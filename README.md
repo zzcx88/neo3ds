@@ -4,11 +4,11 @@
 PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3DS 설치 파일(CIA)이 만들어집니다.
 설치하면 HOME 메뉴에 게임별 아이콘으로 나타나고, 바로 실행됩니다. New 3DS 계열에서는 더 여유롭게 돌아갑니다.
 
-[English](README.en.md) · [다운로드 (Releases)](../../releases/latest)
+[English](README.en.md) · [변환기 다운로드](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)
 
 | 메탈슬러그 3 (구형 3DS 실기) | KOF '99 (구형 3DS 실기) |
 |---|---|
-| [![메탈슬러그 3 실기 영상](docs/images/video_mslug3.jpg)](docs/media/mslug3_old3ds.mp4) | [![KOF99 실기 영상](docs/images/video_kof99.jpg)](docs/media/kof99_old3ds.mp4) |
+| [![메탈슬러그 3 실기 영상](docs/images/thumb_mslug3_black.jpg)](docs/media/mslug3_old3ds.mp4) | [![KOF99 실기 영상](docs/images/thumb_kof99_black.jpg)](docs/media/kof99_old3ds.mp4) |
 | 이미지를 누르면 영상(41초)이 열립니다 | 이미지를 누르면 영상(66초)이 열립니다 |
 
 ## 특징
@@ -33,7 +33,7 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 ## 사용법
 
 ### 1. 변환기 받기
-[Releases](../../releases/latest)에서 `neo3ds-converter-*.zip`을 받아 원하는 곳에 압축을 풉니다.
+[neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)을 받아 원하는 곳에 압축을 풉니다.
 `Neo3dsConverter.exe`와 `tools` 폴더는 항상 같이 두세요.
 
 ### 2. CIA 만들기

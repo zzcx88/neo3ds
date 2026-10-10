@@ -4,11 +4,11 @@
 Give it a Neo Geo ROM zip on your PC and it builds a 3DS install file (CIA) with the emulator inside.
 Each game gets its own HOME menu icon and starts straight away. New 3DS models run it with room to spare.
 
-[한국어](README.md) · [Download (Releases)](../../releases/latest)
+[한국어](README.md) · [Download the converter](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)
 
 | Metal Slug 3 (Old 3DS hardware) | KOF '99 (Old 3DS hardware) |
 |---|---|
-| [![Metal Slug 3 on hardware](docs/images/video_mslug3.jpg)](docs/media/mslug3_old3ds.mp4) | [![KOF99 on hardware](docs/images/video_kof99.jpg)](docs/media/kof99_old3ds.mp4) |
+| [![Metal Slug 3 on hardware](docs/images/thumb_mslug3_black.jpg)](docs/media/mslug3_old3ds.mp4) | [![KOF99 on hardware](docs/images/thumb_kof99_black.jpg)](docs/media/kof99_old3ds.mp4) |
 | Click to open the video (41 s) | Click to open the video (66 s) |
 
 ## Features
@@ -33,7 +33,7 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 ## How to use
 
 ### 1. Get the converter
-Download `neo3ds-converter-*.zip` from [Releases](../../releases/latest) and unzip it anywhere.
+Download [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) and unzip it anywhere.
 Keep `Neo3dsConverter.exe` and its `tools` folder together.
 
 ### 2. Build a CIA
