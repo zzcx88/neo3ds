@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyTitle>neo3ds converter</AssemblyTitle>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!-- Everything the converter needs at runtime is copied next to the exe under tools\ -->
+  <ItemGroup>
+    <None Include="..\assets\neo3ds.rsf" Link="tools\neo3ds.rsf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="..\..\engine\engine.elf" Link="tools\engine.elf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="..\..\tools\makerom\makerom.exe" Link="tools\makerom.exe" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="..\..\tools\bannertool\windows-x86_64\bannertool.exe" Link="tools\bannertool.exe" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Every MAME Neo Geo romset; regenerate with scripts/gen_gamedb.py -->
+    <EmbeddedResource Include="..\assets\neogeo_games.json" LogicalName="neogeo_games.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.8" />
+  </ItemGroup>
+
+</Project>

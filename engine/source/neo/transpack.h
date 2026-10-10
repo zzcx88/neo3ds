@@ -1,0 +1,10 @@
+#ifndef _TRANSPACK_H_
+#define _TRANSPACK_H_
+#include "SDL.h"
+enum {
+	TILE_NORMAL,
+	TILE_INVISIBLE,
+	TILE_TRANSPARENT25,
+	TILE_TRANSPARENT50,
+};
+#endif

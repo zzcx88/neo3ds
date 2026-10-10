@@ -1,0 +1,12 @@
+roms/
+tools/
+third_party/
+engine/build/
+engine/*.elf
+engine/*.3dsx
+engine/*.smdh
+converter/**/bin/
+converter/**/obj/
+dist/
+out/
+docs/PROGRESS.md
