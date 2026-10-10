@@ -8,8 +8,8 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 
 | Metal Slug 3 (Old 3DS hardware) | KOF '99 (Old 3DS hardware) |
 |---|---|
-| [![Metal Slug 3 on hardware](docs/images/thumb_mslug3_black.jpg)](docs/media/mslug3_old3ds.mp4) | [![KOF99 on hardware](docs/images/thumb_kof99_black.jpg)](docs/media/kof99_old3ds.mp4) |
-| Click to open the video (41 s) | Click to open the video (66 s) |
+| [![Metal Slug 3 on hardware](docs/images/thumb_mslug3_black.jpg)](https://youtube.com/shorts/tM-fU44WTpA) | [![KOF99 on hardware](docs/images/thumb_kof99_black.jpg)](https://youtube.com/shorts/EF6eDKhlq-E) |
+| Click to watch on YouTube (41 s) | Click to watch on YouTube (66 s) |
 
 ## Features
 

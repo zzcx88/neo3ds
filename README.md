@@ -8,8 +8,8 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 
 | 메탈슬러그 3 (구형 3DS 실기) | KOF '99 (구형 3DS 실기) |
 |---|---|
-| [![메탈슬러그 3 실기 영상](docs/images/thumb_mslug3_black.jpg)](docs/media/mslug3_old3ds.mp4) | [![KOF99 실기 영상](docs/images/thumb_kof99_black.jpg)](docs/media/kof99_old3ds.mp4) |
-| 이미지를 누르면 영상(41초)이 열립니다 | 이미지를 누르면 영상(66초)이 열립니다 |
+| [![메탈슬러그 3 실기 영상](docs/images/thumb_mslug3_black.jpg)](https://youtube.com/shorts/tM-fU44WTpA) | [![KOF99 실기 영상](docs/images/thumb_kof99_black.jpg)](https://youtube.com/shorts/EF6eDKhlq-E) |
+| 이미지를 누르면 YouTube 영상(41초)이 열립니다 | 이미지를 누르면 YouTube 영상(66초)이 열립니다 |
 
 ## 특징
 
