@@ -318,17 +318,22 @@ Uint8 mem68k_fetch_video_byte(Uint32 addr) {
     if (!(addr&0x1))
         return mem68k_fetch_video_word(addr)>>8;
     else {
-        Uint32 lpc=cpu_68k_getpc()+2;
+        /* the odd byte is open bus: the low byte of the prefetched program word. gngeo indexed
+         * &...p (the pointer variable) here, which read 4x past it and crashed (KOF2002). */
+        Uint32 lpc=(cpu_68k_getpc()+2)&~1;
+        Uint32 off=lpc&0xFFFFF;
         switch((lpc&0xF00000)>>20) {
         case 0x0:
-            return READ_WORD(&memory.rom.cpu_m68k.p+(lpc&0xFFFFF));
+            if (off < memory.rom.cpu_m68k.size)
+                return READ_WORD_ROM(memory.rom.cpu_m68k.p+off);
             break;
         case 0x2:
-            return READ_WORD(&memory.rom.cpu_m68k.p+bankaddress+(lpc&0xFFFFF));
+            if (bankaddress+off < memory.rom.cpu_m68k.size)
+                return READ_WORD_ROM(memory.rom.cpu_m68k.p+bankaddress+off);
             break;
         case 0xC:
-            if (lpc<=0xc1FFff)
-                return READ_WORD(&memory.rom.bios_m68k.p+(lpc&0xFFFFF));
+            if (off < memory.rom.bios_m68k.size)
+                return READ_WORD_ROM(memory.rom.bios_m68k.p+off);
             break;
         }
     }
