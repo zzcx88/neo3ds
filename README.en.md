@@ -168,6 +168,20 @@ Their memory use should be close to KOF99 and Metal Slug 3, whose ROMs are the s
 
 Mahjong games lack mahjong panel input, and the 4-player `kizuna4p` plays with two players.
 
+## Battery life
+
+Measured on an Old 3DS with a CameronSino 1300 mAh third-party battery, running Metal Slug 3.
+
+| Settings | Used per hour | Full charge to shutdown | |
+|---|---|---|---|
+| Brightness 3 (middle), Wi-Fi off, power saving off, medium volume | 19.5% (95% → 75.5%) | about 6 hours | measured + estimate |
+| Max brightness, Wi-Fi on | – | about 3.5–4.5 hours | estimate |
+
+- With the same battery, a battery benchmark (max brightness, 3D on, Wi-Fi on) went from 95% to 5% in 2 hours and shut down after 2 h 32 min. neo3ds draws about 43% of that benchmark's power.
+- The hourly figure is measured. The time to shutdown adds the reserve the benchmark showed below 5% on the gauge; the max brightness / Wi-Fi figure adds the power of the brighter backlight and Wi-Fi.
+- No GPU work, both cores sleep while they have nothing to do, and nothing is written to the SD card during play. The picture stays 2D even with the 3D slider up.
+- Results vary with the battery's age and capacity.
+
 ## 64 MB mode and the optimizations
 
 An Old 3DS has two 268 MHz ARM11 cores, and apps get 64 MB in the default memory mode.
