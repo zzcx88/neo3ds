@@ -14,6 +14,7 @@
 #include "screen.h"
 #include "video.h"
 #include "keys.h"
+#include "ui.h"
 #include "drz80/DrZ80.h"
 
 #define MB (1024.0 * 1024.0)
@@ -187,13 +188,13 @@ static void print_memory(void) {
 enum { TURBO_FRAMES = 3 }; /* 60 fps / 3 = 20 presses a second: 2 frames down, 1 up */
 static const u32 face_keys = KEY_A | KEY_B | KEY_X | KEY_Y;
 static int turbo_phase;
-static bool show_stats; /* touch the bottom screen to toggle the diagnostics */
-
-static int turbo_row(void) { return show_stats ? 28 : 16; }
+static bool show_stats; /* the diagnostics (text console) instead of the GUI on the bottom screen */
 
 static void show_turbo(void) {
-	printf("\x1b[%d;2HTurbo: %-20s", turbo_row(), keys_button_name(keys_turbo));
-	flush_console();
+	if (show_stats) {
+		printf("\x1b[28;2HTurbo: %-20s", keys_button_name(keys_turbo));
+		flush_console();
+	} else ui_turbo_changed();
 }
 
 // Returns the keys as the game should see them, with turbo applied. While R is free (not
@@ -270,24 +271,6 @@ static void dump_video_state(void) {
 }
 #endif
 
-/* Touch areas on the info screen (console rows, 8 pixels each) */
-enum { KEYCFG_ROW = 20, DIAG_ROW = 25 };
-
-// Bottom screen while playing: controls only, so nothing is redrawn during play.
-static void show_info(double load_secs, bool sound) {
-	consoleClear();
-	printf("\x1b[2;2H\x1b[1;36mneo3ds\x1b[0m");
-	int row = keys_print(4);
-	if (keys_r_free()) printf("\x1b[%d;2HR + A/B/X/Y     turbo on / off", row++);
-	printf("\x1b[%d;2HSELECT+START    hold: restart", row);
-	show_turbo();
-	if (!sound) printf("\x1b[18;2H\x1b[33mSound off (no sdmc:/3ds/dspfirm.cdc)\x1b[0m");
-	printf("\x1b[%d;2H\x1b[36m[ Key config ]\x1b[0m", KEYCFG_ROW);
-	printf("\x1b[%d;2H\x1b[36m[ Diagnostics ]\x1b[0m", DIAG_ROW);
-	printf("\x1b[28;2HLoaded in %.1fs", load_secs);
-	flush_console();
-}
-
 int main(void) {
 	gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, false);
 	consoleInit(GFX_BOTTOM, &bottom);
@@ -333,40 +316,54 @@ int main(void) {
 	int frames = 0;
 	u64 emu_ticks = 0, present_ticks = 0, last_loop = 0;
 	int late = 0;
-	show_info(load_secs, sound);
+	ui_main_init(load_secs, sound);
+	ui_main_draw();
 	while (aptMainLoop()) {
 		hidScanInput();
 		read_input();
-		if (hidKeysDown() & KEY_TOUCH) {
-			touchPosition tp;
-			hidTouchRead(&tp);
-			const int row = tp.py / 8 + 1;
-			if (show_stats) {
+		UiAction action = UI_NONE;
+		if (show_stats) {
+			if (hidKeysDown() & KEY_TOUCH) { /* any touch goes back to the GUI */
 				show_stats = false;
-				show_info(load_secs, sound);
-			} else if (row >= KEYCFG_ROW - 1 && row <= KEYCFG_ROW + 1) {
-				keys_menu(flush_console); /* the game waits while the menu is open */
-				show_info(load_secs, sound);
-				if (keys_bios_mvs() != memory.mvs) { /* switching the BIOS restarts the game */
-					loader_use_bios(keys_bios_mvs());
-					neo_restart();
-					printf("\x1b[27;2H\x1b[33mRestarted with the %s BIOS\x1b[0m", memory.mvs ? "MVS" : "AES");
-					flush_console();
-				}
-				last_loop = 0;
-			} else if (row >= DIAG_ROW - 1 && row <= DIAG_ROW + 1) {
-				show_stats = true;
-				consoleClear(); /* filled at the next one-second report */
-				show_turbo();
+				ui_main_draw();
 			}
-		}
+		} else action = ui_main_update();
 		if ((hidKeysHeld() & (KEY_SELECT | KEY_START)) == (KEY_SELECT | KEY_START)) {
-			if (++restart_hold == RESTART_FRAMES) {
-				neo_restart();
-				printf("\x1b[%d;2H\x1b[33mRestarted\x1b[0m", show_stats ? 29 : 27);
-				flush_console();
-			}
+			if (++restart_hold == RESTART_FRAMES) action = UI_RESTART;
 		} else restart_hold = 0;
+		switch (action) {
+		case UI_KEYCONFIG:
+			keys_menu(); /* the game waits while the menu is open */
+			if (keys_bios_mvs() != memory.mvs) { /* switching the BIOS restarts the game */
+				loader_use_bios(keys_bios_mvs());
+				neo_restart();
+				ui_main_draw();
+				ui_status(memory.mvs ? "Restarted with the MVS BIOS" : "Restarted with the AES BIOS");
+			} else ui_main_draw();
+			last_loop = 0;
+			break;
+		case UI_SYSTEM:
+			keys_set_bios_mvs(!memory.mvs);
+			loader_use_bios(keys_bios_mvs());
+			neo_restart();
+			ui_main_draw();
+			ui_status(memory.mvs ? "Restarted with the MVS BIOS" : "Restarted with the AES BIOS");
+			break;
+		case UI_RESTART:
+			neo_restart();
+			if (show_stats) {
+				printf("\x1b[29;2H\x1b[33mRestarted\x1b[0m");
+				flush_console();
+			} else ui_status("Restarted");
+			break;
+		case UI_DIAG:
+			show_stats = true;
+			consoleClear(); /* filled at the next one-second report */
+			show_turbo();
+			break;
+		default:
+			break;
+		}
 #ifdef NEO3DS_BENCH
 		/* L+R: draw the current frame 30 times with the old and the new zoomed-row code */
 		if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R)) {
@@ -423,6 +420,7 @@ int main(void) {
 			memmove(log[1], log[0], sizeof log[0] * (LOG_LINES - 1));
 			snprintf(log[0], sizeof log[0], "%4.1f fps  %5.2f ms  late %2d", frames * 1000.0 / (now - fps_t),
 			         emu_ticks * k, late);
+			if (!show_stats) ui_fps(frames * 1000.0 / (now - fps_t));
 			if (show_stats) {
 				for (int i = 0; i < LOG_LINES; i++) printf("\x1b[%d;0H%-39s", i + 1, log[i]);
 				printf("\x1b[%d;0HPC %06lx  resets %d  miss %4lu   \n", LOG_LINES + 2, cpu_68k_getpc(), neo_watchdog_resets,

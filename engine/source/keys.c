@@ -1,4 +1,4 @@
-// Button mapping and the key config screen on the bottom console.
+// Button mapping and the key config screen (drawn with ui.h).
 //
 // Each 3DS button (directions excluded) presses one entry of `actions`: a Neo Geo button, a
 // combination such as A+B, Start or Coin. The mapping and the turbo button are saved per game
@@ -10,6 +10,7 @@
 
 #include "keys.h"
 #include "loader.h"
+#include "ui.h"
 
 enum { NBUTTONS = 10 };
 
@@ -109,37 +110,77 @@ const char *keys_button_name(u32 key) {
 	return "off";
 }
 
-int keys_print(int row) {
-	for (int i = 0; i < NBUTTONS; i++) {
-		if (!map[i]) continue;
-		printf("\x1b[%d;2H%-16s%s", row++, buttons[i].name, actions[map[i]].name);
+int keys_mapped(KeyEntry *out, int max) {
+	int n = 0;
+	for (int i = 0; i < NBUTTONS && n < max; i++) {
+		if (!map[i] || (i >= 8 && map[i] == default_map[i])) continue; /* START / SELECT as usual */
+		out[n].button = buttons[i].name;
+		out[n].bits = actions[map[i]].bits;
+		n++;
 	}
-	return row;
+	return n;
 }
 
-/* Menu lines: the buttons, then turbo, reset and save. Rows on the 40x30 console. */
-enum { ITEM_TURBO = NBUTTONS, ITEM_BIOS, ITEM_RESET, ITEM_SAVE, NITEMS };
-static int item_row(int i) { return i < NBUTTONS ? 4 + i : i == ITEM_TURBO ? 15 : i == ITEM_BIOS ? 16 : i == ITEM_RESET ? 18 : 20; }
+void keys_cycle_turbo(void) {
+	/* off, then A, B, X, Y (the face buttons), saved like the key config */
+	int t = turbo_index();
+	t = t >= 4 ? 0 : t + 1;
+	keys_turbo = t ? buttons[t - 1].key : 0;
+	keys_save();
+}
+
+void keys_set_bios_mvs(int mvs) {
+	if (!loader_has_bios(mvs)) return;
+	bios = mvs ? 2 : 1;
+	keys_save();
+}
+
+/* ---- key config screen: the 10 buttons, turbo and system, then Default and Save ---- */
+
+enum { ITEM_TURBO = NBUTTONS, ITEM_BIOS, NROWS, ITEM_DEFAULT = NROWS, ITEM_SAVE, NITEMS };
+enum { ROW_Y = 26, ROW_H = 15 };
+static const UiRect left_arrow = {226, 0, 40, 13}, right_arrow = {272, 0, 40, 13};
+static const UiRect bottom_buttons[2] = {{8, 212, 148, 24}, {164, 212, 148, 24}};
+
+static UiRect row_rect(int i, UiRect r) { r.y = ROW_Y + i * ROW_H + 1; return r; }
+
+static void row_value(int i, char *out, size_t n) {
+	if (i < NBUTTONS) snprintf(out, n, "%s", actions[map[i]].name);
+	else if (i == ITEM_TURBO) snprintf(out, n, "%s", keys_button_name(keys_turbo));
+	else snprintf(out, n, "%s%s", keys_bios_mvs() ? "MVS (arcade)" : "AES (home)",
+	              loader_has_bios(!keys_bios_mvs()) ? "" : " only");
+}
+
+static void draw_row(int i, int cursor) {
+	char value[24];
+	const int y = ROW_Y + i * ROW_H;
+	ui_fill(0, y, 320, ROW_H, i == cursor ? UI_PANEL : UI_BG);
+	if (i == cursor) ui_fill(0, y, 3, ROW_H, UI_ACCENT);
+	ui_text(10, y + 4, i < NBUTTONS ? buttons[i].name : i == ITEM_TURBO ? "Turbo" : "System",
+	        i == cursor ? UI_ACCENT : UI_TEXT, 1);
+	row_value(i, value, sizeof value);
+	ui_text(80, y + 4, value, UI_TEXT, 1);
+	ui_button(row_rect(i, left_arrow), "<", UI_PRESSED, UI_TEXT);
+	ui_button(row_rect(i, right_arrow), ">", UI_PRESSED, UI_TEXT);
+}
+
+static void draw_bottom(int cursor, const char *status) {
+	ui_fill(0, 208, 320, 32, UI_BG);
+	ui_button(bottom_buttons[0], "Default", cursor == ITEM_DEFAULT ? UI_PRESSED : UI_PANEL,
+	          cursor == ITEM_DEFAULT ? UI_ACCENT : UI_TEXT);
+	ui_button(bottom_buttons[1], "Save (B)", cursor == ITEM_SAVE ? UI_PRESSED : UI_PANEL,
+	          cursor == ITEM_SAVE ? UI_ACCENT : UI_TEXT);
+	ui_fill(176, 0, 144, 22, UI_HEADER); /* status area, right of the title */
+	if (status) ui_text(312 - ui_text_width(status, 1), 8, status, UI_ACCENT, 1);
+}
 
 static void draw_menu(int cursor, const char *status) {
-	consoleClear();
-	printf("\x1b[1;2H\x1b[1;36mKey config\x1b[0m  (saved for this game)");
-	printf("\x1b[2;2H3DS button      Neo Geo");
-	for (int i = 0; i < NITEMS; i++) {
-		printf("\x1b[%d;0H%s", item_row(i), i == cursor ? "\x1b[33m>" : " ");
-		if (i < NBUTTONS) printf(" %-16s%s", buttons[i].name, actions[map[i]].name);
-		else if (i == ITEM_TURBO) printf(" %-16s%s", "Turbo button", keys_button_name(keys_turbo));
-		else if (i == ITEM_BIOS) printf(" %-16s%s%s", "System", keys_bios_mvs() ? "MVS (arcade)" : "AES (home)",
-		                                loader_has_bios(!keys_bios_mvs()) ? "" : " only");
-		else if (i == ITEM_RESET) printf(" Reset to default");
-		else printf(" Save and back");
-		printf("\x1b[0m");
-	}
-	printf("\x1b[23;2HUp/Down     choose a line");
-	printf("\x1b[24;2HLeft/Right  change it");
-	printf("\x1b[25;2HA / touch   change / select");
-	printf("\x1b[26;2HB           save and back");
-	if (status) printf("\x1b[28;2H\x1b[33m%s\x1b[0m", status);
+	ui_fill(0, 0, 320, 240, UI_BG);
+	ui_fill(0, 0, 320, 22, UI_HEADER);
+	ui_text(8, 3, "Key config", UI_TEXT, 2);
+	for (int i = 0; i < NROWS; i++) draw_row(i, cursor);
+	draw_bottom(cursor, status);
+	ui_flush();
 }
 
 static void change(int item, int step) {
@@ -152,51 +193,65 @@ static void change(int item, int step) {
 	}
 }
 
-void keys_menu(void (*flush)(void)) {
+void keys_menu(void) {
 	int cursor = 0;
 	const char *status = NULL;
 	hidSetRepeatParameters(15, 5);
 	draw_menu(cursor, status);
-	flush();
 	while (aptMainLoop()) {
 		gspWaitForVBlank();
 		hidScanInput();
 		const u32 down = hidKeysDown(), rep = hidKeysDownRepeat();
-		bool redraw = true, activate = false;
-		if (rep & KEY_UP) cursor = (cursor + NITEMS - 1) % NITEMS;
-		else if (rep & KEY_DOWN) cursor = (cursor + 1) % NITEMS;
-		else if (rep & KEY_LEFT) change(cursor, -1);
-		else if (rep & KEY_RIGHT) change(cursor, 1);
-		else if (down & (KEY_A | KEY_B)) {
-			if (down & KEY_B) cursor = ITEM_SAVE;
+		int moved = -1, changed = -1; /* rows to redraw */
+		bool activate = false, all = false;
+		if (rep & (KEY_UP | KEY_DOWN)) {
+			moved = cursor;
+			cursor = (cursor + ((rep & KEY_UP) ? NITEMS - 1 : 1)) % NITEMS;
+		} else if ((rep & (KEY_LEFT | KEY_RIGHT)) && cursor < NROWS) {
+			change(cursor, (rep & KEY_LEFT) ? -1 : 1);
+			changed = cursor;
+		} else if (down & KEY_A) activate = true;
+		else if (down & KEY_B) {
+			cursor = ITEM_SAVE;
 			activate = true;
 		} else if (down & KEY_TOUCH) {
 			touchPosition t;
 			hidTouchRead(&t);
-			const int row = t.py / 8 + 1;
-			redraw = false;
-			for (int i = 0; i < NITEMS; i++)
-				if (row == item_row(i)) {
-					if (i == cursor || i >= ITEM_RESET) activate = true;
-					cursor = i;
-					redraw = true;
+			for (int i = 0; i < NROWS; i++) {
+				if (ui_hit(row_rect(i, left_arrow), t.px, t.py)) change(i, -1), changed = i;
+				else if (ui_hit(row_rect(i, right_arrow), t.px, t.py)) change(i, 1), changed = i;
+				else if (t.py >= ROW_Y + i * ROW_H && t.py < ROW_Y + (i + 1) * ROW_H) changed = i;
+				if (changed == i && cursor != i) moved = cursor, cursor = i;
+			}
+			for (int b = 0; b < 2; b++)
+				if (ui_hit(bottom_buttons[b], t.px, t.py)) {
+					moved = cursor;
+					cursor = ITEM_DEFAULT + b;
+					activate = true;
 				}
-		} else redraw = false;
+		}
 		if (activate) {
-			if (cursor < ITEM_RESET) change(cursor, 1);
-			else if (cursor == ITEM_RESET) {
+			if (cursor < NROWS) {
+				change(cursor, 1);
+				changed = cursor;
+			} else if (cursor == ITEM_DEFAULT) {
 				memcpy(map, default_map, sizeof map);
 				keys_turbo = 0;
 				bios = 0;
-				status = "Defaults restored (not saved yet)";
+				status = "Defaults set";
+				all = true;
 			} else {
 				if (keys_save()) return;
-				status = "Could not save to the SD card";
+				status = "Could not save";
 			}
 		}
-		if (redraw) {
-			draw_menu(cursor, status);
-			flush();
+		if (all) draw_menu(cursor, status);
+		else if (moved >= 0 || changed >= 0 || activate) {
+			if (moved >= 0 && moved < NROWS) draw_row(moved, cursor);
+			if (changed >= 0) draw_row(changed, cursor);
+			if (cursor < NROWS) draw_row(cursor, cursor);
+			draw_bottom(cursor, status);
+			ui_flush();
 		}
 	}
 }

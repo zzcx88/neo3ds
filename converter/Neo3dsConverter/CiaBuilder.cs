@@ -174,6 +174,8 @@ public sealed class CiaBuilder
         string romfs = Path.Combine(work, "romfs");
         using var rom = new RomSet(CiaJob.ZipsFor(def, Path.GetDirectoryName(job.RomZip)!, job.RomName));
         var stats = RomPack.Write(def, rom, job.BiosZip!, Path.Combine(romfs, "game"), log, job.StartMvs);
+        // shown at the top of the bottom screen (the 3DS font has ASCII only)
+        File.WriteAllText(Path.Combine(romfs, "game", "title.txt"), job.Title, new System.Text.UTF8Encoding(false));
         log(L($"  타일 {stats.Tiles:N0}개, 그래픽 {stats.SpriteRaw / 1048576.0:F1}MB → {stats.SpritePacked / 1048576.0:F1}MB, " +
               $"3DS 메모리 사용 약 {stats.TotalBytes / 1048576.0:F1}MB",
               $"  {stats.Tiles:N0} tiles, graphics {stats.SpriteRaw / 1048576.0:F1}MB → {stats.SpritePacked / 1048576.0:F1}MB, " +

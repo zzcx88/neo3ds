@@ -17,6 +17,7 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 - **One CIA per game** with its own HOME menu icon. No launcher in between.
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
 - **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 241 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
+- **Bottom screen GUI**: touch buttons for key config, turbo, system (AES/MVS), diagnostics and restart, with the current key layout in the Neo Geo button colours.
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Restart**: hold SELECT + START for a second to restart the game.
@@ -67,7 +68,7 @@ Neo3dsConverter.exe <game.zip> [out-dir] [--title "Name"] [--icon pic.png] [--ba
 
 ## Controls
 
-<img src="docs/images/controls_kof99.png" width="400" alt="Game on the top screen, controls on the bottom screen">
+<img src="docs/images/main_kof99.png" width="400" alt="Game on the top screen, buttons on the bottom screen">
 
 These are the defaults. Buttons can be changed per game in [Key config](#key-config), and the bottom screen shows the current layout.
 
@@ -79,28 +80,38 @@ These are the defaults. Buttons can be changed per game in [Key config](#key-con
 | START | Start |
 | R + B/A/Y/X | Turbo on/off (see below) |
 | Hold SELECT + START for 1 s | Restart the game |
-| Touch `[ Key config ]` on the bottom screen | Key config |
-| Touch `[ Diagnostics ]` on the bottom screen | Diagnostics |
 
-**Restart**: holding SELECT and START together for a second restarts the game as if the console were switched off and on (the cartridge's save data is kept). While both are held, they don't reach the game as coin and start.
+### Bottom screen
+
+| Button | What it does |
+|---|---|
+| **Key config** | Opens the key config screen (see below) |
+| **Turbo** | Each tap moves turbo off → A → B → X → Y, saved at once |
+| **System** | Switches between the home (AES) and arcade (MVS) BIOS. Tap twice (to avoid accidents); the game restarts on it |
+| **Diagnostics** | Opens the diagnostics; touch anywhere to go back |
+| **Restart** | Hold it until the yellow bar fills to restart the game |
+
+Below them is the current key layout as `3DS button > Neo Geo button`, in the colours of the arcade panel (A red, B yellow, C green, D blue); START and SELECT are left out while they are Start and Coin. The game title and fps are at the top.
+
+**Restart**: starts the game over as if the console were switched off and on (the cartridge's save data is kept). Holding SELECT and START together for a second does the same; while both are held, they don't reach the game as coin and start.
 
 ## Key config
 
-<img src="docs/images/keyconfig2_kof99.png" width="400" alt="Key config screen (L = A+B, R = C+D)">
+<img src="docs/images/keyconfig3_kof99.png" width="400" alt="Key config screen (L = A+B, R = C+D)">
 
-Touch `[ Key config ]` on the bottom screen; the game pauses and the config screen opens.
+Tap **Key config** on the bottom screen; the game pauses and the config screen opens.
 
 - Each of A / B / X / Y / L / R / ZL / ZR / START / SELECT can press **Neo Geo A-D, a combination (A+B, C+D, B+C, A+B+C, B+C+D, A+B+C+D), Start or Coin**. For example in KOF: L = A+B (dodge), R = C+D (blowback).
-- Up/Down picks a line, Left/Right (or A, or a touch) changes it. The **turbo button** can be set here too.
-- **B** or `Save and back` saves and returns to the game. `Reset to default` restores the default layout.
-- **System** switches between the home (AES) and arcade (MVS) BIOS; saving restarts the game on it. On MVS, press SELECT to insert a coin before starting, and the BIOS's green test screen shows briefly at boot. If neogeo.zip had only one BIOS, it says `only` and can't be changed.
+- Tap the `<` `>` at the end of a line, or pick a line with Up/Down and change it with Left/Right (or A). The **turbo button** can be set here too.
+- **B** or `Save (B)` saves and returns to the game. `Default` restores the default layout.
+- **System** switches between the home (AES) and arcade (MVS) BIOS (like the System button on the bottom screen); saving restarts the game on it. On MVS, press SELECT to insert a coin before starting, and the BIOS's green test screen shows briefly at boot. If neogeo.zip had only one BIOS, it says `only` and can't be changed.
 - Settings are saved **per game** on the SD card in `/3ds/neo3ds/keys/` and kept across launches.
 
 ## Turbo (rapid fire)
 
-<img src="docs/images/turbo_kof99.png" width="400" alt="Turbo enabled (Turbo: A)">
+<img src="docs/images/turbo2_kof99.png" width="400" alt="Turbo enabled (Turbo: A)">
 
-- **Hold R and press A, B, X or Y** to make that button the turbo button.
+- Use the **Turbo** button on the bottom screen (saved), or **hold R and press A, B, X or Y** to make that button the turbo button.
 - Hold R and press **the same button again** to turn turbo off, or **another button** to move turbo there. Only one button has turbo at a time.
 - **While you hold** the turbo button it is pressed and released 20 times a second. Single taps still fire once.
 - The bottom screen shows the state: `Turbo: A` or `Turbo: off`.
@@ -109,9 +120,9 @@ Touch `[ Key config ]` on the bottom screen; the game pauses and the config scre
 
 ## Diagnostics
 
-<img src="docs/images/diag_kof99.png" width="400" alt="Diagnostics screen">
+<img src="docs/images/diag2_kof99.png" width="400" alt="Diagnostics screen">
 
-Touch `[ Diagnostics ]` on the bottom screen for a once-a-second report: fps, main-core time (68000, Z80, timers), second-core time (sound, drawing) and memory use. Touch again to go back to the controls.
+Tap **Diagnostics** on the bottom screen for a once-a-second report: fps, main-core time (68000, Z80, timers), second-core time (sound, drawing) and memory use. Touch anywhere to go back to the buttons.
 
 ## Compatibility
 
@@ -173,7 +184,7 @@ So the goal was to **fit 64 MB graphics ROMs into the default 64 MB mode**.
 - **Two cores**: the main core runs only the 68000, Z80 and timers; the second core synthesizes sound and draws the screen.
 - **Split sound chip**: the YM2610 runs as two copies. The main-core copy handles timers, interrupts and status; the second-core copy replays the logged register writes to make the sound.
 - **Sprite renderer**: unzoomed sprites are drawn tile by tile, and opaque 8-pixel runs are written by ARM assembly in one go, straight into the 3DS's rotated framebuffer. Horizontally shrunk rows use straight-line code unrolled at compile time for each of the 16 zoom steps and both flips, so games that zoom out a lot (Samurai Shodown) stay fast.
-- **Output**: the CPU draws into the framebuffer (no GPU round trip) with triple buffering, so nothing tears. Cache flushes use an SVC directly instead of a system service, so the second core never stalls waiting on one.
+- **Output**: the CPU draws into the framebuffer (no GPU round trip) with triple buffering, so nothing tears. Cache flushes use an SVC directly instead of a system service, so the second core never stalls waiting on one. The bottom screen GUI is drawn by the CPU too, but only when something changes, so it costs next to nothing while you play.
 - **Visible area only**: draws the Neo Geo's real 304×224 picture.
 - **BIOS**: uses the home (AES) BIOS from neogeo.zip when present, otherwise an arcade (MVS) BIOS.
 
