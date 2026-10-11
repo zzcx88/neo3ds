@@ -7,6 +7,7 @@
 //   bios.bin  68k BIOS                lo.bin    000-lo.lo zoom table
 //   c.idx     sprite block index      c.pak     compressed sprite blocks
 //   sma.bin   SMA carts: bank switching and random number addresses
+//   fixbank.bin  one byte: fix layer bank type for fix ROMs past 128KB
 #include <3ds.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,6 +147,12 @@ bool loader_load(LoaderProgress progress, Uint32 sprite_cache_bytes) {
 	if (!(memory.ng_lo = read_file("lo.bin", NULL, true, progress))) return false;
 	if (!load_sprites(progress, sprite_cache_bytes)) return false;
 	load_sma();
+	{ /* fixbank.bin: how a fix ROM past 128KB is banked (1 Garou type, 2 KOF2000 type) */
+		extern int neogeo_fix_bank_type;
+		Uint8 *t = read_file("fixbank.bin", NULL, false, NULL);
+		neogeo_fix_bank_type = t ? t[0] : 0;
+		free(t);
+	}
 
 	// Same post-load steps as gngeo's dr_load_game/dr_load_bios.
 	r->gfix_usage.size = r->game_sfix.size >> 5;

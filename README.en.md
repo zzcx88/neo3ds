@@ -104,14 +104,16 @@ Touch the bottom screen for a once-a-second report: fps, main-core time (68000, 
 | Metal Slug 2 | `mslug2` | Playable; slows down where the original board also did |
 | Metal Slug X | `mslugx` (protection checks patched) | Full speed |
 | Metal Slug 3 | `mslug3` (SMA + CMC42 decrypted) | Full speed |
+| The King of Fighters 2000 | `kof2000` (SMA + CMC50 decrypted) | Full speed |
+| The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 decrypted) | Full speed |
 
 ### Converts, but not tried on hardware
 - **Most unencrypted games** (1990-1999): KOF94-97, Fatal Fury series (except 2), Samurai Shodown 1-4, World Heroes, The Last Blade 1/2, Metal Slug 1, Blazing Star, Puzzle Bobble and more. They convert the same way as the verified games.
 - **Decryption implemented, never run (no ROMs to test)**
   - CMC42: Garou, Sengoku 3, Zupapa!, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead
-  - CMC50: KOF2000, KOF2001
+  - CMC50: KOF2001
   - PCM2: Metal Slug 4 / 4 Plus, Rage of the Dragons, Pochi and Nyaa
-  - KOF2002 type: KOF2002 / 2002 Plus, Samurai Shodown V / V Special, Matrimelee
+  - KOF2002 type (KOF2002 itself verified): 2002 Plus, Samurai Shodown V / V Special, Matrimelee
 
 Their memory use should be close to KOF99 and Metal Slug 3, whose ROMs are the same size (about 53 MB of 58 MB). The converter warns when memory gets tight.
 

@@ -212,7 +212,7 @@ static void fix_value_init(void) {
 	}
 }
 
-#define fix_add(x, y) ((((READ_WORD(memory.vid.ram + 0xEA00 + (((y-1)&31)*2 + 64 * (x/6))) >> (5-(x%6))*2) & 3) ^ 3))
+#define fix_add(x, y) ((((READ_WORD(snap_vram + 0xEA00 + (((y-1)&31)*2 + 64 * (x/6))) >> (5-(x%6))*2) & 3) ^ 3))
 
 /* Drawing function generation */
 #define RENAME(name) name##_tile
@@ -318,7 +318,8 @@ static __inline__ void draw_fix_char(unsigned char *buf, int start, int end) {
 	int ystart = 2, yend = 30; /* fix rows on visible scanlines 16..239 */
 
 	//banked = (snap_fix == memory.rom.game_sfix.p && memory.rom.game_sfix.size > 0x1000) ? 1 : 0;
-	banked = (snap_fix == memory.rom.game_sfix.p && neogeo_fix_bank_type && memory.rom.game_sfix.size > 0x1000) ? 1 : 0;
+	/* as MAME: only fix ROMs past 128KB are banked (Garou, MSlug 3/4, KOF2000...) */
+	banked = (snap_fix == memory.rom.game_sfix.p && neogeo_fix_bank_type && memory.rom.game_sfix.size > 0x20000) ? 1 : 0;
 	//if (banked && conf.rom_type==MVS_CMC42)
 	if (banked && neogeo_fix_bank_type == 1) {
 		int garoubank = 0;

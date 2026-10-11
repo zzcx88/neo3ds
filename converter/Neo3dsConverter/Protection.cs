@@ -18,6 +18,17 @@ public static class Protection
         _ => false,
     };
 
+    /// <summary>How the cart banks a fix ROM past 128KB (MAME get_fixed_bank_type): 0 none,
+    /// 1 Garou / Metal Slug 3 type, 2 KOF2000 type.</summary>
+    public static int FixBankType(string cart) => cart switch
+    {
+        "cmc50_kof2000n" or "sma_kof2k" or "k2k2_matrim" => 2,
+        "pcm2_ms4p" or "k2k2_kof2k2" or "k2k2_kf2k2p" => 0,
+        _ when cart.StartsWith("cmc42_") || cart.StartsWith("cmc50_") || cart.StartsWith("sma_") ||
+               cart.StartsWith("pcm2_") || cart.StartsWith("k2k2_") => 1,
+        _ => 0,
+    };
+
     /// <summary>Decrypts the regions in place. Returns what the engine must emulate while the
     /// game runs (SMA bank switching), or null.</summary>
     public static SmaConfig? Apply(string cart, Dictionary<string, byte[]> r)

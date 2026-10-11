@@ -36,6 +36,11 @@ public static class RomPack
         File.WriteAllBytes(Path.Combine(gameDir, "p.bin"), program);
         File.WriteAllBytes(Path.Combine(gameDir, "s.bin"), Need("fixed"));
         WriteSmaConfig(Path.Combine(gameDir, "sma.bin"), sma);
+        // fixbank.bin: the engine banks fix ROMs past 128KB the way this cart does
+        string fixBank = Path.Combine(gameDir, "fixbank.bin");
+        int bankType = Protection.FixBankType(game.Cart);
+        if (bankType != 0) File.WriteAllBytes(fixBank, new[] { (byte)bankType });
+        else File.Delete(fixBank);
         // MAME's audiocpu region holds the M1 ROM at 0 and again from 0x10000 (ROM_RELOAD), the second
         // copy overwriting the first above 64KB. The engine wants the ROM itself: take the reloaded copy.
         if (!regions.TryGetValue("m1", out var m1))
