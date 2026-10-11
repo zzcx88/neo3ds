@@ -5,6 +5,7 @@
 #include "SDL.h"
 
 void neo_init(void);
+void neo_restart(void);
 void neo_set_input(Uint8 p1, Uint8 p2, Uint8 start, Uint8 coin);
 void neo_run_frame(bool render);
 

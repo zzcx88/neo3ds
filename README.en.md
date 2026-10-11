@@ -13,11 +13,13 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 
 ## Features
 
-- **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, Metal Slug X and Metal Slug 3.
+- **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug X, Metal Slug 3 and SVC Chaos.
 - **One CIA per game** with its own HOME menu icon. No launcher in between.
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
 - **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 240 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
+- **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
+- **Restart**: hold SELECT + START for a second to restart the game.
 - **Generated icon and banner** from the game title, or use your own pictures.
 - Converter in **English and Korean**.
 
@@ -64,7 +66,9 @@ Neo3dsConverter.exe <game.zip> [out-dir] [--title "Name"] [--icon pic.png] [--ba
 
 ## Controls
 
-<img src="docs/images/kof99_title.png" width="400" alt="Game on the top screen, controls on the bottom screen">
+<img src="docs/images/controls_kof99.png" width="400" alt="Game on the top screen, controls on the bottom screen">
+
+These are the defaults. Buttons can be changed per game in [Key config](#key-config), and the bottom screen shows the current layout.
 
 | 3DS | Neo Geo |
 |---|---|
@@ -73,23 +77,39 @@ Neo3dsConverter.exe <game.zip> [out-dir] [--title "Name"] [--icon pic.png] [--ba
 | SELECT | Coin |
 | START | Start |
 | R + B/A/Y/X | Turbo on/off (see below) |
-| Touch the bottom screen | Diagnostics on/off |
+| Hold SELECT + START for 1 s | Restart the game |
+| Touch `[ Key config ]` on the bottom screen | Key config |
+| Touch `[ Diagnostics ]` on the bottom screen | Diagnostics |
+
+**Restart**: holding SELECT and START together for a second restarts the game as if the console were switched off and on (the cartridge's save data is kept). While both are held, they don't reach the game as coin and start.
+
+## Key config
+
+<img src="docs/images/keyconfig_kof99.png" width="400" alt="Key config screen (L = A+B, R = C+D)">
+
+Touch `[ Key config ]` on the bottom screen; the game pauses and the config screen opens.
+
+- Each of A / B / X / Y / L / R / ZL / ZR / START / SELECT can press **Neo Geo A-D, a combination (A+B, C+D, B+C, A+B+C, B+C+D, A+B+C+D), Start or Coin**. For example in KOF: L = A+B (dodge), R = C+D (blowback).
+- Up/Down picks a line, Left/Right (or A, or a touch) changes it. The **turbo button** can be set here too.
+- **B** or `Save and back` saves and returns to the game. `Reset to default` restores the default layout.
+- Settings are saved **per game** on the SD card in `/3ds/neo3ds/keys/` and kept across launches.
 
 ## Turbo (rapid fire)
 
-<img src="docs/images/kof99_turbo.png" width="400" alt="Turbo enabled (Turbo: A)">
+<img src="docs/images/turbo_kof99.png" width="400" alt="Turbo enabled (Turbo: A)">
 
 - **Hold R and press A, B, X or Y** to make that button the turbo button.
 - Hold R and press **the same button again** to turn turbo off, or **another button** to move turbo there. Only one button has turbo at a time.
 - **While you hold** the turbo button it is pressed and released 20 times a second. Single taps still fire once.
-- The bottom screen shows the state: `Turbo: A (Neo Geo B)` or `Turbo: off`.
+- The bottom screen shows the state: `Turbo: A` or `Turbo: off`.
 - While R is held, A/B/X/Y don't reach the game, so setting turbo never makes your character act.
+- Turbo set with R + button lasts for this session; set it in Key config to keep it. If R is mapped to something, turbo can only be changed in Key config.
 
 ## Diagnostics
 
-<img src="docs/images/kof99_diag.png" width="400" alt="Diagnostics screen">
+<img src="docs/images/diag_kof99.png" width="400" alt="Diagnostics screen">
 
-Touch the bottom screen for a once-a-second report: fps, main-core time (68000, Z80, timers), second-core time (sound, drawing) and memory use. Touch again to go back to the controls.
+Touch `[ Diagnostics ]` on the bottom screen for a once-a-second report: fps, main-core time (68000, Z80, timers), second-core time (sound, drawing) and memory use. Touch again to go back to the controls.
 
 ## Compatibility
 

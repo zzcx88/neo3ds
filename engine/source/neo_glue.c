@@ -37,6 +37,17 @@ void neogeo_reset(void) {
 	cpu_68k_reset();
 }
 
+// The restart combo: as if the console were switched off and on, keeping the backup RAM.
+void neo_restart(void) {
+	extern Uint16 pvc_ram[0x1000];
+	memset(memory.ram, 0, sizeof memory.ram);
+	memset(pvc_ram, 0, sizeof pvc_ram);
+	memory.watchdog = 0;
+	cpu_z80_init();
+	YM2610_sh_reset();
+	neogeo_reset();
+}
+
 void neo_init(void) {
 	conf.sound = 1;
 	/* the ADPCM-A playback rate (8MHz / 432): sound effects and voices need no resampling, and 16%

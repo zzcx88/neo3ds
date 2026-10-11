@@ -13,6 +13,7 @@
 #include "memory.h"
 #include "screen.h"
 #include "video.h"
+#include "keys.h"
 #include "drz80/DrZ80.h"
 
 #define MB (1024.0 * 1024.0)
@@ -184,52 +185,58 @@ static void print_memory(void) {
 // Turbo (rapid fire): R + A/B/X/Y picks the button, the same combination again turns it off.
 // While the turbo button is held it is pressed for (TURBO_FRAMES+1)/2 frames and released for the rest.
 enum { TURBO_FRAMES = 3 }; /* 60 fps / 3 = 20 presses a second: 2 frames down, 1 up */
-static const u32 turbo_keys[4] = {KEY_A, KEY_B, KEY_X, KEY_Y};
-static u32 turbo_key;  /* 0 = off */
+static const u32 face_keys = KEY_A | KEY_B | KEY_X | KEY_Y;
 static int turbo_phase;
 static bool show_stats; /* touch the bottom screen to toggle the diagnostics */
 
+static int turbo_row(void) { return show_stats ? 28 : 16; }
+
 static void show_turbo(void) {
-	static const char *const names[4] = {"A (Neo Geo B)", "B (Neo Geo A)", "X (Neo Geo D)", "Y (Neo Geo C)"};
-	const char *name = "off";
-	for (int i = 0; i < 4; i++)
-		if (turbo_key == turbo_keys[i]) name = names[i];
-	printf("\x1b[%d;2HTurbo: %-20s", show_stats ? 28 : 12, name);
+	printf("\x1b[%d;2HTurbo: %-20s", turbo_row(), keys_button_name(keys_turbo));
 	flush_console();
 }
 
-// Returns the keys as the game should see them, with turbo applied.
+// Returns the keys as the game should see them, with turbo applied. While R is free (not
+// mapped to anything), R + A/B/X/Y sets or clears the turbo button for this session.
 static u32 turbo_filter(u32 k) {
 	const u32 down = hidKeysDown();
-	if (k & KEY_R) {
-		for (int i = 0; i < 4; i++) {
-			if (!(down & turbo_keys[i])) continue;
-			turbo_key = turbo_key == turbo_keys[i] ? 0 : turbo_keys[i];
+	if ((k & KEY_R) && keys_r_free()) {
+		const u32 hit = down & face_keys;
+		if (hit) {
+			const u32 key = hit & -hit; /* lowest bit if several land together */
+			keys_turbo = keys_turbo == key ? 0 : key;
 			show_turbo();
 		}
-		return k & ~(KEY_A | KEY_B | KEY_X | KEY_Y); /* face buttons only set turbo while R is held */
+		return k & ~face_keys; /* face buttons only set turbo while R is held */
 	}
-	if (!turbo_key || !(k & turbo_key)) return k;
-	if (down & turbo_key) turbo_phase = 0; /* first press lands at once */
-	if (turbo_phase++ >= (TURBO_FRAMES + 1) / 2) k &= ~turbo_key;
+	if (!keys_turbo || !(k & keys_turbo)) return k;
+	if (down & keys_turbo) turbo_phase = 0; /* first press lands at once */
+	if (turbo_phase++ >= (TURBO_FRAMES + 1) / 2) k &= ~keys_turbo;
 	if (turbo_phase == TURBO_FRAMES) turbo_phase = 0;
 	return k;
 }
 
+// Holding SELECT + START this long restarts the game.
+enum { RESTART_FRAMES = 60 };
+static int restart_hold;
+
 static void read_input(void) {
 	u32 k = turbo_filter(hidKeysHeld());
+	if ((k & (KEY_SELECT | KEY_START)) == (KEY_SELECT | KEY_START))
+		k &= ~(KEY_SELECT | KEY_START); /* the restart combo, not coin + start */
+	const unsigned neo = keys_neo(k);
 	/* REG_STATUS_B: bit 7 = hardware type (0 = AES, matching the AES BIOS), bits 4-6 = no memory card */
 	Uint8 p1 = 0xFF, start = 0x7F, coin = 0x7;
 	if ((k & KEY_UP) && !(k & KEY_DOWN)) p1 &= 0xFE;
 	if ((k & KEY_DOWN) && !(k & KEY_UP)) p1 &= 0xFD;
 	if ((k & KEY_LEFT) && !(k & KEY_RIGHT)) p1 &= 0xFB;
 	if ((k & KEY_RIGHT) && !(k & KEY_LEFT)) p1 &= 0xF7;
-	if (k & KEY_B) p1 &= 0xEF; /* Neo Geo A */
-	if (k & KEY_A) p1 &= 0xDF; /* B */
-	if (k & KEY_Y) p1 &= 0xBF; /* C */
-	if (k & KEY_X) p1 &= 0x7F; /* D */
-	if (k & KEY_START) start &= 0xFE;
-	if (k & KEY_SELECT) coin &= 0x6;
+	if (neo & NEO_A) p1 &= 0xEF;
+	if (neo & NEO_B) p1 &= 0xDF;
+	if (neo & NEO_C) p1 &= 0xBF;
+	if (neo & NEO_D) p1 &= 0x7F;
+	if (neo & NEO_START) start &= 0xFE;
+	if (neo & NEO_COIN) coin &= 0x6;
 	neo_set_input(p1, 0xFF, start, coin);
 }
 
@@ -242,6 +249,7 @@ static void wait_for_exit(void) {
 	}
 }
 
+#if defined(NEO3DS_VDUMP) || defined(NEO3DS_AUTODUMP)
 // Debug snapshot for PC-side analysis: video RAM, palettes and the rendered frame.
 static void dump_video_state(void) {
 	static int n;
@@ -260,19 +268,23 @@ static void dump_video_state(void) {
 	fclose(f);
 	printf("\x1b[19;0Hdumped %s\n", path);
 }
+#endif
+
+/* Touch areas on the info screen (console rows, 8 pixels each) */
+enum { KEYCFG_ROW = 20, DIAG_ROW = 25 };
 
 // Bottom screen while playing: controls only, so nothing is redrawn during play.
 static void show_info(double load_secs, bool sound) {
 	consoleClear();
 	printf("\x1b[2;2H\x1b[1;36mneo3ds\x1b[0m");
-	printf("\x1b[5;2HB / A / Y / X   Neo Geo A / B / C / D");
-	printf("\x1b[6;2HSELECT          coin");
-	printf("\x1b[7;2HSTART           start");
-	printf("\x1b[8;2HR + B/A/Y/X     turbo on / off");
+	int row = keys_print(4);
+	if (keys_r_free()) printf("\x1b[%d;2HR + A/B/X/Y     turbo on / off", row++);
+	printf("\x1b[%d;2HSELECT+START    hold: restart", row);
 	show_turbo();
-	if (!sound) printf("\x1b[10;2H\x1b[33mSound off (no sdmc:/3ds/dspfirm.cdc)\x1b[0m");
-	printf("\x1b[27;2HLoaded in %.1fs", load_secs);
-	printf("\x1b[29;2HTouch the screen for diagnostics");
+	if (!sound) printf("\x1b[18;2H\x1b[33mSound off (no sdmc:/3ds/dspfirm.cdc)\x1b[0m");
+	printf("\x1b[%d;2H\x1b[36m[ Key config ]\x1b[0m", KEYCFG_ROW);
+	printf("\x1b[%d;2H\x1b[36m[ Diagnostics ]\x1b[0m", DIAG_ROW);
+	printf("\x1b[28;2HLoaded in %.1fs", load_secs);
 	flush_console();
 }
 
@@ -311,6 +323,7 @@ int main(void) {
 		gfxExit();
 		return 0;
 	}
+	keys_load();
 	neo_init();
 	render_thread_start();
 	const bool sound = audio_init(conf.sample_rate);
@@ -324,14 +337,33 @@ int main(void) {
 		hidScanInput();
 		read_input();
 		if (hidKeysDown() & KEY_TOUCH) {
-			show_stats = !show_stats;
+			touchPosition tp;
+			hidTouchRead(&tp);
+			const int row = tp.py / 8 + 1;
 			if (show_stats) {
+				show_stats = false;
+				show_info(load_secs, sound);
+			} else if (row >= KEYCFG_ROW - 1 && row <= KEYCFG_ROW + 1) {
+				keys_menu(flush_console); /* the game waits while the menu is open */
+				show_info(load_secs, sound);
+				last_loop = 0;
+			} else if (row >= DIAG_ROW - 1 && row <= DIAG_ROW + 1) {
+				show_stats = true;
 				consoleClear(); /* filled at the next one-second report */
 				show_turbo();
-			} else show_info(load_secs, sound);
+			}
 		}
+		if ((hidKeysHeld() & (KEY_SELECT | KEY_START)) == (KEY_SELECT | KEY_START)) {
+			if (++restart_hold == RESTART_FRAMES) {
+				neo_restart();
+				printf("\x1b[%d;2H\x1b[33mRestarted\x1b[0m", show_stats ? 29 : 27);
+				flush_console();
+			}
+		} else restart_hold = 0;
+#ifdef NEO3DS_VDUMP
 		if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R))
 			dump_video_state();
+#endif
 #ifdef NEO3DS_YMLOG
 		{
 			extern int ymlog_frame;
