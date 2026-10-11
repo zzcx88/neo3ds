@@ -2,9 +2,10 @@
 //
 // Layout (all files written by the PC converter):
 //   p.bin     68k program, as dumped (16-bit words already little-endian)
-//   s.bin     game fix layer          sfix.bin  BIOS fix layer
+//   s.bin     game fix layer          sfix.bin  MVS board fix layer
 //   m1.bin    Z80 program             v.bin     ADPCM-A samples (vb.bin: ADPCM-B if separate)
-//   bios.bin  68k BIOS                lo.bin    000-lo.lo zoom table
+//   bios_aes.bin / bios_mvs.bin  home / arcade 68k BIOS (either may be missing)
+//   biosmode.bin  one byte: start on the MVS BIOS     lo.bin    000-lo.lo zoom table
 //   c.idx     sprite block index      c.pak     compressed sprite blocks
 //   sma.bin   SMA carts: bank switching and random number addresses
 //   fixbank.bin  one byte: fix layer bank type for fix ROMs past 128KB
@@ -24,6 +25,9 @@
 void convert_all_char(Uint8 *Ptr, int Taille, Uint8 *usage_ptr);
 
 static char error[256];
+static ROM_REGION bios_aes, bios_mvs, board_sfix;
+static int bios_default_mvs;
+static bool loaded; /* game vectors saved: switching BIOS may now rewrite the vector table */
 
 const char *loader_error(void) { return error; }
 
@@ -143,8 +147,19 @@ bool loader_load(LoaderProgress progress, Uint32 sprite_cache_bytes) {
 	if (!(r->adpcma.p = read_file("v.bin", &r->adpcma.size, true, progress))) return false;
 	r->adpcmb.p = read_file("vb.bin", &r->adpcmb.size, false, progress);
 	if (!r->adpcmb.p) r->adpcmb = r->adpcma;
-	if (!(r->bios_m68k.p = read_file("bios.bin", &r->bios_m68k.size, true, progress))) return false;
-	r->bios_sfix.p = read_file("sfix.bin", &r->bios_sfix.size, false, progress); /* absent for AES */
+	bios_aes.p = read_file("bios_aes.bin", &bios_aes.size, false, progress);
+	bios_mvs.p = read_file("bios_mvs.bin", &bios_mvs.size, false, progress);
+	board_sfix.p = read_file("sfix.bin", &board_sfix.size, false, progress); /* the MVS board's fix ROM */
+	if (!bios_aes.p && !bios_mvs.p) {
+		fail("missing %s", "bios_aes.bin / bios_mvs.bin");
+		return false;
+	}
+	{
+		Uint8 *m = read_file("biosmode.bin", NULL, false, NULL);
+		bios_default_mvs = m ? m[0] : 0;
+		free(m);
+	}
+	loader_use_bios(bios_default_mvs);
 	if (!(memory.ng_lo = read_file("lo.bin", NULL, true, progress))) return false;
 	if (!load_sprites(progress, sprite_cache_bytes)) return false;
 	load_sma();
@@ -166,12 +181,31 @@ bool loader_load(LoaderProgress progress, Uint32 sprite_cache_bytes) {
 	r->gfix_usage.size = r->game_sfix.size >> 5;
 	r->gfix_usage.p = malloc(r->gfix_usage.size);
 	memory.fix_game_usage = r->gfix_usage.p;
-	if (r->bios_sfix.p) convert_all_char(r->bios_sfix.p, 0x20000, memory.fix_board_usage);
+	if (board_sfix.p) convert_all_char(board_sfix.p, 0x20000, memory.fix_board_usage);
 	convert_all_char(r->game_sfix.p, r->game_sfix.size, memory.fix_game_usage);
 
 	memcpy(memory.game_vector, r->cpu_m68k.p, 0x80);
 	memcpy(r->cpu_m68k.p, r->bios_m68k.p, 0x80);
+	loaded = true;
 	return true;
+}
+
+bool loader_has_bios(int mvs) { return mvs ? bios_mvs.p != NULL : bios_aes.p != NULL; }
+
+int loader_default_bios(void) { return bios_default_mvs; }
+
+// Switches the 68k BIOS and with it the board: an AES console has no fix ROM of its own (the
+// cart's S ROM is always used) and reports itself as AES in REG_STATUS_B. Takes effect at the
+// next reset; falls back to the other BIOS when this one was not packed.
+void loader_use_bios(int mvs) {
+	GAME_ROMS *r = &memory.rom;
+	if (!loader_has_bios(mvs)) mvs = !mvs;
+	r->bios_m68k = mvs ? bios_mvs : bios_aes;
+	if (mvs && board_sfix.p) r->bios_sfix = board_sfix;
+	else r->bios_sfix.p = NULL, r->bios_sfix.size = 0;
+	memory.mvs = mvs;
+	if (loaded) memcpy(r->cpu_m68k.p, r->bios_m68k.p, 0x80); /* the BIOS vectors, as at power on */
+	memory.current_vector = 0;
 }
 
 // From gngeo roms.c: reorder 8x8 fix-layer chars into the layout draw_fix_char expects.

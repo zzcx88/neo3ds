@@ -9,6 +9,7 @@ public sealed class MainForm : Form
     readonly TextBox outBox = new() { Dock = DockStyle.Fill };
     readonly Label biosLabel = new() { AutoSize = true, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
     readonly Label setLabel = new() { AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+    readonly ComboBox systemBox = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
     readonly TextBox iconBox = new() { ReadOnly = true, Dock = DockStyle.Fill, PlaceholderText = L("자동 생성 (약어 + 넘버링)", "generated (abbreviation + number)") };
     readonly TextBox bannerBox = new() { ReadOnly = true, Dock = DockStyle.Fill, PlaceholderText = L("자동 생성 (게임 이름)", "generated (game title)") };
     readonly PictureBox iconPreview = new() { Size = new Size(96, 96), SizeMode = PictureBoxSizeMode.Zoom, Margin = new Padding(0, 0, 12, 0) };
@@ -28,8 +29,8 @@ public sealed class MainForm : Form
     public MainForm()
     {
         Text = L("neo3ds 변환기 - 네오지오 롬 → 3DS CIA", "neo3ds converter - Neo Geo ROM → 3DS CIA");
-        ClientSize = new Size(660, 680);
-        MinimumSize = new Size(560, 620);
+        ClientSize = new Size(660, 715);
+        MinimumSize = new Size(560, 655);
         Font = new Font("Malgun Gothic", 9.5f);
         AllowDrop = true;
 
@@ -48,6 +49,13 @@ public sealed class MainForm : Form
         AddRow(grid, L("롬셋", "Romset"), setLabel, null);
         AddRow(grid, L("바이오스", "BIOS"), biosLabel, null);
         AddRow(grid, L("게임 이름", "Title"), titleBox, null);
+        systemBox.Items.AddRange(new object[] {
+            L("자동 (가정용 AES, 필요한 게임만 MVS)", "Automatic (home AES, MVS where a game needs it)"),
+            L("AES (가정용)", "AES (home console)"),
+            L("MVS (아케이드)", "MVS (arcade)"),
+        });
+        systemBox.SelectedIndex = 0;
+        AddRow(grid, L("시스템", "System"), systemBox, null);
         AddRow(grid, L("아이콘", "Icon"), iconBox, ImageButtons(iconBox, L("아이콘 (48×48로 맞춰집니다)", "Icon (fitted to 48×48)")));
         AddRow(grid, L("배너", "Banner"), bannerBox, ImageButtons(bannerBox, L("배너 (256×128로 맞춰집니다)", "Banner (fitted to 256×128)")));
         var previews = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, BackColor = Color.FromArgb(40, 40, 44) };
@@ -178,6 +186,7 @@ public sealed class MainForm : Form
         job.Title = CurrentTitle;
         job.IconImage = IconImage;
         job.BannerImage = BannerImage;
+        job.StartMvs = systemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
         job.OutputDir = outBox.Text;
         buildButton.Enabled = false;
         UseWaitCursor = true;

@@ -225,8 +225,8 @@ static void read_input(void) {
 	if ((k & (KEY_SELECT | KEY_START)) == (KEY_SELECT | KEY_START))
 		k &= ~(KEY_SELECT | KEY_START); /* the restart combo, not coin + start */
 	const unsigned neo = keys_neo(k);
-	/* REG_STATUS_B: bit 7 = hardware type (0 = AES, matching the AES BIOS), bits 4-6 = no memory card */
-	Uint8 p1 = 0xFF, start = 0x7F, coin = 0x7;
+	/* REG_STATUS_B: bit 7 = hardware type (1 = MVS, 0 = AES, matching the BIOS), bits 4-6 = no memory card */
+	Uint8 p1 = 0xFF, start = memory.mvs ? 0xFF : 0x7F, coin = 0x7;
 	if ((k & KEY_UP) && !(k & KEY_DOWN)) p1 &= 0xFE;
 	if ((k & KEY_DOWN) && !(k & KEY_UP)) p1 &= 0xFD;
 	if ((k & KEY_LEFT) && !(k & KEY_RIGHT)) p1 &= 0xFB;
@@ -324,6 +324,7 @@ int main(void) {
 		return 0;
 	}
 	keys_load();
+	loader_use_bios(keys_bios_mvs());
 	neo_init();
 	render_thread_start();
 	const bool sound = audio_init(conf.sample_rate);
@@ -346,6 +347,12 @@ int main(void) {
 			} else if (row >= KEYCFG_ROW - 1 && row <= KEYCFG_ROW + 1) {
 				keys_menu(flush_console); /* the game waits while the menu is open */
 				show_info(load_secs, sound);
+				if (keys_bios_mvs() != memory.mvs) { /* switching the BIOS restarts the game */
+					loader_use_bios(keys_bios_mvs());
+					neo_restart();
+					printf("\x1b[27;2H\x1b[33mRestarted with the %s BIOS\x1b[0m", memory.mvs ? "MVS" : "AES");
+					flush_console();
+				}
 				last_loop = 0;
 			} else if (row >= DIAG_ROW - 1 && row <= DIAG_ROW + 1) {
 				show_stats = true;

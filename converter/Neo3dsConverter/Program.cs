@@ -9,7 +9,7 @@ static class Program
     static int Main(string[] args)
     {
         // Command-line mode for scripted builds:
-        //   Neo3dsConverter.exe <game.zip> [out-dir] [--title "..."] [--icon icon.png] [--banner banner.png] [--set romset] [--lang ko|en]
+        //   Neo3dsConverter.exe <game.zip> [out-dir] [--title "..."] [--icon icon.png] [--banner banner.png] [--set romset] [--system aes|mvs] [--lang ko|en]
         //   Neo3dsConverter.exe --art-sheet sheet.png   (generated art of every MAME romset, for checking)
         // --lang ko|en anywhere picks the language (remembered; without other arguments it opens the window).
         int li = Array.IndexOf(args, "--lang");
@@ -26,6 +26,7 @@ static class Program
                 if (args[0] == "--art-sheet") { ArtSheet(args[1]); return 0; }
                 var positional = new List<string>();
                 string? title = null, icon = null, banner = null, set = null;
+                bool? startMvs = null;
                 for (int i = 0; i < args.Length; i++)
                     switch (args[i])
                     {
@@ -33,6 +34,7 @@ static class Program
                         case "--set": set = args[++i]; break;
                         case "--icon": icon = Path.GetFullPath(args[++i]); break;
                         case "--banner": banner = Path.GetFullPath(args[++i]); break;
+                        case "--system": startMvs = args[++i].Equals("mvs", StringComparison.OrdinalIgnoreCase); break;
                         default: positional.Add(args[i]); break;
                     }
                 var job = CiaJob.FromRomZip(positional[0], set);
@@ -40,6 +42,7 @@ static class Program
                 if (title != null) job.Title = title;
                 job.IconImage = icon;
                 job.BannerImage = banner;
+                job.StartMvs = startMvs;
                 var cia = new CiaBuilder(Console.WriteLine).Build(job);
                 Console.WriteLine($"OK {cia}");
                 return 0;

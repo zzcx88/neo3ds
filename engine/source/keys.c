@@ -2,12 +2,14 @@
 //
 // Each 3DS button (directions excluded) presses one entry of `actions`: a Neo Geo button, a
 // combination such as A+B, Start or Coin. The mapping and the turbo button are saved per game
-// in sdmc:/3ds/neo3ds/keys/<title id>.bin.
+// in sdmc:/3ds/neo3ds/keys/<title id>.bin, with the BIOS choice (home AES or arcade MVS).
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
 #include "keys.h"
+#include "loader.h"
 
 enum { NBUTTONS = 10 };
 
@@ -32,12 +34,14 @@ static const u8 default_map[NBUTTONS] = {2, 1, 4, 3, 0, 0, 0, 0, 11, 12};
 
 static u8 map[NBUTTONS];
 u32 keys_turbo;
+static u8 bios; /* 0 = the converter's default, 1 = AES, 2 = MVS */
 
 typedef struct {
 	char magic[4]; /* "NKEY" */
 	u8 version;
 	u8 turbo; /* 0 = off, else 1 + index into buttons */
 	u8 map[NBUTTONS];
+	u8 bios; /* version 2 */
 } KeyFile;
 
 static void file_path(char *out, size_t n) {
@@ -55,12 +59,16 @@ static int turbo_index(void) {
 void keys_load(void) {
 	memcpy(map, default_map, sizeof map);
 	keys_turbo = 0;
+	bios = 0;
 	char path[64];
 	file_path(path, sizeof path);
 	FILE *f = fopen(path, "rb");
 	if (!f) return;
-	KeyFile k;
-	if (fread(&k, sizeof k, 1, f) == 1 && !memcmp(k.magic, "NKEY", 4) && k.version == 1) {
+	KeyFile k = {{0}};
+	/* version 1 files end before the bios byte */
+	if (fread(&k, 1, sizeof k, f) >= offsetof(KeyFile, bios) && !memcmp(k.magic, "NKEY", 4) &&
+	    (k.version == 1 || k.version == 2)) {
+		if (k.version == 2 && k.bios <= 2) bios = k.bios;
 		for (int i = 0; i < NBUTTONS; i++) map[i] = k.map[i] < NACTIONS ? k.map[i] : default_map[i];
 		if (k.turbo >= 1 && k.turbo <= TURBO_BUTTONS) keys_turbo = buttons[k.turbo - 1].key;
 	}
@@ -75,7 +83,7 @@ bool keys_save(void) {
 	file_path(path, sizeof path);
 	FILE *f = fopen(path, "wb");
 	if (!f) return false;
-	KeyFile k = {{'N', 'K', 'E', 'Y'}, 1, (u8)turbo_index(), {0}};
+	KeyFile k = {{'N', 'K', 'E', 'Y'}, 2, (u8)turbo_index(), {0}, bios};
 	memcpy(k.map, map, sizeof map);
 	bool ok = fwrite(&k, sizeof k, 1, f) == 1;
 	return fclose(f) == 0 && ok;
@@ -89,6 +97,11 @@ unsigned keys_neo(u32 held) {
 }
 
 bool keys_r_free(void) { return map[5] == 0; }
+
+int keys_bios_mvs(void) {
+	const int mvs = bios ? bios == 2 : loader_default_bios();
+	return loader_has_bios(mvs) ? mvs : !mvs;
+}
 
 const char *keys_button_name(u32 key) {
 	for (int i = 0; i < NBUTTONS; i++)
@@ -105,8 +118,8 @@ int keys_print(int row) {
 }
 
 /* Menu lines: the buttons, then turbo, reset and save. Rows on the 40x30 console. */
-enum { ITEM_TURBO = NBUTTONS, ITEM_RESET, ITEM_SAVE, NITEMS };
-static int item_row(int i) { return i < NBUTTONS ? 4 + i : i == ITEM_TURBO ? 15 : i == ITEM_RESET ? 17 : 19; }
+enum { ITEM_TURBO = NBUTTONS, ITEM_BIOS, ITEM_RESET, ITEM_SAVE, NITEMS };
+static int item_row(int i) { return i < NBUTTONS ? 4 + i : i == ITEM_TURBO ? 15 : i == ITEM_BIOS ? 16 : i == ITEM_RESET ? 18 : 20; }
 
 static void draw_menu(int cursor, const char *status) {
 	consoleClear();
@@ -116,20 +129,24 @@ static void draw_menu(int cursor, const char *status) {
 		printf("\x1b[%d;0H%s", item_row(i), i == cursor ? "\x1b[33m>" : " ");
 		if (i < NBUTTONS) printf(" %-16s%s", buttons[i].name, actions[map[i]].name);
 		else if (i == ITEM_TURBO) printf(" %-16s%s", "Turbo button", keys_button_name(keys_turbo));
+		else if (i == ITEM_BIOS) printf(" %-16s%s%s", "System", keys_bios_mvs() ? "MVS (arcade)" : "AES (home)",
+		                                loader_has_bios(!keys_bios_mvs()) ? "" : " only");
 		else if (i == ITEM_RESET) printf(" Reset to default");
 		else printf(" Save and back");
 		printf("\x1b[0m");
 	}
-	printf("\x1b[22;2HUp/Down     choose a line");
-	printf("\x1b[23;2HLeft/Right  change it");
-	printf("\x1b[24;2HA / touch   change / select");
-	printf("\x1b[25;2HB           save and back");
-	if (status) printf("\x1b[27;2H\x1b[33m%s\x1b[0m", status);
+	printf("\x1b[23;2HUp/Down     choose a line");
+	printf("\x1b[24;2HLeft/Right  change it");
+	printf("\x1b[25;2HA / touch   change / select");
+	printf("\x1b[26;2HB           save and back");
+	if (status) printf("\x1b[28;2H\x1b[33m%s\x1b[0m", status);
 }
 
 static void change(int item, int step) {
 	if (item < NBUTTONS) map[item] = (map[item] + step + NACTIONS) % NACTIONS;
-	else if (item == ITEM_TURBO) {
+	else if (item == ITEM_BIOS) {
+		if (loader_has_bios(!keys_bios_mvs())) bios = keys_bios_mvs() ? 1 : 2;
+	} else if (item == ITEM_TURBO) {
 		int t = (turbo_index() + step + TURBO_BUTTONS + 1) % (TURBO_BUTTONS + 1);
 		keys_turbo = t ? buttons[t - 1].key : 0;
 	}
@@ -170,6 +187,7 @@ void keys_menu(void (*flush)(void)) {
 			else if (cursor == ITEM_RESET) {
 				memcpy(map, default_map, sizeof map);
 				keys_turbo = 0;
+				bios = 0;
 				status = "Defaults restored (not saved yet)";
 			} else {
 				if (keys_save()) return;

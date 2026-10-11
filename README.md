@@ -18,7 +18,7 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 - **구형 3DS(268MHz)에서 60fps**: KOF98·KOF99·KOF2000·KOF2002·메탈슬러그 X·메탈슬러그 3·SVC Chaos·사무라이 쇼다운 5 스페셜을 실기에서 확인했습니다.
 - **게임마다 독립된 HOME 메뉴 아이콘**: 게임 하나가 CIA 하나입니다. 런처를 거치지 않습니다.
 - **빠른 실행과 종료**: 3DS 기본 메모리 모드(64MB)로 돌아가서, 켜고 끌 때 시스템 재로딩이 없습니다.
-- **MAME 롬셋 그대로 사용**: MAME 롬셋 282종을 인식하고, 그중 240종을 변환할 수 있습니다. 암호화된 후기 게임(KOF99, 가로우, 메탈슬러그 3~5, KOF2000~2003, SVC Chaos 등)은 변환할 때 해독합니다.
+- **MAME 롬셋 그대로 사용**: MAME 롬셋 282종을 인식하고, 그중 241종을 변환할 수 있습니다. 암호화된 후기 게임(KOF99, 가로우, 메탈슬러그 3~5, KOF2000~2003, SVC Chaos 등)은 변환할 때 해독합니다.
 - **키 설정**: 버튼마다 네오지오 버튼이나 동시 누르기(A+B 등)를 지정하고, 게임별로 저장합니다.
 - **연사(매크로)**: R + 버튼으로 켜고 끕니다. 초당 20회입니다.
 - **재시작**: SELECT + START를 1초 누르면 게임을 처음부터 다시 시작합니다.
@@ -42,12 +42,12 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 
 ### 2. CIA 만들기
 
-<img src="docs/images/converter_ko.png" width="520" alt="변환기 화면">
+<img src="docs/images/converter2_ko.png" width="520" alt="변환기 화면">
 
 1. 게임 롬 zip과 `neogeo.zip`을 **같은 폴더**에 둡니다. zip 파일 이름은 MAME 이름 그대로 두세요(`kof99.zip`, `mslug3.zip` 등).
 2. `Neo3dsConverter.exe`를 실행하고, 롬 zip을 창에 끌어다 놓거나 **[찾아보기...]** 를 누릅니다.
 3. **롬셋** 줄에 인식된 게임이 초록색으로 나오면 변환할 수 있습니다. 빨간색이면 이유가 함께 나옵니다.
-4. 필요하면 **게임 이름**, **아이콘**, **배너**를 바꿉니다. 아래 미리보기가 실제 HOME 메뉴 모양입니다.
+4. 필요하면 **게임 이름**, **시스템**, **아이콘**, **배너**를 바꿉니다. 시스템은 처음 켤 때 쓸 바이오스입니다(자동 = 가정용 AES, 아케이드 기판용으로 개조된 게임만 MVS). 3DS에서도 바꿀 수 있습니다. 아래 미리보기가 실제 HOME 메뉴 모양입니다.
 5. **[CIA 만들기]** 를 누릅니다. 게임 하나에 1~2분쯤 걸립니다(그래픽 압축).
 
 창 오른쪽 아래 **[English]** 버튼으로 언어를 바꿀 수 있습니다.
@@ -61,9 +61,10 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 
 ### 명령줄로 쓰기
 ```
-Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--lang ko|en]
+Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--system aes|mvs] [--lang ko|en]
 ```
 - `--set`: 합본 zip 안의 다른 판을 직접 고릅니다(예: `kof98.zip --set kof98h`).
+- `--system`: 처음 켤 때 쓸 바이오스(가정용 `aes` / 아케이드 `mvs`)를 정합니다. 생략하면 자동입니다.
 - `--icon` / `--banner`: 아이콘(48×48)과 배너(256×128)로 쓸 그림입니다. 크기가 달라도 비율에 맞춰 잘라서 맞춥니다.
 
 ## 조작법
@@ -87,13 +88,14 @@ Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그�
 
 ## 키 설정
 
-<img src="docs/images/keyconfig_kof99.png" width="400" alt="키 설정 화면 (L = A+B, R = C+D)">
+<img src="docs/images/keyconfig2_kof99.png" width="400" alt="키 설정 화면 (L = A+B, R = C+D)">
 
 아래 화면의 `[ Key config ]`를 터치하면 게임이 멈추고 설정 화면이 열립니다.
 
 - A / B / X / Y / L / R / ZL / ZR / START / SELECT 각각에 **네오지오 A~D, 동시 누르기(A+B, C+D, B+C, A+B+C, B+C+D, A+B+C+D), 스타트, 코인**을 지정할 수 있습니다. 예를 들어 KOF에서 L = A+B(회피), R = C+D(날리기).
 - 십자키 위/아래로 줄을 고르고, 좌/우(또는 A, 터치)로 바꿉니다. **연사 버튼**도 여기서 정할 수 있습니다.
 - **B** 또는 `Save and back`으로 저장하고 게임으로 돌아갑니다. `Reset to default`는 기본 배치로 되돌립니다.
+- **System**: 가정용(AES)과 아케이드(MVS) 바이오스를 바꿉니다. 저장하면 그 바이오스로 게임이 다시 시작합니다. MVS에서는 SELECT로 코인을 넣어야 시작하고, 켤 때 바이오스의 초록색 점검 화면이 잠깐 보입니다. neogeo.zip에 한쪽 바이오스만 있으면 `only`로 표시되고 바꿀 수 없습니다.
 - 설정은 **게임마다** SD 카드의 `/3ds/neo3ds/keys/`에 저장되어, 껐다 켜도 유지됩니다.
 
 ## 연사(매크로)
@@ -129,6 +131,7 @@ Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그�
 | The King of Fighters 2000 | `kof2000` (SMA + CMC50 해독) | 풀 스피드 |
 | The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 해독) | 풀 스피드 |
 | SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 해독) | 풀 스피드 |
+| SNK vs. Capcom: SVC Chaos Plus | `svcplus` (해적판. 파이트케이드에서 많이 쓰는 판) | 풀 스피드. MVS 바이오스로 시작 |
 | Samurai Shodown V Special | `samsh5sp` (KOF2002형 + PCM2 + CMC50 해독) | 풀 스피드 (1.0.5부터. 줌 아웃 장면 최적화) |
 | The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 해독) | 60fps (유저 제보) |
 | Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 해독) | 60fps (유저 제보) |
@@ -152,7 +155,7 @@ Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그�
 | MVS판 보호 칩 | KOF98 MVS판 (`kof98`, `kof98a`, `kof98k`, `kof98ka`). 합본 `kof98.zip`이면 가정용판 `kof98h`로 자동 변환됩니다 |
 | 전용 컨트롤러 | 더 이리테이팅 메이즈 (`irrmaze`, 트랙볼) |
 | 도박 기판 | V-Liner (`vliner` 계열), 자키 그랑프리 (`jockeygp` 계열) |
-| 해적판(부트렉) | `kof10th`, `kf2k2mp`, `kof2002b`, `cthd2003`, `ms5plus`, `svcboot`, `kf2k3bl`, `mslug3b6`, `kog`, `sbp` 등 28종 |
+| 해적판(부트렉) | `kof10th`, `kf2k2mp`, `kof2002b`, `cthd2003`, `ms5plus`, `svcboot`, `svcplusa`, `kf2k3bl`, `mslug3b6`, `kog`, `sbp` 등 27종 (해적판 중 `svcplus`만 지원) |
 
 이 밖에 마작 게임은 마작 패널 입력이 없어서 제대로 즐기기 어렵고, 4인용(`kizuna4p`)은 2인까지만 됩니다.
 

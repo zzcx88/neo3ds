@@ -43,6 +43,16 @@ void neo_restart(void) {
 	memset(memory.ram, 0, sizeof memory.ram);
 	memset(pvc_ram, 0, sizeof pvc_ram);
 	memory.watchdog = 0;
+	/* the board's fix ROM is selected at power on (the BIOS may have been switched) */
+	if (memory.rom.bios_sfix.p) {
+		current_fix = memory.rom.bios_sfix.p;
+		fix_usage = memory.fix_board_usage;
+		memory.vid.currentfix = 0;
+	} else {
+		current_fix = memory.rom.game_sfix.p;
+		fix_usage = memory.fix_game_usage;
+		memory.vid.currentfix = 1;
+	}
 	cpu_z80_init();
 	YM2610_sh_reset();
 	neogeo_reset();

@@ -1,5 +1,5 @@
 // Ported from MAME src/devices/bus/neogeo (prot_cmc, prot_sma, prot_pcm2, prot_kof2k2, sma, cmc,
-// pcm2, kof2k2, prot_pvc, pvc), BSD-3-Clause, copyright-holders: S. Smith, David Haywood, Fabio Priuli,
+// pcm2, kof2k2, prot_pvc, pvc, prot_misc, boot_svc), BSD-3-Clause, copyright-holders: S. Smith, David Haywood, Fabio Priuli,
 // Razoola, Mr.K, and the decode information credited there.
 namespace Neo3dsConverter;
 
@@ -16,6 +16,7 @@ public static class Protection
         _ when cart.StartsWith("cmc42_") || cart is "cmc50_kof2001" or "cmc50_kof2000n" => true,
         _ when cart.StartsWith("sma_") || cart.StartsWith("pcm2_") || cart.StartsWith("k2k2_") => true,
         "pvc_mslug5" or "pvc_svc" or "pvc_kf2k3" or "pvc_kf2k3h" => true,
+        "boot_svcplus" => true, /* bootleg, but the set Fightcade players use */
         _ => false,
     };
 
@@ -77,6 +78,12 @@ public static class Protection
             case "pvc_svc": Pvc.Svc(r["maincpu"]); Pcm2.Swap(r["ymsnd:adpcma"], 3); Cmc50(0x57); break;
             case "pvc_kf2k3": Pvc.Kof2003(r["maincpu"]); Pcm2.Swap(r["ymsnd:adpcma"], 5); Cmc50(0x9d); break;
             case "pvc_kf2k3h": Pvc.Kof2003h(r["maincpu"]); Pcm2.Swap(r["ymsnd:adpcma"], 5); Cmc50(0x9d); break;
+            case "boot_svcplus":
+                Bootleg.SvcplusProgram(r["maincpu"]);
+                Bootleg.SvcbootSprites(spr);
+                Bootleg.SwapFixHalves(r["fixed"]);
+                Protection.SetWord(r["maincpu"], 0x0f8016 / 2, 0x33c1); /* MAME svcplus_px_hack */
+                break;
             case "k2k2_sams5s": Kof2002.Samsh5sp(r["maincpu"]); Cmc50(0x0d); Pcm2.Swap(r["ymsnd:adpcma"], 6); break;
         }
         return null;
@@ -505,5 +512,54 @@ static class Pvc
         XorWords(rom, XorA, new byte[] { 0x2b, 0x09, 0xd0, 0x7f, 0x51, 0x0b, 0x10, 0x4c, 0x5b, 0x07, 0x70, 0x9d, 0x3e, 0x0b, 0xb0, 0xb6, 0x54, 0x09, 0xe0, 0xcc, 0x3d, 0x0d, 0x80, 0x99, 0x87, 0x03, 0x90, 0x82, 0xfe, 0x04, 0x20, 0x18 });
         SwapBits(rom, 15, 14, 13, 12, 10, 11, 8, 9, 6, 7, 4, 5, 3, 2, 1, 0);
         Shuffle9M(rom, new[] { 7, 6, 5, 4, 1, 0, 3, 2 }, 0x00400, new[] { 6, 7, 4, 5, 0, 1, 2, 3 });
+    }
+}
+
+/// <summary>Bootleg carts (MAME prot_misc.cpp).</summary>
+static class Bootleg
+{
+    /// <summary>svcplus_px_decrypt: words scrambled inside each 1MB, then the 1MB blocks reordered.</summary>
+    public static void SvcplusProgram(byte[] rom)
+    {
+        int[] sec = { 0x00, 0x03, 0x02, 0x05, 0x04, 0x01 };
+        var dst = (byte[])rom.Clone();
+        for (int i = 0; i < rom.Length / 2; i++)
+        {
+            int ofst = Protection.BitSwap(i & 0xfffff, 0x17, 0x16, 0x15, 0x14, 0x13, 0x00, 0x01, 0x02,
+                0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x10, 0x11, 0x12);
+            ofst ^= 0x0f0007;
+            ofst += i & 0xff00000;
+            rom[2 * i] = dst[2 * ofst];
+            rom[2 * i + 1] = dst[2 * ofst + 1];
+        }
+        Array.Copy(rom, dst, rom.Length);
+        for (int i = 0; i < sec.Length; i++) Array.Copy(dst, sec[i] * 0x100000, rom, i * 0x100000, 0x100000);
+    }
+
+    /// <summary>svcboot_cx_decrypt: 128-byte sprite blocks reordered.</summary>
+    public static void SvcbootSprites(byte[] spr)
+    {
+        int[] idxTbl = { 0, 1, 0, 1, 2, 3, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5 };
+        int[,] swap4 = { { 3, 0, 1, 2 }, { 2, 3, 0, 1 }, { 1, 2, 3, 0 }, { 0, 1, 2, 3 }, { 3, 2, 1, 0 }, { 3, 0, 2, 1 } };
+        var dst = (byte[])spr.Clone();
+        for (int i = 0; i < spr.Length / 0x80; i++)
+        {
+            int idx = idxTbl[(i & 0xf00) >> 8];
+            int ofst = Protection.BitSwap(i & 0xff, 7, 6, 5, 4, swap4[idx, 3], swap4[idx, 2], swap4[idx, 1], swap4[idx, 0]);
+            ofst += i & 0xfffff00;
+            Array.Copy(dst, ofst * 0x80, spr, i * 0x80, 0x80);
+        }
+    }
+
+    /// <summary>sx_decrypt(1): the two 8-byte halves of every 16 bytes of the fix ROM swapped.</summary>
+    public static void SwapFixHalves(byte[] fix)
+    {
+        var buf = new byte[8];
+        for (int i = 0; i + 16 <= fix.Length; i += 16)
+        {
+            Array.Copy(fix, i, buf, 0, 8);
+            Array.Copy(fix, i + 8, fix, i, 8);
+            Array.Copy(buf, 0, fix, i + 8, 8);
+        }
     }
 }

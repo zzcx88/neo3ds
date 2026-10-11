@@ -16,7 +16,7 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 - **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug X, Metal Slug 3, SVC Chaos and Samurai Shodown V Special.
 - **One CIA per game** with its own HOME menu icon. No launcher in between.
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
-- **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 240 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
+- **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 241 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Restart**: hold SELECT + START for a second to restart the game.
@@ -40,12 +40,12 @@ Keep `Neo3dsConverter.exe` and its `tools` folder together.
 
 ### 2. Build a CIA
 
-<img src="docs/images/converter_en.png" width="520" alt="Converter window">
+<img src="docs/images/converter2_en.png" width="520" alt="Converter window">
 
 1. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...).
 2. Run `Neo3dsConverter.exe` and drop the game zip on the window, or press **[Browse...]**.
 3. If the **Romset** line turns green, the game can be converted. If it is red, the reason is shown.
-4. Change the **Title**, **Icon** or **Banner** if you like. The preview shows the HOME menu art as it will be built.
+4. Change the **Title**, **System**, **Icon** or **Banner** if you like. System is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too. The preview shows the HOME menu art as it will be built.
 5. Press **[Build CIA]**. A game takes a minute or two (graphics compression).
 
 The **[한국어]** button next to it switches the window to Korean.
@@ -59,9 +59,10 @@ Copy the `.cia` to the SD card, then in FBI: SD → pick the file → **Install 
 
 ### Command line
 ```
-Neo3dsConverter.exe <game.zip> [out-dir] [--title "Name"] [--icon pic.png] [--banner pic.png] [--set romset] [--lang ko|en]
+Neo3dsConverter.exe <game.zip> [out-dir] [--title "Name"] [--icon pic.png] [--banner pic.png] [--set romset] [--system aes|mvs] [--lang ko|en]
 ```
 - `--set` picks another version inside a merged zip (e.g. `kof98.zip --set kof98h`).
+- `--system` picks the BIOS the game starts on (home `aes` / arcade `mvs`); automatic when left out.
 - `--icon` / `--banner`: pictures for the icon (48×48) and banner (256×128); other sizes are scaled and cropped to fit.
 
 ## Controls
@@ -85,13 +86,14 @@ These are the defaults. Buttons can be changed per game in [Key config](#key-con
 
 ## Key config
 
-<img src="docs/images/keyconfig_kof99.png" width="400" alt="Key config screen (L = A+B, R = C+D)">
+<img src="docs/images/keyconfig2_kof99.png" width="400" alt="Key config screen (L = A+B, R = C+D)">
 
 Touch `[ Key config ]` on the bottom screen; the game pauses and the config screen opens.
 
 - Each of A / B / X / Y / L / R / ZL / ZR / START / SELECT can press **Neo Geo A-D, a combination (A+B, C+D, B+C, A+B+C, B+C+D, A+B+C+D), Start or Coin**. For example in KOF: L = A+B (dodge), R = C+D (blowback).
 - Up/Down picks a line, Left/Right (or A, or a touch) changes it. The **turbo button** can be set here too.
 - **B** or `Save and back` saves and returns to the game. `Reset to default` restores the default layout.
+- **System** switches between the home (AES) and arcade (MVS) BIOS; saving restarts the game on it. On MVS, press SELECT to insert a coin before starting, and the BIOS's green test screen shows briefly at boot. If neogeo.zip had only one BIOS, it says `only` and can't be changed.
 - Settings are saved **per game** on the SD card in `/3ds/neo3ds/keys/` and kept across launches.
 
 ## Turbo (rapid fire)
@@ -127,6 +129,7 @@ Touch `[ Diagnostics ]` on the bottom screen for a once-a-second report: fps, ma
 | The King of Fighters 2000 | `kof2000` (SMA + CMC50 decrypted) | Full speed |
 | The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 decrypted) | Full speed |
 | SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 decrypted) | Full speed |
+| SNK vs. Capcom: SVC Chaos Plus | `svcplus` (bootleg; the set Fightcade players use) | Full speed; starts on the MVS BIOS |
 | Samurai Shodown V Special | `samsh5sp` (KOF2002 type + PCM2 + CMC50 decrypted) | Full speed (from 1.0.5, zoomed-out scenes optimized) |
 | The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
 | Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
@@ -150,7 +153,7 @@ Their memory use should be close to KOF99 and Metal Slug 3, whose ROMs are the s
 | MVS protection chip | KOF98 MVS sets (`kof98`, `kof98a`, `kof98k`, `kof98ka`). A merged `kof98.zip` converts as the home version `kof98h` automatically |
 | Special controller | The Irritating Maze (`irrmaze`, trackball) |
 | Gambling boards | V-Liner (`vliner` sets), Jockey Grand Prix (`jockeygp` sets) |
-| Bootlegs | 28 sets such as `kof10th`, `kf2k2mp`, `kof2002b`, `cthd2003`, `ms5plus`, `svcboot`, `kf2k3bl`, `mslug3b6`, `kog`, `sbp` |
+| Bootlegs | 27 sets (only `svcplus` is supported) such as `kof10th`, `kf2k2mp`, `kof2002b`, `cthd2003`, `ms5plus`, `svcboot`, `svcplusa`, `kf2k3bl`, `mslug3b6`, `kog`, `sbp` |
 
 Mahjong games lack mahjong panel input, and the 4-player `kizuna4p` plays with two players.
 

@@ -22,6 +22,9 @@ public sealed class CiaJob
     /// <summary>Optional pictures for the HOME menu; generated from the title when null.</summary>
     public string? IconImage { get; set; }
     public string? BannerImage { get; set; }
+    /// <summary>The system the game starts on: null = automatic (home AES, or arcade MVS for the carts
+    /// that need it), false = AES, true = MVS. The player can switch it on the 3DS either way.</summary>
+    public bool? StartMvs { get; set; }
 
     /// <param name="set">A romset to use instead of picking one (e.g. a clone inside a merged zip).</param>
     public static CiaJob FromRomZip(string romZip, string? set = null)
@@ -170,7 +173,7 @@ public sealed class CiaBuilder
 
         string romfs = Path.Combine(work, "romfs");
         using var rom = new RomSet(CiaJob.ZipsFor(def, Path.GetDirectoryName(job.RomZip)!, job.RomName));
-        var stats = RomPack.Write(def, rom, job.BiosZip!, Path.Combine(romfs, "game"), log);
+        var stats = RomPack.Write(def, rom, job.BiosZip!, Path.Combine(romfs, "game"), log, job.StartMvs);
         log(L($"  타일 {stats.Tiles:N0}개, 그래픽 {stats.SpriteRaw / 1048576.0:F1}MB → {stats.SpritePacked / 1048576.0:F1}MB, " +
               $"3DS 메모리 사용 약 {stats.TotalBytes / 1048576.0:F1}MB",
               $"  {stats.Tiles:N0} tiles, graphics {stats.SpriteRaw / 1048576.0:F1}MB → {stats.SpritePacked / 1048576.0:F1}MB, " +

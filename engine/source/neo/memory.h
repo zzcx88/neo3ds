@@ -109,6 +109,7 @@ typedef struct neo_mem {
 	Uint8 *bksw_unscramble;
 	int *bksw_offset;
 	Uint16 sma_rng_addr;
+	Uint8 mvs; /* arcade board (MVS BIOS); 0 = home console (AES) */
 	Uint8 pvc; /* PVC carts (mslug5, svc, kof2003): cart RAM at 0x2fe000 banks the ROM */
 	Uint8 memcard[0x800];
 

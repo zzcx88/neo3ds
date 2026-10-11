@@ -137,6 +137,9 @@ public static class GameDb
         new("asia-s3.rom", 0x91b64be3, 0x20000),
     };
     public static bool IsAesBios(RomFile f) => f == Bios[0] || f == Bios[1];
+    /// <summary>Carts that misbehave on a home BIOS: the SVC Chaos Plus bootleg flashes its "PLUS"
+    /// logo during fights and its CPU opponents act oddly unless it runs as an arcade (MVS) board.</summary>
+    public static bool NeedsMvsBios(MameGame g) => g.Cart == "boot_svcplus";
     public static readonly RomFile BiosFix = new("sfix.sfix", 0xc2ea0cfd, 0x20000);
     public static readonly RomFile ZoomTable = new("000-lo.lo", 0x5a86cff2, 0x20000);
 }

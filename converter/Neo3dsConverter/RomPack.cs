@@ -18,7 +18,7 @@ public static class RomPack
 
     public sealed record Stats(int Tiles, long SpriteRaw, long SpritePacked, long TotalBytes);
 
-    public static Stats Write(MameGame game, RomSet rom, string biosZip, string gameDir, Action<string> log)
+    public static Stats Write(MameGame game, RomSet rom, string biosZip, string gameDir, Action<string> log, bool? startMvs = null)
     {
         Directory.CreateDirectory(gameDir);
         using var bios = new ZipSet(biosZip);
@@ -52,6 +52,13 @@ public static class RomPack
             var ops = game.Region("audiocpu")!.Ops;
             var reload = ops.FirstOrDefault(o => o.Kind == "reload");
             int start = reload?.A ?? 0, size = reload?.B ?? ops.First(o => o.Kind == "load").B;
+            // Some bootlegs (svcplus) fill 0x10000 with ROM_COPY instead: the ROM runs from there to
+            // the end of the loaded data.
+            if (reload == null && ops.Any(o => o.Kind == "copy" && o.B == 0x10000))
+            {
+                start = 0x10000;
+                size = ops.Max(o => o.Kind is "load" or "cont" ? o.A + o.B : o.Kind == "copy" ? o.B + o.C : 0) - start;
+            }
             m1 = audio[start..Math.Min(start + size, audio.Length)];
         }
         File.WriteAllBytes(Path.Combine(gameDir, "m1.bin"), m1);
@@ -60,14 +67,20 @@ public static class RomPack
         if (regions.TryGetValue("ymsnd:adpcmb", out var adpcmb)) File.WriteAllBytes(vb, adpcmb);
         else File.Delete(vb);
 
-        // Dev aid: NEO3DS_MVS_BIOS skips the AES BIOSes, to match MAME's default (euro MVS) when comparing.
-        var biosFile = bios.FirstPresent(Environment.GetEnvironmentVariable("NEO3DS_MVS_BIOS") != null
-                                         ? GameDb.Bios[2..] : GameDb.Bios);
-        File.WriteAllBytes(Path.Combine(gameDir, "bios.bin"), bios.Read(biosFile));
-        // An AES console has no system fix ROM; the engine then always uses the cart's S ROM.
-        string sfixPath = Path.Combine(gameDir, "sfix.bin");
-        if (GameDb.IsAesBios(biosFile)) File.Delete(sfixPath);
-        else File.WriteAllBytes(sfixPath, bios.Read(GameDb.BiosFix));
+        // Both a home (AES) and an arcade (MVS) BIOS when neogeo.zip has them, so the player can switch
+        // in the app; biosmode.bin holds the default (1 = MVS). The MVS board also has its own fix ROM.
+        var aes = GameDb.Bios[..2].FirstOrDefault(bios.Has);
+        var mvs = GameDb.Bios[2..].FirstOrDefault(bios.Has);
+        if (aes == null && mvs == null) bios.FirstPresent(GameDb.Bios); /* throws: no BIOS at all */
+        WriteOrDelete(Path.Combine(gameDir, "bios_aes.bin"), aes == null ? null : bios.Read(aes));
+        WriteOrDelete(Path.Combine(gameDir, "bios_mvs.bin"), mvs == null ? null : bios.Read(mvs));
+        WriteOrDelete(Path.Combine(gameDir, "sfix.bin"), mvs == null ? null : bios.Read(GameDb.BiosFix));
+        // Dev aid: NEO3DS_MVS_BIOS starts on the MVS BIOS, to match MAME's default (euro MVS) when comparing.
+        bool mvsFirst = startMvs ?? (GameDb.NeedsMvsBios(game) || Environment.GetEnvironmentVariable("NEO3DS_MVS_BIOS") != null);
+        mvsFirst = mvs != null && (aes == null || mvsFirst);
+        File.WriteAllBytes(Path.Combine(gameDir, "biosmode.bin"), new[] { (byte)(mvsFirst ? 1 : 0) });
+        log(mvsFirst ? L("  시스템: MVS (아케이드)", "  System: MVS (arcade)") : L("  시스템: AES (가정용)", "  System: AES (home)"));
+        File.Delete(Path.Combine(gameDir, "bios.bin"));
         File.WriteAllBytes(Path.Combine(gameDir, "lo.bin"), bios.Read(GameDb.ZoomTable));
 
         log(L("  그래픽 변환 + 압축 중...", "  Converting and compressing graphics..."));
@@ -78,6 +91,12 @@ public static class RomPack
 
     /// <summary>sma.bin for the engine's loader.c: "NSMA", bank select address, the 6 source bits of
     /// the bank number (MAME bitswap order), two random number addresses, 64 bank offsets.</summary>
+    static void WriteOrDelete(string path, byte[]? data)
+    {
+        if (data != null) File.WriteAllBytes(path, data);
+        else File.Delete(path);
+    }
+
     static void WriteSmaConfig(string path, SmaConfig? sma)
     {
         if (sma == null) { File.Delete(path); return; }
@@ -126,7 +145,7 @@ public static class RomPack
                         buf.AsSpan(op.A, Math.Min(op.B, buf.Length - op.A)).Fill((byte)op.C);
                         break;
                     case "copy":
-                        built[op.Src].AsSpan(op.A, op.C).CopyTo(buf.AsSpan(op.B));
+                        (op.Src == region.Name ? buf : built[op.Src]).AsSpan(op.A, op.C).CopyTo(buf.AsSpan(op.B));
                         break;
                 }
             }
@@ -256,6 +275,9 @@ public static class RomPack
                 throw new InvalidDataException(L($"{e.Name}의 CRC가 다릅니다 ({e.Crc32:x8}, 기대값 {f.Crc:x8}). 다른 버전의 롬셋입니다.", $"{e.Name} has CRC {e.Crc32:x8}, expected {f.Crc:x8}: a different romset version."));
             return buf;
         }
+
+        /// <summary>True when the zip holds this exact file (same CRC).</summary>
+        public bool Has(RomFile f) => zip.Entries.Any(e => e.Crc32 == f.Crc && e.Length == f.Size);
 
         public RomFile FirstPresent(RomFile[] candidates)
         {
