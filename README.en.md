@@ -170,17 +170,18 @@ Mahjong games lack mahjong panel input, and the 4-player `kizuna4p` plays with t
 
 ## Battery life
 
-Measured on an Old 3DS with a CameronSino 1300 mAh third-party battery, running Metal Slug 3.
+Measured on an Old 3DS with a CameronSino 1300 mAh third-party battery, running Metal Slug 3. This is a single run, so treat it as a rough guide.
 
-| Settings | Used per hour | Full charge to shutdown | |
+| Settings | Used per hour | From a full charge | |
 |---|---|---|---|
-| Brightness 3 (middle), Wi-Fi off, power saving off, medium volume | 19.5% (95% → 75.5%) | about 6 hours | measured + estimate |
-| Max brightness, Wi-Fi on | – | about 3.5–4.5 hours | estimate |
+| Brightness 3 (middle), Wi-Fi off, power saving off, medium volume | 19.5% (95% → 75.5%) | about 5 hours | measured + estimate |
+| Max brightness, Wi-Fi on | – | about 3–4 hours | estimate |
 
-- With the same battery, a battery benchmark (max brightness, 3D on, Wi-Fi on) went from 95% to 5% in 2 hours and shut down after 2 h 32 min. neo3ds draws about 43% of that benchmark's power.
-- The hourly figure is measured. The time to shutdown adds the reserve the benchmark showed below 5% on the gauge; the max brightness / Wi-Fi figure adds the power of the brighter backlight and Wi-Fi.
+- The hourly use is measured; the full-charge figure is simply that scaled up. The gauge drops slowly near empty, so it may last a little longer.
+- With the same battery, a battery benchmark (max brightness, 3D on, Wi-Fi on) went from 95% to 5% in 2 hours. With neo3ds the gauge drops at a little under half that rate.
+- Max brightness with Wi-Fi on was not measured; it adds the power of the brighter backlight and Wi-Fi to the measured figure.
 - No GPU work, both cores sleep while they have nothing to do, and nothing is written to the SD card during play. The picture stays 2D even with the 3D slider up.
-- Results vary with the battery's age and capacity.
+- Results vary with the game and with the battery's age and capacity.
 
 ## 64 MB mode and the optimizations
 
