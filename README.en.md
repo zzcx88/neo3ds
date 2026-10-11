@@ -13,7 +13,7 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 
 ## Features
 
-- **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug X, Metal Slug 3 and SVC Chaos.
+- **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug X, Metal Slug 3, SVC Chaos and Samurai Shodown V Special.
 - **One CIA per game** with its own HOME menu icon. No launcher in between.
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
 - **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 240 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
@@ -127,15 +127,18 @@ Touch `[ Diagnostics ]` on the bottom screen for a once-a-second report: fps, ma
 | The King of Fighters 2000 | `kof2000` (SMA + CMC50 decrypted) | Full speed |
 | The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 decrypted) | Full speed |
 | SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 decrypted) | Full speed |
+| Samurai Shodown V Special | `samsh5sp` (KOF2002 type + PCM2 + CMC50 decrypted) | Full speed (from 1.0.5, zoomed-out scenes optimized) |
+| The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
+| Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
+| Garou: Mark of the Wolves | `garou` (SMA + CMC42 decrypted) | 60 fps (user report) |
 
 ### Converts, but not tried on hardware
 - **Most unencrypted games** (1990-1999): KOF94-97, Fatal Fury series (except 2), Samurai Shodown 1-4, World Heroes, The Last Blade 1/2, Metal Slug 1, Blazing Star, Puzzle Bobble and more. They convert the same way as the verified games.
 - **Decryption implemented, never run (no ROMs to test)**
-  - CMC42: Garou, Sengoku 3, Zupapa!, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead
+  - CMC42: Sengoku 3, Zupapa!, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead
   - CMC50: KOF2001
   - PCM2: Metal Slug 4 / 4 Plus, Rage of the Dragons, Pochi and Nyaa
-  - KOF2002 type (KOF2002 itself verified): 2002 Plus, Samurai Shodown V / V Special, Matrimelee
-  - PVC (SVC Chaos verified): Metal Slug 5, KOF2003
+  - KOF2002 type (KOF2002 and Samurai Shodown V Special verified): 2002 Plus, Samurai Shodown V, Matrimelee
 
 Their memory use should be close to KOF99 and Metal Slug 3, whose ROMs are the same size (about 53 MB of 58 MB). The converter warns when memory gets tight.
 
@@ -166,7 +169,7 @@ So the goal was to **fit 64 MB graphics ROMs into the default 64 MB mode**.
 ### Speed
 - **Two cores**: the main core runs only the 68000, Z80 and timers; the second core synthesizes sound and draws the screen.
 - **Split sound chip**: the YM2610 runs as two copies. The main-core copy handles timers, interrupts and status; the second-core copy replays the logged register writes to make the sound.
-- **Sprite renderer**: unzoomed sprites are drawn tile by tile, and opaque 8-pixel runs are written by ARM assembly in one go, straight into the 3DS's rotated framebuffer.
+- **Sprite renderer**: unzoomed sprites are drawn tile by tile, and opaque 8-pixel runs are written by ARM assembly in one go, straight into the 3DS's rotated framebuffer. Horizontally shrunk rows use straight-line code unrolled at compile time for each of the 16 zoom steps and both flips, so games that zoom out a lot (Samurai Shodown) stay fast.
 - **Output**: the CPU draws into the framebuffer (no GPU round trip) with triple buffering, so nothing tears. Cache flushes use an SVC directly instead of a system service, so the second core never stalls waiting on one.
 - **Visible area only**: draws the Neo Geo's real 304×224 picture.
 - **BIOS**: uses the home (AES) BIOS from neogeo.zip when present, otherwise an arcade (MVS) BIOS.

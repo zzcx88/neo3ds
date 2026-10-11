@@ -562,6 +562,38 @@ static void put_row_zoomed(Uint16 *row, int x, int zoom_x, Uint32 w0, Uint32 w1,
 	}
 }
 
+/* A zoomed row that lies fully inside the visible columns, for one x zoom and flip known at
+ * compile time: the column list unrolls into straight-line code, so a pixel costs a shift, a
+ * test and the palette store, as in put_half. Zoomed-out scenes (Samurai Shodown) draw most
+ * of the screen through here. */
+static __inline__ __attribute__((always_inline)) void put_row_zoom_k(Uint16 *dst, Uint32 w0, Uint32 w1,
+		const Uint32 *pal, const int z, const int xflip) {
+	int k = 0, i;
+	Uint32 c;
+#pragma GCC unroll 16
+	for (i = 0; i < 16; i++) {
+		if (!zoom_x_tables[z][i]) continue;
+		const int p = xflip ? 15 - i : i;
+		if ((c = PIX(p < 8 ? w0 : w1, p & 7)) != 0) dst[k * XSTEP] = pal[c];
+		k++;
+	}
+}
+
+#define ZOOM_CASE(z) \
+	case (z) * 2: put_row_zoom_k(dst, w0, w1, pal, z, 0); break; \
+	case (z) * 2 + 1: put_row_zoom_k(dst, w0, w1, pal, z, 1); break;
+
+/* dst is the row's first pixel; x + zoom_width[zoom_x] <= 320. */
+static void put_row_zoomed_in(Uint16 *dst, int zoom_x, Uint32 w0, Uint32 w1, const Uint32 *pal, int xflip) {
+	switch (zoom_x * 2 + xflip) {
+	ZOOM_CASE(0) ZOOM_CASE(1) ZOOM_CASE(2) ZOOM_CASE(3) ZOOM_CASE(4) ZOOM_CASE(5) ZOOM_CASE(6) ZOOM_CASE(7)
+	ZOOM_CASE(8) ZOOM_CASE(9) ZOOM_CASE(10) ZOOM_CASE(11) ZOOM_CASE(12) ZOOM_CASE(13) ZOOM_CASE(14)
+	ZOOM_CASE(15)
+	}
+}
+
+#undef ZOOM_CASE
+
 #undef PUT
 #undef PUT8_OPAQUE
 
@@ -625,10 +657,22 @@ static void draw_sprite_tiles(int sprite, int first, int last, int y, int x, con
 
 #undef TILE_ROWS
 
+#ifdef NEO3DS_BENCH
+int render_zoom_fast = 1; /* the benchmark compares the renderer with and without put_row_zoomed_in */
+#define RENDER_ZOOM_FAST render_zoom_fast
+#else
+#define RENDER_ZOOM_FAST 1
+#endif
+
+/* Diagnostics: sprite lines drawn by each path (0 whole tiles, 1 unzoomed per line, 2 x zoom or
+ * screen edge, 3 y zoom), summed until main.c reads and clears them. */
+unsigned spr_lines[4];
+
 static void draw_sprite_lines(int sprite, int first, int last, int y, int x, int zoom_x, int zoom_y,
 		int size, const Uint16 *vram) {
 	const int animate = !(snap_irq2control & 0x08);
 	const int fast = zoom_x == 15 && x <= 320 - 16;
+	const int inside = RENDER_ZOOM_FAST && x + zoom_width[zoom_x] <= 320; /* x < 512, so no wrap either */
 	/* With zoom 0xff the size > 0x20 wrap-around never changes the line, so it needs no check. */
 	const int unzoomed = zoom_y == 0xff && lo_identity;
 	const int tiles_per_slot = memory.vid.spr_cache.slot_size >> 7;
@@ -636,6 +680,7 @@ static void draw_sprite_lines(int sprite, int first, int last, int y, int x, int
 	const Uint32 *tile_data = NULL;
 	const Uint32 *pal = NULL;
 
+	spr_lines[unzoomed ? (fast ? 0 : 2) : 3] += last - first;
 	if (unzoomed && fast) {
 		draw_sprite_tiles(sprite, first, last, y, x, vram);
 		return;
@@ -693,6 +738,8 @@ have_tile:
 		if (!(src[0] | src[1])) continue;
 		if (fast)
 			put_row16(canvas + x * XSTEP - line, src[0], src[1], pal, attr & 0x01);
+		else if (inside)
+			put_row_zoomed_in(canvas + x * XSTEP - line, zoom_x, src[0], src[1], pal, attr & 0x01);
 		else
 			put_row_zoomed(canvas - line, x, zoom_x, src[0], src[1], pal, attr & 0x01);
 	}

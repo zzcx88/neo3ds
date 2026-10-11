@@ -360,6 +360,24 @@ int main(void) {
 				flush_console();
 			}
 		} else restart_hold = 0;
+#ifdef NEO3DS_BENCH
+		/* L+R: draw the current frame 30 times with the old and the new zoomed-row code */
+		if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R)) {
+			extern int render_zoom_fast;
+			static u16 *scratch;
+			if (!scratch) scratch = malloc(TOP_BYTES);
+			double ms[2];
+			for (int mode = 0; mode < 2; mode++) {
+				render_zoom_fast = mode;
+				u64 t0 = svcGetSystemTick();
+				for (int i = 0; i < 30; i++) video_render(scratch);
+				ms[mode] = (svcGetSystemTick() - t0) / (CPU_TICKS_PER_MSEC * 30.0);
+			}
+			render_zoom_fast = 1;
+			printf("\x1b[%d;0Hbench old %5.2f new %5.2f ms", show_stats ? 19 : 26, ms[0], ms[1]);
+			flush_console();
+		}
+#endif
 #ifdef NEO3DS_VDUMP
 		if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R))
 			dump_video_state();
@@ -422,6 +440,9 @@ int main(void) {
 					       dbg_z80_resets, dbg_z80_restarts);
 					extern int dbg_adpcma_keyons, dbg_adpcma_oob;
 					printf("adpcm-a keyon %d  past rom %d  \n", dbg_adpcma_keyons, dbg_adpcma_oob);
+					extern unsigned spr_lines[4];
+					printf("spr lines %4u xz %4u yz %4u  ", spr_lines[0] / frames, /* last row: no newline */ spr_lines[2] / frames,
+					       spr_lines[3] / frames);
 					last_writes = z80_port_writes;
 					memset(prof_split, 0, sizeof prof_split);
 					prof_split_frames = 0;
@@ -430,6 +451,10 @@ int main(void) {
 			}
 			memset(prof_ticks, 0, sizeof prof_ticks);
 			memory.vid.spr_cache.misses = 0;
+			{
+				extern unsigned spr_lines[4];
+				memset(spr_lines, 0, sizeof spr_lines);
+			}
 			present_ticks = 0;
 			late = 0;
 			fps_t = now;
