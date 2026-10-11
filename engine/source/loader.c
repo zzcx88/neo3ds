@@ -8,6 +8,7 @@
 //   c.idx     sprite block index      c.pak     compressed sprite blocks
 //   sma.bin   SMA carts: bank switching and random number addresses
 //   fixbank.bin  one byte: fix layer bank type for fix ROMs past 128KB
+//   pvc.bin   present on PVC carts (cart RAM + bank switching at 0x2fe000)
 #include <3ds.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,6 +152,13 @@ bool loader_load(LoaderProgress progress, Uint32 sprite_cache_bytes) {
 		extern int neogeo_fix_bank_type;
 		Uint8 *t = read_file("fixbank.bin", NULL, false, NULL);
 		neogeo_fix_bank_type = t ? t[0] : 0;
+		free(t);
+	}
+	{ /* pvc.bin (empty): PVC cart, see pvc_write in memory.c */
+		extern Uint16 pvc_ram[0x1000];
+		Uint8 *t = read_file("pvc.bin", NULL, false, NULL);
+		memory.pvc = t != NULL;
+		memset(pvc_ram, 0, sizeof pvc_ram);
 		free(t);
 	}
 

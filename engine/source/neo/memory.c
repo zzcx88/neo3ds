@@ -855,8 +855,41 @@ Uint16 sma_random(void) {
     return old;
 }
 
+/* PVC (MAME prot_pvc.cpp): 0x2fe000-0x2fffff is cart RAM. Writing a pen to word 0xff0 unpacks
+ * it into 0xff1/0xff2, writing 0xff4/0xff5 packs them into 0xff6, and writing 0xff8 and up
+ * selects the ROM bank given by bytes 0x1ff1-0x1ff3. */
+Uint16 pvc_ram[0x1000];
+
+static void pvc_write(Uint32 addr, Uint16 data, Uint16 mask) {
+    Uint32 o = (addr & 0x1fff) >> 1;
+    pvc_ram[o] = (pvc_ram[o] & ~mask) | (data & mask);
+    if (o == 0xff0) {
+        Uint16 pen = pvc_ram[0xff0];
+        Uint8 b = ((pen & 0x000f) << 1) | ((pen & 0x1000) >> 12);
+        Uint8 g = ((pen & 0x00f0) >> 3) | ((pen & 0x2000) >> 13);
+        Uint8 r = ((pen & 0x0f00) >> 7) | ((pen & 0x4000) >> 14);
+        Uint8 s = (pen & 0x8000) >> 15;
+        pvc_ram[0xff1] = (g << 8) | b;
+        pvc_ram[0xff2] = (s << 8) | r;
+    } else if (o == 0xff4 || o == 0xff5) {
+        Uint16 gb = pvc_ram[0xff4], sr = pvc_ram[0xff5];
+        pvc_ram[0xff6] = ((gb & 0x001e) >> 1) | ((gb & 0x1e00) >> 5) | ((sr & 0x001e) << 7) |
+            ((gb & 0x0001) << 12) | ((gb & 0x0100) << 5) | ((sr & 0x0001) << 14) | ((sr & 0x0100) << 7);
+    } else if (o >= 0xff8) {
+        Uint32 bank = ((pvc_ram[0xff8] >> 8) | (pvc_ram[0xff9] << 8)) + 0x100000;
+        pvc_ram[0xff8] = (pvc_ram[0xff8] & 0xfe00) | 0x00a0;
+        pvc_ram[0xff9] &= 0x7fff;
+        if (bank + 0x100000 > memory.rom.cpu_m68k.size) bank = 0x100000;
+        cpu_68k_bankswitch(bank & ~1);
+    }
+}
+
 /* Normal bankswitcher */
 Uint8 mem68k_fetch_bk_normal_byte(Uint32 addr) {
+    if (memory.pvc && (addr & 0xFFFFF) >= 0xfe000) {
+        Uint16 w = pvc_ram[(addr & 0x1fff) >> 1];
+        return addr & 1 ? w & 0xff : w >> 8;
+    }
     if (memory.bksw_unscramble) { /* SMA prot & random number generator */
         Uint32 a=addr&0xFFFFE;
         if (a == 0xfe446) {
@@ -875,6 +908,8 @@ Uint8 mem68k_fetch_bk_normal_byte(Uint32 addr) {
 }
 
 Uint16 mem68k_fetch_bk_normal_word(Uint32 addr) {
+    if (memory.pvc && (addr & 0xFFFFF) >= 0xfe000)
+        return pvc_ram[(addr & 0x1fff) >> 1];
     if (memory.bksw_unscramble) { /* SMA prot & random number generator */
       if ((addr&0xFFFFF) == 0xfe446) {
             //core_log("Prot reading W %08x\n", addr);
@@ -913,13 +948,22 @@ static void bankswitch(Uint32 address, Uint8 data) {
 void mem68k_store_bk_normal_byte(Uint32 addr, Uint8 data) {
     //if (addr<0x2FFFF0)
     //core_log("bankswitch_b %x %x\n", addr, data);
+    if (memory.pvc) {
+        if ((addr & 0xFFFFF) >= 0xfe000)
+            pvc_write(addr, addr & 1 ? data : data << 8, addr & 1 ? 0x00ff : 0xff00);
+        return;
+    }
     bankswitch(addr, data);
 }
 
 void mem68k_store_bk_normal_word(Uint32 addr, Uint16 data) {
     //if (addr<0x2FFFF0) 
     //core_log("bankswitch_w %x %x\n",addr,data);
-    if (memory.bksw_unscramble && (addr & 0xFF) == memory.bksw_unscramble[0]) {
+    if (memory.pvc) {
+        if ((addr & 0xFFFFF) >= 0xfe000) pvc_write(addr, data, 0xffff);
+        return;
+    }
+    if (memory.bksw_unscramble &&(addr & 0xFF) == memory.bksw_unscramble[0]) {
         /* unscramble bank number */
         data = 
             (((data >> memory.bksw_unscramble[1]) & 1) << 0) + 

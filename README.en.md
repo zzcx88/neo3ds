@@ -16,7 +16,7 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 - **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, Metal Slug X and Metal Slug 3.
 - **One CIA per game** with its own HOME menu icon. No launcher in between.
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
-- **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 235 of them. Encrypted later games (KOF99, Garou, Metal Slug 3/4, KOF2000-2002...) are decrypted during conversion.
+- **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 240 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Generated icon and banner** from the game title, or use your own pictures.
 - Converter in **English and Korean**.
@@ -106,6 +106,7 @@ Touch the bottom screen for a once-a-second report: fps, main-core time (68000, 
 | Metal Slug 3 | `mslug3` (SMA + CMC42 decrypted) | Full speed |
 | The King of Fighters 2000 | `kof2000` (SMA + CMC50 decrypted) | Full speed |
 | The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 decrypted) | Full speed |
+| SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 decrypted) | Full speed |
 
 ### Converts, but not tried on hardware
 - **Most unencrypted games** (1990-1999): KOF94-97, Fatal Fury series (except 2), Samurai Shodown 1-4, World Heroes, The Last Blade 1/2, Metal Slug 1, Blazing Star, Puzzle Bobble and more. They convert the same way as the verified games.
@@ -114,6 +115,7 @@ Touch the bottom screen for a once-a-second report: fps, main-core time (68000, 
   - CMC50: KOF2001
   - PCM2: Metal Slug 4 / 4 Plus, Rage of the Dragons, Pochi and Nyaa
   - KOF2002 type (KOF2002 itself verified): 2002 Plus, Samurai Shodown V / V Special, Matrimelee
+  - PVC (SVC Chaos verified): Metal Slug 5, KOF2003
 
 Their memory use should be close to KOF99 and Metal Slug 3, whose ROMs are the same size (about 53 MB of 58 MB). The converter warns when memory gets tight.
 
@@ -121,7 +123,6 @@ Their memory use should be close to KOF99 and Metal Slug 3, whose ROMs are the s
 
 | Reason | Romsets |
 |---|---|
-| PVC protection chip not supported | Metal Slug 5 (`mslug5`, `mslug5h`), SNK vs. Capcom (`svc`), KOF2003 (`kof2003`, `kof2003h`) |
 | Protection chip not supported | Fatal Fury 2 (`fatfury2`), Super Sidekicks (`ssideki`) |
 | MVS protection chip | KOF98 MVS sets (`kof98`, `kof98a`, `kof98k`, `kof98ka`). A merged `kof98.zip` converts as the home version `kof98h` automatically |
 | Special controller | The Irritating Maze (`irrmaze`, trackball) |

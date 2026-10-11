@@ -1,5 +1,5 @@
 // Ported from MAME src/devices/bus/neogeo (prot_cmc, prot_sma, prot_pcm2, prot_kof2k2, sma, cmc,
-// pcm2, kof2k2), BSD-3-Clause, copyright-holders: S. Smith, David Haywood, Fabio Priuli,
+// pcm2, kof2k2, prot_pvc, pvc), BSD-3-Clause, copyright-holders: S. Smith, David Haywood, Fabio Priuli,
 // Razoola, Mr.K, and the decode information credited there.
 namespace Neo3dsConverter;
 
@@ -15,6 +15,7 @@ public static class Protection
         "rom" or "rom_mslugx" => true,
         _ when cart.StartsWith("cmc42_") || cart is "cmc50_kof2001" or "cmc50_kof2000n" => true,
         _ when cart.StartsWith("sma_") || cart.StartsWith("pcm2_") || cart.StartsWith("k2k2_") => true,
+        "pvc_mslug5" or "pvc_svc" or "pvc_kf2k3" or "pvc_kf2k3h" => true,
         _ => false,
     };
 
@@ -22,12 +23,15 @@ public static class Protection
     /// 1 Garou / Metal Slug 3 type, 2 KOF2000 type.</summary>
     public static int FixBankType(string cart) => cart switch
     {
-        "cmc50_kof2000n" or "sma_kof2k" or "k2k2_matrim" => 2,
+        "cmc50_kof2000n" or "sma_kof2k" or "k2k2_matrim" or "pvc_svc" or "pvc_kf2k3" or "pvc_kf2k3h" => 2,
         "pcm2_ms4p" or "k2k2_kof2k2" or "k2k2_kf2k2p" => 0,
         _ when cart.StartsWith("cmc42_") || cart.StartsWith("cmc50_") || cart.StartsWith("sma_") ||
-               cart.StartsWith("pcm2_") || cart.StartsWith("k2k2_") => 1,
+               cart.StartsWith("pcm2_") || cart.StartsWith("k2k2_") || cart.StartsWith("pvc_") => 1,
         _ => 0,
     };
+
+    /// <summary>PVC carts: the engine emulates the cart RAM at 0x2fe000 (colour packing, bank switching).</summary>
+    public static bool IsPvc(string cart) => cart.StartsWith("pvc_");
 
     /// <summary>Decrypts the regions in place. Returns what the engine must emulate while the
     /// game runs (SMA bank switching), or null.</summary>
@@ -69,6 +73,10 @@ public static class Protection
             case "k2k2_kf2k2p": Kof2002.Program(r["maincpu"]); Cmc50(0xec, fix: false); Pcm2.Swap(r["ymsnd:adpcma"], 0); break;
             case "k2k2_matrim": Kof2002.Program(r["maincpu"]); Cmc50(0x6a); Pcm2.Swap(r["ymsnd:adpcma"], 1); break;
             case "k2k2_samsh5": Kof2002.Samsho5(r["maincpu"]); Cmc50(0x0f); Pcm2.Swap(r["ymsnd:adpcma"], 4); break;
+            case "pvc_mslug5": Pvc.Mslug5(r["maincpu"]); Pcm2.Swap(r["ymsnd:adpcma"], 2); Cmc50(0x19); break;
+            case "pvc_svc": Pvc.Svc(r["maincpu"]); Pcm2.Swap(r["ymsnd:adpcma"], 3); Cmc50(0x57); break;
+            case "pvc_kf2k3": Pvc.Kof2003(r["maincpu"]); Pcm2.Swap(r["ymsnd:adpcma"], 5); Cmc50(0x9d); break;
+            case "pvc_kf2k3h": Pvc.Kof2003h(r["maincpu"]); Pcm2.Swap(r["ymsnd:adpcma"], 5); Cmc50(0x9d); break;
             case "k2k2_sams5s": Kof2002.Samsh5sp(r["maincpu"]); Cmc50(0x0d); Pcm2.Swap(r["ymsnd:adpcma"], 6); break;
         }
         return null;
@@ -398,4 +406,104 @@ static class Kof2002
     public static void Samsh5sp(byte[] p) => Blocks(p, 0, 0x800000,
         new[] { 0x000000, 0x080000, 0x500000, 0x480000, 0x600000, 0x580000, 0x700000, 0x280000,
                 0x100000, 0x680000, 0x400000, 0x780000, 0x200000, 0x380000, 0x300000, 0x180000 });
+}
+
+/// <summary>NEO-PVC: 68k program encryption (MAME prot_pvc.cpp). Works on little-endian words, as MAME
+/// does on a little-endian host (BYTE_XOR_LE is the identity).</summary>
+static class Pvc
+{
+    static void XorWords(byte[] rom, byte[] xor1, byte[] xor2)
+    {
+        if (xor1 != null) for (int i = 0; i < 0x100000; i++) rom[i] ^= xor1[i % 0x20];
+        for (int i = 0x100000; i < 0x800000; i++) rom[i] ^= xor2[i % 0x20];
+    }
+
+    static void SwapBits(byte[] rom, params int[] bits)
+    {
+        for (int i = 0x100000; i < 0x800000; i += 4)
+        {
+            int w = rom[i + 1] | rom[i + 2] << 8;
+            w = Protection.BitSwap(w, bits);
+            rom[i + 1] = (byte)w;
+            rom[i + 2] = (byte)(w >> 8);
+        }
+    }
+
+    static int Swap8(int v, params int[] bits) => Protection.BitSwap(v, bits);
+
+    /// <summary>mslug5 / svc: 8MB program, reordered in place.</summary>
+    static void Shuffle8M(byte[] rom, int[] lowBits, int xorMid, int[] midBits)
+    {
+        var buf = (byte[])rom[..0x800000].Clone();
+        for (int i = 0; i < 0x10; i++)
+        {
+            int ofst = (i & 0xf0) + Swap8(i & 0x0f, lowBits);
+            Array.Copy(buf, ofst * 0x10000, rom, i * 0x10000, 0x10000);
+        }
+        for (int i = 0x100000; i < 0x800000; i += 0x100)
+        {
+            int ofst = (i & 0xf000ff) + ((i & 0x000f00) ^ xorMid) + (Swap8((i & 0x0ff000) >> 12, midBits) << 12);
+            Array.Copy(buf, ofst, rom, i, 0x100);
+        }
+        buf = (byte[])rom[..0x800000].Clone();
+        Array.Copy(buf, 0x700000, rom, 0x100000, 0x100000);
+        Array.Copy(buf, 0x100000, rom, 0x200000, 0x600000);
+    }
+
+    /// <summary>kof2003: 9MB program; the last 1MB is xored with the banked data first.</summary>
+    static void Shuffle9M(byte[] rom, int[] lowBits, int xorMid, int[] midBits)
+    {
+        var buf = new byte[0x900000];
+        for (int i = 0; i < 0x10; i++)
+        {
+            int ofst = (i & 0xf0) + Swap8(i & 0x0f, lowBits);
+            Array.Copy(rom, ofst * 0x10000, buf, i * 0x10000, 0x10000);
+        }
+        for (int i = 0x100000; i < 0x900000; i += 0x100)
+        {
+            int ofst = (i & 0xf000ff) + ((i & 0x000f00) ^ xorMid) + (Swap8((i & 0x0ff000) >> 12, midBits) << 12);
+            Array.Copy(rom, ofst, buf, i, 0x100);
+        }
+        Array.Copy(buf, 0x000000, rom, 0x000000, 0x100000);
+        Array.Copy(buf, 0x800000, rom, 0x100000, 0x100000);
+        Array.Copy(buf, 0x100000, rom, 0x200000, 0x700000);
+    }
+
+    static void XorTail(byte[] rom)
+    {
+        for (int i = 0; i < 0x100000; i++) rom[0x800000 + i] ^= rom[0x100002 | i];
+    }
+
+    static readonly byte[] XorA = { 0xc2, 0x4b, 0x74, 0xfd, 0x0b, 0x34, 0xeb, 0xd7, 0x10, 0x6d, 0xf9, 0xce, 0x5d, 0xd5, 0x61, 0x29, 0xf5, 0xbe, 0x0d, 0x82, 0x72, 0x45, 0x0f, 0x24, 0xb3, 0x34, 0x1b, 0x99, 0xea, 0x09, 0xf3, 0x03 };
+    static readonly byte[] XorB = { 0x3b, 0x6a, 0xf7, 0xb7, 0xe8, 0xa9, 0x20, 0x99, 0x9f, 0x39, 0x34, 0x0c, 0xc3, 0x9a, 0xa5, 0xc8, 0xb8, 0x18, 0xce, 0x56, 0x94, 0x44, 0xe3, 0x7a, 0xf7, 0xdd, 0x42, 0xf0, 0x18, 0x60, 0x92, 0x9f };
+
+    public static void Mslug5(byte[] rom)
+    {
+        XorWords(rom, XorA, new byte[] { 0x36, 0x09, 0xb0, 0x64, 0x95, 0x0f, 0x90, 0x42, 0x6e, 0x0f, 0x30, 0xf6, 0xe5, 0x08, 0x30, 0x64, 0x08, 0x04, 0x00, 0x2f, 0x72, 0x09, 0xa0, 0x13, 0xc9, 0x0b, 0xa0, 0x3e, 0xc2, 0x00, 0x40, 0x2b });
+        SwapBits(rom, 15, 14, 13, 12, 10, 11, 8, 9, 6, 7, 4, 5, 3, 2, 1, 0);
+        Shuffle8M(rom, new[] { 7, 6, 5, 4, 1, 0, 3, 2 }, 0x00700, new[] { 5, 4, 7, 6, 1, 0, 3, 2 });
+    }
+
+    public static void Svc(byte[] rom)
+    {
+        XorWords(rom, XorB, new byte[] { 0x69, 0x0b, 0x60, 0xd6, 0x4f, 0x01, 0x40, 0x1a, 0x9f, 0x0b, 0xf0, 0x75, 0x58, 0x0e, 0x60, 0xb4, 0x14, 0x04, 0x20, 0xe4, 0xb9, 0x0d, 0x10, 0x89, 0xeb, 0x07, 0x30, 0x90, 0x50, 0x0e, 0x20, 0x26 });
+        SwapBits(rom, 15, 14, 13, 12, 10, 11, 8, 9, 6, 7, 4, 5, 3, 2, 1, 0);
+        Shuffle8M(rom, new[] { 7, 6, 5, 4, 2, 3, 0, 1 }, 0x00a00, new[] { 4, 5, 6, 7, 1, 0, 3, 2 });
+    }
+
+    public static void Kof2003(byte[] rom)
+    {
+        XorTail(rom);
+        XorWords(rom, XorB, new byte[] { 0x2f, 0x02, 0x60, 0xbb, 0x77, 0x01, 0x30, 0x08, 0xd8, 0x01, 0xa0, 0xdf, 0x37, 0x0a, 0xf0, 0x65, 0x28, 0x03, 0xd0, 0x23, 0xd3, 0x03, 0x70, 0x42, 0xbb, 0x06, 0xf0, 0x28, 0xba, 0x0f, 0xf0, 0x7a });
+        SwapBits(rom, 15, 14, 13, 12, 5, 4, 7, 6, 9, 8, 11, 10, 3, 2, 1, 0);
+        Shuffle9M(rom, new[] { 7, 6, 5, 4, 0, 1, 2, 3 }, 0x00800, new[] { 4, 5, 6, 7, 1, 0, 3, 2 });
+    }
+
+    public static void Kof2003h(byte[] rom)
+    {
+        XorTail(rom);
+        XorWords(rom, XorA, new byte[] { 0x2b, 0x09, 0xd0, 0x7f, 0x51, 0x0b, 0x10, 0x4c, 0x5b, 0x07, 0x70, 0x9d, 0x3e, 0x0b, 0xb0, 0xb6, 0x54, 0x09, 0xe0, 0xcc, 0x3d, 0x0d, 0x80, 0x99, 0x87, 0x03, 0x90, 0x82, 0xfe, 0x04, 0x20, 0x18 });
+        SwapBits(rom, 15, 14, 13, 12, 10, 11, 8, 9, 6, 7, 4, 5, 3, 2, 1, 0);
+        Shuffle9M(rom, new[] { 7, 6, 5, 4, 1, 0, 3, 2 }, 0x00400, new[] { 6, 7, 4, 5, 0, 1, 2, 3 });
+    }
 }

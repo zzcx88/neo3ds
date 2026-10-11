@@ -52,7 +52,6 @@ public static class GameDb
             "rom_kof98" => L("보호 칩이 달린 MVS판입니다 (가정용 kof98h 롬이 있으면 그걸로 변환됩니다)", "MVS version with a protection chip (the home version kof98h converts if its ROMs are in the zip)"),
             "rom_fatfur2" => L("보호 칩 미지원", "protection chip not supported"),
             "rom_vliner" or "cmc50_jockeygp" => L("도박기판 게임", "gambling board"),
-            _ when g.Cart.StartsWith("pvc_") => L("PVC 보호 칩 미지원", "PVC protection chip not supported"),
             _ when g.Cart.StartsWith("boot_") => L("해적판(부트렉) 롬셋 미지원", "bootleg romsets are not supported"),
             _ => L("보호 칩 미지원", "protection chip not supported"),
         };
