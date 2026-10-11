@@ -1,6 +1,6 @@
-# neo3ds
+# neo3ds - NeoGeo emulator for Nintendo 3DS
 
-**A converter that turns Neo Geo games into full-speed 3DS titles, even on the original (Old) 3DS.**
+**A NeoGeo (Neo Geo) emulator and converter that turns Neo Geo games into full-speed 3DS titles, even on the original (Old) 3DS.**
 Give it a Neo Geo ROM zip on your PC and it builds a 3DS install file (CIA) with the emulator inside.
 Each game gets its own HOME menu icon and starts straight away. New 3DS models run it with room to spare.
 

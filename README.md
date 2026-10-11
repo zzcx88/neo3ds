@@ -1,4 +1,6 @@
-# neo3ds
+# neo3ds - NeoGeo emulator for Nintendo 3DS
+
+*NeoGeo (Neo Geo) emulator for the Nintendo 3DS: converts MAME romsets into CIAs that run at full speed on the Old 3DS.*
 
 **구형 3DS에서도 풀 스피드로 돌아가는 네오지오 게임을 만들어 주는 변환기**입니다.
 PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3DS 설치 파일(CIA)이 만들어집니다.
