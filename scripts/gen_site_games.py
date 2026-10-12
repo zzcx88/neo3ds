@@ -42,9 +42,9 @@ DEFAULT_REASON = ('보호 칩 미지원', 'protection chip not supported')
 VERIFIED = {
     'kof98h': ('실기 확인 · 풀 스피드 · kof98.zip에서 자동 선택', 'verified · full speed · picked automatically from kof98.zip'),
     'kof99': ('실기 확인 · 풀 스피드', 'verified · full speed'),
-    'mslug2': ('실기 확인 · 플레이 가능 · 원래 기판도 느려지던 장면에서 느려짐', 'verified · playable · slows down where the original board did too'),
-    'mslugx': ('실기 확인 · 풀 스피드 · 보호칩 검사 패치', 'verified · full speed · protection check patched'),
-    'mslug3': ('실기 확인 · 풀 스피드', 'verified · full speed'),
+    'mslug2': ('실기 확인 · 플레이 가능 · 원래 기판에서 느려지던 장면은 똑같이 느려짐', 'verified · playable · slows down exactly where the original board did'),
+    'mslugx': ('실기 확인 · 풀 스피드 · 보호칩 검사 패치 · 원래 기판에서 느려지던 장면은 똑같이 느려짐', 'verified · full speed · protection check patched · slows down where the original board did'),
+    'mslug3': ('실기 확인 · 풀 스피드 · 원래 기판에서 느려지던 장면은 똑같이 느려짐', 'verified · full speed · slows down where the original board did'),
     'kof2000': ('실기 확인 · 풀 스피드', 'verified · full speed'),
     'kof2002': ('실기 확인 · 풀 스피드', 'verified · full speed'),
     'svc': ('실기 확인 · 풀 스피드', 'verified · full speed'),
