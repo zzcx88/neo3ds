@@ -154,8 +154,11 @@ void screen_frame_end(void) {
 void screen_update(void) {} /* frames reach the screen through render_frame */
 
 // Paces the main loop at 60Hz; the render thread has already queued the frame.
+// nextEvent=false: if the vblank already came while this frame was being emulated, go straight
+// on to the next one instead of waiting for the vblank after it. A frame that runs a little over
+// 16.7ms then costs a little time instead of a whole extra frame, and the next one catches up.
 static void present_frame(void) {
-	gspWaitForVBlank();
+	gspWaitForEvent(GSPGPU_EVENT_VBlank0, false);
 }
 
 static void show_progress(const char *file, Uint32 done, Uint32 total) {
@@ -441,8 +444,10 @@ int main(void) {
 						       prof_split[2] * ks);
 					}
 					extern int z80_bank_wraps, dbg_z80_resets, dbg_z80_restarts;
-					printf("z80 wr %5d/s wrap %d rst %d/%d  \n", z80_port_writes - last_writes, z80_bank_wraps,
-					       dbg_z80_resets, dbg_z80_restarts);
+					extern unsigned z80_idle_slices;
+					printf("z80 wr %5d/s idle %2u%% wrap %d rst %d/%d  \n", z80_port_writes - last_writes,
+					       z80_idle_slices * 100 / (frames * 264), z80_bank_wraps, dbg_z80_resets, dbg_z80_restarts);
+					z80_idle_slices = 0;
 					extern int dbg_adpcma_keyons, dbg_adpcma_oob;
 					printf("adpcm-a keyon %d  past rom %d  \n", dbg_adpcma_keyons, dbg_adpcma_oob);
 					extern unsigned spr_lines[4];

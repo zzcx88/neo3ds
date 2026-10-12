@@ -215,10 +215,51 @@ void cpu_z80_init(void)
 Uint16 dbg_z80_restart_from[4]; /* neo3ds diagnostics: PC seen just before falling back to boot code */
 int dbg_z80_restarts;
 
+/* Idle loop skip. Some sound drivers (Metal Slug 2, X and 3) wait for their timer interrupt in
+ *     s:   ld a,(hl)       7 cycles
+ *     s+1: and a / or a    4
+ *     s+2: jp z,s          10
+ * polling a byte that only the interrupt handler changes, and spend about half the Z80's time
+ * there. Interrupts arrive between slices, so a slice that starts in that loop with the byte
+ * still 0 and no interrupt pending only goes round the loop. Instead of running it, this works
+ * out where DrZ80 would stop (it runs instructions while the cycle count stays >= 0) and sets
+ * PC, A and F to what the loop leaves there: the same state, so the sound is unchanged.
+ * The loop is found by its bytes, so no per-game addresses are needed. */
+unsigned z80_idle_slices; /* diagnostics: slices skipped */
+
+static int z80_idle(int nbcycle) {
+	const int pc = mydrz80.Z80PC - mydrz80.Z80PC_BASE;
+	if (mydrz80.Z80_IRQ) return 0;
+	for (int s = pc; s >= 0 && s >= pc - 2; s--) { /* the slice may have stopped on any of the three */
+		const Uint8 *m = drz80mem + s;
+		if (s > 0xfffb) continue;
+		if (!(m[0] == 0x7e && (m[1] == 0xa7 || m[1] == 0xb7) && m[2] == 0xca && (m[3] | m[4] << 8) == s)) continue;
+		if (drz80mem[mydrz80.Z80HL >> 16]) return 0; /* the loop is about to end */
+		int p = pc - s, c = nbcycle;
+		if (p == 1 && (mydrz80.Z80A >> 24)) return 0;
+		if (p == 2 && !(mydrz80.Z80F & (1 << 2))) return 0; /* jp z falls through */
+		/* DrZ80 flags for and a / or a with A = 0: Z and P/V (its PZS table), and a also sets H */
+		const unsigned f = m[1] == 0xa7 ? 0x15 : 0x05;
+		do {
+			if (p == 0) mydrz80.Z80A = 0, c -= 7;
+			else if (p == 1) mydrz80.Z80F = f, c -= 4;
+			else c -= 10;
+			p = p == 2 ? 0 : p + 1;
+		} while (c >= 0);
+		mydrz80.Z80PC = mydrz80.Z80PC_BASE + s + p;
+		return 1;
+	}
+	return 0;
+}
+
 void cpu_z80_run(int nbcycle) {
 	static Uint16 last_pc;
 	Uint16 pc;
 	//core_log("Drz80run %d\n",nbcycle);
+	if (z80_idle(nbcycle)) {
+		z80_idle_slices++;
+		return;
+	}
 	DrZ80Run(&mydrz80, nbcycle);
 	pc = mydrz80.Z80PC - mydrz80.Z80PC_BASE;
 	/* entering the boot/init code (0x00b0-0x00c7) from anywhere else */

@@ -15,9 +15,15 @@
 #define MAX_SAMPLES 1024 /* per buffer, stereo frames */
 #define LOG_MAX 16384    /* YM2610 port writes per frame */
 #define LOG_RESET 0xffff /* log entry: reset the chip */
+#define LOG_LINE 0xf000  /* log entry: the entries after it happened on scanline (e & 0x1ff) */
+#define LINES 264        /* scanlines per frame (neo_glue.c) */
 
-/* gngeo's YM2610Update_stream() writes interleaved stereo s16 here (core 1 only) */
+/* gngeo's YM2610Update_stream() writes interleaved stereo s16 here, from sample play_pos on
+ * (core 1 only) */
 Uint16 play_buffer[16384];
+int play_pos;
+
+extern int current_line; /* neo_glue.c */
 
 void ym_audio_Init(int baseclock, int rate, void *pcmroma, int pcmsizea, void *pcmromb, int pcmsizeb,
                    FM_TIMERHANDLER TimerHandler, FM_IRQHANDLER IRQHandler);
@@ -77,8 +83,17 @@ bool audio_init(int rate) {
 	return true;
 }
 
+/* Each write is replayed at its place in the frame: a LOG_LINE entry goes before the first
+ * write of every scanline that has any, so drivers that change a register several times a
+ * frame (pitch sweeps, short notes) sound as they do on the chip. */
+static int log_line = -1; /* scanline of the last LOG_LINE entry in log[fill] */
+
 static void log_entry(u16 e) {
 	int *len = &log_len[log_fill];
+	if (current_line != log_line && *len < LOG_MAX) {
+		log_line = current_line;
+		ym_log[log_fill][(*len)++] = LOG_LINE | (current_line & 0x1ff);
+	}
 	if (*len < LOG_MAX) ym_log[log_fill][(*len)++] = e;
 }
 
@@ -145,6 +160,7 @@ void audio_end_frame(int rate) {
 	if (frame_samples > MAX_SAMPLES) frame_samples = MAX_SAMPLES;
 	log_fill ^= 1;
 	log_len[log_fill] = 0;
+	log_line = -1;
 	frames_logged++;
 }
 
@@ -153,16 +169,24 @@ void audio_end_frame(int rate) {
 void audio_render(void) {
 	const u16 *e = ym_log[log_fill ^ 1];
 	const int len = log_len[log_fill ^ 1];
+	const int n = frame_samples;
+	u64 t0 = svcGetSystemTick();
+	play_pos = 0;
 	for (int i = 0; i < len; i++) {
-		if (e[i] == LOG_RESET) ym_audio_Reset();
+		if ((e[i] & 0xf000) == LOG_LINE && e[i] != LOG_RESET) {
+			/* synthesize up to this scanline's place in the frame, then apply its writes */
+			const int to = (e[i] & 0x1ff) * n / LINES;
+			if (enabled && to > play_pos) {
+				ym_audio_Update_stream(to - play_pos);
+				play_pos = to;
+			}
+		} else if (e[i] == LOG_RESET) ym_audio_Reset();
 		else ym_audio_Write(e[i] >> 8, e[i] & 0xff);
 	}
 	__atomic_store_n(&frames_played, frames_logged, __ATOMIC_RELEASE);
 	if (!enabled) return;
 
-	const int n = frame_samples;
-	u64 t0 = svcGetSystemTick();
-	ym_audio_Update_stream(n);
+	if (n > play_pos) ym_audio_Update_stream(n - play_pos);
 	prof_ticks[5] += svcGetSystemTick() - t0;
 
 	ndspWaveBuf *wb = &wave[next];

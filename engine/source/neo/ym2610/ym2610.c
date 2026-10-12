@@ -2852,6 +2852,7 @@ int YM2610TimerOver(int ch) {
 }
 s16 mixing_buffer[2][16384];
 extern Uint16 play_buffer[16384];
+extern int play_pos; /* neo3ds: first stereo sample of play_buffer to write (audio.c) */
 //static Uint32 buf_pos;
 
 /* Generate samples for one of the YM2610s */
@@ -2860,7 +2861,7 @@ void YM2610Update_stream(int length) {
 	int i, j, outn;
 	FMSAMPLE_MIX lt, rt;
 	FM_CH *cch[6];
-	Uint16 *pl = play_buffer;
+	Uint16 *pl = play_buffer + 2 * play_pos;
 
 	//core_log("AAA %d\n",length);
 	cch[0] = &YM2610.CH[1];
