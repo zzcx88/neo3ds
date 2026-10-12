@@ -4,7 +4,7 @@
 Give it a Neo Geo ROM zip on your PC and it builds a 3DS install file (CIA) with the emulator inside.
 Each game gets its own HOME menu icon and starts straight away. New 3DS models run it with room to spare.
 
-[한국어](README.md) · [Download the converter](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)
+[Project page](https://zzcx88.github.io/neo3ds/) · [한국어](README.md) · [Download the converter](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)
 
 | Metal Slug 3 (Old 3DS hardware) | KOF '99 (Old 3DS hardware) |
 |---|---|
@@ -16,7 +16,7 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 - **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug X, Metal Slug 3, SVC Chaos and Samurai Shodown V Special.
 - **One CIA per game** with its own HOME menu icon. No launcher in between.
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
-- **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 241 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
+- **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 242 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
 - **Bottom screen GUI**: touch buttons for key config, turbo, system (AES/MVS), diagnostics and restart, with the current key layout in the Neo Geo button colours.
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
