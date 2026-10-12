@@ -203,9 +203,13 @@ So the goal was to **fit 64 MB graphics ROMs into the default 64 MB mode**.
 - **Sprite renderer**: unzoomed sprites are drawn tile by tile, and opaque 8-pixel runs are written by ARM assembly in one go, straight into the 3DS's rotated framebuffer. Horizontally shrunk rows use straight-line code unrolled at compile time for each of the 16 zoom steps and both flips, so games that zoom out a lot (Samurai Shodown) stay fast.
 - **Output**: the CPU draws into the framebuffer (no GPU round trip) with triple buffering, so nothing tears. Cache flushes use an SVC directly instead of a system service, so the second core never stalls waiting on one. The bottom screen GUI is drawn by the CPU too, but only when something changes, so it costs next to nothing while you play.
 - **Visible area only**: draws the Neo Geo's real 304×224 picture.
+- **Frame pacing**: a vblank that has already passed is not waited for, so a frame that runs a little long doesn't lose a whole frame.
+- **Sound driver idle skip**: the loop Metal Slug 2, X and 3's Z80 spends waiting for its interrupt is skipped, with exactly the same result.
 - **BIOS**: uses the home (AES) BIOS from neogeo.zip when present, otherwise an arcade (MVS) BIOS.
 
 New 3DS models are set to 804 MHz with the L2 cache on, for plenty of headroom (not tested on hardware).
+
+The [technical write-up](docs/TECHNICAL.md) goes into more detail: measurements, what was tried and dropped, and how bugs were found.
 
 ## Building from source
 
