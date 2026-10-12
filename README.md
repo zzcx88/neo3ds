@@ -136,9 +136,9 @@ Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그�
 |---|---|---|
 | The King of Fighters '98 | `kof98` (가정용 `kof98h`로 변환) | 풀 스피드, 대전 중 프레임 드랍 없음 |
 | The King of Fighters '99 | `kof99` (SMA + CMC42 해독) | 풀 스피드 |
-| Metal Slug 2 | `mslug2` | 플레이 가능. 원래 기판에서도 느려지던 장면에서 느려짐 |
-| Metal Slug X | `mslugx` (보호 칩 검사 패치) | 풀 스피드 |
-| Metal Slug 3 | `mslug3` (SMA + CMC42 해독) | 풀 스피드 |
+| Metal Slug 2 | `mslug2` | 플레이 가능. 원래 기판에서 느려지는 장면은 똑같이 느려짐 |
+| Metal Slug X | `mslugx` (보호 칩 검사 패치) | 풀 스피드. 원래 기판에서 느려지는 장면은 똑같이 느려짐 |
+| Metal Slug 3 | `mslug3` (SMA + CMC42 해독) | 풀 스피드. 원래 기판에서 느려지는 장면은 똑같이 느려짐 |
 | The King of Fighters 2000 | `kof2000` (SMA + CMC50 해독) | 풀 스피드 |
 | The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 해독) | 풀 스피드 |
 | SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 해독) | 풀 스피드 |
@@ -147,6 +147,8 @@ Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그�
 | The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 해독) | 60fps (유저 제보) |
 | Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 해독) | 60fps (유저 제보) |
 | Garou: Mark of the Wolves | `garou` (SMA + CMC42 해독) | 60fps (유저 제보) |
+
+메탈슬러그 2·X·3은 원래 아케이드 기판에서도 적과 폭발이 많은 장면에서 느려지는(처리 지연) 게임입니다. neo3ds에서도 그 구간에서는 똑같이 프레임이 떨어지며, PC 에뮬레이터에서도 같은 곳에서 느려집니다.
 
 ### 변환은 되지만 실기에서 확인하지 못한 게임
 - **암호화 없는 게임 대부분** (1990~1999년 게임): KOF94~97, 아랑전설 시리즈(2편 제외), 사무라이 쇼다운 1~4, 월드 히어로즈, 라스트 블레이드 1·2, 메탈슬러그 1, 블레이징 스타, 퍼즐 보블 등. 위 확인 게임과 같은 방식으로 변환됩니다.

@@ -134,9 +134,9 @@ Tap **Diagnostics** on the bottom screen for a once-a-second report: fps, main-c
 |---|---|---|
 | The King of Fighters '98 | `kof98` (converted as the home version `kof98h`) | Full speed, no drops in fights |
 | The King of Fighters '99 | `kof99` (SMA + CMC42 decrypted) | Full speed |
-| Metal Slug 2 | `mslug2` | Playable; slows down where the original board also did |
-| Metal Slug X | `mslugx` (protection checks patched) | Full speed |
-| Metal Slug 3 | `mslug3` (SMA + CMC42 decrypted) | Full speed |
+| Metal Slug 2 | `mslug2` | Playable; slows down where the original board does |
+| Metal Slug X | `mslugx` (protection checks patched) | Full speed; slows down where the original board does |
+| Metal Slug 3 | `mslug3` (SMA + CMC42 decrypted) | Full speed; slows down where the original board does |
 | The King of Fighters 2000 | `kof2000` (SMA + CMC50 decrypted) | Full speed |
 | The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 decrypted) | Full speed |
 | SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 decrypted) | Full speed |
@@ -145,6 +145,8 @@ Tap **Diagnostics** on the bottom screen for a once-a-second report: fps, main-c
 | The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
 | Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
 | Garou: Mark of the Wolves | `garou` (SMA + CMC42 decrypted) | 60 fps (user report) |
+
+Metal Slug 2, X and 3 slow down on the original arcade board too, in scenes with lots of enemies and explosions. neo3ds drops frames in the same places, as PC emulators do.
 
 ### Converts, but not tried on hardware
 - **Most unencrypted games** (1990-1999): KOF94-97, Fatal Fury series (except 2), Samurai Shodown 1-4, World Heroes, The Last Blade 1/2, Metal Slug 1, Blazing Star, Puzzle Bobble and more. They convert the same way as the verified games.
