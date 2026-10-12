@@ -10,3 +10,7 @@ converter/**/obj/
 dist/
 out/
 docs/PROGRESS.md
+.DS_Store
+.idea/
+.vs/
+Thumbs.db
