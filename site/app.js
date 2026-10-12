@@ -43,7 +43,7 @@ const EN = {
   'panel.r4': 'FPS, per-core time and memory, once a second.',
   'panel.r5': 'Hold to restart from the beginning; SELECT+START for a second does the same.',
   'panel.mapH3': 'Default mapping',
-  'panel.map1': 'lever', 'panel.map2': 'Neo Geo A · B · C · D', 'panel.map3': 'coin · start',
+  'panel.map1k': 'D-pad · slide pad', 'panel.map1': 'lever', 'panel.map2': 'Neo Geo A · B · C · D', 'panel.map3': 'coin · start',
   'panel.map4': 'turbo on/off',
   'panel.mapNote': 'In KOF, L = A+B (evade) and R = C+D (blowback) is a good start.',
   'conv.h2': 'Conversion pipeline',
@@ -232,8 +232,10 @@ function logLines() {
   const row = g();
   const titleId = isKof99() ? '0004000000CE43400' : t('zip 이름에서 생성', 'from the zip name');
   const biosMvs = row[0] === 'svcplus';
-  const graphics = `타일 ${tiles(row[9]).toLocaleString()}개, 그래픽 ${row[9]}MB` +
+  const graphicsKo = `타일 ${tiles(row[9]).toLocaleString()}개, 그래픽 ${row[9]}MB` +
     (isKof99() ? ' → 19.6MB, 3DS 메모리 사용 약 43.5MB' : ' (zstd 4KB 블록)');
+  const graphicsEn = `${tiles(row[9]).toLocaleString()} tiles, graphics ${row[9]}MB` +
+    (isKof99() ? ' → 19.6MB, about 43.5MB of 3DS memory' : ' (zstd 4KB blocks)');
   return [
     [`선택: ${chipSelect}.zip  (Title ID ${titleId})`, `Selected: ${chipSelect}.zip  (Title ID ${titleId})`],
     [`[1/4] RomFS 준비 (${chipSelect})`, `[1/4] Preparing RomFS (${chipSelect})`],
@@ -242,7 +244,7 @@ function logLines() {
     row[5] ? [biosMvs ? '  시스템: MVS (아케이드)' : '  시스템: AES (가정용)',
               biosMvs ? '  System: MVS (arcade)' : '  System: AES (home)'] : null,
     ['  그래픽 변환 + 압축 중...', '  Converting and compressing graphics...'],
-    ['  ' + graphics, '  ' + graphics],
+    ['  ' + graphicsKo, '  ' + graphicsEn],
     ['[2/4] 아이콘/배너 생성', '[2/4] Making icon and banner'],
     [`[3/4] CIA 생성 (Title ID ${titleId})`, `[3/4] Building CIA (Title ID ${titleId})`],
     [`[4/4] 완료: C:\\NeoGeo\\${chipSelect}.cia`, `[4/4] Done: C:\\NeoGeo\\${chipSelect}.cia`],
