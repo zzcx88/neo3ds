@@ -15,9 +15,9 @@ const EN = {
   'nav.steps': '3 steps', 'nav.panel': 'Controls', 'nav.convert': 'Conversion',
   'nav.speed': 'Speed', 'nav.games': 'Games',
   'cta.download': 'Get the converter', 'cta.source': 'Source code', 'lang.label': 'Language',
-  'hero.kicker': 'MAME romsets → 3DS CIA · converter + emulator engine',
+  'hero.kicker': 'romset zip on the PC → a 3DS install file (CIA) · converter + emulator engine',
   'hero.h1': 'Neo Geo games,<br>on the 3DS HOME menu.',
-  'hero.lede': 'Feed the PC tool a romset zip and each game becomes one CIA. Install it and the game appears on the HOME menu with its own icon, at 60 fps even on an Old 3DS.',
+  'hero.lede': 'Drop the romset zip of a game you own on the converter and each game becomes one install file (CIA). Install it on the 3DS and the game shows up on the HOME menu with its own icon, at 60 fps even on an Old 3DS.',
   'hero.req': 'Windows 10/11 64-bit · no runtime to install · GPL-2.0',
   'hero.cap': 'The top screen cycles through real Metal Slug 3 and KOF \'99 captures; the bottom screen shows real pages of the touch GUI.',
   'hero.capTiny': 'Stills from real hardware stitched together — not a recorded video.',
@@ -30,7 +30,7 @@ const EN = {
   'steps.s3t': 'Copy the .cia to the SD card and install it with FBI',
   'steps.s3d': 'The game then shows up on the HOME menu.',
   'prep.h3': 'What you need',
-  'prep.1b': 'A 3DS', 'prep.1d': 'Old 3DS / 2DS / New 3DS / New 2DS XL + Luma3DS + FBI',
+  'prep.1b': 'A 3DS', 'prep.1d': 'Old 3DS / 2DS / New 3DS / New 2DS XL, with custom firmware (Luma3DS) and an installer (FBI)',
   'prep.2b': 'A Windows PC', 'prep.2d': 'Windows 10/11 64-bit · no runtime to install',
   'prep.3b': 'Romsets you own', 'prep.3d': 'MAME romset zip + neogeo.zip (not included here)',
   'prep.4b': 'The sound file', 'prep.4d': '<code>/3ds/dspfirm.cdc</code> on the SD card',
@@ -65,15 +65,15 @@ const EN = {
   'speed.kv1k': 'Compression', 'speed.kv1v': '4KB blocks · zstd 19 · KOF \'99 64.0 → 19.6MB',
   'speed.kv2k': 'Cache', 'speed.kv2v': '8MB (2,048 blocks of 4KB)',
   'speed.kv3k': 'In RAM', 'speed.kv3v': '51.8MB used · 2.0MB free',
-  'speed.kv4k': 'Output', 'speed.kv4v': '304×224 only · triple buffered · nothing reloads',
+  'speed.kv4k': 'Output', 'speed.kv4v': '304×224 only · three screens in rotation (triple buffered) · nothing reloads',
   'speed.modeH3': 'Why not the 80MB mode',
   'speed.modeP': '80MB gives more memory, but the system is reloaded every time a game starts or quits.',
   'speed.mode64tag': '(neo3ds)', 'speed.mode80tag': '(not used)',
   'speed.n1h': 'What makes it fast',
   'speed.n1': 'Drawing and sound move to the second core while the main core emulates the next frame.',
-  'speed.n2': 'Unzoomed sprites are drawn tile by tile, and opaque runs of 8 pixels by ARM assembly.',
-  'speed.n3': 'Games that zoom out use code unrolled at compile time per zoom step (16) and flip (2).',
-  'speed.n4': 'Cache cleaning calls the SVC directly, so the second core never waits on a service.',
+  'speed.n2': 'Unzoomed sprites are drawn tile by tile, and opaque runs of 8 pixels go out as ARM assembly (raw CPU instructions).',
+  'speed.n3': 'Games that zoom out a lot use code pre-built for every zoom step (16) and flip (2).',
+  'speed.n4': 'Cache cleaning calls the system call directly (an SVC), so the second core never waits on a service.',
   'speed.n2h': 'Sound',
   'speed.s1': 'The YM2610 is split in two; the second core replays the logged register writes and makes the audio.',
   'speed.s2': 'The 3DS DSP is unused and sound is never dropped. Without <code>/3ds/dspfirm.cdc</code> the game runs silently.',
@@ -85,7 +85,8 @@ const EN = {
   'games.sortYear': 'Year', 'games.sortSize': 'ROM size',
   'games.more': 'Show more',
   'games.cavH3': 'Worth knowing',
-  'games.cav1': 'Some decryption is implemented but never played, because we lack the ROMs: Sengoku 3, Zupapa, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead (CMC42), KOF2001 (CMC50), Metal Slug 4, Rage of the Dragons, Pochi and Nyaa (PCM2).',
+  'games.cav1': 'Some decryption is implemented but never played, because we lack the ROMs.',
+  'games.cav1b': 'Games we could not check — CMC42: Sengoku 3, Zupapa, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead · CMC50: KOF2001 · PCM2: Metal Slug 4, Rage of the Dragons, Pochi and Nyaa',
   'games.cav2': 'KOF \'98 does not convert: the MVS version has a protection chip. When the home set (kof98h) is in the zip it is picked automatically.',
   'games.cav3': 'When a romset is tight for memory, the converter warns you first.',
   'faq.h2': 'Questions',
@@ -100,7 +101,7 @@ const EN = {
   'legal.p1': 'No ROMs, BIOS or game data are included here. Convert only games you own, and never distribute a CIA you build.',
   'legal.p2': 'neo3ds is a personal fan project, unaffiliated with SNK or Nintendo. NEOGEO is a trademark of SNK CORPORATION; Nintendo 3DS of Nintendo.',
   'legal.credH': 'Thanks to',
-  'legal.credits': 'gngeo · Cyclone 68000 · DrZ80 · the MAME team · Zstandard · devkitPro / libctru · makerom · bannertool · Azahar',
+  'legal.cred2': 'the MAME team (romset data and cartridge decryption research)',
   'legal.lic': 'Source is GPL-2.0; bundled third-party code is listed in THIRD_PARTY_NOTICES.md.',
   'foot.repo': 'Repository', 'foot.rel': 'Releases', 'foot.readme': 'README',
   'foot.build': 'Build procedure', 'foot.lic': 'Licence',
@@ -114,7 +115,7 @@ const EN = {
   'budget.dtmrT': 'The Neo Geo frame timers, 264 lines per frame.',
   'budget.dsndT': 'YM2610 synthesis on the second core, while the main core emulates ahead.',
   'budget.drndT': 'Sprites and tiles drawn straight into the top screen framebuffer — no GPU involved.',
-  'budget.didleT': 'The frame finishes early: the emulator is paced at 60Hz, not maxed out.',
+  'budget.didleT': 'Time spent waiting for the screen-refresh signal (vblank). The emulator is paced at 60Hz, not maxed out.',
   'mem.rom': 'ROM data', 'mem.cache': 'sprite cache', 'mem.free': 'heap free', 'mem.linear': 'linear (screens, audio)',
   'mode.64a': 'Games start and quit immediately — nothing is reloaded.',
   'mode.64b': '64MB of app memory split as heap 58MB + linear 2MB.',
@@ -302,7 +303,7 @@ const BUDGET = [
   { row: 'main', color: 'var(--a)', value: 3.15, ko: '68000 (게임 코드)', en: '68000 (game code)', key: 'd68k' },
   { row: 'main', color: 'var(--b)', value: 0.86, ko: 'Z80 (사운드 CPU)', en: 'Z80 (sound CPU)', key: 'dz80' },
   { row: 'main', color: 'var(--c)', value: 0.40, ko: '타이머', en: 'timers', key: 'dtmr' },
-  { row: 'core1', color: 'var(--d)', value: 1.23, ko: 'YM2610 합성', en: 'YM2610 synthesis', key: 'dsnd' },
+  { row: 'core1', color: 'var(--d)', value: 1.23, ko: '사운드 칩(YM2610) 합성', en: 'sound chip (YM2610) synthesis', key: 'dsnd' },
   { row: 'core1', color: 'var(--gold)', value: 2.96, ko: '화면 그리기', en: 'frame drawing', key: 'drnd' },
 ];
 const budgetName = (b) => (LANG === 'en' ? b.en : b.ko);
@@ -312,7 +313,7 @@ const KO_NOTE = {
   dtmr: '네오지오 프레임 타이머. 한 프레임에 264줄입니다.',
   dsnd: 'YM2610 합성. 메인 코어가 다음 프레임을 에뮬레이션하는 동안 두 번째 코어가 맡습니다.',
   drnd: '스프라이트와 타일을 위 화면 프레임버퍼에 직접 그립니다. GPU를 쓰지 않습니다.',
-  didle: '한 프레임이 일찍 끝납니다. 60Hz에 맞춰 돌리는 것이지, 최대로 돌리는 것이 아닙니다.',
+  didle: '화면이 갱신되는 신호(vblank)를 기다리는 시간입니다. 60Hz에 맞춰 돌리는 것이지, 최대로 돌리는 것이 아닙니다.',
 };
 
 function buildBudget() {
@@ -330,7 +331,7 @@ function buildBudget() {
   const idleMain = FRAME - BUDGET.filter((b) => b.row === 'main').reduce((a, b) => a + b.value, 0);
   const rows = BUDGET.concat([{ color: 'var(--panel)', value: idleMain, key: 'didle' }]);
   legend.innerHTML = rows.map((b) =>
-    `<button type="button" data-key="${b.key}"><i style="--c:${b.color}"></i><span>${b.key === 'didle' ? t('남는 시간 (vblank 대기)', 'idle (waiting for vblank)') : budgetName(b)}</span><b>${b.value.toFixed(2)} ms</b></button>`).join('');
+    `<button type="button" data-key="${b.key}"><i style="--c:${b.color}"></i><span>${b.key === 'didle' ? t('남는 시간 (화면 신호를 기다림)', 'idle (waiting for the screen refresh)') : budgetName(b)}</span><b>${b.value.toFixed(2)} ms</b></button>`).join('');
   $$('button', legend).forEach((el) => el.addEventListener('click', () => {
     const key = el.dataset.key;
     $$('.seg', host).forEach((s) => s.classList.toggle('on', s.dataset.key === key));

@@ -44,9 +44,9 @@
 <section class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <p class="kicker" data-i18n="hero.kicker">MAME 롬셋 → 3DS CIA · 변환기 + 에뮬레이터 엔진</p>
+      <p class="kicker" data-i18n="hero.kicker">PC의 롬 zip → 3DS 설치 파일(CIA) · 변환기 + 에뮬레이터 엔진</p>
       <h1 data-i18n="hero.h1">네오지오 게임을<br>3DS 홈 메뉴에.</h1>
-      <p class="lede" data-i18n="hero.lede">PC에서 롬 zip을 넣으면 게임마다 CIA 하나가 나옵니다. 설치하면 HOME 메뉴에 자기 아이콘으로 뜨고, 구형 3DS에서도 60fps로 돕니다.</p>
+      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 게임마다 설치 파일(CIA) 하나가 나옵니다. 3DS에 설치하면 HOME 메뉴에 자기 아이콘으로 뜨고, 구형 3DS에서도 60fps로 돕니다.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.download">변환기 받기</a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/zzcx88/neo3ds" data-i18n="cta.source">소스 보기</a>
@@ -123,7 +123,7 @@
     <div class="prep">
       <h3 data-i18n="prep.h3">준비물</h3>
       <ul class="check">
-        <li><b data-i18n="prep.1b">3DS</b> <span data-i18n="prep.1d">구형 3DS / 2DS / New 3DS / New 2DS XL + Luma3DS + FBI</span></li>
+        <li><b data-i18n="prep.1b">3DS</b> <span data-i18n="prep.1d">구형 3DS / 2DS / New 3DS / New 2DS XL, 커스텀 펌웨어(Luma3DS)와 설치 도구(FBI) 필요</span></li>
         <li><b data-i18n="prep.2b">Windows PC</b> <span data-i18n="prep.2d">Windows 10·11 64비트 · 런타임 설치 불필요</span></li>
         <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip + neogeo.zip (저장소에는 없음)</span></li>
         <li><b data-i18n="prep.4b">소리 파일</b> <span data-i18n="prep.4d">SD 카드에 <code>/3ds/dspfirm.cdc</code></span></li>
@@ -230,7 +230,7 @@
           <div><dt data-i18n="speed.kv1k">압축</dt><dd data-i18n="speed.kv1v">4KB 블록 · zstd 19 · KOF '99 64.0 → 19.6MB</dd></div>
           <div><dt data-i18n="speed.kv2k">캐시</dt><dd data-i18n="speed.kv2v">8MB (4KB 블록 2,048개)</dd></div>
           <div><dt data-i18n="speed.kv3k">실사용</dt><dd data-i18n="speed.kv3v">51.8MB 사용 · 2.0MB 여유</dd></div>
-          <div><dt data-i18n="speed.kv4k">화면</dt><dd data-i18n="speed.kv4v">304×224만 · 3중 버퍼 · 재로딩 없음</dd></div>
+          <div><dt data-i18n="speed.kv4k">화면</dt><dd data-i18n="speed.kv4v">304×224만 그림 · 화면 세 장을 돌려 씀(3중 버퍼) · 재로딩 없음</dd></div>
         </dl>
       </div>
 
@@ -250,9 +250,9 @@
         <h3 data-i18n="speed.n1h">속도를 만든 장치들</h3>
         <ul class="facts">
           <li data-i18n="speed.n1">그리기·사운드를 두 번째 코어로 넘기고, 메인 코어는 다음 프레임을 바로 에뮬레이션합니다.</li>
-          <li data-i18n="speed.n2">확대·축소가 없는 스프라이트는 타일 단위로, 불투명 8픽셀은 ARM 어셈블리로 한 번에 씁니다.</li>
-          <li data-i18n="speed.n3">줌 아웃이 많은 게임은 줌 단계(16)×반전(2)마다 컴파일 때 펼쳐 둔 코드로 그립니다.</li>
-          <li data-i18n="speed.n4">캐시 정리는 SVC를 직접 불러서 두 번째 코어가 기다리지 않습니다.</li>
+          <li data-i18n="speed.n2">확대·축소가 없는 스프라이트는 타일 단위로 그리고, 불투명한 8픽셀은 ARM 어셈블리(CPU가 바로 실행하는 명령)로 한 번에 씁니다.</li>
+          <li data-i18n="speed.n3">줌 아웃이 많은 게임은 줌 단계(16)×반전(2)마다 미리 만들어 둔 코드로 그립니다.</li>
+          <li data-i18n="speed.n4">캐시 정리는 시스템 호출을 직접 불러서(이걸 SVC라고 합니다) 두 번째 코어가 기다리지 않습니다.</li>
         </ul>
       </div>
       <div>
@@ -308,7 +308,8 @@
     <div class="caveat">
       <h3 data-i18n="games.cavH3">알아 두면 좋은 것</h3>
       <ul>
-        <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다: 전국전승 3·줏파파·스트라이커즈 1945 플러스·프리히스토릭 아일 2·나이트메어 인 더 다크·간류·뱅 비드(CMC42), KOF2001(CMC50), 메탈슬러그 4·레이지 오브 드래곤즈·포치와 냐(PCM2).</li>
+        <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다.</li>
+        <li data-i18n="games.cav1b">롬이 없어 확인하지 못한 게임 — CMC42: 전국전승 3, 줏파파, 스트라이커즈 1945 플러스, 프리히스토릭 아일 2, 나이트메어 인 더 다크, 간류, 뱅 비드 · CMC50: KOF2001 · PCM2: 메탈슬러그 4, 레이지 오브 드래곤즈, 포치와 냐</li>
         <li data-i18n="games.cav2">KOF '98 MVS판은 보호 칩 때문에 변환되지 않습니다. 가정용판(kof98h)이 zip에 있으면 자동으로 그쪽으로 변환됩니다.</li>
         <li data-i18n="games.cav3">메모리가 빠듯한 롬셋은 변환기가 미리 경고합니다.</li>
       </ul>
@@ -363,7 +364,12 @@
     </div>
     <div>
       <h3 data-i18n="legal.credH">고마운 분들</h3>
-      <p class="tiny" data-i18n="legal.credits">gngeo · Cyclone 68000 · DrZ80 · MAME 개발팀 · Zstandard · devkitPro / libctru · makerom · bannertool · Azahar</p>
+      <ul class="credits tiny">
+        <li>gngeo · Cyclone 68000 · DrZ80</li>
+        <li data-i18n="legal.cred2">MAME 개발팀 (롬셋 정보와 카트 해독 연구)</li>
+        <li>Zstandard · devkitPro / libctru</li>
+        <li>makerom · bannertool · Azahar</li>
+      </ul>
       <p class="tiny" data-i18n="legal.lic">소스는 GPL-2.0, 외부 코드는 THIRD_PARTY_NOTICES.md에 있습니다.</p>
     </div>
   </div>
