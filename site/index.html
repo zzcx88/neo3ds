@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>neo3ds — 네오지오 게임을 3DS 홈 메뉴에</title>
+<meta name="description" content="네오지오(MAME) 롬셋을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#16161C">
+<meta property="og:title" content="neo3ds — 네오지오 게임을 3DS 홈 메뉴에">
+<meta property="og:description" content="PC에서 롬 zip을 넣으면 게임마다 CIA 하나. 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23B01420'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='3' fill='none' stroke='%23F8C428' stroke-width='2'/%3E%3Cg fill='%23F8C428'%3E%3Crect x='8' y='7' width='4' height='18'/%3E%3Crect x='20' y='7' width='4' height='18'/%3E%3Crect x='12' y='10' width='4' height='4'/%3E%3Crect x='16' y='15' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="a11y.skip">본문으로 건너뛰기</a>
+
+<header class="bar">
+  <a class="brand" href="#top" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
+  <nav class="bar-nav" aria-label="sections">
+    <a href="#steps" data-i18n="nav.steps">3단계</a>
+    <a href="#panel" data-i18n="nav.panel">조작</a>
+    <a href="#convert" data-i18n="nav.convert">변환</a>
+    <a href="#speed" data-i18n="nav.speed">성능</a>
+    <a href="#games" data-i18n="nav.games">호환성</a>
+  </nav>
+  <div class="bar-end">
+    <div class="lang" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+      <button type="button" data-lang="ko" aria-pressed="true">KO</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <a class="btn btn-primary" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.download">변환기 받기</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker" data-i18n="hero.kicker">MAME 롬셋 → 3DS CIA · 변환기 + 에뮬레이터 엔진</p>
+      <h1 data-i18n-html="hero.h1">네오지오 게임을<br>3DS 홈 메뉴에.</h1>
+      <p class="lede" data-i18n="hero.lede">PC에서 롬 zip을 넣으면 게임마다 CIA 하나가 나옵니다. 설치하면 HOME 메뉴에 자기 아이콘으로 뜨고, 구형 3DS에서도 60fps로 돕니다.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary btn-lg" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.download">변환기 받기</a>
+        <a class="btn btn-ghost btn-lg" href="https://github.com/zzcx88/neo3ds" data-i18n="cta.source">소스 보기</a>
+      </div>
+      <p class="tiny" data-i18n="hero.req">Windows 10·11 64비트 · 런타임 설치 불필요 · GPL-2.0</p>
+    </div>
+
+    <!-- 3DS 본체: 두 화면 모두 실기 캡처 -->
+    <figure class="device-col">
+      <div class="device" aria-hidden="true">
+        <div class="shell shell-top">
+          <div class="cam"></div>
+          <span class="speaker"></span>
+          <div class="screen-outer">
+            <img class="screen-top" src="media/hero-top.gif" width="400" height="240" alt="">
+          </div>
+        </div>
+        <div class="hinge"><span></span><span></span></div>
+        <div class="shell shell-bottom">
+          <span class="shell-btn sh-l">L</span>
+          <span class="shell-btn sh-r">R</span>
+          <div class="pad-wrap">
+            <div class="circle-pad"><span></span></div>
+            <div class="dpad"></div>
+          </div>
+          <div class="touch-outer">
+            <img class="screen-bottom" src="media/hero-bottom.gif" width="320" height="240" alt="">
+          </div>
+          <div class="face">
+            <span class="shell-btn face-a">A</span>
+            <span class="shell-btn face-b">B</span>
+            <span class="shell-btn face-x">X</span>
+            <span class="shell-btn face-y">Y</span>
+          </div>
+          <div class="strip">
+            <span class="shell-btn small">SELECT</span>
+            <span class="shell-btn small">HOME</span>
+            <span class="shell-btn small">START</span>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <p class="cap" data-i18n="hero.cap">위 화면은 메탈슬러그 3·KOF '99 실기 캡처를 순환한 움짤, 아래 화면은 실제 하단 GUI 화면들입니다.</p>
+        <p class="cap tiny" data-i18n="hero.capTiny">녹화 영상이 아니라 실기 캡처 이미지를 이어 붙인 것입니다.</p>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ── 3단계 ───────────────────────────────────────────────────────────── -->
+<section class="sec" id="steps">
+  <div class="wrap">
+    <h2 data-i18n="steps.h2">3단계면 끝</h2>
+    <p class="lede narrow" data-i18n="steps.lede">설치 파일을 만드는 건 PC에서 1~2분입니다. 그 뒤로는 3DS만 있으면 됩니다.</p>
+
+    <ol class="steps">
+      <li>
+        <span class="step-no">1</span>
+        <h3 data-i18n="steps.s1t">롬 zip과 neogeo.zip을 같은 폴더에</h3>
+        <p data-i18n="steps.s1d">직접 가진 게임의 MAME 롬셋과 바이오스를 한 폴더에 둡니다. zip 이름은 그대로 두세요.</p>
+      </li>
+      <li>
+        <span class="step-no">2</span>
+        <h3 data-i18n="steps.s2t">변환기에 zip을 끌어다 놓고 [CIA 만들기]</h3>
+        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다.</p>
+      </li>
+      <li>
+        <span class="step-no">3</span>
+        <h3 data-i18n="steps.s3t">만든 .cia를 SD 카드로, FBI로 설치</h3>
+        <p data-i18n="steps.s3d">설치가 끝나면 HOME 메뉴에 게임 아이콘이 생깁니다.</p>
+      </li>
+    </ol>
+
+    <div class="prep">
+      <h3 data-i18n="prep.h3">준비물</h3>
+      <ul class="check">
+        <li><b data-i18n="prep.1b">3DS</b> <span data-i18n="prep.1d">구형 3DS / 2DS / New 3DS / New 2DS XL + Luma3DS + FBI</span></li>
+        <li><b data-i18n="prep.2b">Windows PC</b> <span data-i18n="prep.2d">Windows 10·11 64비트 · 런타임 설치 불필요</span></li>
+        <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip + neogeo.zip (저장소에는 없음)</span></li>
+        <li><b data-i18n="prep.4b">소리 파일</b> <span data-i18n="prep.4d">SD 카드에 <code>/3ds/dspfirm.cdc</code></span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── 조작 ────────────────────────────────────────────────────────────── -->
+<section class="sec" id="panel">
+  <div class="wrap">
+    <h2 data-i18n="panel.h2">아래 화면에서 다 됩니다</h2>
+    <p class="lede narrow" data-i18n="panel.lede">게임을 멈추지 않고 바로 동작합니다. 설정은 게임마다 저장됩니다.</p>
+
+    <ul class="panel-list">
+      <li>
+        <span class="pb-name" data-i18n="dev.keyconfig">Key config</span>
+        <span class="pb-desc" data-i18n="panel.r1">버튼마다 네오지오 버튼이나 동시 누르기를 지정합니다.</span>
+      </li>
+      <li>
+        <span class="pb-name" data-i18n="panel.r2n">Turbo</span>
+        <span class="pb-desc" data-i18n="panel.r2">연사 버튼 하나를 초당 20회로. R + A/B/X/Y로 즉시 바뀝니다.</span>
+      </li>
+      <li>
+        <span class="pb-name" data-i18n="panel.r3n">System: AES / MVS</span>
+        <span class="pb-desc" data-i18n="panel.r3">가정용 ↔ 아케이드 바이오스 전환. 실수 방지로 두 번 눌러야 합니다.</span>
+      </li>
+      <li>
+        <span class="pb-name" data-i18n="dev.diag">Diagnostics</span>
+        <span class="pb-desc" data-i18n="panel.r4">FPS·코어별 시간·메모리를 1초마다 표시합니다.</span>
+      </li>
+      <li>
+        <span class="pb-name" data-i18n="dev.restart">Restart</span>
+        <span class="pb-desc" data-i18n="panel.r5">길게 누르면 처음부터. SELECT+START 1초도 같습니다.</span>
+      </li>
+    </ul>
+
+    <div class="map">
+      <h3 data-i18n="panel.mapH3">기본 키 배치</h3>
+      <dl class="map-list">
+        <div><dt>십자키 · 슬라이드 패드</dt><dd data-i18n="panel.map1">레버</dd></div>
+        <div><dt>B · A · Y · X</dt><dd data-i18n="panel.map2">네오지오 A · B · C · D</dd></div>
+        <div><dt>SELECT · START</dt><dd data-i18n="panel.map3">코인 · 스타트</dd></div>
+        <div><dt>R + B/A/Y/X</dt><dd data-i18n="panel.map4">연사 켜기/끄기</dd></div>
+      </dl>
+      <p class="tiny" data-i18n="panel.mapNote">KOF에서는 L = A+B(회피), R = C+D(날리기)로 두면 편합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── 변환기 ──────────────────────────────────────────────────────────── -->
+<section class="sec" id="convert">
+  <div class="wrap">
+    <h2 data-i18n="conv.h2">변환기가 하는 일</h2>
+    <p class="lede narrow" data-i18n="conv.lede">암호 해독은 전부 PC에서 끝냅니다. 3DS는 해독에 시간도 메모리도 쓰지 않습니다.</p>
+
+    <div class="chips" id="chips" role="group" aria-label="romsets"></div>
+
+    <div class="conv-grid">
+      <ol class="pipe" id="pipe">
+        <li><span class="pipe-no">1</span><div><h3 data-i18n="conv.p1t">롬셋 확인</h3><p data-i18n="conv.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다. 합본이면 쓸 수 있는 판을 고릅니다(kof98.zip → kof98h).</p></div><span class="pipe-val" data-pipe="1"></span></li>
+        <li><span class="pipe-no">2</span><div><h3 data-i18n="conv.p2t">암호 해독</h3><p data-i18n="conv.p2d">CMC42·CMC50·SMA·PCM2·PVC 등 보호 칩을 PC에서 풉니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
+        <li><span class="pipe-no">3</span><div><h3 data-i18n="conv.p3t">실기용 패치</h3><p data-i18n="conv.p3d">보호 칩 검사 루틴을 지우고 68k 바이트 순서를 맞춥니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
+        <li><span class="pipe-no">4</span><div><h3 data-i18n="conv.p4t">그래픽 압축</h3><p data-i18n="conv.p4d">스프라이트를 4KB 블록으로 zstd 압축합니다. 3DS는 8MB 캐시로 씁니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
+        <li><span class="pipe-no">5</span><div><h3 data-i18n="conv.p5t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="5"></span></li>
+        <li><span class="pipe-no">6</span><div><h3 data-i18n="conv.p6t">CIA 만들기</h3><p data-i18n="conv.p6d">엔진과 게임 데이터를 묶어 설치 파일로 만듭니다.</p></div><span class="pipe-val" data-pipe="6"></span></li>
+      </ol>
+
+      <div class="conv-side">
+        <div class="conv-head">
+          <span class="conv-file" id="convFile">kof99.zip</span>
+          <button type="button" class="btn btn-primary" id="convRun" data-i18n="conv.run">CIA 만들기</button>
+          <button type="button" class="btn btn-ghost btn-sm hidden" id="convReset" data-i18n="conv.again">다시</button>
+        </div>
+        <pre class="log" id="convLog" aria-live="polite" aria-label="converter log"></pre>
+        <p class="tiny" data-i18n="conv.logNote">문구·형식은 실제 변환기와 같습니다. 압축 수치는 실측한 KOF '99 기준입니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 성능 ───────────────────────────────────────────────────────────── -->
+<section class="sec" id="speed">
+  <div class="wrap">
+    <h2 data-i18n="speed.h2">268MHz 두 코어로 60fps</h2>
+    <p class="lede narrow" data-i18n="speed.lede">GPU를 쓰지 않고 CPU가 직접 그립니다. 한 프레임 계산을 두 코어에 나눴습니다.</p>
+
+    <figure class="fig">
+      <figcaption>
+        <span data-i18n="speed.figCap">한 프레임 16.7ms — 실기 진단 화면 값 (KOF '99, 59.8fps)</span>
+      </figcaption>
+      <div class="budget" id="budget"></div>
+      <div class="budget-legend" id="budgetLegend"></div>
+      <p class="fig-note" id="budgetNote" data-i18n="speed.figNote">항목을 누르면 설명이 나옵니다.</p>
+    </figure>
+
+    <div class="mem-grid">
+      <div class="mem-card">
+        <h3 data-i18n="speed.memH3">64MB 안에 64MB 그래픽 롬</h3>
+        <p data-i18n="speed.memP">스프라이트를 압축해 두고 필요한 블록만 풀어 씁니다.</p>
+        <div class="membar" id="membar"></div>
+        <ul class="legend" id="memLegend"></ul>
+        <dl class="kv">
+          <div><dt data-i18n="speed.kv1k">압축</dt><dd data-i18n="speed.kv1v">4KB 블록 · zstd 19 · KOF '99 64.0 → 19.6MB</dd></div>
+          <div><dt data-i18n="speed.kv2k">캐시</dt><dd data-i18n="speed.kv2v">8MB (4KB 블록 2,048개)</dd></div>
+          <div><dt data-i18n="speed.kv3k">실사용</dt><dd data-i18n="speed.kv3v">51.8MB 사용 · 2.0MB 여유</dd></div>
+          <div><dt data-i18n="speed.kv4k">화면</dt><dd data-i18n="speed.kv4v">304×224만 · 3중 버퍼 · 재로딩 없음</dd></div>
+        </dl>
+      </div>
+
+      <div class="mem-card">
+        <h3 data-i18n="speed.modeH3">왜 80MB 모드를 쓰지 않나</h3>
+        <p data-i18n="speed.modeP">80MB는 메모리가 넉넉하지만 게임을 켜고 끌 때마다 시스템을 다시 불러옵니다.</p>
+        <div class="modes" role="tablist" aria-label="memory mode">
+          <button type="button" role="tab" aria-selected="true" data-mode="64">64MB <span data-i18n="speed.mode64tag">(neo3ds)</span></button>
+          <button type="button" role="tab" aria-selected="false" data-mode="80">80MB <span data-i18n="speed.mode80tag">(미사용)</span></button>
+        </div>
+        <div class="mode-body" id="modeBody"></div>
+      </div>
+    </div>
+
+    <div class="notes-grid">
+      <div>
+        <h3 data-i18n="speed.n1h">속도를 만든 장치들</h3>
+        <ul class="facts">
+          <li data-i18n="speed.n1">그리기·사운드를 두 번째 코어로 넘기고, 메인 코어는 다음 프레임을 바로 에뮬레이션합니다.</li>
+          <li data-i18n="speed.n2">확대·축소가 없는 스프라이트는 타일 단위로, 불투명 8픽셀은 ARM 어셈블리로 한 번에 씁니다.</li>
+          <li data-i18n="speed.n3">줌 아웃이 많은 게임은 줌 단계(16)×반전(2)마다 컴파일 때 펼쳐 둔 코드로 그립니다.</li>
+          <li data-i18n="speed.n4">캐시 정리는 SVC를 직접 불러서 두 번째 코어가 기다리지 않습니다.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 data-i18n="speed.n2h">사운드</h3>
+        <ul class="facts">
+          <li data-i18n="speed.s1">YM2610을 둘로 나눠, 두 번째 코어가 기록된 레지스터 쓰기를 재생하며 소리를 만듭니다.</li>
+          <li data-i18n="speed.s2">3DS DSP를 쓰지 않고 소리를 끄지도 않습니다. <code>/3ds/dspfirm.cdc</code>가 없으면 게임은 소리 없이 돕니다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 호환성 ──────────────────────────────────────────────────────────── -->
+<section class="sec" id="games">
+  <div class="wrap">
+    <h2 data-i18n="games.h2">무엇이 돌아가나</h2>
+    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 13종은 구형 3DS 실기에서 확인했습니다.</p>
+
+    <div class="explorer">
+      <div class="ex-tools">
+        <label class="search">
+          <span class="sr-only" data-i18n="games.searchLabel">게임 검색</span>
+          <input type="search" id="exSearch" data-i18n-attr="placeholder:games.searchPh" placeholder="제목 또는 롬셋 이름 (예: kof99, slug)">
+        </label>
+        <div class="filters" id="exFilters" role="group" aria-label="filters">
+          <button type="button" data-filter="all" aria-pressed="true"><span data-i18n="games.fAll">전체</span> <b id="cAll">282</b></button>
+          <button type="button" data-filter="verified" aria-pressed="false"><span data-i18n="games.fVerified">실기 확인</span> <b id="cVerified">13</b></button>
+          <button type="button" data-filter="ok" aria-pressed="false"><span data-i18n="games.fOk">변환 가능</span> <b id="cOk">242</b></button>
+          <button type="button" data-filter="no" aria-pressed="false"><span data-i18n="games.fNo">변환 불가</span> <b id="cNo">40</b></button>
+        </div>
+        <label class="sort">
+          <span data-i18n="games.sort">정렬</span>
+          <select id="exSort">
+            <option value="default" data-i18n="games.sortDefault">실기 확인 먼저</option>
+            <option value="name" data-i18n="games.sortName">제목</option>
+            <option value="year" data-i18n="games.sortYear">연도</option>
+            <option value="size" data-i18n="games.sortSize">롬 크기</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="ex-body">
+        <div class="ex-list-wrap">
+          <div class="ex-list" id="exList" role="rowgroup"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="exMore" data-i18n="games.more">더 보기</button>
+          <p class="tiny" id="exCount" aria-live="polite"></p>
+        </div>
+        <aside class="ex-detail" id="exDetail" aria-live="polite"></aside>
+      </div>
+    </div>
+
+    <div class="caveat">
+      <h3 data-i18n="games.cavH3">알아 두면 좋은 것</h3>
+      <ul>
+        <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다: 전국전승 3·줏파파·스트라이커즈 1945 플러스·프리히스토릭 아일 2·나이트메어 인 더 다크·간류·뱅 비드(CMC42), KOF2001(CMC50), 메탈슬러그 4·레이지 오브 드래곤즈·포치와 냐(PCM2).</li>
+        <li data-i18n="games.cav2">KOF '98 MVS판은 보호 칩 때문에 변환되지 않습니다. 가정용판(kof98h)이 zip에 있으면 자동으로 그쪽으로 변환됩니다.</li>
+        <li data-i18n="games.cav3">메모리가 빠듯한 롬셋은 변환기가 미리 경고합니다.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ────────────────────────────────────────────────────────────── -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <h2 data-i18n="faq.h2">자주 묻는 질문</h2>
+    <div class="faq">
+      <details open>
+        <summary data-i18n="faq.q1">롬은 어디서 받나요?</summary>
+        <p data-i18n="faq.a1">받는 곳이 없습니다. 직접 가진 게임의 롬셋이 필요하고, 만든 CIA에는 롬 데이터가 들어 있으니 배포하면 안 됩니다.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
+        <p data-i18n="faq.a2">KOF '98·'99·2000·2002, 메탈슬러그 X·3, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드를 확인했습니다.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q3">소리가 안 나요.</summary>
+        <p data-i18n="faq.a3">SD 카드에 <code>/3ds/dspfirm.cdc</code>가 필요합니다. DSP1 같은 도구로 한 번 만들어 두면 됩니다.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q4">키 설정은 어디에 저장되나요?</summary>
+        <p data-i18n="faq.a4">게임마다 SD 카드의 <code>/3ds/neo3ds/keys/</code>에 저장됩니다.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q5">New 3DS에서는요?</summary>
+        <p data-i18n="faq.a5">804MHz와 L2 캐시를 켜도록 설정해 두어 훨씬 여유롭습니다(실기 미확인).</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q6">상업적으로 써도 되나요?</summary>
+        <p data-i18n="faq.a6">안 됩니다. 포함된 CPU 코어(Cyclone 68000, DrZ80)가 비상업적 사용만 허락합니다.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q7">직접 빌드할 수 있나요?</summary>
+        <p data-i18n="faq.a7">엔진은 devkitPro로 <code>bash scripts/build_engine.sh</code>, 변환기는 .NET 10 SDK로 빌드합니다. 자세한 절차는 docs/build.md에 있습니다.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ── 법적 고지 ───────────────────────────────────────────────────────── -->
+<section class="sec sec-legal" id="legal">
+  <div class="wrap legal-grid">
+    <div>
+      <h2 data-i18n="legal.h2">법적 고지</h2>
+      <p data-i18n="legal.p1">롬·바이오스·게임 데이터는 저장소와 배포 파일에 없습니다. 직접 가진 게임으로만 만들고, 만든 CIA는 배포하지 마세요.</p>
+      <p data-i18n="legal.p2">neo3ds는 개인 팬 프로젝트이며 SNK·Nintendo와 관계가 없습니다. NEOGEO는 SNK CORPORATION, Nintendo 3DS는 Nintendo의 상표입니다.</p>
+    </div>
+    <div>
+      <h3 data-i18n="legal.credH">고마운 분들</h3>
+      <p class="tiny" data-i18n="legal.credits">gngeo · Cyclone 68000 · DrZ80 · MAME 개발팀 · Zstandard · devkitPro / libctru · makerom · bannertool · Azahar</p>
+      <p class="tiny" data-i18n="legal.lic">소스는 GPL-2.0, 외부 코드는 THIRD_PARTY_NOTICES.md에 있습니다.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <span class="brand-plate">neo3ds</span>
+    <nav>
+      <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases" data-i18n="foot.rel">릴리스</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md" data-i18n="foot.readme">README</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/build.md" data-i18n="foot.build">빌드 절차</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/LICENSE" data-i18n="foot.lic">라이선스</a>
+    </nav>
+    <p class="tiny" data-i18n="foot.note">게임 화면과 상표의 권리는 각 권리자에게 있습니다.</p>
+  </div>
+</footer>
+
+<script src="games.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
