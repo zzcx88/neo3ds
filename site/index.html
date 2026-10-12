@@ -23,11 +23,11 @@
 <header class="bar">
   <a class="brand" href="#top" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
   <nav class="bar-nav" aria-label="sections">
-    <a href="#steps" data-i18n="nav.steps">3단계</a>
-    <a href="#panel" data-i18n="nav.panel">조작</a>
-    <a href="#convert" data-i18n="nav.convert">변환</a>
+    <a href="#steps" data-i18n="nav.steps">설치 3단계</a>
+    <a href="#panel" data-i18n="nav.panel">터치 조작</a>
+    <a href="#convert" data-i18n="nav.convert">변환 과정</a>
     <a href="#speed" data-i18n="nav.speed">성능</a>
-    <a href="#games" data-i18n="nav.games">호환성</a>
+    <a href="#games" data-i18n="nav.games">게임 호환성</a>
   </nav>
   <div class="bar-end">
     <div class="lang" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
@@ -99,23 +99,23 @@
 <!-- ── 3단계 ───────────────────────────────────────────────────────────── -->
 <section class="sec" id="steps">
   <div class="wrap">
-    <h2 data-i18n="steps.h2">3단계면 끝</h2>
+    <h2 data-i18n="steps.h2">설치 3단계</h2>
     <p class="lede narrow" data-i18n="steps.lede">설치 파일을 만드는 건 PC에서 1~2분입니다. 그 뒤로는 3DS만 있으면 됩니다.</p>
 
     <ol class="steps">
       <li>
         <span class="step-no">1</span>
-        <h3 data-i18n="steps.s1t">롬 zip과 neogeo.zip을 같은 폴더에</h3>
+        <h3 data-i18n="steps.s1t">롬 준비</h3>
         <p data-i18n="steps.s1d">직접 가진 게임의 MAME 롬셋과 바이오스를 한 폴더에 둡니다. zip 이름은 그대로 두세요.</p>
       </li>
       <li>
         <span class="step-no">2</span>
-        <h3 data-i18n="steps.s2t">변환기에 zip을 끌어다 놓고 [CIA 만들기]</h3>
+        <h3 data-i18n="steps.s2t">CIA 만들기</h3>
         <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다.</p>
       </li>
       <li>
         <span class="step-no">3</span>
-        <h3 data-i18n="steps.s3t">만든 .cia를 SD 카드로, FBI로 설치</h3>
+        <h3 data-i18n="steps.s3t">3DS에 설치</h3>
         <p data-i18n="steps.s3d">설치가 끝나면 HOME 메뉴에 게임 아이콘이 생깁니다.</p>
       </li>
     </ol>
@@ -135,7 +135,7 @@
 <!-- ── 조작 ────────────────────────────────────────────────────────────── -->
 <section class="sec" id="panel">
   <div class="wrap">
-    <h2 data-i18n="panel.h2">아래 화면에서 다 됩니다</h2>
+    <h2 data-i18n="panel.h2">터치 조작</h2>
     <p class="lede narrow" data-i18n="panel.lede">게임을 멈추지 않고 바로 동작합니다. 설정은 게임마다 저장됩니다.</p>
 
     <ul class="panel-list">
@@ -177,7 +177,7 @@
 <!-- ── 변환기 ──────────────────────────────────────────────────────────── -->
 <section class="sec" id="convert">
   <div class="wrap">
-    <h2 data-i18n="conv.h2">변환기가 하는 일</h2>
+    <h2 data-i18n="conv.h2">변환 과정</h2>
     <p class="lede narrow" data-i18n="conv.lede">암호 해독은 전부 PC에서 끝냅니다. 3DS는 해독에 시간도 메모리도 쓰지 않습니다.</p>
 
     <div class="chips" id="chips" role="group" aria-label="romsets"></div>
@@ -189,7 +189,7 @@
         <li><span class="pipe-no">3</span><div><h3 data-i18n="conv.p3t">실기용 패치</h3><p data-i18n="conv.p3d">보호 칩 검사 루틴을 지우고 68k 바이트 순서를 맞춥니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
         <li><span class="pipe-no">4</span><div><h3 data-i18n="conv.p4t">그래픽 압축</h3><p data-i18n="conv.p4d">스프라이트를 4KB 블록으로 zstd 압축합니다. 3DS는 8MB 캐시로 씁니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
         <li><span class="pipe-no">5</span><div><h3 data-i18n="conv.p5t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="5"></span></li>
-        <li><span class="pipe-no">6</span><div><h3 data-i18n="conv.p6t">CIA 만들기</h3><p data-i18n="conv.p6d">엔진과 게임 데이터를 묶어 설치 파일로 만듭니다.</p></div><span class="pipe-val" data-pipe="6"></span></li>
+        <li><span class="pipe-no">6</span><div><h3 data-i18n="conv.p6t">CIA 생성</h3><p data-i18n="conv.p6d">엔진과 게임 데이터를 묶어 설치 파일로 만듭니다.</p></div><span class="pipe-val" data-pipe="6"></span></li>
       </ol>
 
       <div class="conv-side">
@@ -208,7 +208,7 @@
 <!-- ── 성능 ───────────────────────────────────────────────────────────── -->
 <section class="sec" id="speed">
   <div class="wrap">
-    <h2 data-i18n="speed.h2">268MHz 두 코어로 60fps</h2>
+    <h2 data-i18n="speed.h2">성능</h2>
     <p class="lede narrow" data-i18n="speed.lede">GPU를 쓰지 않고 CPU가 직접 그립니다. 한 프레임 계산을 두 코어에 나눴습니다.</p>
 
     <figure class="fig">
@@ -222,7 +222,7 @@
 
     <div class="mem-grid">
       <div class="mem-card">
-        <h3 data-i18n="speed.memH3">64MB 안에 64MB 그래픽 롬</h3>
+        <h3 data-i18n="speed.memH3">메모리 구성</h3>
         <p data-i18n="speed.memP">스프라이트를 압축해 두고 필요한 블록만 풀어 씁니다.</p>
         <div class="membar" id="membar"></div>
         <ul class="legend" id="memLegend"></ul>
@@ -235,7 +235,7 @@
       </div>
 
       <div class="mem-card">
-        <h3 data-i18n="speed.modeH3">왜 80MB 모드를 쓰지 않나</h3>
+        <h3 data-i18n="speed.modeH3">메모리 모드 선택</h3>
         <p data-i18n="speed.modeP">80MB는 메모리가 넉넉하지만 게임을 켜고 끌 때마다 시스템을 다시 불러옵니다.</p>
         <div class="modes" role="tablist" aria-label="memory mode">
           <button type="button" role="tab" aria-selected="true" data-mode="64">64MB <span data-i18n="speed.mode64tag">(neo3ds)</span></button>
@@ -247,7 +247,7 @@
 
     <div class="notes-grid">
       <div>
-        <h3 data-i18n="speed.n1h">속도를 만든 장치들</h3>
+        <h3 data-i18n="speed.n1h">속도 최적화</h3>
         <ul class="facts">
           <li data-i18n="speed.n1">그리기·사운드를 두 번째 코어로 넘기고, 메인 코어는 다음 프레임을 바로 에뮬레이션합니다.</li>
           <li data-i18n="speed.n2">확대·축소가 없는 스프라이트는 타일 단위로 그리고, 불투명한 8픽셀은 ARM 어셈블리(CPU가 바로 실행하는 명령)로 한 번에 씁니다.</li>
@@ -269,7 +269,7 @@
 <!-- ── 호환성 ──────────────────────────────────────────────────────────── -->
 <section class="sec" id="games">
   <div class="wrap">
-    <h2 data-i18n="games.h2">무엇이 돌아가나</h2>
+    <h2 data-i18n="games.h2">게임 호환성</h2>
     <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 13종은 구형 3DS 실기에서 확인했습니다.</p>
 
     <div class="explorer">
@@ -306,7 +306,7 @@
     </div>
 
     <div class="caveat">
-      <h3 data-i18n="games.cavH3">알아 두면 좋은 것</h3>
+      <h3 data-i18n="games.cavH3">참고 사항</h3>
       <ul>
         <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다.</li>
         <li data-i18n="games.cav1b">롬이 없어 확인하지 못한 게임 — CMC42: 전국전승 3, 줏파파, 스트라이커즈 1945 플러스, 프리히스토릭 아일 2, 나이트메어 인 더 다크, 간류, 뱅 비드 · CMC50: KOF2001 · PCM2: 메탈슬러그 4, 레이지 오브 드래곤즈, 포치와 냐</li>
@@ -363,7 +363,7 @@
       <p data-i18n="legal.p2">neo3ds는 개인 팬 프로젝트이며 SNK·Nintendo와 관계가 없습니다. NEOGEO는 SNK CORPORATION, Nintendo 3DS는 Nintendo의 상표입니다.</p>
     </div>
     <div>
-      <h3 data-i18n="legal.credH">고마운 분들</h3>
+      <h3 data-i18n="legal.credH">크레딧</h3>
       <ul class="credits tiny">
         <li>gngeo · Cyclone 68000 · DrZ80</li>
         <li data-i18n="legal.cred2">MAME 개발팀 (롬셋 정보와 카트 해독 연구)</li>
