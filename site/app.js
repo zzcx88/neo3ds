@@ -406,7 +406,7 @@ function renderList() {
   exList.innerHTML = rows.slice(0, shown).map(([set, title, year, , mb, , st]) => {
     const badge = st === 1 ? `<span class="badge">${t('실기 확인', 'hardware')}</span>`
       : st === 2 ? `<span class="badge">${t('불가', 'no')}</span>` : '';
-    return `<button type="button" class="ex-row${selected === set ? ' sel' : ''}" data-st="${st}" data-set="${set}">
+    return `<button type="button" class="ex-row${selected === set ? ' sel' : ''}" data-st="${st}" data-set="${set}" title="${title}">
       <span class="ex-title">${title}${badge}</span>
       <span class="ex-set">${set}</span>
       <span class="ex-year">${year}</span>

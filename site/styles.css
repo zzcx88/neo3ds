@@ -242,15 +242,17 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .sort select{background:var(--panel-2);border:1px solid var(--line);color:var(--paper);
   font:400 11px/1 var(--pixel-sm);padding:9px 8px;border-radius:3px}
 .ex-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:26px;align-items:start;margin-top:16px}
+.ex-list{display:grid}
 .ex-row{display:grid;grid-template-columns:minmax(0,1fr) 84px 46px 54px;gap:0 10px;text-align:left;
+  width:100%;
   background:none;border:0;border-bottom:1px solid var(--line);color:inherit;font:inherit;
   padding:9px 4px;cursor:pointer;align-items:baseline}
 .ex-row:hover{background:var(--panel-2)}
 .ex-row.sel{background:var(--panel-2);box-shadow:inset 3px 0 0 var(--gold)}
 .ex-title{grid-column:1;font-size:14.5px;color:var(--paper);line-height:1.4}
-.ex-set{grid-column:2;font:400 10px/1.5 var(--pixel-sm);color:var(--dim);text-align:right}
-.ex-year{grid-column:3;font:400 10px/1.5 var(--pixel-sm);color:var(--dim);text-align:right}
-.ex-size{grid-column:4;font:400 10px/1.5 var(--pixel-sm);color:var(--dim);text-align:right}
+.ex-set{grid-column:2;font:400 10px/1.5 var(--pixel-sm);color:var(--dim);white-space:nowrap}
+.ex-year{grid-column:3;font:400 10px/1.5 var(--pixel-sm);color:var(--dim);text-align:right;white-space:nowrap}
+.ex-size{grid-column:4;font:400 10px/1.5 var(--pixel-sm);color:var(--dim);text-align:right;white-space:nowrap}
 .ex-row[data-st="2"] .ex-title{color:var(--dim)}
 .ex-row .badge{margin-left:8px;font:400 9px/1 var(--pixel-sm);padding:2px 5px;border-radius:2px;
   border:1px solid currentColor;color:var(--gold);vertical-align:2px;white-space:nowrap}
@@ -306,6 +308,7 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
   .budget-row{grid-template-columns:62px 1fr;gap:8px}
   .budget-legend button{grid-template-columns:12px minmax(0,1fr) auto}
   .ex-row{grid-template-columns:minmax(0,1fr) 44px 46px;gap:0 8px}
+  .ex-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ex-set{display:none}
   .ex-year{grid-column:2}
   .ex-size{grid-column:3}
