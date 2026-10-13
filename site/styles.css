@@ -79,10 +79,10 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 /* ── 3DS 실물 사진 + 윗화면 GIF 합성 (실측: left 28.4%, top 17.5%, w 43.0%) ── */
 .photo-device{position:relative;max-width:520px;width:100%}
 .photo-device .photo{width:100%;height:auto;display:block;border-radius:12px}
-.photo-device .gif-top{position:absolute;left:28.4%;top:17.5%;width:43%;height:28.35%;object-fit:cover;image-rendering:pixelated}
+.photo-device .gif-top{position:absolute;left:28.4%;top:17.5%;width:43%;height:28.35%;object-fit:cover}
 .photo-device .gif-b{animation:gifSwap 12s infinite}
 @keyframes gifSwap{0%,45%{opacity:0}50%,95%{opacity:1}100%{opacity:0}}
-.photo-device .gif-bottom{position:absolute;left:31.4%;top:56.7%;width:37.4%;height:20.9%;object-fit:contain;image-rendering:pixelated}
+.photo-device .gif-bottom{position:absolute;left:30.5%;top:56.1%;width:39%;height:22%;object-fit:fill}
 
 /* ── 섹션 공통 ───────────────────────────────────────────────────────── */
 .sec{padding:64px 0;border-bottom:1px solid var(--line)}
