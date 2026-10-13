@@ -23,3 +23,4 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 
 - 롬·바이오스를 저장소에 넣지 않기
 - 버전은 `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 한 곳에서 관리
 - README 호환성 표는 실기 확인 결과만 반영, 추정치는 "추정" 표기
+- 커밋 메시지는 gitmoji 형태 (`:emoji: 제목` — 예: `:memo: Docs: ...`, `:bug: Engine: ...`)
