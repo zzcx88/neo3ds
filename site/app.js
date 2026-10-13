@@ -19,8 +19,6 @@ const EN = {
   'hero.h1': 'Neo Geo games,<br>on the 3DS HOME menu.',
   'hero.lede': 'Drop the romset zip of a game you own on the converter and each game becomes one install file (CIA). Install it on the 3DS and the game shows up on the HOME menu with its own icon, at 60 fps even on an Old 3DS.',
   'hero.req': 'Windows 10/11 64-bit · no runtime to install · GPL-2.0',
-  'hero.cap': 'The top screen cycles through real Metal Slug 3 and KOF \'99 captures; the bottom screen shows real pages of the touch GUI.',
-  'hero.capTiny': 'Stills from real hardware stitched together — not a recorded video.',
   'steps.h2': 'Set-up in three steps',
   'steps.lede': 'Building an install file takes a minute or two on the PC. After that you only need the 3DS.',
   'steps.s1t': 'Get the romset ready',
