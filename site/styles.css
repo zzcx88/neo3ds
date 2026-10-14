@@ -299,9 +299,13 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
   .hero-grid{grid-template-columns:minmax(0,1fr);gap:34px}
   .conv-grid,.mem-grid,.notes-grid,.ex-body,.legal-grid,.map{grid-template-columns:minmax(0,1fr)}
   .ex-detail{position:static}
-  .bar-nav{display:none}
+  .bar-nav{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+  .bar-nav::-webkit-scrollbar{display:none}
+  .bar-nav a{flex:0 0 auto}
 }
 @media (max-width:760px){
+  .bar{gap:10px;padding:9px 12px}
+  .bar-end .btn{padding:8px 10px;font-size:11px}
   body{font-size:16px}
   .sec{padding:46px 0}
   .steps,.check{grid-template-columns:minmax(0,1fr)}

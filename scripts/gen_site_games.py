@@ -107,7 +107,7 @@ def main():
                      scheme(cart), status, note[0], note[1], sprite_mb])
         counts['total'] += 1
         counts['ok' if status != 2 else 'no'] += 1
-        counts['verified'] += status == 1
+        counts['verified'] += int(status == 1)
         s = scheme(cart) or 'none'
         schemes[s] = schemes.get(s, 0) + 1
 

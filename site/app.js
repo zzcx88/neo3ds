@@ -11,7 +11,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
    1. 언어 (한국어가 기본, 브라우저 로케일로 자동 선택)
    ════════════════════════════════════════════════════════════════════ */
 const EN = {
-  'a11y.skip': 'Skip to content', 'a11y.sections': 'Sections',
+  'a11y.skip': 'Skip to content', 'a11y.sections': 'Sections', 'meta.desc': 'Converter + emulator engine turning Neo Geo (MAME) romsets into 3DS install files (CIA). 60fps on an Old 3DS, one HOME Menu icon per game.', 'meta.ogdesc': 'Drop a rom zip on the PC, get one CIA per game. Neo Geo emulator running at 60fps on the 3DS.',
   'nav.steps': 'Set-up in three steps', 'nav.panel': 'Touch controls', 'nav.convert': 'Conversion pipeline',
   'nav.speed': 'Speed', 'nav.games': 'Game compatibility',
   'cta.download': 'Get the converter', 'cta.source': 'Source code', 'lang.label': 'Language',
@@ -148,8 +148,10 @@ function setLang(lang) {
   for (const s of snapshots) {
     if (s[0] === 'el') {
       const key = s[1].dataset.i18n;
+      if (lang === 'en' && !(key in EN)) console.warn('[i18n] missing EN key:', key);
       s[1].innerHTML = lang === 'en' ? (EN[key] ?? s[2]) : s[2];
     } else if (s[0] === 'attr') {
+      if (lang === 'en' && !(s[2] in EN)) console.warn('[i18n] missing EN key:', s[2]);
       s[1].setAttribute(s[3], lang === 'en' ? (EN[s[2]] ?? s[4]) : s[4]);
     } else {
       s[1].textContent = lang === 'en' ? 'neo3ds — Neo Geo games on your 3DS HOME menu' : s[2];

@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>neo3ds — 네오지오 게임을 3DS 홈 메뉴에</title>
-<meta name="description" content="네오지오(MAME) 롬셋을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나.">
+<meta name="description" data-i18n-attr="content:meta.desc" content="네오지오(MAME) 롬셋을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <meta property="og:title" content="neo3ds — 네오지오 게임을 3DS 홈 메뉴에">
-<meta property="og:description" content="PC에서 롬 zip을 넣으면 게임마다 CIA 하나. 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터.">
+<meta property="og:description" data-i18n-attr="content:meta.ogdesc" content="PC에서 롬 zip을 넣으면 게임마다 CIA 하나. 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23B01420'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='3' fill='none' stroke='%23F8C428' stroke-width='2'/%3E%3Cg fill='%23F8C428'%3E%3Crect x='8' y='7' width='4' height='18'/%3E%3Crect x='20' y='7' width='4' height='18'/%3E%3Crect x='12' y='10' width='4' height='4'/%3E%3Crect x='16' y='15' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -39,6 +39,7 @@
 </header>
 
 <main id="main">
+<noscript><p style="padding:12px 24px">이 페이지는 JavaScript가 필요합니다. 게임 목록·변환 데모가 동작하지 않습니다.</p></noscript>
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
 <section class="hero" id="top">
@@ -61,8 +62,8 @@
           <div class="cam"></div>
           <span class="speaker"></span>
           <div class="screen-outer screen-stack">
-            <img class="screen-top gif-a" src="media/game-kof98.gif" width="400" height="240" alt="">
-            <img class="screen-top gif-b" src="media/game-mslug3.gif" width="400" height="240" alt="">
+            <img class="screen-top gif-a" src="media/game-kof98.gif" width="400" height="240" alt="" fetchpriority="high" decoding="async">
+            <img class="screen-top gif-b" src="media/game-mslug3.gif" width="400" height="240" alt="" decoding="async">
           </div>
         </div>
         <div class="hinge"><span></span><span></span></div>
@@ -277,10 +278,10 @@
           <input type="search" id="exSearch" data-i18n-attr="placeholder:games.searchPh" placeholder="제목 또는 롬셋 이름 (예: kof99, slug)">
         </label>
         <div class="filters" id="exFilters" role="group" aria-label="필터" data-i18n-attr="aria-label:games.filters">
-          <button type="button" data-filter="all" aria-pressed="true"><span data-i18n="games.fAll">전체</span> <b id="cAll">282</b></button>
-          <button type="button" data-filter="verified" aria-pressed="false"><span data-i18n="games.fVerified">실기 확인</span> <b id="cVerified">13</b></button>
-          <button type="button" data-filter="ok" aria-pressed="false"><span data-i18n="games.fOk">변환 가능</span> <b id="cOk">242</b></button>
-          <button type="button" data-filter="no" aria-pressed="false"><span data-i18n="games.fNo">변환 불가</span> <b id="cNo">40</b></button>
+          <button type="button" data-filter="all" aria-pressed="true"><span data-i18n="games.fAll">전체</span> <b id="cAll">—</b></button>
+          <button type="button" data-filter="verified" aria-pressed="false"><span data-i18n="games.fVerified">실기 확인</span> <b id="cVerified">—</b></button>
+          <button type="button" data-filter="ok" aria-pressed="false"><span data-i18n="games.fOk">변환 가능</span> <b id="cOk">—</b></button>
+          <button type="button" data-filter="no" aria-pressed="false"><span data-i18n="games.fNo">변환 불가</span> <b id="cNo">—</b></button>
         </div>
         <label class="sort">
           <span data-i18n="games.sort">정렬</span>

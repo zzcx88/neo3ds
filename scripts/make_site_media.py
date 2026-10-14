@@ -13,6 +13,7 @@ from PIL import Image
 
 SRC = 'docs/images'
 OUT = 'site/media'
+MAX_BYTES = 2 * 1024 * 1024  # 파일당 상한 2MB
 
 # 2x boxes: (left, top, right, bottom)
 TOP_BOX = (2, 16, 802, 496)          # 800x480 -> 400x240 (visible area 304x224 inside)
@@ -57,7 +58,9 @@ def main():
     for name in ('hero-top', 'hero-bottom'):
         for ext in ('gif', 'png'):
             path = f'{OUT}/{name}.{ext}'
-            print(f'  {path}: {os.path.getsize(path) / 1024:.0f} KB')
+            size = os.path.getsize(path)
+            print(f'  {path}: {size / 1024:.0f} KB')
+            assert size <= MAX_BYTES, f'{path} exceeds {MAX_BYTES} bytes'
 
 
 if __name__ == '__main__':
