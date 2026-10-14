@@ -11,7 +11,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
    1. 언어 (한국어가 기본, 브라우저 로케일로 자동 선택)
    ════════════════════════════════════════════════════════════════════ */
 const EN = {
-  'a11y.skip': 'Skip to content',
+  'a11y.skip': 'Skip to content', 'a11y.sections': 'Sections',
   'nav.steps': 'Set-up in three steps', 'nav.panel': 'Touch controls', 'nav.convert': 'Conversion pipeline',
   'nav.speed': 'Speed', 'nav.games': 'Game compatibility',
   'cta.download': 'Get the converter', 'cta.source': 'Source code', 'lang.label': 'Language',
@@ -52,7 +52,7 @@ const EN = {
   'conv.p4t': 'Compress graphics', 'conv.p4d': 'Sprites become 4KB zstd blocks; the 3DS unpacks them into an 8MB cache.',
   'conv.p5t': 'Make icon and banner', 'conv.p5d': 'Icon (48×48) and banner (256×128) drawn from the title.',
   'conv.p6t': 'Package the CIA', 'conv.p6d': 'Engine and game data wrapped into one install file.',
-  'conv.run': 'Build CIA', 'conv.again': 'Again',
+  'conv.run': 'Build CIA', 'conv.again': 'Again', 'conv.sets': 'Romsets', 'conv.logLabel': 'Converter log',
   'conv.logNote': 'Wording and layout match the real converter. Compression figures come from the KOF \'99 run we measured.',
   'speed.h2': 'Speed',
   'speed.lede': 'No GPU: the CPU draws the frame itself, and the work is split across both cores.',
@@ -66,7 +66,7 @@ const EN = {
   'speed.kv4k': 'Output', 'speed.kv4v': '304×224 only · three screens in rotation (triple buffered) · nothing reloads',
   'speed.modeH3': 'Memory mode choice',
   'speed.modeP': '80MB gives more memory, but the system is reloaded every time a game starts or quits.',
-  'speed.mode64tag': '(neo3ds)', 'speed.mode80tag': '(not used)',
+  'speed.mode64tag': '(neo3ds)', 'speed.mode80tag': '(not used)', 'speed.modeLabel': 'Memory mode',
   'speed.n1h': 'Speed optimisations',
   'speed.n1': 'Drawing and sound move to the second core while the main core emulates the next frame.',
   'speed.n2': 'Unzoomed sprites are drawn tile by tile, and opaque runs of 8 pixels go out as ARM assembly (raw CPU instructions).',
@@ -78,7 +78,7 @@ const EN = {
   'games.h2': 'Game compatibility',
   'games.lede': 'The converter knows 282 romsets and builds 242 of them. 13 of those were played on an Old 3DS.',
   'games.searchLabel': 'Search games', 'games.searchPh': 'Title or romset name (e.g. kof99, slug)',
-  'games.fAll': 'All', 'games.fVerified': 'On hardware', 'games.fOk': 'Buildable', 'games.fNo': 'Not supported',
+  'games.fAll': 'All', 'games.fVerified': 'On hardware', 'games.fOk': 'Buildable', 'games.fNo': 'Not supported', 'games.filters': 'Filters',
   'games.sort': 'Sort', 'games.sortDefault': 'Hardware first', 'games.sortName': 'Title',
   'games.sortYear': 'Year', 'games.sortSize': 'ROM size',
   'games.more': 'Show more',
@@ -90,7 +90,7 @@ const EN = {
   'games.cav4': 'Metal Slug 2, X and 3 slow down in scenes with many enemies and explosions on the original arcade board too. neo3ds drops frames in exactly those scenes, as PC emulators do.',
   'faq.h2': 'Questions',
   'faq.q1': 'Where do I get the ROMs?', 'faq.a1': 'Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so never share it.',
-  'faq.q2': 'Is it really 60 fps on an Old 3DS?', 'faq.a2': 'KOF \'98, \'99, 2000, 2002, Metal Slug X and 3, SVC Chaos and Samurai Shodown V Special ran at full speed on hardware. Metal Slug 2, X and 3 slow down exactly where the original board did.',
+  'faq.q2': 'Is it really 60 fps on an Old 3DS?', 'faq.a2': 'KOF \'98, \'99, 2000, 2002, Metal Slug X and 3, SVC Chaos and Samurai Shodown V Special ran at full speed on hardware. Metal Slug 2 and 3 slow down exactly where the original board did.',
   'faq.q3': 'No sound.', 'faq.a3': 'The SD card needs <code>/3ds/dspfirm.cdc</code>; a tool like DSP1 creates it once.',
   'faq.q4': 'Where are key configs stored?', 'faq.a4': 'Per game, under <code>/3ds/neo3ds/keys/</code> on the SD card.',
   'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, which leaves more headroom (not confirmed on hardware yet).',
@@ -252,7 +252,9 @@ function logLines() {
   ].filter(Boolean);
 }
 
+let pipeToken = 0;
 function resetPipeline() {
+  pipeToken++;
   const row = g();
   $('#convFile').textContent = `${chipSelect}.zip`;
   $('#convLog').innerHTML = `<i>${t('변환 대기 중 — [CIA 만들기]를 누르세요.', 'Ready — press [Build CIA].')}</i>\n` +
@@ -272,7 +274,9 @@ function runPipeline() {
   items.forEach((li) => li.classList.remove('done', 'now'));
   const stageOf = [0, 1, 1, 2, 3, 4, 4, 5, 5, 5, 5];
   let i = 0;
+  const my = ++pipeToken;
   const tick = () => {
+    if (my !== pipeToken) return;
     const stage = Math.min(items.length - 1, stageOf[Math.min(i, stageOf.length - 1)]);
     items.forEach((li, n) => {
       li.classList.toggle('now', n === stage);
@@ -326,7 +330,7 @@ function buildBudget() {
       `<span class="seg" data-key="${b.key}" style="width:${(b.value / FRAME * 100).toFixed(2)}%;background:${b.color}"></span>`).join('') +
       `<span class="seg seg-idle" style="width:${(idle / FRAME * 100).toFixed(2)}%"></span>`;
     return `<div class="budget-row"><span class="budget-name">${row === 'main' ? t('메인 코어', 'main core') : t('코어 1', 'core 1')}</span>
-      <span class="bar">${bars}</span></div>`;
+      <span class="fbar">${bars}</span></div>`;
   }).join('');
 
   const idleMain = FRAME - BUDGET.filter((b) => b.row === 'main').reduce((a, b) => a + b.value, 0);
@@ -366,7 +370,7 @@ const KO_MODE = {
   'mode.80c': '같은 CIA로 New 3DS에서는 124MB + 804MHz + L2 캐시가 켜집니다(실기 미확인).',
 };
 function setMode(m) {
-  $$('.modes button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+  $$('.modes button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
   const keys = m === '64' ? ['mode.64a', 'mode.64b', 'mode.64c'] : ['mode.80a', 'mode.80b', 'mode.80c'];
   $('#modeBody').innerHTML = `<ul>${keys.map((k) => `<li>${LANG === 'en' ? EN[k] : KO_MODE[k]}</li>`).join('')}</ul>`;
 }
@@ -404,11 +408,11 @@ function renderList() {
   exList.innerHTML = rows.slice(0, shown).map(([set, title, year, , mb, , st]) => {
     const badge = st === 1 ? `<span class="badge">${t('실기 확인', 'hardware')}</span>`
       : st === 2 ? `<span class="badge">${t('불가', 'no')}</span>` : '';
-    return `<button type="button" class="ex-row${selected === set ? ' sel' : ''}" data-st="${st}" data-set="${set}" title="${title}">
+    return `<div role="listitem"><button type="button" class="ex-row${selected === set ? ' sel' : ''}" data-st="${st}" data-set="${set}" title="${title}">
       <span class="ex-title">${title}${badge}</span>
       <span class="ex-set">${set}</span>
       <span class="ex-year">${year}</span>
-      <span class="ex-size">${mb}MB</span></button>`;
+      <span class="ex-size">${mb}MB</span></button></div>`;
   }).join('');
   $('#exMore').classList.toggle('hidden', rows.length <= shown);
   $('#exCount').textContent = t(`${rows.length}종 표시 · 변환 가능 ${DB.counts.ok} · 실기 확인 ${DB.counts.verified}`,
@@ -456,7 +460,7 @@ function refreshDynamic() {
   buildChips();
   if (DB.games.length) resetPipeline();
   buildBudget(); buildMemory();
-  setMode($$('.modes button').find((b) => b.getAttribute('aria-selected') === 'true').dataset.mode);
+  setMode($$('.modes button').find((b) => b.getAttribute('aria-pressed') === 'true').dataset.mode);
   if (DB.games.length) { renderList(); renderDetail(); }
 }
 })();

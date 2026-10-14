@@ -22,7 +22,7 @@
 
 <header class="bar">
   <a class="brand" href="#top" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
-  <nav class="bar-nav" aria-label="sections">
+  <nav class="bar-nav" aria-label="섹션" data-i18n-attr="aria-label:a11y.sections">
     <a href="#steps" data-i18n="nav.steps">설치 3단계</a>
     <a href="#panel" data-i18n="nav.panel">터치 조작</a>
     <a href="#convert" data-i18n="nav.convert">변환 과정</a>
@@ -54,15 +54,42 @@
       <p class="tiny" data-i18n="hero.req">Windows 10·11 64비트 · 런타임 설치 불필요 · GPL-2.0</p>
     </div>
 
-    <!-- 3DS 실물 사진 + 윗화면 게임 GIF 합성 -->
+    <!-- 3DS 본체 목업: 윗화면 게임 교대, 아랫화면 터치 UI -->
     <figure class="device-col">
-      <div class="photo-device">
-        <img class="photo" src="media/old-3ds.png" width="1312" height="1199" alt="Nintendo 3DS 실물">
-        <img class="gif-top gif-a" src="media/game-kof98.gif" width="400" height="240" alt="KOF '98 플레이 화면">
-        <img class="gif-top gif-b" src="media/game-mslug3.gif" width="400" height="240" alt="메탈슬러그 3 플레이 화면">
-        <img class="gif-bottom" src="media/ui-bottom.png" width="320" height="240" alt="하단 터치 메뉴">
+      <div class="device" aria-hidden="true">
+        <div class="shell shell-top">
+          <div class="cam"></div>
+          <span class="speaker"></span>
+          <div class="screen-outer screen-stack">
+            <img class="screen-top gif-a" src="media/game-kof98.gif" width="400" height="240" alt="">
+            <img class="screen-top gif-b" src="media/game-mslug3.gif" width="400" height="240" alt="">
+          </div>
+        </div>
+        <div class="hinge"><span></span><span></span></div>
+        <div class="shell shell-bottom">
+          <span class="shell-btn sh-l">L</span>
+          <span class="shell-btn sh-r">R</span>
+          <div class="pad-wrap">
+            <div class="circle-pad"><span></span></div>
+            <div class="dpad"></div>
+          </div>
+          <div class="touch-outer">
+            <img class="screen-bottom" src="media/ui-bottom.png" width="320" height="240" alt="">
+          </div>
+          <div class="face">
+            <span class="shell-btn face-a">A</span>
+            <span class="shell-btn face-b">B</span>
+            <span class="shell-btn face-x">X</span>
+            <span class="shell-btn face-y">Y</span>
+          </div>
+          <div class="strip">
+            <span class="shell-btn small">SELECT</span>
+            <span class="shell-btn small">HOME</span>
+            <span class="shell-btn small">START</span>
+          </div>
+        </div>
       </div>
-      <figcaption class="sr-only">구형 3DS 실물 사진에 게임 화면 합성</figcaption>
+      <figcaption class="sr-only">3DS 본체 목업에 게임 화면 합성</figcaption>
     </figure>
   </div>
 </section>
@@ -151,7 +178,7 @@
     <h2 data-i18n="conv.h2">변환 과정</h2>
     <p class="lede narrow" data-i18n="conv.lede">암호 해독은 전부 PC에서 끝냅니다. 3DS는 해독에 시간도 메모리도 쓰지 않습니다.</p>
 
-    <div class="chips" id="chips" role="group" aria-label="romsets"></div>
+    <div class="chips" id="chips" role="group" aria-label="롬셋" data-i18n-attr="aria-label:conv.sets"></div>
 
     <div class="conv-grid">
       <ol class="pipe" id="pipe">
@@ -169,7 +196,7 @@
           <button type="button" class="btn btn-primary" id="convRun" data-i18n="conv.run">CIA 만들기</button>
           <button type="button" class="btn btn-ghost btn-sm hidden" id="convReset" data-i18n="conv.again">다시</button>
         </div>
-        <pre class="log" id="convLog" aria-live="polite" aria-label="converter log"></pre>
+        <pre class="log" id="convLog" aria-label="변환기 로그" data-i18n-attr="aria-label:conv.logLabel"></pre>
         <p class="tiny" data-i18n="conv.logNote">문구·형식은 실제 변환기와 같습니다. 압축 수치는 실측한 KOF '99 기준입니다.</p>
       </div>
     </div>
@@ -208,9 +235,9 @@
       <div class="mem-card">
         <h3 data-i18n="speed.modeH3">메모리 모드 선택</h3>
         <p data-i18n="speed.modeP">80MB는 메모리가 넉넉하지만 게임을 켜고 끌 때마다 시스템을 다시 불러옵니다.</p>
-        <div class="modes" role="tablist" aria-label="memory mode">
-          <button type="button" role="tab" aria-selected="true" data-mode="64">64MB <span data-i18n="speed.mode64tag">(neo3ds)</span></button>
-          <button type="button" role="tab" aria-selected="false" data-mode="80">80MB <span data-i18n="speed.mode80tag">(미사용)</span></button>
+        <div class="modes" role="group" aria-label="메모리 모드" data-i18n-attr="aria-label:speed.modeLabel">
+          <button type="button" aria-pressed="true" data-mode="64">64MB <span data-i18n="speed.mode64tag">(neo3ds)</span></button>
+          <button type="button" aria-pressed="false" data-mode="80">80MB <span data-i18n="speed.mode80tag">(미사용)</span></button>
         </div>
         <div class="mode-body" id="modeBody"></div>
       </div>
@@ -249,7 +276,7 @@
           <span class="sr-only" data-i18n="games.searchLabel">게임 검색</span>
           <input type="search" id="exSearch" data-i18n-attr="placeholder:games.searchPh" placeholder="제목 또는 롬셋 이름 (예: kof99, slug)">
         </label>
-        <div class="filters" id="exFilters" role="group" aria-label="filters">
+        <div class="filters" id="exFilters" role="group" aria-label="필터" data-i18n-attr="aria-label:games.filters">
           <button type="button" data-filter="all" aria-pressed="true"><span data-i18n="games.fAll">전체</span> <b id="cAll">282</b></button>
           <button type="button" data-filter="verified" aria-pressed="false"><span data-i18n="games.fVerified">실기 확인</span> <b id="cVerified">13</b></button>
           <button type="button" data-filter="ok" aria-pressed="false"><span data-i18n="games.fOk">변환 가능</span> <b id="cOk">242</b></button>
@@ -268,7 +295,7 @@
 
       <div class="ex-body">
         <div class="ex-list-wrap">
-          <div class="ex-list" id="exList" role="rowgroup"></div>
+          <div class="ex-list" id="exList" role="list"></div>
           <button type="button" class="btn btn-ghost btn-sm" id="exMore" data-i18n="games.more">더 보기</button>
           <p class="tiny" id="exCount" aria-live="polite"></p>
         </div>
@@ -300,7 +327,7 @@
       </details>
       <details>
         <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
-        <p data-i18n="faq.a2">KOF '98·'99·2000·2002, 메탈슬러그 X·3, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드입니다. 메탈슬러그 2·X·3은 원래 기판에서도 느려지던 장면에서 똑같이 느려집니다.</p>
+        <p data-i18n="faq.a2">KOF '98·'99·2000·2002, 메탈슬러그 X·3, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드입니다. 메탈슬러그 2·3은 원래 기판에서도 느려지던 장면에서 똑같이 느려집니다.</p>
       </details>
       <details>
         <summary data-i18n="faq.q3">소리가 안 나요.</summary>
