@@ -86,7 +86,8 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 ## 7. 릴리스
 
 1. `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 올리기
-2. 엔진 빌드 (§1) + 변환기 Release 빌드 (§2)
-3. exe + `tools\`를 `neo3ds-converter.zip`으로 묶기
+2. 엔진 빌드 (§1) + 외부 도구 배치 (§2 선행 준비: `tools\makerom`, `tools\bannertool`)
+3. `powershell scripts/package_release.ps1` — self-contained 단일 exe로 publish 후 `dist\neo3ds-converter.zip` 생성
+   (zip 안은 `neo3ds-converter\` 단일 폴더: exe + `tools\` + `사용법.txt`. 파일명은 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게)
 4. 커밋 후 태그 푸시 (`v1.0.8` 형식)
 5. GitHub Releases에 zip 첨부 + 변경점 기록 (수동 업로드)
