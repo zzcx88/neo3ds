@@ -36,8 +36,8 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 ## How to use
 
 ### 1. Get the converter
-Download [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) and unzip it anywhere.
-Keep `Neo3dsConverter.exe` and its `tools` folder together.
+Download [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) and unzip it.
+The `neo3ds-converter` folder holds `Neo3dsConverter.exe` with its `tools` folder and usage notes. Keep the folder together; do not take the exe out alone.
 
 ### 2. Build a CIA
 

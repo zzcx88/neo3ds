@@ -38,8 +38,8 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 ## 사용법
 
 ### 1. 변환기 받기
-[neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)을 받아 원하는 곳에 압축을 풉니다.
-`Neo3dsConverter.exe`와 `tools` 폴더는 항상 같이 두세요.
+[neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)을 받아 압축을 풉니다.
+`neo3ds-converter` 폴더 안에 `Neo3dsConverter.exe`와 `tools` 폴더, `사용법.txt`가 함께 들어 있습니다. 폴더째로 원하는 곳에 두고, exe만 따로 꺼내지 마세요.
 
 ### 2. CIA 만들기
 
