@@ -414,6 +414,12 @@ int main(void) {
 				ui_main_draw();
 			}
 		} else action = ui_main_update();
+#ifdef NEO3DS_KEYCONFIG_AT
+		{ /* Azahar test (screenshots): open the key config at frame NEO3DS_KEYCONFIG_AT */
+			static int frame_no;
+			if (++frame_no == NEO3DS_KEYCONFIG_AT) action = UI_KEYCONFIG;
+		}
+#endif
 		if ((hidKeysHeld() & (KEY_SELECT | KEY_START)) == (KEY_SELECT | KEY_START)) {
 			if (++restart_hold == RESTART_FRAMES) action = UI_RESTART;
 		} else restart_hold = 0;
