@@ -18,7 +18,8 @@ public static class RomPack
 
     public sealed record Stats(int Tiles, long SpriteRaw, long SpritePacked, long TotalBytes);
 
-    public static Stats Write(MameGame game, RomSet rom, string biosZip, string gameDir, Action<string> log, bool? startMvs = null)
+    public static Stats Write(MameGame game, RomSet rom, string biosZip, string gameDir, Action<string> log, bool? startMvs = null,
+        Region region = Region.Europe)
     {
         Directory.CreateDirectory(gameDir);
         using var bios = new ZipSet(biosZip);
@@ -69,9 +70,13 @@ public static class RomPack
 
         // Both a home (AES) and an arcade (MVS) BIOS when neogeo.zip has them, so the player can switch
         // in the app; biosmode.bin holds the default (1 = MVS). The MVS board also has its own fix ROM.
-        var aes = GameDb.Bios[..2].FirstOrDefault(bios.Has);
-        var mvs = GameDb.Bios[2..].FirstOrDefault(bios.Has);
+        var aes = GameDb.AesBios(region).FirstOrDefault(bios.Has);
+        var mvs = GameDb.MvsBios(region).FirstOrDefault(bios.Has);
         if (aes == null && mvs == null) bios.FirstPresent(GameDb.Bios); /* throws: no BIOS at all */
+        foreach (var b in new[] { aes, mvs })
+            if (b != null)
+                log($"  {(GameDb.IsAesBios(b) ? "AES" : "MVS")} BIOS: {b.Name} ({RegionName(GameDb.RegionOf(b))})" +
+                    (GameDb.RegionOf(b) != region ? L($" - {RegionName(region)} 바이오스가 없어 대신 사용", $" - no {RegionName(region)} BIOS, used instead") : ""));
         WriteOrDelete(Path.Combine(gameDir, "bios_aes.bin"), aes == null ? null : bios.Read(aes));
         WriteOrDelete(Path.Combine(gameDir, "bios_mvs.bin"), mvs == null ? null : bios.Read(mvs));
         WriteOrDelete(Path.Combine(gameDir, "sfix.bin"), mvs == null ? null : bios.Read(GameDb.BiosFix));
@@ -88,6 +93,13 @@ public static class RomPack
         long total = Directory.GetFiles(gameDir).Sum(f => new FileInfo(f).Length);
         return new Stats(tiles, raw, packed, total);
     }
+
+    public static string RegionName(Region r) => r switch
+    {
+        Region.Japan => L("일본", "Japan"),
+        Region.Usa => L("미국", "USA"),
+        _ => L("유럽·아시아", "Europe/Asia"),
+    };
 
     /// <summary>sma.bin for the engine's loader.c: "NSMA", bank select address, the 6 source bits of
     /// the bank number (MAME bitswap order), two random number addresses, 64 bank offsets.</summary>

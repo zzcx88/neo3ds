@@ -10,4 +10,5 @@
 #define YM2610Update ym_audio_Update
 #define YM2610Update_stream ym_audio_Update_stream
 #define mixing_buffer ym_audio_mixing_buffer
+#define YM2610State ym_audio_State
 #include "ym2610.c"

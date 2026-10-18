@@ -24,6 +24,7 @@
 #include "emu.h"
 #include "timer.h"
 #include "state.h"
+#include "savestate.h"
 #include "ym2610/ym2610.h"
 #ifdef GP2X
 #include "ym2610-940/940shared.h"
@@ -95,7 +96,9 @@ void my_timer(void)
 		inc = ((double) (0.02) / nb_interlace);/* *(1<<TIMER_SH);*/
 			  //(conf.sound ? (double) nb_interlace : 1.0);
 	} else {
-		inc = ((double) (0.01666) / nb_interlace); /* *(1<<TIMER_SH); */
+		/* neo3ds: one frame is 1 / 59.185s (6MHz / 384 / 264), not 16.66ms: timer-driven music ran
+		 * 1.4% slow, and Metal Slug's sampled music left gaps between its pieces */
+		inc = (1.0 / 59.185) / nb_interlace;
 		//(conf.sound ? (double) nb_interlace : 1.0);
 	}
 	for (i = 0; i < MAX_TIMER; i++)
@@ -111,4 +114,11 @@ void my_timer(void)
 	    timers[i].del_it = 1;
 	}
     }
+}
+
+/* neo3ds: save states (savestate.c); the callbacks are this build's own functions */
+void timer_state(void) {
+    st_bytes(&timer_count, sizeof timer_count);
+    st_bytes(timers, sizeof timers);
+    st_bytes(&timer_list, sizeof timer_list);
 }

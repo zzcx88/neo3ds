@@ -332,6 +332,7 @@ static __inline__ void draw_fix_char(unsigned char *buf, int start, int end) {
 
 				garoubank = READ_WORD(&snap_vram[0xeb00 + (k << 1)]) & 3;
 				garouoffsets[y++] = garoubank;
+				if (y == 32) break; /* neo3ds: the next write would be past the array */
 			}
 			garouoffsets[y++] = garoubank;
 			k += 2;

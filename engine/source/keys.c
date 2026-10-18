@@ -46,8 +46,7 @@ typedef struct {
 } KeyFile;
 
 static void file_path(char *out, size_t n) {
-	u64 id = 0;
-	APT_GetProgramID(&id);
+	const u64 id = loader_game_id();
 	snprintf(out, n, "sdmc:/3ds/neo3ds/keys/%016llX.bin", (unsigned long long)id);
 }
 

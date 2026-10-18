@@ -15,8 +15,9 @@
 #define MAX_SAMPLES 1024 /* per buffer, stereo frames */
 #define LOG_MAX 16384    /* YM2610 port writes per frame */
 #define LOG_RESET 0xffff /* log entry: reset the chip */
-#define LOG_LINE 0xf000  /* log entry: the entries after it happened on scanline (e & 0x1ff) */
+#define LOG_LINE 0xf000  /* log entry: the entries after it happened on scanline (e & 0x3ff) */
 #define LINES 264        /* scanlines per frame (neo_glue.c) */
+#define MAX_PARTS 3      /* emulated frames in one log: the 68k's and up to two sound-only ones */
 
 /* gngeo's YM2610Update_stream() writes interleaved stereo s16 here, from sample play_pos on
  * (core 1 only) */
@@ -44,6 +45,8 @@ static double frac;
 static u16 ym_log[2][LOG_MAX];
 static int log_len[2], log_fill;
 static int frame_samples;           /* samples core 1 generates for the handed-over log */
+static int frame_lines;             /* scanlines that log covers (LINES per emulated frame) */
+static int log_parts = 1;           /* emulated frames in log[fill] */
 static unsigned frames_logged;      /* frames handed to core 1 */
 static volatile unsigned frames_played; /* frames whose log core 1 has applied */
 
@@ -68,7 +71,10 @@ bool audio_init(int rate) {
 	ndspSetOutputMode(NDSP_OUTPUT_STEREO);
 	ndspChnReset(CHANNEL);
 	ndspChnSetInterp(CHANNEL, NDSP_INTERP_LINEAR);
-	ndspChnSetRate(CHANNEL, rate);
+	/* The main loop runs at the 3DS's 59.83Hz, so 59.83 Neo Geo frames (59.185Hz each) are emulated
+	 * a second: play them that much faster, or the DSP falls 1.1% behind and a whole frame of sound
+	 * is dropped every 1.5s, which stumbles the music */
+	ndspChnSetRate(CHANNEL, rate * (59.83f / 59.185f));
 	ndspChnSetFormat(CHANNEL, NDSP_FORMAT_STEREO_PCM16);
 	float mix[12] = {1.0f, 1.0f};
 	ndspChnSetMix(CHANNEL, mix);
@@ -90,9 +96,10 @@ static int log_line = -1; /* scanline of the last LOG_LINE entry in log[fill] */
 
 static void log_entry(u16 e) {
 	int *len = &log_len[log_fill];
-	if (current_line != log_line && *len < LOG_MAX) {
-		log_line = current_line;
-		ym_log[log_fill][(*len)++] = LOG_LINE | (current_line & 0x1ff);
+	const int line = (log_parts - 1) * LINES + current_line; /* counted from the log's first frame */
+	if (line != log_line && *len < LOG_MAX) {
+		log_line = line;
+		ym_log[log_fill][(*len)++] = LOG_LINE | (line & 0x3ff);
 	}
 	if (*len < LOG_MAX) ym_log[log_fill][(*len)++] = e;
 }
@@ -152,9 +159,39 @@ u8 audio_adpcm_status(void) {
 	return ym_audio_Read(2) & ~pending_clear;
 }
 
+unsigned audio_catchups, audio_drops; /* diagnostics: sound-only frames run, frames dropped */
+
+/* The DSP is about to run out: fewer than two frames' buffers are still queued. Then the 3DS is not
+ * keeping up with 60 emulated frames a second, and the music would slow down with the game. */
+/* After a save state was loaded: the logged writes belong to the frames before it. */
+void audio_state_loaded(void) {
+	log_len[0] = log_len[1] = 0;
+	log_parts = 1;
+	log_line = -1;
+	pending_clear = 0;
+}
+
+bool audio_behind(void) {
+#ifdef NEO3DS_STATE_TEST
+	return false; /* sound-only frames depend on host timing: the test needs the same run twice */
+#endif
+	if (!enabled || log_parts >= MAX_PARTS) return false;
+	int queued = 0;
+	for (int i = 0; i < NBUF; i++)
+		if (wave[i].status == NDSP_WBUF_QUEUED || wave[i].status == NDSP_WBUF_PLAYING) queued++;
+	return queued < 2;
+}
+
+void audio_next_part(void) {
+	log_parts++;
+	audio_catchups++;
+}
+
 // Main core, end of frame (core 1 is idle): hand this frame's writes over and start a new log.
 void audio_end_frame(int rate) {
-	frac += rate / 59.185;
+	frac += log_parts * rate / 59.185;
+	frame_lines = log_parts * LINES;
+	log_parts = 1;
 	frame_samples = (int)frac;
 	frac -= frame_samples;
 	if (frame_samples > MAX_SAMPLES) frame_samples = MAX_SAMPLES;
@@ -175,7 +212,7 @@ void audio_render(void) {
 	for (int i = 0; i < len; i++) {
 		if ((e[i] & 0xf000) == LOG_LINE && e[i] != LOG_RESET) {
 			/* synthesize up to this scanline's place in the frame, then apply its writes */
-			const int to = (e[i] & 0x1ff) * n / LINES;
+			const int to = (e[i] & 0x3ff) * n / frame_lines;
 			if (enabled && to > play_pos) {
 				ym_audio_Update_stream(to - play_pos);
 				play_pos = to;
@@ -190,7 +227,10 @@ void audio_render(void) {
 	prof_ticks[5] += svcGetSystemTick() - t0;
 
 	ndspWaveBuf *wb = &wave[next];
-	if (wb->status != NDSP_WBUF_DONE && wb->status != NDSP_WBUF_FREE) return;
+	if (wb->status != NDSP_WBUF_DONE && wb->status != NDSP_WBUF_FREE) {
+		audio_drops++;
+		return;
+	}
 	memcpy(wb->data_pcm16, play_buffer, n * 2 * sizeof(s16));
 	wb->nsamples = n;
 	/* kernel call instead of DSP_FlushDataCache, which waits on the DSP service (see screen_update) */

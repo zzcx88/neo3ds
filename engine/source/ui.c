@@ -9,6 +9,8 @@
 #include "keys.h"
 #include "loader.h"
 #include "neo/memory.h"
+#include "neo/emu.h"
+#include "savestate.h"
 
 static u16 *fb(void) { return (u16 *)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL); }
 
@@ -61,28 +63,47 @@ void ui_flush(void) {
 
 /* ---- main screen ---- */
 
-enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, NB };
-static const UiRect rects[NB] = {
-	{8, 50, 148, 34}, {164, 50, 148, 34}, {8, 92, 148, 34}, {164, 92, 148, 34}, {8, 134, 304, 28},
+enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, B_SERVICE, B_SLOT, B_SAVE, B_LOAD, B_LIST, NB };
+static UiRect rects[NB] = {
+	{8, 44, 148, 30}, {164, 44, 148, 30}, {8, 80, 148, 30}, {164, 80, 148, 30}, {8, 116, 148, 26}, {164, 116, 148, 26},
+	{8, 148, 96, 26}, {112, 148, 96, 26}, {216, 148, 96, 26}, {0, 0, 0, 0}, /* B_LIST: launcher only */
 };
-enum { RESTART_FRAMES = 60, CONFIRM_FRAMES = 180 };
+static bool launcher; /* the third row is then Reset / Service / Game list */
+
+void ui_set_launcher(void) {
+	launcher = true;
+	rects[B_RESTART] = (UiRect){8, 116, 96, 26};
+	rects[B_SERVICE] = (UiRect){112, 116, 96, 26};
+	rects[B_LIST] = (UiRect){216, 116, 96, 26};
+}
+/* the test button is held while touched, and at least SERVICE_FRAMES so that a tap reaches the BIOS */
+enum { RESTART_FRAMES = 60, CONFIRM_FRAMES = 180, SERVICE_FRAMES = 15 };
 
 static char title[40];
+static char version[16]; /* "v1.1.0", empty for CIAs from converters before it was written */
 static char default_status[40];
+
+/* A short ASCII line written by the converter, non-printable bytes replaced. */
+static void read_text(const char *name, char *out, size_t size) {
+	char buf[64];
+	if (!loader_read_text(name, buf, sizeof buf)) return;
+	snprintf(out, size, "%s", buf);
+	for (char *c = out; *c; c++)
+		if ((u8)*c < 32 || (u8)*c > 126) *c = '?';
+	if (strlen(buf) > size - 1 && size > 4) strcpy(out + size - 4, "...");
+}
 static char status[40];
 static bool status_warn;
-static int pressed = -1, hold, confirm;
+static int pressed = -1, hold, confirm, service;
+static int slot, load_confirm, list_confirm; /* quick save slot (0-2), and the countdown of "Tap again" on Load */
+
+int ui_state_slot(void) { return slot; }
 
 void ui_main_init(double load_secs, bool sound) {
-	FILE *f = fopen("romfs:/game/title.txt", "rb"); /* written by the converter (1.0.7 and later) */
-	if (f) {
-		size_t n = fread(title, 1, sizeof title - 1, f);
-		title[n] = 0;
-		fclose(f);
-		for (char *c = title; *c; c++)
-			if ((u8)*c < 32 || (u8)*c > 126) *c = '?';
-		if (n == sizeof title - 1) strcpy(title + sizeof title - 4, "...");
-	}
+	read_text("title.txt", title, sizeof title); /* converter 1.0.7 and later */
+	char v[12] = "";
+	read_text("version.txt", v, sizeof v); /* converter 1.1.0 and later */
+	if (v[0]) snprintf(version, sizeof version, "v%s", v);
 	if (sound) snprintf(default_status, sizeof default_status, "Loaded in %.1fs", load_secs);
 	else snprintf(default_status, sizeof default_status, "Sound off: no /3ds/dspfirm.cdc");
 	status_warn = !sound;
@@ -99,7 +120,15 @@ static void button_label(int b, char *out, size_t n) {
 		else snprintf(out, n, "System: %s", memory.mvs ? "MVS" : "AES");
 		break;
 	case B_DIAG: snprintf(out, n, "Diagnostics"); break;
-	default: snprintf(out, n, "Restart (hold)  or SELECT+START"); break;
+	case B_SERVICE:
+		if (launcher) snprintf(out, n, memory.mvs ? "Service" : "(MVS only)");
+		else snprintf(out, n, memory.mvs ? "Service menu" : "Service: MVS only");
+		break;
+	case B_LIST: snprintf(out, n, list_confirm ? "Tap again" : "Game list"); break;
+	case B_SLOT: snprintf(out, n, "Slot %d", slot + 1); break;
+	case B_SAVE: snprintf(out, n, "Save"); break;
+	case B_LOAD: snprintf(out, n, load_confirm ? "Tap again" : "Load"); break;
+	default: snprintf(out, n, launcher ? "Hold: reset" : "Restart (hold)"); break;
 	}
 }
 
@@ -107,7 +136,7 @@ static void draw_button(int b) {
 	char label[40];
 	button_label(b, label, sizeof label);
 	const UiRect r = rects[b];
-	const u16 bg = b == pressed ? UI_PRESSED : (b == B_SYSTEM && confirm) ? UI_HEADER : UI_PANEL;
+	const u16 bg = b == pressed ? UI_PRESSED : ((b == B_SYSTEM && confirm) || (b == B_LOAD && load_confirm) || (b == B_LIST && list_confirm)) ? UI_HEADER : UI_PANEL;
 	ui_button(r, label, bg, UI_TEXT);
 	if (b == B_RESTART && hold) /* progress while held */
 		ui_fill(r.x, r.y + r.h - 4, r.w * hold / RESTART_FRAMES, 4, UI_ACCENT);
@@ -141,7 +170,7 @@ static int draw_neo(int x, int y, unsigned bits) {
 }
 
 /* Two columns of "3DS button > Neo Geo": the face buttons on the left, the rest on the right */
-enum { KEYS_Y = 172, KEYS_ROW = 12, KEYS_ROWS = 4 };
+enum { KEYS_Y = 184, KEYS_ROW = 12, KEYS_ROWS = 3 };
 static void draw_keys(void) {
 	KeyEntry e[10];
 	const int n = keys_mapped(e, 10);
@@ -173,8 +202,10 @@ void ui_main_draw(void) {
 	ui_fill(0, 0, 320, 240, UI_BG);
 	ui_fill(0, 0, 320, 26, UI_HEADER);
 	ui_text(8, 5, "neo3ds", UI_TEXT, 2);
+	ui_text(8 + ui_text_width("neo3ds", 2) + 8, 12, version, UI_TEXT, 1); /* on the logo's baseline */
 	ui_text(8, 34, title, UI_TEXT, 1);
-	for (int b = 0; b < NB; b++) draw_button(b);
+	for (int b = 0; b < NB; b++)
+		if (rects[b].w) draw_button(b);
 	draw_keys();
 	draw_status();
 	ui_flush();
@@ -209,13 +240,22 @@ UiAction ui_main_update(void) {
 		draw_button(B_SYSTEM);
 		dirty = true;
 	}
+	if (load_confirm && --load_confirm == 0) {
+		draw_button(B_LOAD);
+		dirty = true;
+	}
+	if (list_confirm && --list_confirm == 0) {
+		draw_button(B_LIST);
+		dirty = true;
+	}
 	if (down & KEY_TOUCH) {
 		touchPosition t;
 		hidTouchRead(&t);
 		for (int b = 0; b < NB; b++)
-			if (ui_hit(rects[b], t.px, t.py)) {
+			if (rects[b].w && ui_hit(rects[b], t.px, t.py)) {
 				pressed = b;
 				hold = 0;
+				if (b == B_SERVICE && memory.mvs) service = SERVICE_FRAMES;
 				draw_button(b);
 				dirty = true;
 			}
@@ -248,10 +288,35 @@ UiAction ui_main_update(void) {
 				action = UI_SYSTEM;
 			} else confirm = CONFIRM_FRAMES;
 			break;
+		case B_SLOT: {
+			char s[40];
+			slot = (slot + 1) % STATE_SLOTS;
+			savestate_describe(slot, s, sizeof s);
+			ui_status(s);
+			break;
+		}
+		case B_SAVE: action = UI_STATE_SAVE; break;
+		case B_LIST:
+			if (list_confirm) {
+				list_confirm = 0;
+				action = UI_GAME_LIST;
+			} else list_confirm = CONFIRM_FRAMES;
+			break;
+		case B_LOAD:
+			if (load_confirm) {
+				load_confirm = 0;
+				action = UI_STATE_LOAD;
+			} else load_confirm = CONFIRM_FRAMES;
+			break;
 		}
 		draw_button(b);
 		dirty = true;
 	}
+	if (service) { /* the MVS test button: the BIOS opens its menu */
+		if (pressed == B_SERVICE) service = SERVICE_FRAMES;
+		else service--;
+	}
+	conf.test_switch = service > 0;
 	if (dirty) ui_flush();
 	return action;
 }

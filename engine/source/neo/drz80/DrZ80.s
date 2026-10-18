@@ -5434,7 +5434,13 @@ opcode_F_B:
 	orr r1,r1,#(Z80_IF1)|(Z80_IF2)
 	strb r1,[cpucontext,#z80if]
 
-	mov r2,opcodes
+	;@ neo3ds: run the instruction after EI before interrupts are checked. r0 still held the EI
+	;@ opcode here, so this used to run EI a second time and take a pending interrupt before the
+	;@ next instruction: Aero Fighters 2/3 do "di / out (4) / ei / out (5)", and their timer
+	;@ interrupt then wrote the data to its own register 0x27 and stopped the music.
+	sub z80_icount,z80_icount,#4
+	ldrb r0,[z80pc],#1
+	ldr r2,MAIN_opcodes_POINTER
 	ldr opcodes,EI_DUMMY_opcodes_POINTER
 	ldr pc,[r2,r0, lsl #2]
 
@@ -5446,7 +5452,8 @@ ei_return:
 	ldr opcodes,MAIN_opcodes_POINTER
 	;@ check ints
 	bl DoInterrupt
-	;@ continue
+	;@ continue (EI's cycles were counted above)
+	fetch 0
 ei_return_exit:
 	fetch 4
 

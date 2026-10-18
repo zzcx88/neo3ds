@@ -7,7 +7,12 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyTitle>neo3ds converter</AssemblyTitle>
-    <Version>1.0.8</Version>
+    <Version>1.1.0</Version>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+    <!-- Compression needs a self-contained publish (package_release.ps1 -FrameworkDependent skips it) -->
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <!-- Everything the converter needs at runtime is copied next to the exe under tools\ -->

@@ -25,6 +25,8 @@ public sealed class CiaJob
     /// <summary>The system the game starts on: null = automatic (home AES, or arcade MVS for the carts
     /// that need it), false = AES, true = MVS. The player can switch it on the 3DS either way.</summary>
     public bool? StartMvs { get; set; }
+    /// <summary>The region of the BIOSes put in (language, censorship such as Metal Slug's blood).</summary>
+    public Region Region { get; set; }
 
     /// <param name="set">A romset to use instead of picking one (e.g. a clone inside a merged zip).</param>
     public static CiaJob FromRomZip(string romZip, string? set = null)
@@ -107,9 +109,7 @@ public sealed class CiaBuilder
 
     public string Build(CiaJob job)
     {
-        foreach (var tool in new[] { "makerom.exe", "bannertool.exe", "engine.elf", "neo3ds.rsf" })
-            if (!File.Exists(Path.Combine(toolsDir, tool)))
-                throw new FileNotFoundException(L($"tools\\{tool} 파일이 없습니다. 변환기 폴더를 통째로 옮겼는지 확인하세요.", $"tools\\{tool} is missing. Keep the converter folder together when moving it."));
+        CheckTools("makerom.exe", "bannertool.exe", "engine.elf", "neo3ds.rsf");
 
         using var _ = ZipFile.OpenRead(job.RomZip); // fail early on a broken zip
         if (job.BiosZip == null)
@@ -124,14 +124,7 @@ public sealed class CiaBuilder
             string romfs = PrepareRomFs(job, work);
 
             log(L("[2/4] 아이콘/배너 생성", "[2/4] Making icon and banner"));
-            string icon = Path.Combine(work, "icon.icn");
-            string banner = Path.Combine(work, "banner.bnr");
-            using (var bmp = Art.Icon(job.Title, job.IconImage)) bmp.Save(Path.Combine(work, "icon.png"));
-            using (var bmp = Art.Banner(job.Title, job.BannerImage)) bmp.Save(Path.Combine(work, "banner.png"));
-            Art.SaveSilentWav(Path.Combine(work, "banner.wav"));
-            Run("bannertool.exe", $"makebanner -i \"{work}\\banner.png\" -a \"{work}\\banner.wav\" -o \"{banner}\"");
-            Run("bannertool.exe", $"makesmdh -s \"{Smdh(job.Title, 64)}\" -l \"{Smdh(job.Title + " (neo3ds)", 128)}\" " +
-                                  $"-p \"{Smdh(job.Publisher, 64)}\" -i \"{work}\\icon.png\" -o \"{icon}\"");
+            var (icon, banner) = MakeArt(work, job.Title, job.Title + " (neo3ds)", job.Publisher, job.IconImage, job.BannerImage);
 
             log(L($"[3/4] CIA 생성 (Title ID {job.TitleId})", $"[3/4] Building CIA (Title ID {job.TitleId})"));
             job.OutputDir = Path.GetFullPath(job.OutputDir);
@@ -139,21 +132,7 @@ public sealed class CiaBuilder
             string cia = Path.Combine(job.OutputDir, job.RomName + ".cia");
             string product = ("NEO3DS-" + job.RomName.ToUpperInvariant());
             if (product.Length > 16) product = product[..16];
-            Run("makerom.exe",
-                $"-f cia -o \"{cia}\" -target t -exefslogo " +
-                $"-rsf \"{toolsDir}\\neo3ds.rsf\" -elf \"{toolsDir}\\engine.elf\" " +
-                $"-icon \"{icon}\" -banner \"{banner}\" " +
-                $"-DAPP_TITLE=neo3ds -DAPP_PRODUCT_CODE={product} -DAPP_UNIQUE_ID=0x{job.UniqueId:X5} " +
-                $"-DAPP_ROMFS=\"{romfs}\"");
-
-            // Dev aid: a CXI boots directly in Azahar without installing.
-            if (Environment.GetEnvironmentVariable("NEO3DS_CXI") != null)
-                Run("makerom.exe",
-                    $"-f cxi -o \"{Path.ChangeExtension(cia, ".cxi")}\" -target t -exefslogo " +
-                    $"-rsf \"{toolsDir}\\neo3ds.rsf\" -elf \"{toolsDir}\\engine.elf\" " +
-                    $"-icon \"{icon}\" -banner \"{banner}\" " +
-                    $"-DAPP_TITLE=neo3ds -DAPP_PRODUCT_CODE={product} -DAPP_UNIQUE_ID=0x{job.UniqueId:X5} " +
-                    $"-DAPP_ROMFS=\"{romfs}\"");
+            MakeCia(cia, product, job.UniqueId, icon, banner, romfs);
 
             log(L($"[4/4] 완료: {cia} ({new FileInfo(cia).Length / 1048576.0:F1} MB)", $"[4/4] Done: {cia} ({new FileInfo(cia).Length / 1048576.0:F1} MB)"));
             return cia;
@@ -166,6 +145,122 @@ public sealed class CiaBuilder
         }
     }
 
+    void CheckTools(params string[] tools)
+    {
+        foreach (var tool in tools)
+            if (!File.Exists(Path.Combine(toolsDir, tool)))
+                throw new FileNotFoundException(L($"tools\\{tool} 파일이 없습니다. 변환기 폴더를 통째로 옮겼는지 확인하세요.", $"tools\\{tool} is missing. Keep the converter folder together when moving it."));
+    }
+
+    (string icon, string banner) MakeArt(string work, string title, string longTitle, string publisher, string? iconImage, string? bannerImage)
+    {
+        string icon = Path.Combine(work, "icon.icn");
+        string banner = Path.Combine(work, "banner.bnr");
+        using (var bmp = Art.Icon(title, iconImage)) bmp.Save(Path.Combine(work, "icon.png"));
+        using (var bmp = Art.Banner(title, bannerImage)) bmp.Save(Path.Combine(work, "banner.png"));
+        Art.SaveSilentWav(Path.Combine(work, "banner.wav"));
+        Run("bannertool.exe", $"makebanner -i \"{work}\\banner.png\" -a \"{work}\\banner.wav\" -o \"{banner}\"");
+        Run("bannertool.exe", $"makesmdh -s \"{Smdh(title, 64)}\" -l \"{Smdh(longTitle, 128)}\" " +
+                              $"-p \"{Smdh(publisher, 64)}\" -i \"{work}\\icon.png\" -o \"{icon}\"");
+        return (icon, banner);
+    }
+
+    void MakeCia(string cia, string product, uint uniqueId, string icon, string banner, string romfs)
+    {
+        foreach (var format in Environment.GetEnvironmentVariable("NEO3DS_CXI") != null ? new[] { "cia", "cxi" } : new[] { "cia" })
+            Run("makerom.exe", // the CXI is a dev aid: it boots directly in Azahar without installing
+                $"-f {format} -o \"{Path.ChangeExtension(cia, "." + format)}\" -target t -exefslogo " +
+                $"-rsf \"{toolsDir}\\neo3ds.rsf\" -elf \"{toolsDir}\\engine.elf\" " +
+                $"-icon \"{icon}\" -banner \"{banner}\" " +
+                $"-DAPP_TITLE=neo3ds -DAPP_PRODUCT_CODE={product} -DAPP_UNIQUE_ID=0x{uniqueId:X5} " +
+                $"-DAPP_ROMFS=\"{romfs}\"");
+    }
+
+    /// <summary>A game file for the launcher: the files a CIA's romfs/game holds, plus the zip's name
+    /// (romset.txt, from which the engine gets the CIA's title ID), behind a table of contents.
+    /// Layout read by the engine's loader.c: "NEO3DSPK", version, count, {name[24], offset, size}.</summary>
+    public string BuildPack(CiaJob job)
+    {
+        using var _ = ZipFile.OpenRead(job.RomZip);
+        if (job.BiosZip == null)
+            throw new FileNotFoundException(L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));
+        string work = Path.Combine(Path.GetTempPath(), "neo3ds", $"{job.RomName}-{Environment.ProcessId}");
+        if (Directory.Exists(work)) Directory.Delete(work, true);
+        Directory.CreateDirectory(work);
+        try
+        {
+            log(L($"[1/2] 게임 파일 준비 ({job.RomName})", $"[1/2] Preparing the game files ({job.RomName})"));
+            string game = Path.Combine(PrepareRomFs(job, work), "game");
+            File.WriteAllText(Path.Combine(game, "romset.txt"), job.RomName, new UTF8Encoding(false));
+
+            job.OutputDir = Path.GetFullPath(job.OutputDir);
+            Directory.CreateDirectory(job.OutputDir);
+            string pack = Path.Combine(job.OutputDir, job.RomName + ".neo3ds");
+            log(L($"[2/2] {Path.GetFileName(pack)} 만들기", $"[2/2] Writing {Path.GetFileName(pack)}"));
+            var files = Directory.GetFiles(game).OrderBy(f => f, StringComparer.Ordinal).ToArray();
+            using (var w = new BinaryWriter(File.Create(pack)))
+            {
+                w.Write(Encoding.ASCII.GetBytes("NEO3DSPK"));
+                w.Write(1u);
+                w.Write((uint)files.Length);
+                long offset = 16 + files.Length * 32L;
+                foreach (var f in files)
+                {
+                    var name = Encoding.ASCII.GetBytes(Path.GetFileName(f));
+                    if (name.Length > 23) throw new InvalidDataException($"{Path.GetFileName(f)}: name too long");
+                    w.Write(name);
+                    w.Write(new byte[24 - name.Length]);
+                    long size = new FileInfo(f).Length;
+                    w.Write((uint)offset);
+                    w.Write((uint)size);
+                    offset += size;
+                }
+                foreach (var f in files)
+                    using (var src = File.OpenRead(f)) src.CopyTo(w.BaseStream);
+            }
+            log(L($"완료: {pack} ({new FileInfo(pack).Length / 1048576.0:F1} MB)", $"Done: {pack} ({new FileInfo(pack).Length / 1048576.0:F1} MB)"));
+            return pack;
+        }
+        finally
+        {
+            if (Environment.GetEnvironmentVariable("NEO3DS_KEEP") == null)
+                try { Directory.Delete(work, true); } catch { /* temp cleanup is best effort */ }
+        }
+    }
+
+    /// <summary>Unique ID of the launcher, outside the games' 0xC0000-0xCFFFF.</summary>
+    public const uint LauncherUniqueId = 0xBFF00;
+
+    /// <summary>The launcher: the engine with no game in its romfs, so it shows the list of
+    /// .neo3ds files on the SD card. Installed once.</summary>
+    public string BuildLauncher(string outDir)
+    {
+        CheckTools("makerom.exe", "bannertool.exe", "engine.elf", "neo3ds.rsf");
+        string work = Path.Combine(Path.GetTempPath(), "neo3ds", $"launcher-{Environment.ProcessId}");
+        if (Directory.Exists(work)) Directory.Delete(work, true);
+        string romfs = Path.Combine(work, "romfs");
+        Directory.CreateDirectory(romfs);
+        try
+        {
+            log(L("[1/2] 아이콘/배너 생성", "[1/2] Making icon and banner"));
+            File.WriteAllText(Path.Combine(romfs, "launcher.txt"),
+                $"neo3ds launcher {typeof(CiaBuilder).Assembly.GetName().Version!.ToString(3)}\n", new UTF8Encoding(false));
+            var (icon, banner) = MakeArt(work, "neo3ds", "neo3ds - Neo Geo games on the SD card", "neo3ds", null, null);
+            outDir = Path.GetFullPath(outDir);
+            Directory.CreateDirectory(outDir);
+            string cia = Path.Combine(outDir, "neo3ds-launcher.cia");
+            log(L($"[2/2] 런처 CIA 생성 (Title ID 00040000{LauncherUniqueId << 8:X8})", $"[2/2] Building the launcher CIA (Title ID 00040000{LauncherUniqueId << 8:X8})"));
+            MakeCia(cia, "NEO3DS-LAUNCHER", LauncherUniqueId, icon, banner, romfs);
+            log(L($"완료: {cia}", $"Done: {cia}"));
+            return cia;
+        }
+        finally
+        {
+            if (Environment.GetEnvironmentVariable("NEO3DS_KEEP") == null)
+                try { Directory.Delete(work, true); } catch { /* temp cleanup is best effort */ }
+        }
+    }
+
     string PrepareRomFs(CiaJob job, string work)
     {
         var def = job.Game ?? throw new NotSupportedException(job.Problem ?? L("지원하지 않는 게임입니다.", "This game is not supported."));
@@ -173,9 +268,12 @@ public sealed class CiaBuilder
 
         string romfs = Path.Combine(work, "romfs");
         using var rom = new RomSet(CiaJob.ZipsFor(def, Path.GetDirectoryName(job.RomZip)!, job.RomName));
-        var stats = RomPack.Write(def, rom, job.BiosZip!, Path.Combine(romfs, "game"), log, job.StartMvs);
+        var stats = RomPack.Write(def, rom, job.BiosZip!, Path.Combine(romfs, "game"), log, job.StartMvs, job.Region);
         // shown at the top of the bottom screen (the 3DS font has ASCII only)
         File.WriteAllText(Path.Combine(romfs, "game", "title.txt"), job.Title, new System.Text.UTF8Encoding(false));
+        // shown next to the neo3ds logo, so testers can tell which converter built a CIA
+        File.WriteAllText(Path.Combine(romfs, "game", "version.txt"),
+            typeof(CiaBuilder).Assembly.GetName().Version!.ToString(3), new System.Text.UTF8Encoding(false));
         log(L($"  타일 {stats.Tiles:N0}개, 그래픽 {stats.SpriteRaw / 1048576.0:F1}MB → {stats.SpritePacked / 1048576.0:F1}MB, " +
               $"3DS 메모리 사용 약 {stats.TotalBytes / 1048576.0:F1}MB",
               $"  {stats.Tiles:N0} tiles, graphics {stats.SpriteRaw / 1048576.0:F1}MB → {stats.SpritePacked / 1048576.0:F1}MB, " +

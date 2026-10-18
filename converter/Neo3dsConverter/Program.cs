@@ -9,7 +9,10 @@ static class Program
     static int Main(string[] args)
     {
         // Command-line mode for scripted builds:
-        //   Neo3dsConverter.exe <game.zip> [out-dir] [--title "..."] [--icon icon.png] [--banner banner.png] [--set romset] [--system aes|mvs] [--lang ko|en]
+        //   Neo3dsConverter.exe <game.zip> [out-dir] [--title "..."] [--icon icon.png] [--banner banner.png] [--set romset] [--system aes|mvs] [--region eu|jp|us] [--lang ko|en]
+        //   Neo3dsConverter.exe <a.zip> <b.zip> ... [out-dir] [--system aes|mvs] [--region eu|jp|us]
+        //   --pack: a .neo3ds game file for the launcher instead of a CIA (same options)
+        //   Neo3dsConverter.exe --launcher [out-dir]   (the launcher CIA, neo3ds-launcher.cia)   (one CIA each; --title/--icon/--banner/--set need one zip)
         //   Neo3dsConverter.exe --art-sheet sheet.png   (generated art of every MAME romset, for checking)
         // --lang ko|en anywhere picks the language (remembered; without other arguments it opens the window).
         int li = Array.IndexOf(args, "--lang");
@@ -24,9 +27,17 @@ static class Program
             try
             {
                 if (args[0] == "--art-sheet") { ArtSheet(args[1]); return 0; }
+                if (args[0] == "--launcher")
+                {
+                    var launcher = new CiaBuilder(Console.WriteLine).BuildLauncher(args.Length > 1 ? args[1] : ".");
+                    Console.WriteLine($"OK {launcher}");
+                    return 0;
+                }
+                bool pack = false;
                 var positional = new List<string>();
                 string? title = null, icon = null, banner = null, set = null;
                 bool? startMvs = null;
+                var region = Region.Europe;
                 for (int i = 0; i < args.Length; i++)
                     switch (args[i])
                     {
@@ -34,18 +45,46 @@ static class Program
                         case "--set": set = args[++i]; break;
                         case "--icon": icon = Path.GetFullPath(args[++i]); break;
                         case "--banner": banner = Path.GetFullPath(args[++i]); break;
+                        case "--pack": pack = true; break;
                         case "--system": startMvs = args[++i].Equals("mvs", StringComparison.OrdinalIgnoreCase); break;
+                        case "--region":
+                            region = args[++i].ToLowerInvariant() switch
+                            {
+                                "jp" or "japan" => Region.Japan,
+                                "us" or "usa" => Region.Usa,
+                                "eu" or "europe" or "asia" => Region.Europe,
+                                var r => throw new ArgumentException($"--region {r}: use eu, jp or us"),
+                            };
+                            break;
                         default: positional.Add(args[i]); break;
                     }
-                var job = CiaJob.FromRomZip(positional[0], set);
-                if (positional.Count > 1) job.OutputDir = Path.GetFullPath(positional[1]);
-                if (title != null) job.Title = title;
-                job.IconImage = icon;
-                job.BannerImage = banner;
-                job.StartMvs = startMvs;
-                var cia = new CiaBuilder(Console.WriteLine).Build(job);
-                Console.WriteLine($"OK {cia}");
-                return 0;
+                var zips = positional.Where(a => a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
+                var outDir = positional.Except(zips).LastOrDefault();
+                if (zips.Count == 0) throw new ArgumentException("no game zip given");
+                if (zips.Count > 1 && (title ?? icon ?? banner ?? set) != null)
+                    throw new ArgumentException("--title, --icon, --banner and --set need a single zip");
+                int failed = 0;
+                foreach (var zip in zips)
+                {
+                    try
+                    {
+                        var job = CiaJob.FromRomZip(zip, set);
+                        if (outDir != null) job.OutputDir = Path.GetFullPath(outDir);
+                        if (title != null) job.Title = title;
+                        job.IconImage = icon;
+                        job.BannerImage = banner;
+                        job.StartMvs = startMvs;
+                        job.Region = region;
+                        var builder = new CiaBuilder(Console.WriteLine);
+                        Console.WriteLine($"OK {(pack ? builder.BuildPack(job) : builder.Build(job))}");
+                    }
+                    catch (Exception e) when (zips.Count > 1)
+                    {
+                        Console.Error.WriteLine($"FAILED {Path.GetFileName(zip)}: {e.Message}");
+                        failed++;
+                    }
+                }
+                return failed == 0 ? 0 : 1;
             }
             catch (Exception e)
             {

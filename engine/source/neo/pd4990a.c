@@ -13,6 +13,7 @@
 #include <time.h>
 #include "pd4990a.h"
 #include "state.h"
+#include "savestate.h"
 
 
 /* Set the data in the chip to Monday 09/09/73 00:00:00     */
@@ -115,7 +116,7 @@ void pd4990a_init(void) {
     pd4990a.hours = ((today->tm_hour / 10) << 4) + (today->tm_hour % 10);
     pd4990a.days = ((today->tm_mday / 10) << 4) + (today->tm_mday % 10);
     pd4990a.month = (today->tm_mon + 1);
-    pd4990a.year = ((today->tm_year / 10) << 4) + (today->tm_year % 10);
+    pd4990a.year = (((today->tm_year % 100) / 10) << 4) + (today->tm_year % 10); /* neo3ds: tm_year counts from 1900 */
     pd4990a.weekday = today->tm_wday;
     //core_log("%d %d %d %d %d %d %d\n",pd4990a.seconds,pd4990a.minutes,pd4990a.hours,pd4990a.days,pd4990a.month,pd4990a.year,pd4990a.weekday);
     //pd4990a_init_save_state();
@@ -340,4 +341,18 @@ void pd4990a_serial_control(unsigned char data)
 
 void write_4990_control_w(Uint32 address, Uint32 data) {
   pd4990a_serial_control(data&0x7);
+}
+
+/* neo3ds: save states (savestate.c) */
+void pd4990a_state(void) {
+    st_bytes(&pd4990a, sizeof pd4990a);
+    st_bytes(&shiftlo, sizeof shiftlo);
+    st_bytes(&shifthi, sizeof shifthi);
+    st_bytes(&retraces, sizeof retraces);
+    st_bytes(&testwaits, sizeof testwaits);
+    st_bytes(&testbit, sizeof testbit);
+    st_bytes(&outputbit, sizeof outputbit);
+    st_bytes(&bitno, sizeof bitno);
+    st_bytes(&reading, sizeof reading);
+    st_bytes(&writing, sizeof writing);
 }

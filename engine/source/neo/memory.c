@@ -24,6 +24,8 @@
 #include "video.h"
 #include "memory.h"
 #include "pd4990a.h"
+#include "savestate.h"
+#include <stddef.h>
 #include "transpack.h"
 
 #ifdef GP2X
@@ -287,7 +289,7 @@ Uint8 mem68k_fetch_sram_byte(Uint32 addr) {
 }
 
 Uint16 mem68k_fetch_sram_word(Uint32 addr) {
-    addr -= 0xd00000;
+    addr = (addr - 0xd00000) & 0xfffe; /* neo3ds: a word never straddles the end of the RAM */
     return (memory.sram[addr] << 8) | (memory.sram[addr + 1] & 0xff);
 }
 
@@ -525,7 +527,7 @@ void mem68k_store_sram_word(Uint32 addr, Uint16 data) {
       && ((data & 0xffff) == 0x01))
       return;
     */
-    addr -= 0xd00000;
+    addr = (addr - 0xd00000) & 0xfffe;
     memory.sram[addr] = data >> 8;
     memory.sram[addr + 1] = data & 0xff;
 }
@@ -982,3 +984,34 @@ void mem68k_store_bk_normal_word(Uint32 addr, Uint16 data) {
 LONG_STORE(mem68k_store_bk_normal)
 ;
 
+/* neo3ds: save states (savestate.c) */
+void memory_state(void) {
+    st_bytes(memory.ram, sizeof memory.ram);
+    st_bytes(&memory.vid, offsetof(VIDEO, spr_cache)); /* the sprite cache only holds decompressed ROM */
+    st_bytes(memory.sram, sizeof memory.sram);
+    st_bytes(memory.z80_ram, sizeof memory.z80_ram);
+    st_bytes(&memory.current_vector, sizeof memory.current_vector);
+    st_bytes(memory.rom.cpu_m68k.p, 0x80); /* the vectors in place: the BIOS's or the game's */
+    st_bytes(&memory.sma_rng_addr, sizeof memory.sma_rng_addr);
+    st_bytes(memory.memcard, sizeof memory.memcard);
+    st_bytes(&memory.watchdog, sizeof memory.watchdog);
+    st_bytes(&sram_lock, 1);
+    st_bytes(&sound_code, 1);
+    st_bytes(&pending_command, 1);
+    st_bytes(&result_code, 1);
+    st_bytes(z80_bank, sizeof z80_bank);
+    st_bytes(&bankaddress, sizeof bankaddress);
+    st_bytes(&neogeo_rng, sizeof neogeo_rng);
+    st_bytes(pvc_ram, sizeof pvc_ram);
+    if (!st_reading()) return;
+    current_pal = memory.vid.pal_neo[memory.vid.currentpal & 1];
+    current_pc_pal = (Uint32 *) memory.vid.pal_host[memory.vid.currentpal & 1];
+    if (memory.vid.currentfix == 0 && memory.rom.bios_sfix.p) {
+        current_fix = memory.rom.bios_sfix.p;
+        fix_usage = memory.fix_board_usage;
+    } else {
+        current_fix = memory.rom.game_sfix.p;
+        fix_usage = memory.fix_game_usage;
+        memory.vid.currentfix = 1;
+    }
+}

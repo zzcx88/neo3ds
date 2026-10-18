@@ -27,6 +27,8 @@
 #include "memory.h"
 #include "drz80/DrZ80.h"
 #include "state.h"
+#include "savestate.h"
+#include <stddef.h>
 #ifdef GP2X
 #include "ym2610-940/940shared.h"
 #endif
@@ -307,3 +309,19 @@ void cpu_z80_lower_irq(void)
 }
 #endif /* ENABLE_940T */
 #endif
+
+/* neo3ds: save states (savestate.c). PC and SP are host pointers, stored as Z80 addresses. */
+void cpu_z80_state(void) {
+	struct DrZ80 r = mydrz80;
+	Uint32 pc = mydrz80.Z80PC - mydrz80.Z80PC_BASE, sp = mydrz80.Z80SP - mydrz80.Z80SP_BASE;
+	st_bytes(&r, offsetof(struct DrZ80, z80_irq_callback)); /* registers, not the callbacks */
+	st_bytes(&pc, sizeof pc);
+	st_bytes(&sp, sizeof sp);
+	st_bytes(&nmi_enabled, sizeof nmi_enabled);
+	st_bytes(&nmi_pending, sizeof nmi_pending);
+	st_bytes(drz80mem, sizeof drz80mem); /* RAM and the banked windows' contents */
+	if (!st_reading()) return;
+	memcpy(&mydrz80, &r, offsetof(struct DrZ80, z80_irq_callback));
+	mydrz80.Z80PC = mydrz80.z80_rebasePC(pc & 0xffff);
+	mydrz80.Z80SP = mydrz80.z80_rebaseSP(sp & 0xffff);
+}

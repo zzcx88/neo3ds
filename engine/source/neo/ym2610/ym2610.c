@@ -3362,3 +3362,11 @@ STATE_LOAD( ym2610 )
 }
 
 #endif /* SAVE_STATE */
+
+/* neo3ds: save states (savestate.c). The structs are copied whole: their pointers lead to this
+ * file's statics, which stay put within one build (the state file checks the build). */
+#include "savestate.h"
+void YM2610State(void) {
+	st_bytes(&YM2610, sizeof YM2610);
+	st_bytes(&SSG, sizeof SSG);
+}

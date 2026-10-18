@@ -3,12 +3,14 @@
 #include <string.h>
 
 #include "neo_glue.h"
+#include "savestate.h"
 #include "emu.h"
 #include "memory.h"
 #include "pd4990a.h"
 #include "video.h"
 #include "timer.h"
 #include "ym2610/2610intf.h"
+#include "audio.h"
 
 neo_conf conf;
 /* Profiling, in system ticks: 0 = CPUs (68k + Z80 + timers), 1 = sprite/fix drawing, 2 = screen copy, 3 = audio. */
@@ -103,6 +105,13 @@ void neo_set_input(Uint8 p1, Uint8 p2, Uint8 start, Uint8 coin) {
 // raises IRQ1 (gngeo's non-raster mode; mid-frame raster effects are not drawn).
 void neo_run_frame(bool render) {
 	u64 t0 = svcGetSystemTick();
+	if (audio_behind()) { /* sound only: the 68k waits, the music keeps its tempo */
+		for (current_line = 0; current_line < LINES_PER_FRAME; current_line++) {
+			cpu_z80_run(Z80_CYCLES_PER_FRAME / LINES_PER_FRAME);
+			my_timer();
+		}
+		audio_next_part();
+	}
 	/* Every 16th frame, time the 68k, Z80 and timers separately (reading the tick 1600 times a
 	 * frame costs too much to do always). */
 	static unsigned split_frame;
@@ -143,4 +152,11 @@ void neo_run_frame(bool render) {
 		cpu_68k_reset();
 	}
 	cpu_68k_interrupt(1);
+}
+
+/* neo3ds: save states (savestate.c) */
+void glue_state(void) {
+	st_bytes(&frame_counter_tick, sizeof frame_counter_tick);
+	st_bytes(&neogeo_frame_counter, sizeof neogeo_frame_counter);
+	st_bytes(&neogeo_frame_counter_speed, sizeof neogeo_frame_counter_speed);
 }

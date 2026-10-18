@@ -8,6 +8,9 @@ namespace Neo3dsConverter;
 /// <summary>A BIOS / support ROM chip, matched by CRC first, then by name.</summary>
 public sealed record RomFile(string Name, uint Crc, int Size);
 
+/// <summary>The BIOS region. Europe (also Asia's code) is MAME's default and was the only one before 1.1.0.</summary>
+public enum Region { Europe, Japan, Usa }
+
 /// <summary>One step of MAME's ROM loading for a region (see scripts/gen_gamedb.py).</summary>
 public sealed record RomOp(string Kind, string Flag, string File, uint? Crc, int A, int B, int C, string Src);
 
@@ -128,15 +131,33 @@ public static class GameDb
 
     // BIOS: home (AES) first - no coins, soft DIPs or backup RAM, and it boots
     // straight into the game. MVS BIOSes are the fallback. sfix/zoom are shared.
-    public static readonly RomFile[] Bios =
+    // Each BIOS carries its region (byte 0x401 of the big-endian ROM: 0 Japan, 1 USA, 2 Europe and
+    // Asia), and games pick their language and censorship (Metal Slug's blood) from it.
+    static readonly RomFile NeoEpo = new("neo-epo.bin", 0xd27a71f1, 0x20000), NeoPo = new("neo-po.bin", 0x16d0c132, 0x20000);
+    static readonly RomFile[] MvsEurope =
     {
-        new("neo-epo.bin", 0xd27a71f1, 0x20000),
-        new("neo-po.bin", 0x16d0c132, 0x20000),
-        new("sp-s2.sp1", 0x9036d879, 0x20000),
-        new("vs-bios.rom", 0xf0e8f27d, 0x20000),
-        new("asia-s3.rom", 0x91b64be3, 0x20000),
+        new("sp-s2.sp1", 0x9036d879, 0x20000), new("sp-s.sp1", 0xc7f2fa45, 0x20000),
+        new("asia-s3.rom", 0x91b64be3, 0x20000), new("sp-45.sp1", 0x03cc9f6a, 0x20000),
     };
-    public static bool IsAesBios(RomFile f) => f == Bios[0] || f == Bios[1];
+    static readonly RomFile[] MvsJapan =
+    {
+        new("vs-bios.rom", 0xf0e8f27d, 0x20000), new("sp-j2.sp1", 0xacede59c, 0x20000), new("sp1.jipan.1024", 0x9fb0abe4, 0x20000),
+    };
+    static readonly RomFile[] MvsUsa = { new("usa_2slt.bin", 0xe72943de, 0x20000), new("sp-e.sp1", 0x2723a5b5, 0x20000) };
+    public static readonly RomFile[] Bios = new[] { NeoEpo, NeoPo }.Concat(MvsEurope).Concat(MvsJapan).Concat(MvsUsa).ToArray();
+    public static bool IsAesBios(RomFile f) => f == NeoEpo || f == NeoPo;
+
+    /// <summary>Home BIOSes, the region's first (there is no American one: Europe's stands in).</summary>
+    public static RomFile[] AesBios(Region r) => r == Region.Japan ? new[] { NeoPo, NeoEpo } : new[] { NeoEpo, NeoPo };
+    /// <summary>Arcade BIOSes, the region's first, then the others.</summary>
+    public static RomFile[] MvsBios(Region r) => r switch
+    {
+        Region.Japan => MvsJapan.Concat(MvsEurope).Concat(MvsUsa).ToArray(),
+        Region.Usa => MvsUsa.Concat(MvsEurope).Concat(MvsJapan).ToArray(),
+        _ => MvsEurope.Concat(MvsJapan).Concat(MvsUsa).ToArray(),
+    };
+    public static Region RegionOf(RomFile f) =>
+        f == NeoPo || MvsJapan.Contains(f) ? Region.Japan : MvsUsa.Contains(f) ? Region.Usa : Region.Europe;
     /// <summary>Carts that misbehave on a home BIOS: the SVC Chaos Plus bootleg flashes its "PLUS"
     /// logo during fights and its CPU opponents act oddly unless it runs as an arcade (MVS) board.</summary>
     public static bool NeedsMvsBios(MameGame g) => g.Cart == "boot_svcplus";

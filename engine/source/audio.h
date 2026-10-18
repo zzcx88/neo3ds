@@ -16,4 +16,12 @@ unsigned char audio_adpcm_status(void);
 void audio_end_frame(int rate);
 void audio_render(void);
 
+/* When the 3DS falls behind, the Z80 and the sound chip run a frame on their own before the 68k's
+ * frame (neo_glue.c), as the sound board keeps its tempo while a game slows down on hardware:
+ * audio_behind() says when, audio_next_part() goes between the two in the same log. */
+bool audio_behind(void);
+void audio_state_loaded(void);
+void audio_next_part(void);
+extern unsigned audio_catchups, audio_drops;
+
 #endif

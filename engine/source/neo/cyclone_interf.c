@@ -32,6 +32,7 @@
 #include "memory.h"
 #include "emu.h"
 #include "state.h"
+#include "savestate.h"
 /* neo3ds: debug.h removed */
 #include "video.h"
 /* neo3ds: conf.h removed */
@@ -545,3 +546,10 @@ int cpu_68k_debuger(void (*execstep)(void),void (*dump)(void)) {
 
 
 #endif
+
+/* neo3ds: save states (savestate.c). Unpack recomputes the PC through checkpc, after memory_state. */
+void cpu_68k_state(void) {
+	if (!st_reading()) CyclonePack(&MyCyclone, save_buffer);
+	st_bytes(save_buffer, 128);
+	if (st_reading()) CycloneUnpack(&MyCyclone, save_buffer);
+}

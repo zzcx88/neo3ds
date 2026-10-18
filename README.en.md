@@ -13,11 +13,16 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 
 ## Features
 
-- **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug X, Metal Slug 3, SVC Chaos and Samurai Shodown V Special.
+- **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug, Metal Slug X, Metal Slug 3, SVC Chaos and Samurai Shodown V Special.
 - **One CIA per game** with its own HOME menu icon. No launcher in between.
+- **Launcher (1.1.0)**: or install one launcher app and pick games from the game files on the SD card.
+- **Quick save (1.1.0)**: three slots per game, from the bottom screen or SELECT + L/R.
+- **Service menu and backup RAM (1.1.0)**: open the arcade (MVS) BIOS settings menu; settings and high scores the board saves are kept on the SD card.
+- **Region (1.1.0)**: Europe/Asia, Japan or USA. Japan gives the Japanese versions' content, such as the blood in Metal Slug.
+- **Batch conversion (1.1.0)**: drop several zips and they are converted one after the other.
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
 - **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 242 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
-- **Bottom screen GUI**: touch buttons for key config, turbo, system (AES/MVS), diagnostics and restart, with the current key layout in the Neo Geo button colours.
+- **Bottom screen GUI**: touch buttons for key config, turbo, system (AES/MVS), diagnostics, restart, the service menu and quick save, with the current key layout in the Neo Geo button colours.
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Restart**: hold SELECT + START for a second to restart the game.
@@ -36,8 +41,9 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 ## How to use
 
 ### 1. Get the converter
-Download [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) and unzip it anywhere.
-Keep `Neo3dsConverter.exe` and its `tools` folder together.
+Download [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) and unzip it.
+The `neo3ds-converter` folder holds `Neo3dsConverter.exe`, the `tools` folder, `README.txt` and the launcher app `neo3ds-launcher.cia`. Keep the folder together wherever you put it; the exe does not run on its own.
+If Windows shows an "unknown publisher" warning on first run, click **[More info] → [Run anyway]**.
 
 ### 2. Build a CIA
 
@@ -46,8 +52,12 @@ Keep `Neo3dsConverter.exe` and its `tools` folder together.
 1. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...).
 2. Run `Neo3dsConverter.exe` and drop the game zip on the window, or press **[Browse...]**.
 3. If the **Romset** line turns green, the game can be converted. If it is red, the reason is shown.
-4. Change the **Title**, **System**, **Icon** or **Banner** if you like. System is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too. The preview shows the HOME menu art as it will be built.
+4. Change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like. The preview shows the HOME menu art as it will be built.
+   - **System** is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too.
+   - **Region** is the console region the game sees. The default is Europe/Asia; **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug, and Japanese text (varies by game). If neogeo.zip has no BIOS for that region, another region's BIOS is used and the log says so.
 5. Press **[Build CIA]**. A game takes a minute or two (graphics compression).
+
+Drop or pick **several** zips at once to convert them one after the other. Titles, icons and banners are generated for each game; games that can't be converted are skipped and listed at the end.
 
 The **[한국어]** button next to it switches the window to Korean.
 
@@ -58,12 +68,30 @@ Examples of the generated icons (abbreviation + series number) and banners (game
 ### 3. Install on the 3DS
 Copy the `.cia` to the SD card, then in FBI: SD → pick the file → **Install CIA**. The game appears on the HOME menu.
 
+### Use the launcher (game list app)
+
+<img src="docs/images/launcher.png" width="400" alt="Launcher game list">
+
+Instead of installing a CIA per game, pick games from one app. Only one HOME menu icon is added.
+
+1. Install `neo3ds-launcher.cia` from the zip with FBI, **once**. The converter's **[Build the launcher CIA]** button makes it again.
+2. Load a game zip in the converter and press **[Launcher file]** to get a `.neo3ds` file. The settings (title, system, region) work as for a CIA.
+3. Copy the `.neo3ds` files to `/neo3ds/games/` on the SD card.
+4. Start the launcher: pick a game with Up/Down (L/R for a page) or by touch, and start it with **A** or **a double tap**.
+5. In a game, tap **[Game list]** on the bottom screen twice to go back to the list.
+
+The same game shares its key config, backup RAM and quick saves whether it runs as a CIA or from the launcher.
+
 ### Command line
 ```
-Neo3dsConverter.exe <game.zip> [out-dir] [--title "Name"] [--icon pic.png] [--banner pic.png] [--set romset] [--system aes|mvs] [--lang ko|en]
+Neo3dsConverter.exe <game.zip> [game2.zip ...] [out-dir] [--title "Name"] [--icon pic.png] [--banner pic.png] [--set romset] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
+Neo3dsConverter.exe --launcher [out-dir]
 ```
+- Several zips are converted one after the other (`--title`, `--icon`, `--banner` and `--set` need a single zip).
 - `--set` picks another version inside a merged zip (e.g. `kof98.zip --set kof98h`).
 - `--system` picks the BIOS the game starts on (home `aes` / arcade `mvs`); automatic when left out.
+- `--region`: Europe/Asia `eu`, Japan `jp` or USA `us`; `eu` when left out.
+- `--pack` builds a `.neo3ds` file for the launcher instead of a CIA. `--launcher` builds the launcher CIA (`neo3ds-launcher.cia`).
 - `--icon` / `--banner`: pictures for the icon (48×48) and banner (256×128); other sizes are scaled and cropped to fit.
 
 ## Controls
@@ -79,6 +107,7 @@ These are the defaults. Buttons can be changed per game in [Key config](#key-con
 | SELECT | Coin |
 | START | Start |
 | R + B/A/Y/X | Turbo on/off (see below) |
+| SELECT + L / SELECT + R | Quick save / quick load (see below) |
 | Hold SELECT + START for 1 s | Restart the game |
 
 ### Bottom screen
@@ -90,6 +119,9 @@ These are the defaults. Buttons can be changed per game in [Key config](#key-con
 | **System** | Switches between the home (AES) and arcade (MVS) BIOS. Tap twice (to avoid accidents); the game restarts on it |
 | **Diagnostics** | Opens the diagnostics; touch anywhere to go back |
 | **Restart** | Hold it until the yellow bar fills to restart the game |
+| **Service** | Opens the MVS BIOS service menu (see below). Shows `MVS only` on AES |
+| **Slot / Save / Load** | Pick a quick save slot / save / load (tap twice) (see below) |
+| **Game list** | Only when started from the launcher: tap twice to go back to the game list. Restart then reads `Hold: reset` |
 
 Below them is the current key layout as `3DS button > Neo Geo button`, in the colours of the arcade panel (A red, B yellow, C green, D blue); START and SELECT are left out while they are Start and Coin. The game title and fps are at the top.
 
@@ -118,6 +150,32 @@ Tap **Key config** on the bottom screen; the game pauses and the config screen o
 - While R is held, A/B/X/Y don't reach the game, so setting turbo never makes your character act.
 - Turbo set with R + button lasts for this session; set it in Key config to keep it. If R is mapped to something, turbo can only be changed in Key config.
 
+## Quick save
+
+Three slots per game hold the exact state of the game.
+
+- **Slot** moves through slots 1 → 2 → 3, and the status line shows when that slot was saved (`Slot 2: 10-18 14:05 AES`, or `empty`).
+- **Save** saves to the slot. **Load** needs two taps, to avoid accidents.
+- **SELECT + L** (save) and **SELECT + R** (load) do the same; those buttons don't reach the game then.
+- A slot saved on the other BIOS (AES/MVS) switches to that BIOS before it loads.
+- Slots survive restarts, but **slots from another neo3ds version can't be loaded** (`from another version`). Backup RAM (below) is kept across versions.
+
+## Service menu and backup RAM
+
+- On the arcade (MVS) BIOS, **Service** on the bottom screen acts as the board's test switch and opens the BIOS service menu (game settings such as difficulty and credits, hardware tests and more).
+- The MVS board's **backup RAM** (game settings, high scores, ranking initials...) is saved to the SD card: only when it changes, and straight away when you go to the HOME menu, close the game or the console sleeps.
+
+## Where things are saved
+
+| File | SD card path |
+|---|---|
+| Key config | `/3ds/neo3ds/keys/<title ID>.bin` |
+| Backup RAM | `/3ds/neo3ds/saves/<title ID>.sram` |
+| Quick saves | `/3ds/neo3ds/states/<title ID>.1` to `.3` |
+| Launcher game files | `/neo3ds/games/*.neo3ds` |
+
+The title ID comes from the romset (zip) name, so rebuilding from the same zip or starting the game from the launcher uses the same files.
+
 ## Diagnostics
 
 <img src="docs/images/diag2_kof99.png" width="400" alt="Diagnostics screen">
@@ -134,6 +192,7 @@ Tap **Diagnostics** on the bottom screen for a once-a-second report: fps, main-c
 |---|---|---|
 | The King of Fighters '98 | `kof98` (converted as the home version `kof98h`) | Full speed, no drops in fights |
 | The King of Fighters '99 | `kof99` (SMA + CMC42 decrypted) | Full speed |
+| Metal Slug | `mslug` | Full speed (music that dragged fixed in 1.1.0) |
 | Metal Slug 2 | `mslug2` | Playable; slows down where the original board does |
 | Metal Slug X | `mslugx` (protection checks patched) | Full speed; slows down where the original board does |
 | Metal Slug 3 | `mslug3` (SMA + CMC42 decrypted) | Full speed; slows down where the original board does |
@@ -142,6 +201,7 @@ Tap **Diagnostics** on the bottom screen for a once-a-second report: fps, main-c
 | SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 decrypted) | Full speed |
 | SNK vs. Capcom: SVC Chaos Plus | `svcplus` (bootleg; the set Fightcade players use) | Full speed; starts on the MVS BIOS |
 | Samurai Shodown V Special | `samsh5sp` (KOF2002 type + PCM2 + CMC50 decrypted) | Full speed (from 1.0.5, zoomed-out scenes optimized) |
+| Aero Fighters 3 | `sonicwi3` | Playable (music that stopped after a few seconds fixed in 1.1.0) |
 | The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
 | Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
 | Garou: Mark of the Wolves | `garou` (SMA + CMC42 decrypted) | 60 fps (user report) |
@@ -149,7 +209,7 @@ Tap **Diagnostics** on the bottom screen for a once-a-second report: fps, main-c
 Metal Slug 2, X and 3 slow down on the original arcade board too, in scenes with lots of enemies and explosions. neo3ds drops frames in the same places, as PC emulators do.
 
 ### Converts, but not tried on hardware
-- **Most unencrypted games** (1990-1999): KOF94-97, Fatal Fury series (except 2), Samurai Shodown 1-4, World Heroes, The Last Blade 1/2, Metal Slug 1, Blazing Star, Puzzle Bobble and more. They convert the same way as the verified games.
+- **Most unencrypted games** (1990-1999): KOF94-97, Fatal Fury series (except 2), Samurai Shodown 1-4, World Heroes, The Last Blade 1/2, Blazing Star, Puzzle Bobble and more. They convert the same way as the verified games.
 - **Decryption implemented, never run (no ROMs to test)**
   - CMC42: Sengoku 3, Zupapa!, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead
   - CMC50: KOF2001
@@ -182,7 +242,7 @@ Measured on an Old 3DS with a CameronSino 1300 mAh third-party battery, running 
 - The hourly use is measured; the full-charge figure is simply that scaled up. The gauge drops slowly near empty, so it may last a little longer.
 - With the same battery, a battery benchmark (max brightness, 3D on, Wi-Fi on) went from 95% to 5% in 2 hours. With neo3ds the gauge drops at a little under half that rate.
 - Max brightness with Wi-Fi on was not measured; it adds the power of the brighter backlight and Wi-Fi to the measured figure.
-- No GPU work, both cores sleep while they have nothing to do, and nothing is written to the SD card during play. The picture stays 2D even with the 3D slider up.
+- No GPU work, both cores sleep while they have nothing to do, and during play the SD card is written only when the backup RAM changes or you quick save. (Measured with 1.0.x.) The picture stays 2D even with the 3D slider up.
 - Results vary with the game and with the battery's age and capacity.
 
 ## 64 MB mode and the optimizations
@@ -205,7 +265,7 @@ So the goal was to **fit 64 MB graphics ROMs into the default 64 MB mode**.
 - **Visible area only**: draws the Neo Geo's real 304×224 picture.
 - **Frame pacing**: a vblank that has already passed is not waited for, so a frame that runs a little long doesn't lose a whole frame.
 - **Sound driver idle skip**: the loop Metal Slug 2, X and 3's Z80 spends waiting for its interrupt is skipped, with exactly the same result.
-- **BIOS**: uses the home (AES) BIOS from neogeo.zip when present, otherwise an arcade (MVS) BIOS.
+- **BIOS**: uses the home (AES) BIOS from neogeo.zip when present, otherwise an arcade (MVS) BIOS, looking for the chosen region's BIOS first.
 
 New 3DS models are set to 804 MHz with the L2 cache on, for plenty of headroom (not tested on hardware).
 
@@ -215,6 +275,7 @@ The [technical write-up](docs/TECHNICAL.md) goes into more detail: measurements,
 
 - Engine: [devkitPro](https://devkitpro.org/) (devkitARM, libctru). `bash scripts/build_engine.sh` → `engine/engine.elf`
 - Converter: .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
+- Release zip: `powershell -File scripts/package_release.ps1 -WithLauncher` → `dist/neo3ds-converter.zip` (single exe + `tools` + launcher CIA)
 - The converter bundles `tools/makerom/makerom.exe` and `tools/bannertool/windows-x86_64/bannertool.exe`; get them from the [makerom](https://github.com/3DSGuy/Project_CTR) and [bannertool](https://github.com/diasurgical/bannertool) releases.
 - Game DB: fetch MAME's `src/mame/snk/neogeo.cpp` and run `py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json`.
 

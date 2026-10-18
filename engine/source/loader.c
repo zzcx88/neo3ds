@@ -1,4 +1,6 @@
-// Loads a game prepared by the neo3ds converter from romfs:/game/ into memory.rom.
+// Loads a game prepared by the neo3ds converter into memory.rom: from romfs:/game/ in a game's own
+// CIA, or from one <romset>.neo3ds file picked in the launcher (the same files with a table of
+// contents in front, see loader_open_pack).
 //
 // Layout (all files written by the PC converter):
 //   p.bin     68k program, as dumped (16-bit words already little-endian)
@@ -10,6 +12,7 @@
 //   sma.bin   SMA carts: bank switching and random number addresses
 //   fixbank.bin  one byte: fix layer bank type for fix ROMs past 128KB
 //   pvc.bin   present on PVC carts (cart RAM + bank switching at 0x2fe000)
+//   title.txt / version.txt  shown on the bottom screen    romset.txt  .neo3ds only: the zip's name
 #include <3ds.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,22 +36,112 @@ const char *loader_error(void) { return error; }
 
 static void fail(const char *fmt, const char *arg) { snprintf(error, sizeof error, fmt, arg); }
 
-// Reads a whole file. Large reads are chunked so the progress callback can redraw.
-static Uint8 *read_file(const char *name, Uint32 *size_out, bool required, LoaderProgress progress) {
+/* .neo3ds: "NEO3DSPK", version, entry count, then {name, offset, size} entries and the data */
+#define PACK_MAGIC "NEO3DSPK"
+enum { PACK_VERSION = 1, PACK_MAX_ENTRIES = 64 };
+typedef struct {
+	char name[24];
+	Uint32 offset, size;
+} PackEntry;
+static FILE *pack;
+static PackEntry pack_entries[PACK_MAX_ENTRIES];
+static Uint32 pack_count;
+
+bool loader_open_pack(const char *path) {
+	struct {
+		char magic[8];
+		Uint32 version, count;
+	} h;
+	if (pack) fclose(pack);
+	if (!(pack = fopen(path, "rb"))) {
+		fail("can't open %s", path);
+		return false;
+	}
+	if (fread(&h, sizeof h, 1, pack) != 1 || memcmp(h.magic, PACK_MAGIC, 8) || h.count > PACK_MAX_ENTRIES ||
+	    fread(pack_entries, sizeof pack_entries[0], h.count, pack) != h.count) {
+		fail("%s is not a neo3ds game file", path);
+		fclose(pack);
+		pack = NULL;
+		return false;
+	}
+	if (h.version != PACK_VERSION) {
+		fail("%s was made by another converter version: convert it again", path);
+		fclose(pack);
+		pack = NULL;
+		return false;
+	}
+	pack_count = h.count;
+	for (Uint32 i = 0; i < pack_count; i++) pack_entries[i].name[sizeof pack_entries[i].name - 1] = 0;
+	return true;
+}
+
+bool loader_peek_pack(const char *path, const char *name, char *out, size_t size) {
+	struct {
+		char magic[8];
+		Uint32 version, count;
+	} h;
+	PackEntry e;
+	bool found = false;
+	FILE *f = fopen(path, "rb");
+	if (!f) return false;
+	if (fread(&h, sizeof h, 1, f) == 1 && !memcmp(h.magic, PACK_MAGIC, 8) && h.count <= PACK_MAX_ENTRIES)
+		for (Uint32 i = 0; i < h.count && fread(&e, sizeof e, 1, f) == 1; i++) {
+			e.name[sizeof e.name - 1] = 0;
+			if (strcmp(e.name, name)) continue;
+			Uint32 n = e.size < size - 1 ? e.size : size - 1;
+			if (fseek(f, e.offset, SEEK_SET) == 0) {
+				n = fread(out, 1, n, f);
+				out[n] = 0;
+				found = true;
+			}
+			break;
+		}
+	fclose(f);
+	return found;
+}
+
+bool loader_standalone(void) {
+	FILE *f = fopen(GAME_DIR "p.bin", "rb");
+	if (f) fclose(f);
+	return f != NULL;
+}
+
+/* Positions a stream at one of the game's files: the pack (left open) or a romfs file. */
+static FILE *open_member(const char *name, Uint32 *size) {
+	if (pack) {
+		for (Uint32 i = 0; i < pack_count; i++)
+			if (!strcmp(pack_entries[i].name, name)) {
+				*size = pack_entries[i].size;
+				return fseek(pack, pack_entries[i].offset, SEEK_SET) == 0 ? pack : NULL;
+			}
+		return NULL;
+	}
 	char path[64];
 	snprintf(path, sizeof path, GAME_DIR "%s", name);
 	FILE *f = fopen(path, "rb");
+	if (!f) return NULL;
+	fseek(f, 0, SEEK_END);
+	*size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	return f;
+}
+
+static void close_member(FILE *f) {
+	if (f != pack) fclose(f);
+}
+
+// Reads a whole file. Large reads are chunked so the progress callback can redraw.
+static Uint8 *read_file(const char *name, Uint32 *size_out, bool required, LoaderProgress progress) {
+	Uint32 size = 0;
+	FILE *f = open_member(name, &size);
 	if (!f) {
 		if (required) fail("missing %s", name);
 		if (size_out) *size_out = 0;
 		return NULL;
 	}
-	fseek(f, 0, SEEK_END);
-	Uint32 size = ftell(f);
-	fseek(f, 0, SEEK_SET);
 	Uint8 *buf = malloc(size ? size : 1);
 	if (!buf) {
-		fclose(f);
+		close_member(f);
 		fail("out of memory loading %s", name);
 		return NULL;
 	}
@@ -56,14 +149,14 @@ static Uint8 *read_file(const char *name, Uint32 *size_out, bool required, Loade
 	for (Uint32 done = 0; done < size; done += chunk) {
 		Uint32 n = size - done < chunk ? size - done : chunk;
 		if (fread(buf + done, 1, n, f) != n) {
-			fclose(f);
+			close_member(f);
 			free(buf);
 			fail("read error in %s", name);
 			return NULL;
 		}
 		if (progress) progress(name, done + n, size);
 	}
-	fclose(f);
+	close_member(f);
 	if (size_out) *size_out = size;
 	return buf;
 }
@@ -188,6 +281,36 @@ bool loader_load(LoaderProgress progress, Uint32 sprite_cache_bytes) {
 	memcpy(r->cpu_m68k.p, r->bios_m68k.p, 0x80);
 	loaded = true;
 	return true;
+}
+
+bool loader_read_text(const char *name, char *out, size_t size) {
+	Uint32 n = 0;
+	FILE *f = open_member(name, &n);
+	if (!f) return false;
+	if (n > size - 1) n = size - 1;
+	n = fread(out, 1, n, f);
+	out[n] = 0;
+	close_member(f);
+	return true;
+}
+
+/* The title ID the game's own CIA has (CiaBuilder.UniqueId): 0xC0000 | low 16 bits of the CRC-32
+ * of the zip's name. In the launcher this keeps a game's keys, backup RAM and save states shared
+ * with its CIA. */
+u64 loader_game_id(void) {
+	char name[64];
+	if (!pack || !loader_read_text("romset.txt", name, sizeof name)) {
+		u64 id = 0;
+		APT_GetProgramID(&id);
+		return id;
+	}
+	u32 crc = 0xFFFFFFFF;
+	for (const char *c = name; *c; c++) {
+		crc ^= (u8)*c;
+		for (int i = 0; i < 8; i++) crc = (crc >> 1) ^ (0xEDB88320u & -(crc & 1));
+	}
+	crc = ~crc;
+	return 0x0004000000000000ull | (u64)((0xC0000u | (crc & 0xFFFF)) << 8);
 }
 
 bool loader_has_bios(int mvs) { return mvs ? bios_mvs.p != NULL : bios_aes.p != NULL; }

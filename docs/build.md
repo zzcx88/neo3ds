@@ -33,12 +33,13 @@ dotnet build -c Release converter/Neo3dsConverter
 
 - 산출물: `converter/Neo3dsConverter/bin/Release/net10.0-windows/` — exe + `tools\` (`engine.elf`, `neo3ds.rsf`, `makerom.exe`, `bannertool.exe`)
 - exe와 `tools\` 폴더는 항상 같이 둔다
-- 버전: `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 한 곳에서 관리 (현재 1.0.7)
+- 버전: `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 한 곳에서 관리
 
 ## 3. CIA 만들기 (수동 확인)
 
 ```sh
-Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--system aes|mvs] [--lang ko|en]
+Neo3dsConverter.exe <게임.zip> [게임2.zip ...] [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
+Neo3dsConverter.exe --launcher [저장 폴더]
 ```
 
 - 게임 롬 zip과 `neogeo.zip`을 같은 폴더에, zip 이름은 MAME 이름 유지
@@ -86,7 +87,9 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 ## 7. 릴리스
 
 1. `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 올리기
-2. 엔진 빌드 (§1) + 변환기 Release 빌드 (§2)
-3. exe + `tools\`를 `neo3ds-converter.zip`으로 묶기
-4. 커밋 후 태그 푸시 (`v1.0.8` 형식)
-5. GitHub Releases에 zip 첨부 + 변경점 기록 (수동 업로드)
+2. 테스트 플래그 없이 엔진 빌드 (§1, `make clean` 후) + 외부 도구 배치 (§2 선행 준비: `tools\makerom`, `tools\bannertool`)
+3. `powershell -File scripts/package_release.ps1 -WithLauncher` — self-contained 단일 exe로 publish 후 `dist\neo3ds-converter.zip` 생성
+   (zip 안은 `neo3ds-converter\` 단일 폴더: exe + `tools\` + `README.txt`(한·영, 버전 자동 기입) + `LICENSE.txt` + `THIRD_PARTY_NOTICES.md`
+   + `neo3ds-launcher.cia`. 런처 CIA는 `dist\neo3ds-launcher.cia`에도 따로 나온다. 파일명은 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게)
+4. 커밋 후 태그 푸시 (`v1.1.0` 형식)
+5. GitHub Releases에 zip과 `neo3ds-launcher.cia` 첨부 + 변경점 기록
