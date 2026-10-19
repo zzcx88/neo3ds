@@ -38,13 +38,16 @@ dotnet build -c Release converter/Neo3dsConverter
 ## 3. CIA 만들기 (수동 확인)
 
 ```sh
-Neo3dsConverter.exe <게임.zip> [게임2.zip ...] [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
+Neo3dsConverter.exe <게임.zip> [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
+Neo3dsConverter.exe <게임.zip> [게임2.zip ...] [저장 폴더] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
 Neo3dsConverter.exe --launcher [저장 폴더]
 ```
 
 - 게임 롬 zip과 `neogeo.zip`을 같은 폴더에, zip 이름은 MAME 이름 유지
 - Title ID는 zip 파일명에서 고정 생성 → 같은 zip으로 다시 만들면 기존 설치 위에 덮어쓴다
-- `NEO3DS_CXI=1` 환경변수: CIA 대신 Azahar용 CXI 생성
+- `--title`·`--icon`·`--banner`·`--set`은 zip 1개일 때만 (여러 개와 함께 쓰면 오류)
+- `--pack`: CIA 대신 런처용 `.neo3ds` 파일 생성
+- `NEO3DS_CXI=1` 환경변수: CIA와 함께 Azahar용 CXI도 생성
 - `NEO3DS_DEBUG=1`: 실패 시 스택 트레이스 출력
 
 ## 4. Azahar 테스트 (개발 루프)
@@ -55,11 +58,11 @@ Neo3dsConverter.exe --launcher [저장 폴더]
 scripts/azahar_test.sh [rom.zip]   # 기본 roms/kof98.zip
 ```
 
-1. 엔진 재빌드 → `dist/converter/tools/engine.elf`에 복사
-2. `NEO3DS_CXI=1`로 CXI 빌드 → `out/`
+1. 엔진 재빌드 (`out/build.log`에 기록) → `dist/converter/tools/engine.elf`에 복사
+2. `NEO3DS_CXI=1`로 CXI 빌드 → `out/` (CXI는 `out/<롬셋>.cxi`, 예: `out/kof98.cxi`)
 3. Azahar 종료 후 CXI로 재실행
 
-사전 준비: 변환기 빌드 산출물(exe + `tools\`)을 `dist/converter/`에 복사해 둔다. 스크립트는 그 경로의 exe를 사용한다.
+사전 준비: 변환기 빌드 산출물(exe + `tools\`)을 `dist/converter/`에 복사해 둔다. 스크립트는 `dist/converter/Neo3dsConverter.exe`를 사용한다.
 
 회귀 확인:
 
@@ -67,7 +70,7 @@ scripts/azahar_test.sh [rom.zip]   # 기본 roms/kof98.zip
 scripts/azahar_bench.sh
 ```
 
-어트랙트 데모와 대전 진입 스크린샷을 `$TEMP/claude/s/`에 저장한다 (`demo.png`, `fight.png`).
+어트랙트 데모와 대전 진입 스크린샷을 `$TEMP/claude/s/`에 저장한다 (`demo.png`, `fight.png`). 벤치 스크립트는 `roms/kof98.zip` 고정 → `out/kof98.cxi`로 실행한다.
 
 ## 5. 실기 테스트
 
@@ -87,7 +90,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 ## 7. 릴리스
 
 1. `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 올리기
-2. 테스트 플래그 없이 엔진 빌드 (§1, `make clean` 후) + 외부 도구 배치 (§2 선행 준비: `tools\makerom`, `tools\bannertool`)
+2. 엔진 클린 빌드 (`bash scripts/build_engine.sh clean` 후 `bash scripts/build_engine.sh`로 재빌드 — 테스트용 플래그 잔재 없이) + 외부 도구 배치 (§2 선행 준비: `tools\makerom`, `tools\bannertool`)
 3. `powershell -File scripts/package_release.ps1 -WithLauncher` — self-contained 단일 exe로 publish 후 `dist\neo3ds-converter.zip` 생성
    (zip 안은 `neo3ds-converter\` 단일 폴더: exe + `tools\` + `README.txt`(한·영, 버전 자동 기입) + `LICENSE.txt` + `THIRD_PARTY_NOTICES.md`
    + `neo3ds-launcher.cia`. 런처 CIA는 `dist\neo3ds-launcher.cia`에도 따로 나온다. 파일명은 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게)

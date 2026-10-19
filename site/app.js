@@ -43,7 +43,7 @@ const EN = {
   'panel.r6n': 'Service', 'panel.r6': 'Opens the arcade (MVS) settings menu. Backup RAM (settings, high scores) is kept on the SD card.',
   'panel.r7n': 'Slot / Save / Load', 'panel.r7': 'Save and load from three slots. SELECT+L saves, SELECT+R loads.',
   'panel.mapH3': 'Default mapping',
-  'panel.map1k': 'D-pad · slide pad', 'panel.map1': 'lever', 'panel.map2': 'Neo Geo A · B · C · D', 'panel.map3': 'coin · start',
+  'panel.map1k': 'D-pad', 'panel.map1': 'lever', 'panel.map2': 'Neo Geo A · B · C · D', 'panel.map3': 'coin · start',
   'panel.map4': 'turbo on/off', 'panel.map5': 'quick save / load',
   'panel.mapNote': 'In KOF, L = A+B (evade) and R = C+D (blowback) is a good start.',
   'conv.h2': 'Conversion pipeline',

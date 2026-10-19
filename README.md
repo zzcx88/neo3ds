@@ -95,6 +95,7 @@ Neo3dsConverter.exe --launcher [저장 폴더]
 - `--region`: 지역(유럽·아시아 `eu` / 일본 `jp` / 미국 `us`). 생략하면 `eu`입니다.
 - `--pack`: CIA 대신 런처용 `.neo3ds` 파일을 만듭니다. `--launcher`는 런처 CIA(`neo3ds-launcher.cia`)를 만듭니다.
 - `--icon` / `--banner`: 아이콘(48×48)과 배너(256×128)로 쓸 그림입니다. 크기가 달라도 비율에 맞춰 잘라서 맞춥니다.
+- `--lang`: 화면 언어(`ko` / `en`)를 바꿉니다. 기억해 두었다가 창을 열 때도 씁니다.
 
 ## 조작법
 
@@ -104,7 +105,7 @@ Neo3dsConverter.exe --launcher [저장 폴더]
 
 | 3DS | 네오지오 |
 |---|---|
-| 십자키 / 슬라이드 패드 | 레버 |
+| 십자키 | 레버 |
 | B / A / Y / X | A / B / C / D |
 | SELECT | 코인 |
 | START | 스타트 |
@@ -121,7 +122,7 @@ Neo3dsConverter.exe --launcher [저장 폴더]
 | **System** | 가정용(AES)과 아케이드(MVS) 바이오스를 바꿉니다. 실수 방지로 두 번 눌러야 하고, 그 바이오스로 게임이 다시 시작합니다 |
 | **Diagnostics** | 진단 화면을 엽니다. 아무 데나 터치하면 돌아옵니다 |
 | **Restart** | 길게 누르면(노란 막대가 다 차면) 게임을 다시 시작합니다 |
-| **Service** | MVS 바이오스의 서비스 메뉴를 엽니다 (아래 참고). AES에서는 `MVS only`로 표시됩니다 |
+| **Service** | MVS 바이오스의 서비스 메뉴를 엽니다 (아래 참고). AES에서는 `Service: MVS only`로 표시됩니다 (런처에서는 `(MVS only)`) |
 | **Slot / Save / Load** | 퀵세이브 슬롯 고르기 / 저장 / 불러오기(두 번) (아래 참고) |
 | **Game list** | 런처로 실행했을 때만 나옵니다. 두 번 누르면 게임 목록으로 돌아갑니다. 이때 재시작 버튼은 `Hold: reset`으로 줄어듭니다 |
 
