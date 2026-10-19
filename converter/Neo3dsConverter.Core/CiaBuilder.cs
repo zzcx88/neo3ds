@@ -1,6 +1,7 @@
 using static Neo3dsConverter.Lang;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Neo3dsConverter;
@@ -105,11 +106,23 @@ public sealed class CiaBuilder
     readonly Action<string> log;
     readonly string toolsDir = Path.Combine(AppContext.BaseDirectory, "tools");
 
+    static readonly string Makerom = OperatingSystem.IsWindows() ? "makerom.exe" : "makerom";
+    static readonly string Bannertool = OperatingSystem.IsWindows() ? "bannertool.exe" : "bannertool";
+    static readonly HashSet<string> executableTools = new(StringComparer.Ordinal);
+
+    static string? ToolRid => RuntimeInformation.OSArchitecture switch
+    {
+        Architecture.X64 when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => "win-x64",
+        Architecture.X64 when RuntimeInformation.IsOSPlatform(OSPlatform.Linux) => "linux-x64",
+        Architecture.Arm64 when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => "osx-arm64",
+        _ => null,
+    };
+
     public CiaBuilder(Action<string> log) => this.log = log;
 
     public string Build(CiaJob job)
     {
-        CheckTools("makerom.exe", "bannertool.exe", "engine.elf", "neo3ds.rsf");
+        CheckTools(Makerom, Bannertool, "engine.elf", "neo3ds.rsf");
 
         using var _ = ZipFile.OpenRead(job.RomZip); // fail early on a broken zip
         if (job.BiosZip == null)
@@ -145,32 +158,45 @@ public sealed class CiaBuilder
         }
     }
 
+    string ToolPath(string tool)
+    {
+        if (ToolRid is string rid)
+        {
+            string path = Path.Combine(toolsDir, rid, tool);
+            if (File.Exists(path)) return path;
+        }
+        return Path.Combine(toolsDir, tool);
+    }
+
     void CheckTools(params string[] tools)
     {
         foreach (var tool in tools)
-            if (!File.Exists(Path.Combine(toolsDir, tool)))
-                throw new FileNotFoundException(L($"tools\\{tool} 파일이 없습니다. 변환기 폴더를 통째로 옮겼는지 확인하세요.", $"tools\\{tool} is missing. Keep the converter folder together when moving it."));
+        {
+            string path = ToolPath(tool);
+            if (!File.Exists(path))
+                throw new FileNotFoundException(L($"{path} 파일이 없습니다. 변환기 폴더를 통째로 옮겼는지 확인하세요.", $"{path} is missing. Keep the converter folder together when moving it."));
+        }
     }
 
     (string icon, string banner) MakeArt(string work, string title, string longTitle, string publisher, string? iconImage, string? bannerImage)
     {
         string icon = Path.Combine(work, "icon.icn");
         string banner = Path.Combine(work, "banner.bnr");
-        using (var bmp = Art.Icon(title, iconImage)) bmp.Save(Path.Combine(work, "icon.png"));
-        using (var bmp = Art.Banner(title, bannerImage)) bmp.Save(Path.Combine(work, "banner.png"));
+        File.WriteAllBytes(Path.Combine(work, "icon.png"), Art.Icon(title, iconImage));
+        File.WriteAllBytes(Path.Combine(work, "banner.png"), Art.Banner(title, bannerImage));
         Art.SaveSilentWav(Path.Combine(work, "banner.wav"));
-        Run("bannertool.exe", $"makebanner -i \"{work}\\banner.png\" -a \"{work}\\banner.wav\" -o \"{banner}\"");
-        Run("bannertool.exe", $"makesmdh -s \"{Smdh(title, 64)}\" -l \"{Smdh(longTitle, 128)}\" " +
-                              $"-p \"{Smdh(publisher, 64)}\" -i \"{work}\\icon.png\" -o \"{icon}\"");
+        Run(Bannertool, $"makebanner -i \"{Path.Combine(work, "banner.png")}\" -a \"{Path.Combine(work, "banner.wav")}\" -o \"{banner}\"");
+        Run(Bannertool, $"makesmdh -s \"{Smdh(title, 64)}\" -l \"{Smdh(longTitle, 128)}\" " +
+                              $"-p \"{Smdh(publisher, 64)}\" -i \"{Path.Combine(work, "icon.png")}\" -o \"{icon}\"");
         return (icon, banner);
     }
 
     void MakeCia(string cia, string product, uint uniqueId, string icon, string banner, string romfs)
     {
         foreach (var format in Environment.GetEnvironmentVariable("NEO3DS_CXI") != null ? new[] { "cia", "cxi" } : new[] { "cia" })
-            Run("makerom.exe", // the CXI is a dev aid: it boots directly in Azahar without installing
+            Run(Makerom, // the CXI is a dev aid: it boots directly in Azahar without installing
                 $"-f {format} -o \"{Path.ChangeExtension(cia, "." + format)}\" -target t -exefslogo " +
-                $"-rsf \"{toolsDir}\\neo3ds.rsf\" -elf \"{toolsDir}\\engine.elf\" " +
+                $"-rsf \"{ToolPath("neo3ds.rsf")}\" -elf \"{ToolPath("engine.elf")}\" " +
                 $"-icon \"{icon}\" -banner \"{banner}\" " +
                 $"-DAPP_TITLE=neo3ds -DAPP_PRODUCT_CODE={product} -DAPP_UNIQUE_ID=0x{uniqueId:X5} " +
                 $"-DAPP_ROMFS=\"{romfs}\"");
@@ -235,7 +261,7 @@ public sealed class CiaBuilder
     /// .neo3ds files on the SD card. Installed once.</summary>
     public string BuildLauncher(string outDir)
     {
-        CheckTools("makerom.exe", "bannertool.exe", "engine.elf", "neo3ds.rsf");
+        CheckTools(Makerom, Bannertool, "engine.elf", "neo3ds.rsf");
         string work = Path.Combine(Path.GetTempPath(), "neo3ds", $"launcher-{Environment.ProcessId}");
         if (Directory.Exists(work)) Directory.Delete(work, true);
         string romfs = Path.Combine(work, "romfs");
@@ -295,7 +321,19 @@ public sealed class CiaBuilder
 
     void Run(string exe, string args)
     {
-        var psi = new ProcessStartInfo(Path.Combine(toolsDir, exe), args)
+        string path = ToolPath(exe);
+        if (!OperatingSystem.IsWindows())
+        {
+            lock (executableTools)
+            {
+                if (!executableTools.Contains(path))
+                {
+                    File.SetUnixFileMode(path, File.GetUnixFileMode(path) | UnixFileMode.UserExecute);
+                    executableTools.Add(path);
+                }
+            }
+        }
+        var psi = new ProcessStartInfo(path, args)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,

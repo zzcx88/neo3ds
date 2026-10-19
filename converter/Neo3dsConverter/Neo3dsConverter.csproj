@@ -23,11 +23,7 @@
     <None Include="..\..\tools\bannertool\windows-x86_64\bannertool.exe" Link="tools\bannertool.exe" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Every MAME Neo Geo romset; regenerate with scripts/gen_gamedb.py -->
-    <EmbeddedResource Include="..\assets\neogeo_games.json" LogicalName="neogeo_games.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="ZstdSharp.Port" Version="0.8.8" />
+    <ProjectReference Include="../Neo3dsConverter.Core/Neo3dsConverter.Core.csproj" />
   </ItemGroup>
 
 </Project>
