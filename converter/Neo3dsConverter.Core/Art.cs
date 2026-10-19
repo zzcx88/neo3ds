@@ -61,11 +61,14 @@ public static class Art
         return (bmp, canvas);
     }
 
-    // Prefer the original faces where installed; otherwise use the platform's bold sans face.
-    static SKTypeface Typeface(string family) =>
-        SKFontManager.Default.MatchFamily(family, SKFontStyle.Bold)
-        ?? SKFontManager.Default.MatchFamily(null, SKFontStyle.Bold)
-        ?? SKTypeface.Default;
+    // Arial Black is its own family on macOS but only the Black weight of "Arial" on Windows (DirectWrite);
+    // without either, the platform's sans face in the same weight.
+    static readonly SKTypeface Heavy = Face("Arial Black", SKFontStyle.Normal) ?? Face("Arial", Weight(SKFontStyleWeight.Black))
+                                       ?? SKTypeface.FromFamilyName(null, Weight(SKFontStyleWeight.Black));
+    static readonly SKTypeface BoldFace = Face("Arial", SKFontStyle.Bold) ?? SKTypeface.FromFamilyName(null, SKFontStyle.Bold);
+
+    static SKTypeface? Face(string family, SKFontStyle style) => SKFontManager.Default.MatchFamily(family, style);
+    static SKFontStyle Weight(SKFontStyleWeight w) => new(w, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
 
     /// <summary>Banner: NEO·GEO tag, the main title as large as fits, the subtitle under it.</summary>
     static SKBitmap RenderBanner(string title)
@@ -73,8 +76,7 @@ public static class Art
         var (bmp, canvas) = Canvas(BannerW, BannerH, 4);
         using (canvas)
         {
-            using var face = Typeface("Arial Black");
-            using var tag = new SKFont(face, 14f);
+            using var tag = new SKFont(Heavy, 14f);
             using var gold = new SKPaint { IsAntialias = true, Color = Gold };
             canvas.DrawText("NEO·GEO", 10, 8 - tag.Metrics.Ascent, SKTextAlign.Left, tag, gold);
 
@@ -83,10 +85,10 @@ public static class Art
             if (sub != null)
             {
                 var subArea = SKRect.Create(area.Left, area.Bottom - 22, area.Width, 22);
-                DrawFitted(canvas, sub, "Arial", 16f, subArea, Gold, 1);
+                DrawFitted(canvas, sub, BoldFace, 16f, subArea, Gold, 1);
                 area.Bottom -= 24;
             }
-            DrawFitted(canvas, main, "Arial", 40f, area, SKColors.White, 2);
+            DrawFitted(canvas, main, BoldFace, 40f, area, SKColors.White, 2);
         }
         return bmp;
     }
@@ -99,21 +101,20 @@ public static class Art
         {
             var (abbr, number) = Abbreviate(title);
             if (number == null)
-                DrawFitted(canvas, abbr, "Arial Black", 22f, SKRect.Create(6, 6, 36, 36), SKColors.White, 1);
+                DrawFitted(canvas, abbr, Heavy, 22f, SKRect.Create(6, 6, 36, 36), SKColors.White, 1);
             else
             {
-                DrawFitted(canvas, abbr, "Arial Black", 20f, SKRect.Create(5, 4, 38, 21), SKColors.White, 1);
-                DrawFitted(canvas, number, "Arial Black", 20f, SKRect.Create(5, 24, 38, 20), Gold, 1);
+                DrawFitted(canvas, abbr, Heavy, 20f, SKRect.Create(5, 4, 38, 21), SKColors.White, 1);
+                DrawFitted(canvas, number, Heavy, 20f, SKRect.Create(5, 24, 38, 20), Gold, 1);
             }
         }
         return bmp;
     }
 
     /// <summary>Draws text centered in the box, shrinking it until every line fits whole.</summary>
-    static void DrawFitted(SKCanvas canvas, string text, string family, float maxSize, SKRect box,
+    static void DrawFitted(SKCanvas canvas, string text, SKTypeface face, float maxSize, SKRect box,
                            SKColor color, int maxLines)
     {
-        using var face = Typeface(family);
         for (float size = maxSize; ; size -= 0.5f)
         {
             using var font = new SKFont(face, size);

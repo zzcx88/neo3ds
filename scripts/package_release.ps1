@@ -29,17 +29,12 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 if ($Runtimes.Count -eq 0) { throw "Specify at least one runtime." }
 
-# 1. Prefer the GUI version; after project separation, fall back to Core.
-$version = $null
-foreach ($project in @("Neo3dsConverter", "Neo3dsConverter.Core")) {
-  $csproj = Join-Path $root "converter\$project\$project.csproj"
-  if (-not (Test-Path $csproj -PathType Leaf)) { continue }
-  [xml]$xml = Get-Content $csproj
-  $version = ($xml.Project.PropertyGroup | ForEach-Object { $_.Version } |
-    Where-Object { $_ } | Select-Object -First 1)
-  if ($version) { break }
-}
-if (-not $version) { throw "Version not found in GUI or Core csproj" }
+# 1. Version comes from converter\Directory.Build.props (single source of truth for all projects).
+$props = Join-Path $root "converter\Directory.Build.props"
+[xml]$xml = Get-Content $props
+$version = ($xml.Project.PropertyGroup | ForEach-Object { $_.Version } |
+  Where-Object { $_ } | Select-Object -First 1)
+if (-not $version) { throw "Version not found in $props" }
 
 # 2. Check every requested RID before publishing any release.
 $commonFiles = @(

@@ -10,22 +10,25 @@ remain in the source files.
 | DrZ80 (Z80 CPU core, ARM assembly) | `engine/source/neo/drz80/` | Reesy | Free for non-commercial use |
 | YM2610 sound core (fm.c / ym2610.c) | `engine/source/neo/ym2610/` | Jarek Burczynski, Tatsuyuki Satoh (MAME), via NJ pspmvs and gngeo | as distributed with gngeo |
 | MAME Neo Geo romset data (`neogeo_games.json`, generated from `src/mame/snk/neogeo.cpp`) | `converter/assets/` | Bryan McPhail, Ernesto Corvi, Andrew Prime, Zsolt Vasvari and MAME contributors | BSD-3-Clause |
-| MAME Neo Geo cart decryption (CMC42/CMC50, SMA, PCM2, KOF2002-type, PVC), ported to C#; PVC cart RAM logic | `converter/Neo3dsConverter/Protection.cs`, `CmcTables.cs`, `engine/source/neo/memory.c` (pvc_write) | S. Smith, David Haywood, Fabio Priuli, Razoola, Mr.K | BSD-3-Clause |
+| MAME Neo Geo cart decryption (CMC42/CMC50, SMA, PCM2, KOF2002-type, PVC), ported to C#; PVC cart RAM logic | `converter/Neo3dsConverter.Core/Protection.cs`, `CmcTables.cs`, `engine/source/neo/memory.c` (pvc_write) | S. Smith, David Haywood, Fabio Priuli, Razoola, Mr.K | BSD-3-Clause |
 | Zstandard (decompressor) | `engine/source/zstd/` | Meta Platforms, Inc. and affiliates | BSD-3-Clause (see `engine/source/zstd/LICENSE`) |
 | LZ4 | `engine/source/lz4/` | Yann Collet | BSD-2-Clause |
 | libctru | linked into the engine | devkitPro / 3DS homebrew contributors | zlib |
 | ZstdSharp.Port (converter, NuGet) | converter build | Oleg Stepanischev | MIT |
-| makerom (bundled in the release) | `tools\makerom.exe` | 3DSGuy, applestash, Jakcron | MIT |
-| bannertool (bundled in the release) | `tools\bannertool.exe` | Steveice10 | MIT |
+| SkiaSharp (converter icon/banner drawing, NuGet) | converter build, native library `libSkiaSharp` | Microsoft Corporation | MIT |
+| Skia (inside `libSkiaSharp`; its own third-party parts are listed in SkiaSharp's THIRD-PARTY-NOTICES) | converter build | Google Inc. | BSD-3-Clause |
+| makerom (bundled in the release) | `tools\makerom.exe`, `tools/{rid}/makerom` | 3DSGuy, applestash, Jakcron | MIT |
+| bannertool (bundled in the release) | `tools\bannertool.exe`, `tools/{rid}/bannertool` | Steveice10 | MIT |
 
 Because Cyclone 68000 and DrZ80 are only free for non-commercial use, **neo3ds as a whole may only
 be used and distributed non-commercially.** gngeo itself has shipped with these two cores for years
 under the same arrangement.
 
-## BSD-3-Clause (MAME parts)
+## BSD-3-Clause (MAME parts, Skia)
 
 ```
 Copyright (c) the MAME authors listed above. All rights reserved.
+Skia: Copyright (c) 2011 Google Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted
 provided that the following conditions are met:
@@ -49,7 +52,7 @@ IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISI
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## MIT (makerom, bannertool, ZstdSharp.Port)
+## MIT (makerom, bannertool, ZstdSharp.Port, SkiaSharp)
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and

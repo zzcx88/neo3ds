@@ -39,7 +39,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 
 - 게임 DB 변경 시 `scripts/gen_site_games.py`로 `site/games.js` 재생성 — 수동 편집 금지
 - VERIFIED 수 변경 시 README 호환성 표 + `site/` 문구를 같은 커밋에 함께 갱신
 - 호환성 표는 실기 확인 결과만, 미확인은 "추정" 표기
-- 버전은 csproj `<Version>` 한 곳만. 릴리스 파일명 고정(`neo3ds-converter.zip`, `neo3ds-launcher.cia`) — latest/download 링크 보호
+- 버전은 `converter/Directory.Build.props`의 `<Version>` 한 곳만. 릴리스 파일명 고정(`neo3ds-converter.zip`, `neo3ds-launcher.cia`) — latest/download 링크 보호
 - `site/` 색·폰트·수치는 실제 코드에서만(`ui.h` 팔레트, `ui.c` 좌표, 진단 화면 값) — 창작 금지
 - 문서 전용 변경은 `docs/`·`site/`·README 범위 유지
 

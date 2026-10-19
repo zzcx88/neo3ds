@@ -6,6 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <!-- SkiaSharp itself only brings the Windows and macOS native libraries -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />
     <PackageReference Include="ZstdSharp.Port" Version="0.8.8" />
     <!-- Every MAME Neo Geo romset; regenerate with scripts/gen_gamedb.py -->
     <EmbeddedResource Include="../assets/neogeo_games.json" LogicalName="neogeo_games.json" />
