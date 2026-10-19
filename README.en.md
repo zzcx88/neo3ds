@@ -93,6 +93,7 @@ Neo3dsConverter.exe --launcher [out-dir]
 - `--region`: Europe/Asia `eu`, Japan `jp` or USA `us`; `eu` when left out.
 - `--pack` builds a `.neo3ds` file for the launcher instead of a CIA. `--launcher` builds the launcher CIA (`neo3ds-launcher.cia`).
 - `--icon` / `--banner`: pictures for the icon (48×48) and banner (256×128); other sizes are scaled and cropped to fit.
+- `--lang`: switches the window language (`ko` / `en`); remembered for the window too.
 
 ## Controls
 
@@ -102,7 +103,7 @@ These are the defaults. Buttons can be changed per game in [Key config](#key-con
 
 | 3DS | Neo Geo |
 |---|---|
-| D-pad / Circle Pad | Joystick |
+| D-pad | Joystick |
 | B / A / Y / X | A / B / C / D |
 | SELECT | Coin |
 | START | Start |
@@ -119,7 +120,7 @@ These are the defaults. Buttons can be changed per game in [Key config](#key-con
 | **System** | Switches between the home (AES) and arcade (MVS) BIOS. Tap twice (to avoid accidents); the game restarts on it |
 | **Diagnostics** | Opens the diagnostics; touch anywhere to go back |
 | **Restart** | Hold it until the yellow bar fills to restart the game |
-| **Service** | Opens the MVS BIOS service menu (see below). Shows `MVS only` on AES |
+| **Service** | Opens the MVS BIOS service menu (see below). Shows `Service: MVS only` on AES (`(MVS only)` in the launcher) |
 | **Slot / Save / Load** | Pick a quick save slot / save / load (tap twice) (see below) |
 | **Game list** | Only when started from the launcher: tap twice to go back to the game list. Restart then reads `Hold: reset` |
 
