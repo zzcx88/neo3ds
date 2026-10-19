@@ -42,6 +42,8 @@ DEFAULT_REASON = ('보호 칩 미지원', 'protection chip not supported')
 VERIFIED = {
     'kof98h': ('실기 확인 · 풀 스피드 · kof98.zip에서 자동 선택', 'verified · full speed · picked automatically from kof98.zip'),
     'kof99': ('실기 확인 · 풀 스피드', 'verified · full speed'),
+    'mslug': ('실기 확인 · 풀 스피드 · 1.1.0에서 배경음악 처짐 수정', 'verified · full speed · music that dragged fixed in 1.1.0'),
+    'sonicwi3': ('실기 확인 · 플레이 가능 · 1.1.0에서 음악 멈춤 수정', 'verified · playable · music freeze fixed in 1.1.0'),
     'mslug2': ('실기 확인 · 플레이 가능 · 원래 기판에서 느려지던 장면은 똑같이 느려짐', 'verified · playable · slows down exactly where the original board did'),
     'mslugx': ('실기 확인 · 풀 스피드 · 보호칩 검사 패치 · 원래 기판에서 느려지던 장면은 똑같이 느려짐', 'verified · full speed · protection check patched · slows down where the original board did'),
     'mslug3': ('실기 확인 · 풀 스피드 · 원래 기판에서 느려지던 장면은 똑같이 느려짐', 'verified · full speed · slows down where the original board did'),

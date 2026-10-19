@@ -47,7 +47,7 @@
     <div class="hero-copy">
       <p class="kicker" data-i18n="hero.kicker">PC의 롬 zip → 3DS 설치 파일(CIA) · 변환기 + 에뮬레이터 엔진</p>
       <h1 data-i18n="hero.h1">네오지오 게임을<br>3DS 홈 메뉴에.</h1>
-      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 게임마다 설치 파일(CIA) 하나가 나옵니다. 3DS에 설치하면 HOME 메뉴에 자기 아이콘으로 뜨고, 구형 3DS에서도 60fps로 돕니다.</p>
+      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 게임마다 설치 파일(CIA)이 나옵니다. 런처 앱 하나에 여러 게임을 넣어 고를 수도 있습니다. 3DS에 설치하면 HOME 메뉴에 자기 아이콘으로 뜨고, 구형 3DS에서도 60fps로 돕니다.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.download">변환기 받기</a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/zzcx88/neo3ds" data-i18n="cta.source">소스 보기</a>
@@ -109,13 +109,13 @@
       </li>
       <li>
         <span class="step-no">2</span>
-        <h3 data-i18n="steps.s2t">CIA 만들기</h3>
-        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다.</p>
+        <h3 data-i18n="steps.s2t">CIA 만들기 (또는 런처용 파일)</h3>
+        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다. zip 여러 개를 한 번에 넣으면 차례로 변환되고, 런처용 파일(.neo3ds)로도 만들 수 있습니다.</p>
       </li>
       <li>
         <span class="step-no">3</span>
-        <h3 data-i18n="steps.s3t">3DS에 설치</h3>
-        <p data-i18n="steps.s3d">설치가 끝나면 HOME 메뉴에 게임 아이콘이 생깁니다.</p>
+        <h3 data-i18n="steps.s3t">3DS에 설치 (또는 런처에 복사)</h3>
+        <p data-i18n="steps.s3d">CIA는 설치하면 HOME 메뉴에 게임 아이콘이 생깁니다. 런처용 파일은 SD 카드 /neo3ds/games/에 복사하고 런처 앱에서 고릅니다.</p>
       </li>
     </ol>
 
@@ -123,7 +123,7 @@
       <h3 data-i18n="prep.h3">준비물</h3>
       <ul class="check">
         <li><b data-i18n="prep.1b">3DS</b> <span data-i18n="prep.1d">구형 3DS / 2DS / New 3DS / New 2DS XL, 커스텀 펌웨어(Luma3DS)와 설치 도구(FBI) 필요</span></li>
-        <li><b data-i18n="prep.2b">Windows PC</b> <span data-i18n="prep.2d">Windows 10·11 64비트 · 런타임 설치 불필요</span></li>
+        <li><b data-i18n="prep.2b">Windows PC</b> <span data-i18n="prep.2d">Windows 10·11 64비트 · 런타임 설치 불필요 · 압축을 풀면 neo3ds-converter 폴더(exe·tools·런처 CIA) 하나</span></li>
         <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip + neogeo.zip (저장소에는 없음)</span></li>
         <li><b data-i18n="prep.4b">소리 파일</b> <span data-i18n="prep.4d">SD 카드에 <code>/3ds/dspfirm.cdc</code></span></li>
       </ul>
@@ -158,6 +158,14 @@
         <span class="pb-name" data-i18n="dev.restart">Restart</span>
         <span class="pb-desc" data-i18n="panel.r5">길게 누르면 처음부터. SELECT+START 1초도 같습니다.</span>
       </li>
+      <li>
+        <span class="pb-name" data-i18n="panel.r6n">Service</span>
+        <span class="pb-desc" data-i18n="panel.r6">아케이드(MVS) 설정 메뉴를 엽니다. 백업 RAM(설정·하이스코어)은 SD 카드에 저장됩니다.</span>
+      </li>
+      <li>
+        <span class="pb-name" data-i18n="panel.r7n">Slot / Save / Load</span>
+        <span class="pb-desc" data-i18n="panel.r7">슬롯 3개에 저장하고 불러옵니다. SELECT+L 저장, SELECT+R 불러오기도 됩니다.</span>
+      </li>
     </ul>
 
     <div class="map">
@@ -167,6 +175,7 @@
         <div><dt>B · A · Y · X</dt><dd data-i18n="panel.map2">네오지오 A · B · C · D</dd></div>
         <div><dt>SELECT · START</dt><dd data-i18n="panel.map3">코인 · 스타트</dd></div>
         <div><dt>R + B/A/Y/X</dt><dd data-i18n="panel.map4">연사 켜기/끄기</dd></div>
+        <div><dt>SELECT + L / SELECT + R</dt><dd data-i18n="panel.map5">퀵세이브 저장 / 불러오기</dd></div>
       </dl>
       <p class="tiny" data-i18n="panel.mapNote">KOF에서는 L = A+B(회피), R = C+D(날리기)로 두면 편합니다.</p>
     </div>
@@ -185,10 +194,10 @@
       <ol class="pipe" id="pipe">
         <li><span class="pipe-no">1</span><div><h3 data-i18n="conv.p1t">롬셋 확인</h3><p data-i18n="conv.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다. 합본이면 쓸 수 있는 판을 고릅니다(kof98.zip → kof98h).</p></div><span class="pipe-val" data-pipe="1"></span></li>
         <li><span class="pipe-no">2</span><div><h3 data-i18n="conv.p2t">암호 해독</h3><p data-i18n="conv.p2d">CMC42·CMC50·SMA·PCM2·PVC 등 보호 칩을 PC에서 풉니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
-        <li><span class="pipe-no">3</span><div><h3 data-i18n="conv.p3t">실기용 패치</h3><p data-i18n="conv.p3d">보호 칩 검사 루틴을 지우고 68k 바이트 순서를 맞춥니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
+        <li><span class="pipe-no">3</span><div><h3 data-i18n="conv.p3t">실기용 패치 + 지역</h3><p data-i18n="conv.p3d">보호 칩 검사 루틴을 지우고 68k 바이트 순서를 맞춥니다. 지역(유럽·아시아 / 일본 / 미국)도 고릅니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
         <li><span class="pipe-no">4</span><div><h3 data-i18n="conv.p4t">그래픽 압축</h3><p data-i18n="conv.p4d">스프라이트를 4KB 블록으로 zstd 압축합니다. 3DS는 8MB 캐시로 씁니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
         <li><span class="pipe-no">5</span><div><h3 data-i18n="conv.p5t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="5"></span></li>
-        <li><span class="pipe-no">6</span><div><h3 data-i18n="conv.p6t">CIA 생성</h3><p data-i18n="conv.p6d">엔진과 게임 데이터를 묶어 설치 파일로 만듭니다.</p></div><span class="pipe-val" data-pipe="6"></span></li>
+        <li><span class="pipe-no">6</span><div><h3 data-i18n="conv.p6t">CIA 생성 (또는 런처용 파일)</h3><p data-i18n="conv.p6d">엔진과 게임 데이터를 묶어 설치 파일로 만듭니다. 런처용 파일(.neo3ds)로 뽑아 SD 카드에 넣을 수도 있습니다.</p></div><span class="pipe-val" data-pipe="6"></span></li>
       </ol>
 
       <div class="conv-side">
@@ -269,7 +278,7 @@
 <section class="sec" id="games">
   <div class="wrap">
     <h2 data-i18n="games.h2">게임 호환성</h2>
-    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 13종은 구형 3DS 실기에서 확인했습니다.</p>
+    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 15종은 구형 3DS 실기에서 확인했습니다(소닉윙즈 3는 플레이 가능).</p>
 
     <div class="explorer">
       <div class="ex-tools">
@@ -328,7 +337,7 @@
       </details>
       <details>
         <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
-        <p data-i18n="faq.a2">KOF '98·'99·2000·2002, 메탈슬러그 X·3, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드입니다. 메탈슬러그 2·3은 원래 기판에서도 느려지던 장면에서 똑같이 느려집니다.</p>
+        <p data-i18n="faq.a2">KOF '98·'99·2000·2002, 메탈슬러그 1·X·3, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드입니다. 메탈슬러그 2와 소닉윙즈 3는 플레이 가능하고, 원래 기판에서 느려지던 장면은 똑같이 느려집니다.</p>
       </details>
       <details>
         <summary data-i18n="faq.q3">소리가 안 나요.</summary>
@@ -336,7 +345,7 @@
       </details>
       <details>
         <summary data-i18n="faq.q4">키 설정은 어디에 저장되나요?</summary>
-        <p data-i18n="faq.a4">게임마다 SD 카드의 <code>/3ds/neo3ds/keys/</code>에 저장됩니다.</p>
+        <p data-i18n="faq.a4">게임마다 SD 카드에 저장됩니다. 키 설정 <code>/3ds/neo3ds/keys/</code>, 백업 RAM <code>/3ds/neo3ds/saves/</code>, 퀵세이브 <code>/3ds/neo3ds/states/</code>, 런처용 파일 <code>/neo3ds/games/</code>.</p>
       </details>
       <details>
         <summary data-i18n="faq.q5">New 3DS에서는요?</summary>
