@@ -33,7 +33,7 @@ dotnet build -c Release converter/Neo3dsConverter
 
 - 산출물: `converter/Neo3dsConverter/bin/Release/net10.0-windows/` — exe + `tools\` (`engine.elf`, `neo3ds.rsf`, `makerom.exe`, `bannertool.exe`)
 - exe와 `tools\` 폴더는 항상 같이 둔다
-- 버전: `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 한 곳에서 관리
+- 버전: `converter/Directory.Build.props`의 `<Version>` 한 곳에서 관리
 
 ## 3. CIA 만들기 (수동 확인)
 
@@ -89,7 +89,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 ## 7. 릴리스
 
-1. `converter/Neo3dsConverter/Neo3dsConverter.csproj`의 `<Version>` 올리기
+1. `converter/Directory.Build.props`의 `<Version>` 올리기
 2. 엔진 클린 빌드 (`bash scripts/build_engine.sh clean` 후 `bash scripts/build_engine.sh`로 재빌드 — 테스트용 플래그 잔재 없이) + 외부 도구 배치 (§2 선행 준비: `tools\makerom`, `tools\bannertool`)
 3. `powershell -File scripts/package_release.ps1 -WithLauncher` — self-contained 단일 exe로 publish 후 `dist\neo3ds-converter.zip` 생성
    (zip 안은 `neo3ds-converter\` 단일 폴더: exe + `tools\` + `README.txt`(한·영, 버전 자동 기입) + `LICENSE.txt` + `THIRD_PARTY_NOTICES.md`

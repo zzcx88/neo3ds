@@ -1,0 +1,7 @@
+<Project>
+  <!-- The converter version, shared by Core (version.txt, launcher.txt, meta.txt), the GUI and the CLI.
+       The single place to change it; package_release.ps1 reads it from here. -->
+  <PropertyGroup>
+    <Version>1.1.0</Version>
+  </PropertyGroup>
+</Project>

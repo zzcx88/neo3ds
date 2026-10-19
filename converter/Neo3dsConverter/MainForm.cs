@@ -157,8 +157,8 @@ public sealed class MainForm : Form
         if (job == null) return;
         try
         {
-            SetPreview(iconPreview, Art.Icon(CurrentTitle, IconImage));
-            SetPreview(bannerPreview, Art.Banner(CurrentTitle, BannerImage));
+            SetPreview(iconPreview, Art.Icon(CurrentTitle, IconImage).ToBitmap());
+            SetPreview(bannerPreview, Art.Banner(CurrentTitle, BannerImage).ToBitmap());
         }
         catch (Exception e)
         {

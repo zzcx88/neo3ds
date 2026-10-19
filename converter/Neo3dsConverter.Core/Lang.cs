@@ -6,7 +6,7 @@ namespace Neo3dsConverter;
 /// Korean or English text. Korean when Windows is set to Korean, English otherwise; the choice
 /// made in the window (or --lang ko|en) is remembered in %APPDATA%\neo3ds\lang.txt.
 /// </summary>
-static class Lang
+public static class Lang
 {
     static readonly string SettingFile =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "neo3ds", "lang.txt");
