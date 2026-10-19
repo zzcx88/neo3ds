@@ -92,7 +92,7 @@ const EN = {
   'games.cav4': 'Metal Slug 2, X and 3 slow down in scenes with many enemies and explosions on the original arcade board too. neo3ds drops frames in exactly those scenes, as PC emulators do.',
   'faq.h2': 'Questions',
   'faq.q1': 'Where do I get the ROMs?', 'faq.a1': 'Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so never share it.',
-  'faq.q2': 'Is it really 60 fps on an Old 3DS?', 'faq.a2': 'KOF \'98, \'99, 2000, 2002, Metal Slug 1, X and 3, SVC Chaos and Samurai Shodown V Special ran at full speed on hardware. Metal Slug 2 and Aero Fighters 3 are playable; they slow down exactly where the original board did.',
+  'faq.q2': 'Is it really 60 fps on an Old 3DS?', 'faq.a2': 'KOF \'98, \'99, 2000, 2002, Metal Slug 1, X and 3, SVC Chaos and Samurai Shodown V Special ran at full speed on hardware. Metal Slug 2, X and 3 slow down exactly where the original board did; Aero Fighters 3 is playable.',
   'faq.q3': 'No sound.', 'faq.a3': 'The SD card needs <code>/3ds/dspfirm.cdc</code>; a tool like DSP1 creates it once.',
   'faq.q4': 'Where are key configs stored?', 'faq.a4': 'Per game, on the SD card: key config <code>/3ds/neo3ds/keys/</code>, backup RAM <code>/3ds/neo3ds/saves/</code>, quick saves <code>/3ds/neo3ds/states/</code>, launcher files <code>/neo3ds/games/</code>.',
   'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, which leaves more headroom (not confirmed on hardware yet).',
@@ -225,7 +225,7 @@ function pipeValues() {
     1: `${row[0]} · ${row[2]}`,
     2: chainText(row[5]),
     3: row[5] === 'patch' ? t('보호칩 검사 패치', 'protection check patched') : t('바이트 순서 정리', 'byte order fixed'),
-    4: `${tiles(row[9]).toLocaleString()} ${t('타일', 'tiles')} · ${row[9]}MB` + (isKof99() ? ' → 19.6MB' : ''),
+    4: `${tiles(row[9]).toLocaleString()} ${t('타일', 'tiles')} · ${t('그래픽', 'graphics')} ${row[9]}MB` + (isKof99() ? ' → 19.6MB' : ''),
     5: '48×48 · 256×128',
     6: t('엔진 + 게임 데이터', 'engine + game data'),
   };
