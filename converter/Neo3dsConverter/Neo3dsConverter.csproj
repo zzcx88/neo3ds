@@ -21,6 +21,11 @@
     <None Include="..\..\tools\makerom\makerom.exe" Link="tools\makerom.exe" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="..\..\tools\bannertool\windows-x86_64\bannertool.exe" Link="tools\bannertool.exe" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
+  <!-- Checked by CheckRuntimePayload (converter/Directory.Build.targets) before MSB3030 can fire -->
+  <ItemGroup>
+    <RequiredTool Include="..\..\tools\makerom\makerom.exe" Display="tools/makerom/makerom.exe" Help="Get it from a release zip or upstream (see docs/build.md 2)." />
+    <RequiredTool Include="..\..\tools\bannertool\windows-x86_64\bannertool.exe" Display="tools/bannertool/windows-x86_64/bannertool.exe" Help="Get it from a release zip or upstream (see docs/build.md 2)." />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Neo3dsConverter.Core/Neo3dsConverter.Core.csproj" />
   </ItemGroup>
