@@ -1,0 +1,153 @@
+name: Release
+
+# Builds the three release packages: Windows GUI + Linux/macOS CLI (#23).
+# Tags (v1.2.3) trigger the full flow: engine ELF -> per-OS packages -> GitHub Release.
+# Manual runs (workflow_dispatch) build the same artifacts without creating a release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version embedded in README.txt (e.g. 1.2.0). Empty = read from converter/Directory.Build.props.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write # creating GitHub Releases on tags
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  # Pinned Docker toolchain for reproducible engine builds. Bump deliberately.
+  DEVKITARM_IMAGE: devkitpro/devkitarm:20260610
+
+jobs:
+  engine:
+    name: engine.elf
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build engine.elf in devkitARM container
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/repo" -w /repo/engine \
+            "$DEVKITARM_IMAGE" make
+          test -s engine/engine.elf
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engine-elf
+          path: engine/engine.elf
+          if-no-files-found: error
+
+  package:
+    name: package (${{ matrix.runtime }})
+    needs: engine
+    strategy:
+      # One OS build must not cancel the others: a macOS outage still yields Windows+Linux.
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: win-x64
+            os: windows-latest
+            project: Neo3dsConverter
+            launcher: '-WithLauncher'
+          - runtime: linux-x64
+            os: ubuntu-latest
+            project: Neo3dsConverter.Cli
+            launcher: ''
+          - runtime: osx-arm64
+            os: macos-14
+            project: Neo3dsConverter.Cli
+            launcher: ''
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: engine-elf
+          path: engine
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Guard runner architecture
+        shell: bash
+        run: |
+          arch=$(uname -m)
+          case "${{ matrix.runtime }}/$arch" in
+            win-x64/x86_64|linux-x64/x86_64) ;;
+            osx-arm64/arm64) ;;
+            *) echo "::error::${{ matrix.runtime }} needs a different runner (got $arch)"; exit 1 ;;
+          esac
+      - name: Build Unix tools (makerom, bannertool)
+        if: matrix.runtime != 'win-x64'
+        shell: bash
+        run: |
+          if [ "${{ matrix.runtime }}" = "linux-x64" ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq build-essential git zip libyaml-dev
+          fi
+          bash scripts/build_unix_tools.sh
+          test -s "tools/${{ matrix.runtime }}/makerom"
+          test -s "tools/${{ matrix.runtime }}/bannertool"
+      - name: Fetch Windows tools from latest release
+        if: matrix.runtime == 'win-x64'
+        shell: pwsh
+        run: |
+          # tools/ is git-ignored, so the Windows runner bootstraps makerom/bannertool
+          # from the latest published zip (same documented procedure as docs/build.md 2).
+          $tmp = New-Item -ItemType Directory (Join-Path $env:RUNNER_TEMP 'wintools')
+          $zip = Join-Path $tmp.FullName 'latest.zip'
+          Invoke-WebRequest -Uri 'https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip' -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $tmp.FullName
+          $tools = Join-Path $tmp.FullName 'neo3ds-converter' 'tools'
+          New-Item -ItemType Directory 'tools/makerom' -Force | Out-Null
+          New-Item -ItemType Directory 'tools/bannertool/windows-x86_64' -Force | Out-Null
+          Copy-Item (Join-Path $tools 'makerom.exe') 'tools/makerom/makerom.exe'
+          Copy-Item (Join-Path $tools 'bannertool.exe') 'tools/bannertool/windows-x86_64/bannertool.exe'
+      - name: Package release zip
+        shell: pwsh
+        run: |
+          ./scripts/package_release.ps1 -Runtimes ${{ matrix.runtime }} `
+            -OutDir dist ${{ matrix.launcher }} `
+            -VersionOverride '${{ inputs.version }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.runtime }}
+          path: |
+            dist/*.zip
+            dist/*.cia
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Verify tag matches converter version
+        shell: bash
+        run: |
+          file_ver=$(grep -oPm1 '(?<=<Version>)[^<]+' converter/Directory.Build.props)
+          tag_ver="${GITHUB_REF_NAME#v}"
+          test "$file_ver" = "$tag_ver" || {
+            echo "::error::tag $GITHUB_REF_NAME != Directory.Build.props $file_ver. Bump <Version> first (docs/build.md 7)."
+            exit 1
+          }
+          ls -la dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/neo3ds-converter.zip
+            dist/neo3ds-converter-linux-x64.zip
+            dist/neo3ds-converter-osx-arm64.zip
+            dist/neo3ds-launcher.cia
+          fail_on_unmatched_files: true
