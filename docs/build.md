@@ -89,10 +89,21 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 ## 7. 릴리스
 
-1. `converter/Directory.Build.props`의 `<Version>` 올리기
-2. 엔진 클린 빌드 (`bash scripts/build_engine.sh clean` 후 `bash scripts/build_engine.sh`로 재빌드 — 테스트용 플래그 잔재 없이) + 외부 도구 배치 (§2 선행 준비: `tools\makerom`, `tools\bannertool`)
-3. `powershell -File scripts/package_release.ps1 -WithLauncher` — self-contained 단일 exe로 publish 후 `dist\neo3ds-converter.zip` 생성
-   (zip 안은 `neo3ds-converter\` 단일 폴더: exe + `tools\` + `README.txt`(한·영, 버전 자동 기입) + `LICENSE.txt` + `THIRD_PARTY_NOTICES.md`
-   + `neo3ds-launcher.cia`. 런처 CIA는 `dist\neo3ds-launcher.cia`에도 따로 나온다. 파일명은 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게)
-4. 커밋 후 태그 푸시 (`v1.1.0` 형식)
-5. GitHub Releases에 zip과 `neo3ds-launcher.cia` 첨부 + 변경점 기록
+릴리스 패키지는 GitHub Actions(`.github/workflows/build-release.yml`)가 만든다.
+태그 푸시(`v1.2.0` 형식) 1회로 3종 패키지 + GitHub Release가 자동 생성된다.
+
+1. `converter/Directory.Build.props`의 `<Version>` 올리기 (태그와 반드시 일치 — CI가 검증 후 불일치 시 실패)
+2. 커밋 후 태그 푸시
+3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package` 매트릭스 3종
+   (windows-latest + ubuntu-latest + macos-14) → `release`(Release 생성 + 4개 파일 첨부)
+4. GitHub Releases에서 변경점 기록
+
+산출물 (파일명 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게):
+
+- `neo3ds-converter.zip` — Windows GUI (기존 구조 유지: exe + `tools\` + 런처 CIA 포함)
+- `neo3ds-converter-linux-x64.zip`, `neo3ds-converter-osx-arm64.zip` — Unix CLI (해당 OS 네이티브 makerom/bannertool 포함)
+- `neo3ds-launcher.cia` — 별도 첨부
+
+수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성).
+로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`
+(전제: §1 엔진 빌드 + §2 외부 도구 배치. Unix는 `bash scripts/build_unix_tools.sh` 먼저)
