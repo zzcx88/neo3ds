@@ -52,3 +52,17 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 
 - 도구 출력 접두사(`36:` 같은 줄번호)를 코드로 오인 금지 — 의심되면 `od -c`로 바이트 확인
 - 공유 파일(`neogeo_games.json`, `games.js`, README 표) 수정 전 이슈에 사전 선언
 - 무관 변경 발견 시 즉시 revert
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five canonical labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout. See `docs/agents/domain.md`.
