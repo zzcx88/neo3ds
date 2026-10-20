@@ -21,4 +21,13 @@
     <None Include="../../tools/$(ToolRuntimeIdentifier)/makerom" Link="tools/$(ToolRuntimeIdentifier)/makerom" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../tools/$(ToolRuntimeIdentifier)/bannertool" Link="tools/$(ToolRuntimeIdentifier)/bannertool" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <!-- Checked by CheckRuntimePayload (converter/Directory.Build.targets) before MSB3030 can fire -->
+  <ItemGroup Condition="'$(ToolRuntimeIdentifier)' == 'win-x64'">
+    <RequiredTool Include="../../tools/makerom/makerom.exe" Display="tools/makerom/makerom.exe" Help="Get it from a release zip or upstream (see docs/build.md 2)." />
+    <RequiredTool Include="../../tools/bannertool/windows-x86_64/bannertool.exe" Display="tools/bannertool/windows-x86_64/bannertool.exe" Help="Get it from a release zip or upstream (see docs/build.md 2)." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ToolRuntimeIdentifier)' == 'linux-x64' Or '$(ToolRuntimeIdentifier)' == 'osx-arm64'">
+    <RequiredTool Include="../../tools/$(ToolRuntimeIdentifier)/makerom" Display="tools/$(ToolRuntimeIdentifier)/makerom" Help="Build it: bash scripts/build_unix_tools.sh" />
+    <RequiredTool Include="../../tools/$(ToolRuntimeIdentifier)/bannertool" Display="tools/$(ToolRuntimeIdentifier)/bannertool" Help="Build it: bash scripts/build_unix_tools.sh" />
+  </ItemGroup>
 </Project>

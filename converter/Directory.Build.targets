@@ -1,0 +1,13 @@
+<Project>
+  <!-- Fail fast with an actionable message when runtime payload files are missing.
+       Without this, CopyToOutputDirectory fails later with cryptic MSB3030.
+       Runs only in projects that declare RequiredTool items (GUI, CLI); Core skips it. -->
+  <Target Name="CheckRuntimePayload" BeforeTargets="BeforeBuild" Condition="'@(RequiredTool)' != ''">
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)../engine/engine.elf')"
+           Text="engine/engine.elf is missing. Build it (bash scripts/build_engine.sh, see docs/build.md 1) or copy it from a release zip: unzip -p neo3ds-converter.zip neo3ds-converter/tools/engine.elf &gt; engine/engine.elf (engine.elf is OS-independent)." />
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)assets/neo3ds.rsf')"
+           Text="converter/assets/neo3ds.rsf is missing. Restore it from git: git checkout -- converter/assets/neo3ds.rsf" />
+    <Error Condition="!Exists('%(RequiredTool.Identity)')"
+           Text="%(RequiredTool.Display) is missing. %(RequiredTool.Help)" />
+  </Target>
+</Project>
