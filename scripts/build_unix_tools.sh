@@ -11,8 +11,8 @@
 # 산출물: tools/linux-x64/{makerom,bannertool} 또는 tools/osx-arm64/...
 # --skip-existing: 비어 있지 않은 기존 실행 파일만 건너뛴다. 기본은 재빌드.
 # CC/CXX에는 인자 없는 실행 파일 경로를 지정한다. 크로스 컴파일은 지원하지 않는다.
-# 소스: https://github.com/3DSGuy/Project_CTR
-#       https://github.com/diasurgical/bannertool (buildtools 서브모듈 포함)
+# 소스: https://github.com/3DSGuy/Project_CTR (태그 makerom-v0.19.0 고정, #22)
+#       https://github.com/diasurgical/bannertool (태그 1.2.0 고정, buildtools 서브모듈 포함)
 set -Eeuo pipefail
 
 fail() {
@@ -63,11 +63,20 @@ mkdir -p "$root/out" "$destination"
 work=$(mktemp -d "$root/out/unix-tools.XXXXXX")
 printf '호스트: %s/%s, 작업 디렉터리: %s\n' "$os" "$arch" "$work"
 
+# 재현 가능한 빌드: upstream 태그 고정 (#22). 태그 변경 시 SHA 주석도 함께 갱신.
+makerom_ref=makerom-v0.19.0 # e8f5f529c54ff9b22a2491a480ffa69206bf7b19 (2026-10-20 실측)
+bannertool_ref=1.2.0 # 16d8c5a0ce02a5e06e64ab42275132fca57c04a2 (2026-10-20 실측)
+
 clone_source() {
-    local name=$1 url=$2
-    # 전체 태그 이력 유지: bannertool이 git describe --tags로 버전을 읽는다.
+    local name=$1 url=$2 ref=$3
+    # 전체 태그 이력 유지: bannertool이 git describe --tags로 버전을 읽는다 (shallow clone 금지).
     if ! git clone --recurse-submodules "$url" "$work/$name"; then
         fail "$name 소스/서브모듈 다운로드 실패. 위 git 오류와 네트워크·DNS·프록시·GitHub 접근을 확인하세요. 소스: $work/$name"
+    fi
+    # 고정 태그로 checkout + 서브모듈을 해당 커밋 기준으로 맞춤 (clone 직후는 HEAD 기준이므로 필수).
+    if ! git -C "$work/$name" checkout --quiet "$ref" ||
+        ! git -C "$work/$name" submodule update --init --recursive --quiet; then
+        fail "$name 태그 checkout 실패: $ref. 태그 존재 여부와 네트워크를 확인하세요. 소스: $work/$name"
     fi
 }
 
@@ -82,7 +91,7 @@ install_binary() {
 if should_skip makerom; then
     printf '스킵: %s/makerom\n' "$destination"
 else
-    clone_source Project_CTR https://github.com/3DSGuy/Project_CTR.git
+    clone_source Project_CTR https://github.com/3DSGuy/Project_CTR.git "$makerom_ref"
     # upstream 요구 순서: 의존성 먼저, 본체 나중. 병렬 의존성 경합 방지.
     if ! (
         cd "$work/Project_CTR/makerom"
@@ -97,7 +106,7 @@ fi
 if should_skip bannertool; then
     printf '스킵: %s/bannertool\n' "$destination"
 else
-    clone_source bannertool https://github.com/diasurgical/bannertool.git
+    clone_source bannertool https://github.com/diasurgical/bannertool.git "$bannertool_ref"
     banner_args=(TARGET=NATIVE "CC=$cc" "CXX=$cxx")
     if [[ "$os" == Darwin ]]; then
         # Legacy buildtools rejects arm64 in its uname whitelist. Override only
