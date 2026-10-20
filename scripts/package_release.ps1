@@ -22,39 +22,51 @@ param(
   [string[]]$Runtimes = @("win-x64"),
   [switch]$FrameworkDependent,
   [switch]$WithLauncher,
-  [string]$OutDir = "dist"
+  [string]$OutDir = "dist",
+  [string]$VersionOverride = ""
 )
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path $PSScriptRoot -Parent
 if ($Runtimes.Count -eq 0) { throw "Specify at least one runtime." }
 
-# 1. Version comes from converter\Directory.Build.props (single source of truth for all projects).
-$props = Join-Path $root "converter\Directory.Build.props"
+# 1. Version comes from converter/Directory.Build.props (single source of truth for all projects).
+$props = Join-Path $root 'converter' 'Directory.Build.props'
 [xml]$xml = Get-Content $props
 $version = ($xml.Project.PropertyGroup | ForEach-Object { $_.Version } |
   Where-Object { $_ } | Select-Object -First 1)
+if ($VersionOverride) { $version = $VersionOverride }
 if (-not $version) { throw "Version not found in $props" }
 
-# 2. Check every requested RID before publishing any release.
+# 2. Check every requested RID before publishing any release. Segment arrays stay
+# OS-agnostic; Join-Path applies the platform separator (backslashes break Unix).
 $commonFiles = @(
-  "engine\engine.elf",
-  "converter\assets\neo3ds.rsf",
-  "converter\assets\README.txt",
-  "LICENSE",
-  "THIRD_PARTY_NOTICES.md"
+  ,@('engine', 'engine.elf'),
+  ,@('converter', 'assets', 'neo3ds.rsf'),
+  ,@('converter', 'assets', 'README.txt'),
+  ,@('LICENSE'),
+  ,@('THIRD_PARTY_NOTICES.md')
 )
 foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
-  $required = if ($runtime -eq "win-x64") {
-    @("converter\Neo3dsConverter\Neo3dsConverter.csproj",
-      "tools\makerom\makerom.exe", "tools\bannertool\windows-x86_64\bannertool.exe")
+  $required = if ($runtime -eq 'win-x64') {
+    @(
+      ,@('converter', 'Neo3dsConverter', 'Neo3dsConverter.csproj'),
+      ,@('tools', 'makerom', 'makerom.exe'),
+      ,@('tools', 'bannertool', 'windows-x86_64', 'bannertool.exe')
+    )
   } else {
-    @("converter\Neo3dsConverter.Cli\Neo3dsConverter.Cli.csproj",
-      "tools\$runtime\makerom", "tools\$runtime\bannertool")
+    @(
+      ,@('converter', 'Neo3dsConverter.Cli', 'Neo3dsConverter.Cli.csproj'),
+      ,@('tools', $runtime, 'makerom'),
+      ,@('tools', $runtime, 'bannertool')
+    )
   }
-  foreach ($src in ($commonFiles + $required)) {
-    if (-not (Test-Path (Join-Path $root $src) -PathType Leaf)) {
-      throw "$src is missing for $runtime. See docs/build.md 1-2 or scripts/build_unix_tools.sh."
+  foreach ($segments in ($commonFiles + $required)) {
+    $rel = $segments -join '/'
+    $path = $root
+    foreach ($seg in $segments) { $path = Join-Path $path $seg }
+    if (-not (Test-Path $path -PathType Leaf)) {
+      throw "$rel is missing for $runtime. See docs/build.md 1-2 or scripts/build_unix_tools.sh."
     }
   }
 }
@@ -74,10 +86,10 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
   }
 
   # 3. Publish separately per RID so outputs cannot leak between packages.
-  $publishDir = Join-Path $root "out\publish-tmp\$runtime"
+  $publishDir = Join-Path $root 'out' 'publish-tmp' $runtime
   if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
   $sc = if ($selfContained) { "true" } else { "false" }
-  dotnet publish (Join-Path $root "converter\$project") `
+  dotnet publish (Join-Path $root 'converter' $project) `
     -c $Configuration -r $runtime --self-contained $sc -o $publishDir
   if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $runtime (code $LASTEXITCODE)" }
   if (-not (Test-Path (Join-Path $publishDir $binary) -PathType Leaf)) {
@@ -86,55 +98,58 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
 
   # CLI None/Link items normally supply tools; fill any missing items here.
   if (-not $isWindowsRid) {
-    $toolsDir = Join-Path $publishDir "tools"
+    $toolsDir = Join-Path $publishDir 'tools'
     New-Item $toolsDir -ItemType Directory -Force | Out-Null
     $payload = @{
-      "makerom" = "tools\$runtime\makerom"
-      "bannertool" = "tools\$runtime\bannertool"
-      "engine.elf" = "engine\engine.elf"
-      "neo3ds.rsf" = "converter\assets\neo3ds.rsf"
+      'makerom' = @('tools', $runtime, 'makerom')
+      'bannertool' = @('tools', $runtime, 'bannertool')
+      'engine.elf' = @('engine', 'engine.elf')
+      'neo3ds.rsf' = @('converter', 'assets', 'neo3ds.rsf')
     }
     foreach ($name in $payload.Keys) {
       $destination = Join-Path $toolsDir $name
       if (-not (Test-Path $destination -PathType Leaf)) {
-        Copy-Item (Join-Path $root $payload[$name]) $destination
+        $src = $root
+        foreach ($seg in $payload[$name]) { $src = Join-Path $src $seg }
+        Copy-Item $src $destination
       }
     }
   }
-  $toolNames = if ($isWindowsRid) { @("makerom.exe", "bannertool.exe") } else { @("makerom", "bannertool") }
-  foreach ($name in ($toolNames + @("engine.elf", "neo3ds.rsf"))) {
-    if (-not (Test-Path (Join-Path $publishDir "tools\$name") -PathType Leaf)) {
-      throw "tools\$name missing from the $runtime publish output"
+  $toolNames = if ($isWindowsRid) { @('makerom.exe', 'bannertool.exe') } else { @('makerom', 'bannertool') }
+  foreach ($name in ($toolNames + @('engine.elf', 'neo3ds.rsf'))) {
+    if (-not (Test-Path (Join-Path $publishDir 'tools' $name) -PathType Leaf)) {
+      throw "tools/$name missing from the $runtime publish output"
     }
   }
 
   # 4. Keep the Windows layout; Unix also needs published native libraries.
-  $stage = Join-Path $root "$OutDir\stage\$packageName"
+  $stage = Join-Path $root $OutDir 'stage' $packageName
   if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
   New-Item $stage -ItemType Directory -Force | Out-Null
   if ($isWindowsRid) {
     Copy-Item (Join-Path $publishDir $binary) $stage
-    Copy-Item (Join-Path $publishDir "tools") (Join-Path $stage "tools") -Recurse
+    Copy-Item (Join-Path $publishDir 'tools') (Join-Path $stage 'tools') -Recurse
   } else {
     Get-ChildItem $publishDir -Force | Copy-Item -Destination $stage -Recurse -Force
   }
-  $readme = (Get-Content (Join-Path $root "converter\assets\README.txt") -Raw -Encoding UTF8).Replace("{VERSION}", $version)
-  Set-Content (Join-Path $stage "README.txt") $readme -Encoding UTF8
-  Copy-Item (Join-Path $root "LICENSE") (Join-Path $stage "LICENSE.txt") -Force
-  Copy-Item (Join-Path $root "THIRD_PARTY_NOTICES.md") $stage -Force
+  $readmeTemplate = Join-Path $root 'converter' 'assets' 'README.txt'
+  $readme = (Get-Content $readmeTemplate -Raw -Encoding UTF8).Replace('{VERSION}', $version)
+  Set-Content (Join-Path $stage 'README.txt') $readme -Encoding UTF8
+  Copy-Item (Join-Path $root 'LICENSE') (Join-Path $stage 'LICENSE.txt') -Force
+  Copy-Item (Join-Path $root 'THIRD_PARTY_NOTICES.md') $stage -Force
 
   # 5. Only the Windows GUI exe builds the optional launcher CIA.
   $includeLauncher = $isWindowsRid -and $WithLauncher
   if ($includeLauncher) {
-    $exe = Join-Path $stage "Neo3dsConverter.exe"
-    $p = Start-Process $exe -ArgumentList "--launcher", "`"$stage`"" -Wait -PassThru -WindowStyle Hidden
-    $cia = Join-Path $stage "neo3ds-launcher.cia"
+    $exe = Join-Path $stage 'Neo3dsConverter.exe'
+    $p = Start-Process $exe -ArgumentList '--launcher', "`"$stage`"" -Wait -PassThru -WindowStyle Hidden
+    $cia = Join-Path $stage 'neo3ds-launcher.cia'
     if ($p.ExitCode -ne 0 -or -not (Test-Path $cia)) { throw "launcher CIA build failed (code $($p.ExitCode))" }
-    Copy-Item $cia (Join-Path $root "$OutDir\neo3ds-launcher.cia") -Force
+    Copy-Item $cia (Join-Path $root $OutDir 'neo3ds-launcher.cia') -Force
   }
 
   # 6. Slash-separated entries; Windows asset name protects latest/download links.
-  $zip = Join-Path $root "$OutDir\$packageName.zip"
+  $zip = Join-Path $root $OutDir "$packageName.zip"
   if (Test-Path $zip) { Remove-Item $zip -Force }
   $base = Split-Path $stage -Parent
   $z = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
