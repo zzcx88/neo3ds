@@ -9,6 +9,7 @@ namespace Neo3dsConverter;
 ///   --pack: a .neo3ds game file for the launcher instead of a CIA (same options)
 ///   --launcher [out-dir]   (the launcher CIA, neo3ds-launcher.cia)
 ///   --art-sheet sheet.png   (generated art of every MAME romset, for checking)
+///   --help | -h   (this help)
 /// </summary>
 public static class CommandLine
 {
@@ -26,6 +27,7 @@ public static class CommandLine
     {
         try
         {
+            if (args.Any(a => a == "--help" || a == "-h")) { PrintHelp(); return 0; }
             if (args[0] == "--art-sheet") { ArtSheet(args[1]); return 0; }
             if (args[0] == "--launcher")
             {
@@ -92,6 +94,55 @@ public static class CommandLine
             if (Environment.GetEnvironmentVariable("NEO3DS_DEBUG") != null) Console.Error.WriteLine(e);
             return 1;
         }
+    }
+
+    /// <summary>Prints full usage (--help / -h) in the current language.</summary>
+    static void PrintHelp()
+    {
+        string exe = "neo3ds-converter";
+        try
+        {
+            var path = Environment.ProcessPath;
+            var name = path != null ? Path.GetFileNameWithoutExtension(path) : null;
+            if (!string.IsNullOrEmpty(name) && !name.Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                exe = Path.GetFileName(path)!; // self-contained run: real file name
+        }
+        catch { /* keep the default */ }
+        Console.WriteLine(Lang.L($"""
+            사용법:
+              {exe} <game.zip> [out-dir] [옵션]   CIA 1개 생성
+              {exe} <a.zip> <b.zip>... [옵션]     zip마다 CIA 1개씩 생성
+              {exe} --launcher [out-dir]          neo3ds-launcher.cia 생성
+              {exe} --art-sheet sheet.png         전 롬셋 아트 덤프 (점검용)
+              {exe} --help | -h                  이 도움말 출력
+
+            옵션:
+              --title "..."        타이틀 지정 (zip 1개만)
+              --icon icon.png      아이콘 지정 (zip 1개만)
+              --banner banner.png  배너 지정 (zip 1개만)
+              --set romset         롬셋 강제 지정 (zip 1개만)
+              --system aes|mvs     기종 모드
+              --region eu|jp|us    리전 (기본값 eu)
+              --pack               CIA 대신 런처용 .neo3ds 출력
+              --lang ko|en         메시지 언어 (기억됨)
+            """, $"""
+            Usage:
+              {exe} <game.zip> [out-dir] [options]   build one CIA
+              {exe} <a.zip> <b.zip>... [options]     build one CIA each
+              {exe} --launcher [out-dir]             build neo3ds-launcher.cia
+              {exe} --art-sheet sheet.png            dump all romsets' art for checking
+              {exe} --help | -h                      show this help
+
+            Options:
+              --title "..."        custom title (one zip only)
+              --icon icon.png      custom icon (one zip only)
+              --banner banner.png  custom banner (one zip only)
+              --set romset         force romset (one zip only)
+              --system aes|mvs     console mode
+              --region eu|jp|us    region (default eu)
+              --pack               output .neo3ds for launcher instead of CIA
+              --lang ko|en         message language (remembered)
+            """));
     }
 
     /// <summary>Every parent romset's generated icon (shown 2x) and banner, 32 games per picture
