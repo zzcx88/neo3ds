@@ -110,18 +110,24 @@ function gradient(w, h, border, drawText) {
   return rgb;
 }
 
+function canCanvas() {
+  return typeof document !== 'undefined' || typeof OffscreenCanvas !== 'undefined';
+}
+
 export async function iconPng(title) {
-  if (typeof document !== 'undefined') return canvasIcon(title);
+  if (canCanvas()) return canvasIcon(title);
   return encodePng(ICON_SIZE, ICON_SIZE, gradient(ICON_SIZE, ICON_SIZE, 2));
 }
 
 export async function bannerPng(title) {
-  if (typeof document !== 'undefined') return canvasBanner(title);
+  if (canCanvas()) return canvasBanner(title);
   return encodePng(BANNER_W, BANNER_H, gradient(BANNER_W, BANNER_H, 4));
 }
 
 function baseCanvas(w, h, border) {
-  const cv = document.createElement('canvas');
+  const cv = typeof document !== 'undefined'
+    ? document.createElement('canvas')
+    : new OffscreenCanvas(w, h);
   cv.width = w; cv.height = h;
   const cx = cv.getContext('2d');
   const grad = cx.createLinearGradient(0, 0, 0, h);
@@ -165,8 +171,62 @@ function drawFitted(cx, text, weight, maxSize, x, y, w, h, color, maxLines) {
   }
 }
 
-function canvasToBytes(cv) {
-  return new Promise((resolve) => cv.toBlob(async (b) => resolve(new Uint8Array(await b.arrayBuffer())), 'image/png'));
+async function canvasToBytes(cv) {
+  const b = cv.convertToBlob
+    ? await cv.convertToBlob({ type: 'image/png' })
+    : await new Promise((resolve) => cv.toBlob(resolve, 'image/png'));
+  return mergeIdat(new Uint8Array(await b.arrayBuffer()));
+}
+
+// Canvas toBlob emits split IDAT chunks, which the WASM stb_image in bannertool
+// misreads (icon renders without text). Merge into a single IDAT.
+export function mergeIdat(png) {
+  const dv = new DataView(png.buffer, png.byteOffset, png.length);
+  const td = new TextEncoder();
+  const chunks = [];
+  let o = 8;
+  while (o + 8 <= png.length) {
+    const len = dv.getUint32(o);
+    const type = String.fromCharCode(png[o + 4], png[o + 5], png[o + 6], png[o + 7]);
+    chunks.push({ type, data: png.subarray(o + 8, o + 8 + len) });
+    o += 12 + len;
+    if (type === 'IEND') break;
+  }
+  const idat = [];
+  let idatLen = 0;
+  for (const c of chunks) {
+    if (c.type !== 'IDAT') continue;
+    idat.push(c.data);
+    idatLen += c.data.length;
+  }
+  if (idat.length <= 1) return png;
+  const merged = new Uint8Array(idatLen);
+  let w = 0;
+  for (const d of idat) { merged.set(d, w); w += d.length; }
+  const mk = (type, data) => {
+    const out = new Uint8Array(12 + data.length);
+    const v = new DataView(out.buffer);
+    v.setUint32(0, data.length);
+    out.set(td.encode(type), 4);
+    out.set(data, 8);
+    const both = new Uint8Array(4 + data.length);
+    both.set(td.encode(type));
+    both.set(data, 4);
+    v.setUint32(8 + data.length, crc32Bytes(both));
+    return out;
+  };
+  const parts = [png.subarray(0, 8)];
+  for (const c of chunks) {
+    if (c.type === 'IDAT' || c.type === 'IEND') continue;
+    parts.push(mk(c.type, c.data));
+  }
+  parts.push(mk('IDAT', merged));
+  parts.push(mk('IEND', new Uint8Array(0)));
+  const total = parts.reduce((a, p) => a + p.length, 0);
+  const out = new Uint8Array(total);
+  let q = 0;
+  for (const p of parts) { out.set(p, q); q += p.length; }
+  return typeof Buffer !== 'undefined' ? Buffer.from(out) : out;
 }
 
 async function canvasIcon(title) {
