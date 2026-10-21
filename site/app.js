@@ -134,6 +134,7 @@ const EN = {
   'gate.mLaunch': 'For the launcher — many games in one app',
   'gate.mGameGroup': 'Per game', 'gate.mLaunchGroup': 'For the launcher',
   'gate.mCiaOut': '.cia → install with FBI', 'gate.mPackOut': '.neo3ds → /neo3ds/games/', 'gate.mLaunchOut': '.cia → install once',
+  'gate.mUpd': 'To update, just install the new launcher CIA. Your existing .neo3ds files run on the new version as they are.',
   /* JS가 그리는 문구 */
   'budget.main': 'main core', 'budget.core1': 'core 1', 'budget.idle': 'idle',
   'budget.d68k': '68000 (game code)', 'budget.dz80': 'Z80 (sound CPU)', 'budget.dtmr': 'timers',
