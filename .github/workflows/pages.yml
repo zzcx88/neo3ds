@@ -1,10 +1,16 @@
 name: Pages
 
+# The web converter is the release: build engine.elf + WASM tools, verify, deploy site/.
 on:
   push:
     branches: [main]
     paths:
       - 'site/**'
+      - 'engine/**'
+      - 'converter/assets/**'
+      - 'scripts/build_wasm.sh'
+      - 'scripts/wasm-shim/**'
+      - 'scripts/gen_site_games.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -17,19 +23,82 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  DEVKITARM_IMAGE: devkitpro/devkitarm:20260610
+  EMSDK_VERSION: 4.0.10
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build engine.elf in devkitARM container
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/repo" -w /repo/engine \
+            "$DEVKITARM_IMAGE" make
+          test -s engine/engine.elf
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ env.EMSDK_VERSION }}
+
+      - name: Build WASM tools + stage static assets
+        run: bash scripts/build_wasm.sh
+
+      - name: Verify site gates (JS + tags + i18n)
+        run: |
+          for f in site/app.js site/convert.js site/vendor/conv/*.js site/vendor/conv/*.mjs site/vendor/*.mjs site/vendor/bench/*; do
+            node --check "$f"
+          done
+          python3 - << 'EOF'
+          import html.parser
+          class P(html.parser.HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.stack=[]; self.errs=[]
+                  self.void={'meta','link','input','br','img','hr'}
+              def handle_starttag(self, tag, attrs):
+                  if tag not in self.void: self.stack.append((tag, self.getpos()))
+              def handle_endtag(self, tag):
+                  if tag in self.void: return
+                  if self.stack and self.stack[-1][0]==tag: self.stack.pop()
+                  else: self.errs.append(f'{tag}@{self.getpos()}')
+          for page in ('site/index.html', 'site/convert.html'):
+              p=P(); p.feed(open(page).read())
+              assert not p.errs and not p.stack, f'{page}: {p.errs} {p.stack}'
+          print('tags OK')
+          EOF
+          node -e "
+          const fs = require('node:fs');
+          const app = fs.readFileSync('site/app.js', 'utf8');
+          for (const page of ['site/index.html', 'site/convert.html']) {
+            const html = fs.readFileSync(page, 'utf8');
+            const keys = [...html.matchAll(/data-i18n=\"([^\"]+)\"/g)].map(m => m[1]);
+            const missing = keys.filter(k => !app.includes(\`'\${k}'\`));
+            if (missing.length) { console.error(page, 'missing EN:', missing); process.exit(1); }
+          }
+          console.log('i18n OK');
+          "
+
+      - name: Run converter module tests
+        run: |
+          cd site/vendor/conv && npm i --no-save adm-zip zstd-codec > /dev/null 2>&1
+          node conv.test.mjs
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true   # Pages가 꺼져 있으면 워크플로 토큰으로 켭니다(실패하면 저장소 주인이 Settings → Pages에서 직접 켜야 합니다)
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
       - id: deploy
         uses: actions/deploy-pages@v4
