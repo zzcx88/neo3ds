@@ -25,7 +25,7 @@
   <nav class="bar-nav" aria-label="섹션" data-i18n-attr="aria-label:a11y.sections">
     <a href="#steps" data-i18n="nav.steps">설치 3단계</a>
     <a href="#panel" data-i18n="nav.panel">터치 조작</a>
-    <a href="#convert" data-i18n="nav.convert">변환 과정</a>
+    <a href="#launcher" data-i18n="nav.launcher">런처</a>
     <a href="#speed" data-i18n="nav.speed">성능</a>
     <a href="#games" data-i18n="nav.games">게임 호환성</a>
   </nav>
@@ -184,34 +184,25 @@
   </div>
 </section>
 
-<!-- ── 변환기 ──────────────────────────────────────────────────────────── -->
-<section class="sec" id="convert">
+<!-- ── 런처 ────────────────────────────────────────────────────────────── -->
+<section class="sec" id="launcher">
   <div class="wrap">
-    <h2 data-i18n="conv.h2">변환 과정</h2>
-    <p class="lede narrow" data-i18n="conv.lede">암호 해독은 전부 PC에서 끝냅니다. 3DS는 해독에 시간도 메모리도 쓰지 않습니다.</p>
-
-    <div class="chips" id="chips" role="group" aria-label="롬셋" data-i18n-attr="aria-label:conv.sets"></div>
-
-    <div class="conv-grid">
-      <ol class="pipe" id="pipe">
-        <li><span class="pipe-no">1</span><div><h3 data-i18n="conv.p1t">롬셋 확인</h3><p data-i18n="conv.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다. 합본이면 쓸 수 있는 판을 고릅니다(kof98.zip → kof98h).</p></div><span class="pipe-val" data-pipe="1"></span></li>
-        <li><span class="pipe-no">2</span><div><h3 data-i18n="conv.p2t">암호 해독</h3><p data-i18n="conv.p2d">CMC42·CMC50·SMA·PCM2·PVC 등 보호 칩을 PC에서 풉니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
-        <li><span class="pipe-no">3</span><div><h3 data-i18n="conv.p3t">실기용 패치 + 지역</h3><p data-i18n="conv.p3d">보호 칩 검사 루틴을 지우고 68k 바이트 순서를 맞춥니다. 지역(유럽·아시아 / 일본 / 미국)도 고릅니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
-        <li><span class="pipe-no">4</span><div><h3 data-i18n="conv.p4t">그래픽 압축</h3><p data-i18n="conv.p4d">스프라이트를 4KB 블록으로 zstd 압축합니다. 3DS는 8MB 캐시로 씁니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
-        <li><span class="pipe-no">5</span><div><h3 data-i18n="conv.p5t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="5"></span></li>
-        <li><span class="pipe-no">6</span><div><h3 data-i18n="conv.p6t">CIA 생성 (또는 런처용 파일)</h3><p data-i18n="conv.p6d">엔진과 게임 데이터를 묶어 설치 파일로 만듭니다. 런처용 파일(.neo3ds)로 뽑아 SD 카드에 넣을 수도 있습니다.</p></div><span class="pipe-val" data-pipe="6"></span></li>
-      </ol>
-
-      <div class="conv-side">
-        <div class="conv-head">
-          <span class="conv-file" id="convFile">kof99.zip</span>
-          <button type="button" class="btn btn-primary" id="convRun" data-i18n="conv.run">CIA 만들기</button>
-          <button type="button" class="btn btn-ghost btn-sm hidden" id="convReset" data-i18n="conv.again">다시</button>
-        </div>
-        <pre class="log" id="convLog" aria-label="변환기 로그" data-i18n-attr="aria-label:conv.logLabel"></pre>
-        <p class="tiny" data-i18n="conv.logNote">문구·형식은 실제 변환기와 같습니다. 압축 수치는 실측한 KOF '99 기준입니다.</p>
-        <div class="cta-row" style="margin:14px 0 0">
-          <a class="btn btn-primary btn-lg" href="convert.html" data-i18n="conv.try">실제 변환기로 가기</a>
+    <h2 data-i18n="launch.h2">런처: 앱 하나로 전 게임</h2>
+    <p class="lede narrow" data-i18n="launch.lede">게임마다 CIA를 설치하는 대신, 런처 앱 하나만 설치하고 SD 카드의 게임 파일 목록에서 골라 실행합니다. HOME 메뉴 아이콘도 하나만 생깁니다.</p>
+    <div class="map">
+      <figure class="fig" style="margin-top:0">
+        <img src="media/launcher.png" width="400" alt="런처 게임 목록" data-i18n-attr="alt:launch.imgAlt" loading="lazy" decoding="async">
+        <p class="fig-note" data-i18n="launch.cap">십자키·터치로 고르고 A(또는 두 번 터치)로 실행. L/R은 한 페이지씩 넘깁니다.</p>
+      </figure>
+      <div>
+        <ul class="panel-list">
+          <li><span class="pb-name" data-i18n="launch.p1n">설치는 한 번</span><span class="pb-desc" data-i18n="launch.p1">런처 CIA는 FBI로 한 번만 설치. 이후 게임 추가는 .neo3ds 파일을 /neo3ds/games/에 복사만 하면 됩니다.</span></li>
+          <li><span class="pb-name" data-i18n="launch.p2n">저장 공유</span><span class="pb-desc" data-i18n="launch.p2">같은 게임이라면 CIA판과 런처판이 키 설정·백업 RAM·퀵세이브를 함께 씁니다.</span></li>
+          <li><span class="pb-name" data-i18n="launch.p3n">바로 복귀</span><span class="pb-desc" data-i18n="launch.p3">게임 중 아래 화면 Game list를 두 번 누르면 목록으로 돌아갑니다.</span></li>
+        </ul>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="convert.html?mode=launcher" data-i18n="launch.cta1">런처 CIA 만들기</a>
+          <a class="btn btn-ghost btn-lg" href="convert.html?mode=pack" data-i18n="launch.cta2">런처용 파일 만들기</a>
         </div>
       </div>
     </div>
