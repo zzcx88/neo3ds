@@ -19,6 +19,8 @@ remain in the source files.
 | Skia (inside `libSkiaSharp`; its own third-party parts are listed in SkiaSharp's THIRD-PARTY-NOTICES) | converter build | Google Inc. | BSD-3-Clause |
 | makerom (bundled in the release) | `tools\makerom.exe`, `tools/{rid}/makerom` | 3DSGuy, applestash, Jakcron | MIT |
 | bannertool (bundled in the release) | `tools\bannertool.exe`, `tools/{rid}/bannertool` | Steveice10 | MIT |
+| fflate 0.8.3 (browser zip reading) | `site/vendor/conv/fflate.js` (verbatim ESM bundle) | Arjun Barrett (101arrowz) | MIT |
+| Zstandard 1.5.6 (web converter compression, Emscripten build) | `site/vendor/zstd.{js,wasm}` (built by `scripts/build_wasm.sh`) | Meta Platforms, Inc. and affiliates | BSD-3-Clause |
 
 Because Cyclone 68000 and DrZ80 are only free for non-commercial use, **neo3ds as a whole may only
 be used and distributed non-commercially.** gngeo itself has shipped with these two cores for years
@@ -52,7 +54,7 @@ IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISI
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## MIT (makerom, bannertool, ZstdSharp.Port, SkiaSharp)
+## MIT (makerom, bannertool, ZstdSharp.Port, SkiaSharp, fflate)
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
