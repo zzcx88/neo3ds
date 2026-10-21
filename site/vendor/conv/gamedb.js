@@ -1,6 +1,8 @@
 // GameDb port (converter/Neo3dsConverter.Core/GameDb.cs).
 // MAME romset records + support rules. JSON shape matches neogeo_games.json
 // (see scripts/gen_gamedb.py); RomOp decoding mirrors GameDb.Load.
+import { supported as protectionSupported } from './protection.js';
+
 export const Region = Object.freeze({ Europe: 0, Japan: 1, Usa: 2 });
 
 export function decodeOps(rawOps) {
@@ -25,10 +27,7 @@ export function titleOf(g) {
   return t.trim();
 }
 
-const SUPPORTED_CARTS = new Set([
-  'rom', 'rom_mslugx', 'cmc42', 'cmc50', 'sma', 'pcm2', 'kof2002',
-  'pvc', 'pvc_al', 'boot_svc', 'boot_svcplus', 'boot_kof10th',
-]);
+// Cart support lives in protection.js (Protection.Supported); unsupported() adds the reason strings.
 
 export class GameDb {
   constructor(games) {
@@ -65,7 +64,7 @@ export class GameDb {
   // Why the engine can't run this cart yet, or null when it can (GameDb.cs:49).
   unsupported(g) {
     if (g.machine === 'irrmaze') return 'needs a trackball';
-    if (SUPPORTED_CARTS.has(g.cart)) return null;
+    if (protectionSupported(g.cart)) return null;
     switch (g.cart) {
       case 'rom_kof98': return 'MVS version with a protection chip (the home version kof98h converts if its ROMs are in the zip)';
       case 'rom_fatfur2': return 'protection chip not supported';

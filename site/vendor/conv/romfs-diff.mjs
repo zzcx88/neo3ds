@@ -37,11 +37,15 @@ const check = (name, ok, detail = '') => {
   if (!ok) fail++;
 };
 
-// 1. uncompressed bytes identical
+// 1. uncompressed bytes identical (incl. Phase-2 scheme files: presence + bytes)
 for (const f of ['p.bin', 's.bin', 'm1.bin', 'v.bin', 'bios_aes.bin', 'bios_mvs.bin',
-  'sfix.bin', 'lo.bin', 'biosmode.bin']) {
-  const a = files.get(f), b = readFileSync(join(keep, 'romfs/game', f));
-  check(`bytes/${f}`, a && Buffer.compare(Buffer.from(a), b) === 0, a ? `${a.length} bytes` : 'missing');
+  'sfix.bin', 'lo.bin', 'biosmode.bin', 'sma.bin', 'fixbank.bin', 'pvc.bin', 'vb.bin']) {
+  const a = files.get(f);
+  let b = null;
+  try { b = readFileSync(join(keep, 'romfs/game', f)); } catch { /* absent on desktop side */ }
+  if (a == null && b == null) continue; // both absent: not applicable to this cart
+  check(`bytes/${f}`, a && b && Buffer.compare(Buffer.from(a), b) === 0,
+    a ? `${a.length} bytes` : 'missing on web');
 }
 
 // 2. c.pak: decode every block on both sides, compare bytes
@@ -67,4 +71,39 @@ check('idx/header', [4, 8, 12, 16].every((o) => wv.getUint32(o, true) === nv.get
 const usageOff = 20 + (wBlocks + 1) * 4;
 const wUse = Buffer.from(wIdx.subarray(usageOff)), nUse = Buffer.from(nIdx.subarray(usageOff));
 check('idx/usage', Buffer.compare(wUse, nUse) === 0, `${wUse.length} bytes`);
+
+// 4. .neo3ds pack: TOC names identical + all entries identical except c.pak
+// (c.pak bytes are compressor-dependent; its blocks were decoded-compared in §2).
+const { buildPack } = await import('./pack.js');
+const { execFileSync } = await import('node:child_process');
+try {
+  execFileSync('dotnet', [join(ROOT, 'converter/Neo3dsConverter.Cli/bin/Release/net10.0/neo3ds-converter.dll'),
+    join(ROOT, 'roms', meta['rom'] + '.zip'), '/tmp', '--pack'], { stdio: 'pipe' });
+  const nPack = readFileSync(join('/tmp', meta['rom'] + '.neo3ds'));
+  const wFiles = new Map(files);
+  wFiles.set('title.txt', Buffer.from(meta['title']));
+  wFiles.set('version.txt', Buffer.from(meta['converter'].split('.').slice(0, 3).join('.')));
+  const wPack = Buffer.from(buildPack(wFiles, meta['rom']));
+  const readToc = (p) => {
+    const out = [];
+    for (let i = 0; i < p.readUInt32LE(12); i++)
+      out.push(p.subarray(16 + i * 32, 16 + i * 32 + 24).toString().replace(/\0+$/, ''));
+    return out;
+  };
+  const wToc = readToc(wPack), nToc = readToc(nPack);
+  check('pack/toc-names', JSON.stringify(wToc) === JSON.stringify(nToc), `${wToc.length} entries`);
+  const getData = (p, name) => {
+    const i = readToc(p).indexOf(name);
+    return p.subarray(p.readUInt32LE(16 + i * 32 + 24), p.readUInt32LE(16 + i * 32 + 24) + p.readUInt32LE(16 + i * 32 + 28));
+  };
+  let badEntry = null;
+  for (const name of wToc) {
+    if (name === 'c.pak' || name === 'c.idx') continue; // compressor-dependent (§2 covers content)
+    if (Buffer.compare(getData(wPack, name), getData(nPack, name)) !== 0) { badEntry = name; break; }
+  }
+  check('pack/entries', badEntry === null, badEntry ?? `${wToc.length - 2} identical`);
+} catch (e) {
+  check('pack/toc-names', false, String(e.message).slice(0, 100));
+  check('pack/entries', false, '');
+}
 process.exit(fail ? 1 : 0);

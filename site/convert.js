@@ -8,16 +8,27 @@ let files = [];
 let worker = null, jobId = 0, running = false;
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
 
+function currentMode() {
+  return document.querySelector('input[name="gateMode"]:checked')?.value ?? 'cia';
+}
+
 function ingest(list) {
   files = [...list].filter((f) => f.name.toLowerCase().endsWith('.zip'));
+  refreshRun();
+}
+
+function refreshRun() {
   const hasBios = files.some((f) => f.name.toLowerCase() === 'neogeo.zip');
   const names = files.map((f) => f.name).join(', ');
   $('gateFile').textContent = files.length === 0
     ? t('zip을 올리세요', 'Drop zips')
     : `${files.length}개: ${names}`;
-  $('gateMeta').textContent = files.length > 0 && !hasBios ? t('neogeo.zip이 없습니다', 'neogeo.zip missing') : '';
-  runBtn.disabled = files.length === 0 || running;
+  $('gateMeta').textContent = files.length > 0 && !hasBios && currentMode() !== 'launcher'
+    ? t('neogeo.zip이 없습니다', 'neogeo.zip missing') : '';
+  runBtn.disabled = (files.length === 0 && currentMode() !== 'launcher') || running;
 }
+
+document.querySelectorAll('input[name="gateMode"]').forEach((r) => r.addEventListener('change', refreshRun));
 input.addEventListener('change', () => ingest(input.files));
 for (const ev of ['dragover', 'dragenter']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); });
 for (const ev of ['dragleave', 'drop']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); });
@@ -47,12 +58,14 @@ function resetPipe() {
 }
 
 runBtn.addEventListener('click', () => {
-  if (running || files.length === 0) return;
+  if (running || (files.length === 0 && currentMode() !== 'launcher')) return;
   running = true;
   runBtn.disabled = true;
   cancelBtn.classList.remove('hidden');
   $('gateDl').classList.add('hidden');
   $('gateStats').classList.add('hidden');
+  $('gateBatch').replaceChildren();
+  $('gateBatch').classList.add('hidden');
   logEl.textContent = '';
   resetPipe();
   worker = new Worker('vendor/conv/worker.js', { type: 'module' });
@@ -78,32 +91,68 @@ runBtn.addEventListener('click', () => {
     } else if (m.type === 'done') {
       finish();
       for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
-      const dl = $('gateDl');
-      if (dl.href) URL.revokeObjectURL(dl.href);
-      dl.href = URL.createObjectURL(new Blob([m.cia], { type: 'application/octet-stream' }));
-      dl.download = `${m.stats.rom}-web.cia`;
-      dl.classList.remove('hidden');
-      const st = $('gateStats');
-      st.textContent = t(
-        `CIA ${m.stats.ciaMB}MB · 메모리 ${m.stats.memMB ?? '?'}MB · 3DS 약 ${m.stats.totalMB}MB · ${m.stats.secs}초`,
-        `CIA ${m.stats.ciaMB}MB · memory ${m.stats.memMB ?? '?'}MB · 3DS ~${m.stats.totalMB}MB · ${m.stats.secs}s`,
-      );
-      st.classList.remove('hidden');
-      log(t(`[완료] ${m.stats.rom}-web.cia (${m.stats.ciaMB} MB, ${m.stats.secs}초)`,
-        `[Done] ${m.stats.rom}-web.cia (${m.stats.ciaMB} MB, ${m.stats.secs}s)`));
-      log(t(`  타일 ${m.stats.tiles.toLocaleString()}개, 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
+      showDownload(m.cia, downloadName(m.stats));
+      showStats(m.stats);
+      log(t(`[완료] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}초)`,
+        `[Done] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}s)`));
+      if (m.stats.tiles) log(t(`  타일 ${m.stats.tiles.toLocaleString()}개, 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
         `  ${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`));
+    } else if (m.type === 'batch-one') {
+      // One game done: add a link the user clicks (auto-clicking N files gets blocked).
+      const name = downloadName({ ...m.stats, mode: currentMode() });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([m.bin], { type: 'application/octet-stream' }));
+      a.download = name;
+      a.className = 'btn btn-ghost btn-sm';
+      a.textContent = `⬇ ${name} (${m.stats.ciaMB} MB)`;
+      $('gateBatch').appendChild(a);
+      $('gateBatch').classList.remove('hidden');
+      log(t(`[완료] ${name} (${m.stats.ciaMB} MB)`, `[Done] ${name} (${m.stats.ciaMB} MB)`));
+    } else if (m.type === 'batch-done') {
+      finish();
+      for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
+      log(t(`배치 ${m.count}종 완료 (${m.secs}초) — 위 목록에서 받으세요`, `Batch done: ${m.count} games (${m.secs}s) — get them from the list above`));
     } else if (m.type === 'error') {
       finish();
       log(t(`실패: ${m.message}`, `Failed: ${m.message}`));
     }
   };
-  worker.postMessage({ id, files, region: $('gateRegion').value, system: $('gateSystem').value });
+  const mode = currentMode();
+  const gameZips = files.filter((f) => f.name.toLowerCase() !== 'neogeo.zip');
+  const batch = mode !== 'launcher' && gameZips.length > 1 ? gameZips.map((f) => ({ name: f.name })) : null;
+  if (batch) log(t(`배치 ${batch.length}종 시작`, `Batch start: ${batch.length} games`));
+  worker.postMessage({ id, files, region: $('gateRegion').value, system: $('gateSystem').value, mode, batch });
 });
+
+
+
+function downloadName(stats) {
+  const mode = stats.mode ?? currentMode();
+  if (stats.rom === 'launcher') return 'neo3ds-launcher.cia';
+  if (mode === 'pack') return `${stats.rom}.neo3ds`;
+  return `${stats.rom}-web.cia`;
+}
+
+function showDownload(bin, name) {
+  const dl = $('gateDl');
+  if (dl.href) URL.revokeObjectURL(dl.href);
+  dl.href = URL.createObjectURL(new Blob([bin], { type: 'application/octet-stream' }));
+  dl.download = name;
+  dl.classList.remove('hidden');
+}
+
+function showStats(stats) {
+  const st = $('gateStats');
+  st.textContent = t(
+    `CIA ${stats.ciaMB}MB · 메모리 ${stats.memMB ?? '?'}MB · 3DS 약 ${stats.totalMB}MB · ${stats.secs}초`,
+    `CIA ${stats.ciaMB}MB · memory ${stats.memMB ?? '?'}MB · 3DS ~${stats.totalMB}MB · ${stats.secs}s`,
+  );
+  st.classList.remove('hidden');
+}
 
 function finish() {
   running = false;
-  runBtn.disabled = files.length === 0;
+  refreshRun();
   cancelBtn.classList.add('hidden');
   if (worker) { worker.terminate(); worker = null; }
 }
