@@ -107,6 +107,21 @@ const EN = {
   'foot.repo': 'Repository', 'foot.rel': 'Releases', 'foot.readme': 'README',
   'foot.build': 'Build procedure', 'foot.lic': 'Licence',
   'foot.note': 'Game screens and trademarks belong to their owners.',
+  /* convert.html — Phase 0 gate */
+  'gate.meta': 'Pack a desktop converter RomFS folder into a CIA with WASM makerom·bannertool, in the browser. Files never leave this tab.',
+  'gate.kicker': 'Web converter Phase 0 · no server · files stay in this tab',
+  'gate.h1': 'Build a CIA<br>in the browser.',
+  'gate.lede': 'Drop the RomFS folder the desktop converter kept and WASM-built makerom·bannertool pack a CIA inside this tab. Neither the rom nor the result ever leaves it.',
+  'gate.req': 'How to make the folder: NEO3DS_KEEP=1 neo3ds-converter kof98h.zip out → the kof98h-* folder in the temp dir',
+  'gate.nofile': 'Drop a folder', 'gate.dropT': 'Drop the kept folder',
+  'gate.dropD': 'Click or drag here (romfs/ + icon.png·banner.png·banner.wav)',
+  'gate.run': 'Build CIA', 'gate.dl': 'Get the CIA',
+  'gate.progH2': 'Progress', 'gate.progLede': 'Each step reports here. Get the CIA above when done.',
+  'gate.p1t': 'Staging files', 'gate.p1d': 'Load romfs/ (14 files) + icon/banner sources into memory.',
+  'gate.p2t': 'Icon·banner', 'gate.p3t': 'Packing the CIA',
+  'gate.p3d': 'Pack the engine ELF + RomFS with WASM makerom.',
+  'gate.logLabel': 'Gate log', 'gate.logNote': 'Log lines match the desktop converter. CIAs are usually tens of MB.',
+  'gate.issue': 'Phase 0 issue', 'gate.home': 'Intro page',
   /* JS가 그리는 문구 */
   'budget.main': 'main core', 'budget.core1': 'core 1', 'budget.idle': 'idle',
   'budget.d68k': '68000 (game code)', 'budget.dz80': 'Z80 (sound CPU)', 'budget.dtmr': 'timers',
@@ -299,10 +314,14 @@ function runPipeline() {
   };
   tick();
 }
-$('#convRun').addEventListener('click', runPipeline);
-$('#convReset').addEventListener('click', resetPipeline);
-buildChips();
-if (DB.games.length) resetPipeline();
+// Subpages (convert.html) share the i18n + header logic but skip index-only sections.
+const ON_INDEX = !!$('#convRun');
+if (ON_INDEX) {
+  $('#convRun').addEventListener('click', runPipeline);
+  $('#convReset').addEventListener('click', resetPipeline);
+  buildChips();
+  if (DB.games.length) resetPipeline();
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    3. 프레임 예산 (실기 진단 화면 값) — 숫자는 막대 밖 범례에 씁니다
@@ -347,7 +366,7 @@ function buildBudget() {
     $('#budgetNote').textContent = LANG === 'en' ? EN['budget.' + key + 'T'] : KO_NOTE[key];
   }));
 }
-buildBudget();
+if (ON_INDEX) buildBudget();
 
 /* ══════════════════════════════════════════════════════════════════════
    4. 메모리 / 64MB 모드
@@ -378,9 +397,11 @@ function setMode(m) {
   const keys = m === '64' ? ['mode.64a', 'mode.64b', 'mode.64c'] : ['mode.80a', 'mode.80b', 'mode.80c'];
   $('#modeBody').innerHTML = `<ul>${keys.map((k) => `<li>${LANG === 'en' ? EN[k] : KO_MODE[k]}</li>`).join('')}</ul>`;
 }
-$$('.modes button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
-buildMemory();
-setMode('64');
+if (ON_INDEX) {
+  $$('.modes button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  buildMemory();
+  setMode('64');
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    5. 호환성 목록 (처음에는 12줄만)
@@ -447,20 +468,23 @@ function applyFilters() {
   $$('button', exFilters).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
   shown = FIRST; renderList(); renderDetail();
 }
-$$('button', exFilters).forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; applyFilters(); }));
-$('#exSearch').addEventListener('input', (e) => { query = e.target.value.trim(); shown = FIRST; renderList(); });
-$('#exSort').addEventListener('change', (e) => { sort = e.target.value; renderList(); });
-$('#exMore').addEventListener('click', () => { shown += MORE; renderList(); });
-$('#cAll').textContent = DB.counts.total;
-$('#cVerified').textContent = DB.counts.verified;
-$('#cOk').textContent = DB.counts.ok;
-$('#cNo').textContent = DB.counts.no;
-if (DB.games.length) { renderList(); renderDetail(); }
+if (ON_INDEX) {
+  $$('button', exFilters).forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; applyFilters(); }));
+  $('#exSearch').addEventListener('input', (e) => { query = e.target.value.trim(); shown = FIRST; renderList(); });
+  $('#exSort').addEventListener('change', (e) => { sort = e.target.value; renderList(); });
+  $('#exMore').addEventListener('click', () => { shown += MORE; renderList(); });
+  $('#cAll').textContent = DB.counts.total;
+  $('#cVerified').textContent = DB.counts.verified;
+  $('#cOk').textContent = DB.counts.ok;
+  $('#cNo').textContent = DB.counts.no;
+  if (DB.games.length) { renderList(); renderDetail(); }
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    6. 언어를 바꾸면 JS가 그린 부분을 다시 그림
    ════════════════════════════════════════════════════════════════════ */
 function refreshDynamic() {
+  if (!ON_INDEX) return;
   buildChips();
   if (DB.games.length) resetPipeline();
   buildBudget(); buildMemory();
