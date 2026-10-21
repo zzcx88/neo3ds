@@ -87,23 +87,27 @@ MAME `src/mame/snk/neogeo.cpp`를 받아서:
 py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 ```
 
-## 7. 릴리스
+## 7. 릴리스 (웹 변환기)
 
-릴리스 패키지는 GitHub Actions(`.github/workflows/build-release.yml`)가 만든다.
-태그 푸시(`v1.2.0` 형식) 1회로 3종 패키지 + GitHub Release가 자동 생성된다.
+릴리스는 웹 변환기 배포다. `main` 푸시 1회로 GitHub Actions(`.github/workflows/pages.yml`)가
+`site/`를 빌드·검증 후 Pages에 배포한다. 플랫폼별 패키지는 만들지 않는다 (#31·#35).
 
-1. `converter/Directory.Build.props`의 `<Version>` 올리기 (태그와 반드시 일치 — CI가 검증 후 불일치 시 실패)
-2. 커밋 후 태그 푸시
-3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package` 매트릭스 3종
-   (windows-latest + ubuntu-latest + macos-14) → `release`(Release 생성 + 4개 파일 첨부)
-4. GitHub Releases에서 변경점 기록
+1. `converter/Directory.Build.props`의 `<Version>` 올리기
+   (`site/vendor/conv/version.js`의 `CONVERTER_VERSION`과 반드시 일치 — 손으로 맞춤)
+2. 커밋 후 `main` 푸시
+3. Actions → Pages 워크플로 확인: `build`(devkitARM Docker로 `engine.elf` 빌드 +
+   emsdk로 WASM 3종 빌드 + `site/` 검증 게이트 + `conv.test.mjs`) → `deploy`
+4. https://zzcx88.github.io/neo3ds/convert.html 에서 변환 1회 확인
 
-산출물 (파일명 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게):
+배포물 (`site/`, 전부 정적):
 
-- `neo3ds-converter.zip` — Windows GUI (기존 구조 유지: exe + `tools\` + 런처 CIA 포함)
-- `neo3ds-converter-linux-x64.zip`, `neo3ds-converter-osx-arm64.zip` — Unix CLI (해당 OS 네이티브 makerom/bannertool 포함)
-- `neo3ds-launcher.cia` — 별도 첨부
+- `convert.html` — 웹 변환기 ( per-game CIA · 런처 CIA · `.neo3ds` 팩 · 배치)
+- `vendor/` — WASM 3종 + `engine.elf` + `neogeo_games.json` (CI가 빌드·스테이징, git 제외)
 
-수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성).
-로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`
-(전제: §1 엔진 빌드 + §2 외부 도구 배치. Unix는 `bash scripts/build_unix_tools.sh` 먼저)
+수동 실행: Actions → Pages → Run workflow.
+로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.
+
+### 데스크톱 변환기 (보관)
+
+`converter/` C# 소스는 하네스 기준선·로컬 디버깅용으로 유지한다. 릴리스 패키지는 만들지 않으며,
+`scripts/build_unix_tools.sh`·`scripts/package_release.ps1`·`build-release.yml`은 #35에서 삭제했다.

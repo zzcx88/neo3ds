@@ -4,7 +4,7 @@
 Give it a Neo Geo ROM zip on your PC and it builds a 3DS install file (CIA) with the emulator inside.
 Each game gets its own HOME menu icon and starts straight away. New 3DS models run it with room to spare.
 
-[Project page](https://zzcx88.github.io/neo3ds/) · [한국어](README.md) · [Download the converter](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip)
+[Project page](https://zzcx88.github.io/neo3ds/) · [한국어](README.md) · [Web converter](https://zzcx88.github.io/neo3ds/convert.html)
 
 | Metal Slug 3 (Old 3DS hardware) | KOF '99 (Old 3DS hardware) |
 |---|---|
@@ -34,32 +34,28 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 | | |
 |---|---|
 | 3DS | Old 3DS / 2DS / New 3DS / New 2DS XL with [Luma3DS](https://github.com/LumaTeam/Luma3DS) custom firmware and a CIA installer such as [FBI](https://github.com/lifehackerhansol/FBI). |
-| PC | Windows 10/11, 64-bit (no .NET install needed) |
+| PC | A web browser (Chrome, Edge, Firefox, Safari). Roms stay inside the browser and are never uploaded. |
 | ROMs | **MAME romset zips** of games you own, plus **neogeo.zip (BIOS)**. No ROMs are included here. |
 | Sound | `/3ds/dspfirm.cdc` on the SD card (dump it once with DSP1). |
 
 ## How to use
 
-### 1. Get the converter
-Download [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) and unzip it.
-The `neo3ds-converter` folder holds `Neo3dsConverter.exe`, the `tools` folder, `README.txt` and the launcher app `neo3ds-launcher.cia`. Keep the folder together wherever you put it; the exe does not run on its own.
-If Windows shows an "unknown publisher" warning on first run, click **[More info] → [Run anyway]**.
+### 1. Open the web converter
+Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing to install.
 
 ### 2. Build a CIA
 
-<img src="docs/images/converter2_en.png" width="520" alt="Converter window">
-
-1. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...).
-2. Run `Neo3dsConverter.exe` and drop the game zip on the window, or press **[Browse...]**.
-3. If the **Romset** line turns green, the game can be converted. If it is red, the reason is shown.
-4. Change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like. The preview shows the HOME menu art as it will be built.
+1. Drop the game zip together with `neogeo.zip`. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...). For merged sets, drop the game + parent zips together.
+2. If the game is recognised, it can be converted. If it is red, the reason is shown.
+3. Change the **System** or **Region** if you like.
    - **System** is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too.
    - **Region** is the console region the game sees. The default is Europe/Asia; **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug, and Japanese text (varies by game). If neogeo.zip has no BIOS for that region, another region's BIOS is used and the log says so.
-5. Press **[Build CIA]**. A game takes a minute or two (graphics compression).
+4. Press **[Build CIA]**. A game takes tens of seconds to a minute or two (graphics compression).
+5. When done, save it with **[Get the CIA]**. The CIA size, browser memory and estimated 3DS memory are shown below.
 
-Drop or pick **several** zips at once to convert them one after the other. Titles, icons and banners are generated for each game; games that can't be converted are skipped and listed at the end.
+Drop **several** game zips at once to convert them one after the other; each finished file gets its own download link.
 
-The **[한국어]** button next to it switches the window to Korean.
+The **KO/EN** buttons at the top right switch the language.
 
 Examples of the generated icons (abbreviation + series number) and banners (game title), sized so no text is cut off:
 
@@ -74,26 +70,16 @@ Copy the `.cia` to the SD card, then in FBI: SD → pick the file → **Install 
 
 Instead of installing a CIA per game, pick games from one app. Only one HOME menu icon is added.
 
-1. Install `neo3ds-launcher.cia` from the zip with FBI, **once**. The converter's **[Build the launcher CIA]** button makes it again.
-2. Load a game zip in the converter and press **[Launcher file]** to get a `.neo3ds` file. The settings (title, system, region) work as for a CIA.
+1. Install `neo3ds-launcher.cia`, built in **[Launcher CIA]** mode of the web converter, with FBI, **once**.
+2. Convert a game zip in **[Launcher file]** mode to get a `.neo3ds` file. The settings (system, region) work as for a CIA.
 3. Copy the `.neo3ds` files to `/neo3ds/games/` on the SD card.
 4. Start the launcher: pick a game with Up/Down (L/R for a page) or by touch, and start it with **A** or **a double tap**.
 5. In a game, tap **[Game list]** on the bottom screen twice to go back to the list.
 
 The same game shares its key config, backup RAM and quick saves whether it runs as a CIA or from the launcher.
 
-### Command line
-```
-Neo3dsConverter.exe <game.zip> [game2.zip ...] [out-dir] [--title "Name"] [--icon pic.png] [--banner pic.png] [--set romset] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
-Neo3dsConverter.exe --launcher [out-dir]
-```
-- Several zips are converted one after the other (`--title`, `--icon`, `--banner` and `--set` need a single zip).
-- `--set` picks another version inside a merged zip (e.g. `kof98.zip --set kof98h`).
-- `--system` picks the BIOS the game starts on (home `aes` / arcade `mvs`); automatic when left out.
-- `--region`: Europe/Asia `eu`, Japan `jp` or USA `us`; `eu` when left out.
-- `--pack` builds a `.neo3ds` file for the launcher instead of a CIA. `--launcher` builds the launcher CIA (`neo3ds-launcher.cia`).
-- `--icon` / `--banner`: pictures for the icon (48×48) and banner (256×128); other sizes are scaled and cropped to fit.
-- `--lang`: switches the window language (`ko` / `en`); remembered for the window too.
+### The old desktop converter
+The Windows exe and CLI from earlier releases are no longer published. The C# sources (`converter/`) stay in the repo as the harness baseline and for local debugging.
 
 ## Controls
 
@@ -275,9 +261,8 @@ The [technical write-up](docs/TECHNICAL.md) goes into more detail: measurements,
 ## Building from source
 
 - Engine: [devkitPro](https://devkitpro.org/) (devkitARM, libctru). `bash scripts/build_engine.sh` → `engine/engine.elf`
-- Converter: .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
-- Release zip: `powershell -File scripts/package_release.ps1 -WithLauncher` → `dist/neo3ds-converter.zip` (single exe + `tools` + launcher CIA)
-- The converter bundles `tools/makerom/makerom.exe` and `tools/bannertool/windows-x86_64/bannertool.exe`; get them from the [makerom](https://github.com/3DSGuy/Project_CTR) and [bannertool](https://github.com/diasurgical/bannertool) releases.
+- Converter (web): emsdk. `bash scripts/build_wasm.sh` → `site/vendor/` (3 WASM builds + static assets), then serve `site/` statically
+- Converter (C#, archived): .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
 - Game DB: fetch MAME's `src/mame/snk/neogeo.cpp` and run `py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json`.
 
 ## Legal
