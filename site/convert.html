@@ -83,11 +83,17 @@
           </select>
         </label>
       </div>
+      <div class="row chips" role="group" aria-label="출력" style="margin:0 0 12px">
+        <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span data-i18n="gate.mCia">게임 CIA</span></label>
+        <label class="chip"><input type="radio" name="gateMode" value="pack"> <span data-i18n="gate.mPack">런처용 파일</span></label>
+        <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span data-i18n="gate.mLaunch">런처 CIA</span></label>
+      </div>
       <div class="cta-row">
         <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">CIA 만들기</button>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
         <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">CIA 받기</a>
       </div>
+      <div class="cta-row hidden" id="gateBatch" style="gap:8px"></div>
       <p class="tiny hidden" id="gateStats"></p>
     </div>
   </div>
