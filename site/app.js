@@ -12,7 +12,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
    ════════════════════════════════════════════════════════════════════ */
 const EN = {
   'a11y.skip': 'Skip to content', 'a11y.sections': 'Sections', 'meta.desc': 'Converter + emulator engine turning Neo Geo (MAME) romsets into 3DS install files (CIA). 60fps on an Old 3DS, one HOME Menu icon per game.', 'meta.ogdesc': 'Drop a rom zip on the PC, get one CIA per game. Neo Geo emulator running at 60fps on the 3DS.',
-  'nav.steps': 'Set-up in three steps', 'nav.panel': 'Touch controls', 'nav.convert': 'Conversion pipeline',
+  'nav.steps': 'Set-up in three steps', 'nav.panel': 'Touch controls', 'nav.launcher': 'Launcher',
   'nav.speed': 'Speed', 'nav.games': 'Game compatibility',
   'cta.download': 'Convert now', 'cta.win': 'Get it for Windows', 'cta.source': 'Source code', 'lang.label': 'Language',
   'hero.kicker': 'romset zip on the PC → a 3DS install file (CIA) · converter + emulator engine',
@@ -47,17 +47,15 @@ const EN = {
   'panel.map1k': 'D-pad', 'panel.map1': 'lever', 'panel.map2': 'Neo Geo A · B · C · D', 'panel.map3': 'coin · start',
   'panel.map4': 'turbo on/off', 'panel.map5': 'quick save / load',
   'panel.mapNote': 'In KOF, L = A+B (evade) and R = C+D (blowback) is a good start.',
-  'conv.h2': 'Conversion pipeline',
-  'conv.lede': 'All decryption happens on the PC. The 3DS spends no time and no memory on it.',
-  'conv.p1t': 'Identify the romset', 'conv.p1d': 'The zip name selects a romset, then every chip is checked by CRC. Merged zips (kof98.zip → kof98h) are handled.',
-  'conv.p2t': 'Decrypt', 'conv.p2d': 'CMC42, CMC50, SMA, PCM2, PVC and friends, undone on the PC.',
-  'conv.p3t': 'Patch for hardware + region', 'conv.p3d': 'Protection checks are removed and the 68k byte order is fixed. Region is picked too (Europe/Asia, Japan or USA).',
-  'conv.p4t': 'Compress graphics', 'conv.p4d': 'Sprites become 4KB zstd blocks; the 3DS unpacks them into an 8MB cache.',
-  'conv.p5t': 'Make icon and banner', 'conv.p5d': 'Icon (48×48) and banner (256×128) drawn from the title.',
-  'conv.p6t': 'Package the CIA (or launcher files)', 'conv.p6d': 'Engine and game data wrapped into an install file — or launcher files (.neo3ds) for the SD card.',
-  'conv.run': 'Build CIA', 'conv.again': 'Again', 'conv.sets': 'Romsets', 'conv.logLabel': 'Converter log',
-  'conv.try': 'Open the real converter',
-  'conv.logNote': 'Wording and layout match the real converter. Compression figures come from the KOF \'99 run we measured.',
+  'conv.p5d': 'Icon (48×48) and banner (256×128) drawn from the title.', /* convert.html gatePipe가 공유 */
+  'launch.h2': 'Launcher: every game in one app',
+  'launch.lede': 'Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.',
+  'launch.imgAlt': 'Launcher game list',
+  'launch.cap': 'Pick with the D-pad or touch, start with A (or a double tap). L/R turn a page.',
+  'launch.p1n': 'Install once', 'launch.p1': 'Install the launcher CIA with FBI just once. Adding a game later is copying its .neo3ds file to /neo3ds/games/.',
+  'launch.p2n': 'Shared saves', 'launch.p2': 'The same game shares key config, backup RAM and quick saves between its CIA and launcher copies.',
+  'launch.p3n': 'Back in a tap', 'launch.p3': 'In a game, tap Game list on the bottom screen twice to return to the list.',
+  'launch.cta1': 'Build the launcher CIA', 'launch.cta2': 'Build launcher files',
   'speed.h2': 'Speed',
   'speed.lede': 'No GPU: the CPU draws the frame itself, and the work is split across both cores.',
   'speed.figCap': 'One frame is 16.7ms — read from the on-device diagnostics screen (KOF \'99, 59.8fps)',
@@ -206,12 +204,9 @@ if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
   $$('.device img').forEach((img) => { img.src = img.src.replace(/\.gif$/, '.png'); });
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   2. 변환 파이프라인 (게임 DB의 실제 값으로)
-   ════════════════════════════════════════════════════════════════════ */
+/* 게임 DB (예산·호환성 섹션이 씀) + 해독 체인 표시 (호환성 상세) */
 const DB = window.NEO3DS_DB || { counts: { total: 0, ok: 0, no: 0, verified: 0 }, games: [] };
 const bySet = new Map(DB.games.map((r) => [r[0], r]));
-
 const CHAIN = {
   '': ['보호칩 없음', 'no protection'],
   'patch': ['보호칩 없음 · 검사 패치', 'no protection · check patched'],
@@ -226,113 +221,8 @@ const CHAIN = {
 };
 const chainText = (c) => (CHAIN[c] || CHAIN[''])[LANG === 'en' ? 1 : 0];
 const tiles = (mb) => Math.round((mb * 1048576) / 128);   // 스프라이트 128B = 타일 1개(RomPack.cs)
-const CHIP_GAMES = ['kof99', 'mslug3', 'mslugx', 'svc', 'garou', 'kof2002'];
-let chipSelect = 'kof99';
-const chips = $('#chips');
-
-function buildChips() {
-  if (!DB.games.length) { chips.innerHTML = ''; return; }
-  chips.innerHTML = CHIP_GAMES.map((s) => {
-    const g = bySet.get(s);
-    return `<button type="button" class="chip" data-set="${s}" aria-pressed="${s === chipSelect}">${g[1]} <span class="dim">${s}</span></button>`;
-  }).join('');
-  $$('.chip', chips).forEach((c) => c.addEventListener('click', () => {
-    chipSelect = c.dataset.set; buildChips(); resetPipeline();
-  }));
-}
-
-const g = () => bySet.get(chipSelect);
-const isKof99 = () => chipSelect === 'kof99';
-
-function pipeValues() {
-  const row = g();
-  return {
-    1: `${row[0]} · ${row[2]}`,
-    2: chainText(row[5]),
-    3: row[5] === 'patch' ? t('보호칩 검사 패치', 'protection check patched') : t('바이트 순서 정리', 'byte order fixed'),
-    4: `${tiles(row[9]).toLocaleString()} ${t('타일', 'tiles')} · ${t('그래픽', 'graphics')} ${row[9]}MB` + (isKof99() ? ' → 19.6MB' : ''),
-    5: '48×48 · 256×128',
-    6: t('엔진 + 게임 데이터', 'engine + game data'),
-  };
-}
-
-function logLines() {
-  const row = g();
-  const titleId = isKof99() ? '0004000000CE43400' : t('zip 이름에서 생성', 'from the zip name');
-  const biosMvs = row[0] === 'svcplus';
-  const graphicsKo = `타일 ${tiles(row[9]).toLocaleString()}개, 그래픽 ${row[9]}MB` +
-    (isKof99() ? ' → 19.6MB, 3DS 메모리 사용 약 43.5MB' : ' (zstd 4KB 블록)');
-  const graphicsEn = `${tiles(row[9]).toLocaleString()} tiles, graphics ${row[9]}MB` +
-    (isKof99() ? ' → 19.6MB, about 43.5MB of 3DS memory' : ' (zstd 4KB blocks)');
-  return [
-    [`선택: ${chipSelect}.zip  (Title ID ${titleId})`, `Selected: ${chipSelect}.zip  (Title ID ${titleId})`],
-    [`[1/4] RomFS 준비 (${chipSelect})`, `[1/4] Preparing RomFS (${chipSelect})`],
-    row[5] === 'patch' ? ['  MslugX 보호칩 검사 패치 적용', '  MslugX protection check patched'] : null,
-    row[5] ? [`  암호 해독 중... (${chainText(row[5])})`, `  Decrypting... (${chainText(row[5])})`] : null,
-    row[5] ? [biosMvs ? '  시스템: MVS (아케이드)' : '  시스템: AES (가정용)',
-              biosMvs ? '  System: MVS (arcade)' : '  System: AES (home)'] : null,
-    ['  그래픽 변환 + 압축 중...', '  Converting and compressing graphics...'],
-    ['  ' + graphicsKo, '  ' + graphicsEn],
-    ['[2/4] 아이콘/배너 생성', '[2/4] Making icon and banner'],
-    [`[3/4] CIA 생성 (Title ID ${titleId})`, `[3/4] Building CIA (Title ID ${titleId})`],
-    [`[4/4] 완료: C:\\NeoGeo\\${chipSelect}.cia`, `[4/4] Done: C:\\NeoGeo\\${chipSelect}.cia`],
-    ['FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA',
-     'Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA'],
-  ].filter(Boolean);
-}
-
-let pipeToken = 0;
-function resetPipeline() {
-  pipeToken++;
-  const row = g();
-  $('#convFile').textContent = `${chipSelect}.zip`;
-  $('#convLog').innerHTML = `<i>${t('변환 대기 중 — [CIA 만들기]를 누르세요.', 'Ready — press [Build CIA].')}</i>\n` +
-    `<i>${t(`롬셋: ${row[1]} (${row[2]}) · 롬 ${row[4]}MB · ${chainText(row[5])}`,
-          `romset: ${row[1]} (${row[2]}) · ROM ${row[4]}MB · ${chainText(row[5])}`)}</i>`;
-  $$('.pipe li').forEach((li) => li.classList.remove('done', 'now'));
-  $$('[data-pipe]').forEach((el) => { el.textContent = ''; });
-  $('#convReset').classList.add('hidden');
-  $('#convRun').disabled = false;
-}
-
-function runPipeline() {
-  const vals = pipeValues(), lines = logLines();
-  const log = $('#convLog'), items = $$('.pipe li');
-  log.innerHTML = '';
-  $('#convRun').disabled = true;
-  items.forEach((li) => li.classList.remove('done', 'now'));
-  const stageOf = [0, 1, 1, 2, 3, 4, 4, 5, 5, 5, 5];
-  let i = 0;
-  const my = ++pipeToken;
-  const tick = () => {
-    if (my !== pipeToken) return;
-    const stage = Math.min(items.length - 1, stageOf[Math.min(i, stageOf.length - 1)]);
-    items.forEach((li, n) => {
-      li.classList.toggle('now', n === stage);
-      if (n < stage) { li.classList.add('done'); if (!li.querySelector('.pipe-val').textContent) li.querySelector('.pipe-val').textContent = vals[n + 1]; }
-    });
-    const [ko, en] = lines[i];
-    log.insertAdjacentHTML('beforeend', t(ko, en).replace(/^(\[[0-9]\/4\])/, '<b>$1</b>') + '\n');
-    log.scrollTop = log.scrollHeight;
-    if (++i >= lines.length) {
-      items.forEach((li, n) => { li.classList.remove('now'); li.classList.add('done'); li.querySelector('.pipe-val').textContent = vals[n + 1]; });
-      $('#convRun').disabled = false;
-      $('#convReset').classList.remove('hidden');
-      return;
-    }
-    setTimeout(tick, matchMedia('(prefers-reduced-motion: reduce)').matches ? 60 : 420);
-  };
-  tick();
-}
 // Subpages (convert.html) share the i18n + header logic but skip index-only sections.
-const ON_INDEX = !!$('#convRun');
-if (ON_INDEX) {
-  $('#convRun').addEventListener('click', runPipeline);
-  $('#convReset').addEventListener('click', resetPipeline);
-  buildChips();
-  if (DB.games.length) resetPipeline();
-}
-
+const ON_INDEX = !!$('#budget');
 /* ══════════════════════════════════════════════════════════════════════
    3. 프레임 예산 (실기 진단 화면 값) — 숫자는 막대 밖 범례에 씁니다
    ════════════════════════════════════════════════════════════════════ */
@@ -495,8 +385,6 @@ if (ON_INDEX) {
    ════════════════════════════════════════════════════════════════════ */
 function refreshDynamic() {
   if (!ON_INDEX) return;
-  buildChips();
-  if (DB.games.length) resetPipeline();
   buildBudget(); buildMemory();
   setMode($$('.modes button').find((b) => b.getAttribute('aria-pressed') === 'true').dataset.mode);
   if (DB.games.length) { renderList(); renderDetail(); }
