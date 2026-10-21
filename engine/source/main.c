@@ -58,11 +58,10 @@ static unsigned top_swap;
 
 /* Full screen (keys_full_screen): the picture is drawn into stretch_src like into a top buffer,
  * then its visible 304x224 (columns 48..351, rows 8..231) is stretched to 400x240, nearest
- * neighbour. stretch_col: source column offset per screen column; stretch_row: source index
- * within a column per screen index (columns are stored bottom row first, see video.c). */
+ * neighbour. stretch_col: the source column (pixel offset) of each screen column; every 25
+ * screen columns take 19 source columns, so 96 of them repeat the one before. */
 static u16 *stretch_src;
 static u32 stretch_col[400];
-static u8 stretch_row[240];
 
 static bool video_init(void) {
 	for (int i = 0; i < 3; i++) {
@@ -73,18 +72,35 @@ static bool video_init(void) {
 	}
 	stretch_src = malloc(TOP_BYTES); /* without it, full screen stays off */
 	for (int x = 0; x < 400; x++) stretch_col[x] = (48 + (2 * x + 1) * 304 / 800) * 240;
-	for (int j = 0; j < 240; j++) stretch_row[j] = 239 - (8 + (2 * (239 - j) + 1) * 224 / 480);
 	return true;
+}
+
+/* One source column (224 pixels from row index 8) to one or two screen columns of 240, two
+ * pixels per word. Every 30 screen pixels take 28 source pixels: screen pixels 7 and 22 repeat
+ * the one before. */
+static inline __attribute__((always_inline)) void stretch_column(u32 *d, u32 *d2, const u32 *s, bool twice) {
+	for (int b = 0; b < 8; b++, s += 14, d += 15) {
+		const u32 o[15] = {
+			s[0], s[1], s[2], (s[3] & 0xFFFF) | (s[3] << 16),
+			(s[3] >> 16) | (s[4] << 16), (s[4] >> 16) | (s[5] << 16), (s[5] >> 16) | (s[6] << 16),
+			(s[6] >> 16) | (s[7] << 16), (s[7] >> 16) | (s[8] << 16), (s[8] >> 16) | (s[9] << 16),
+			(s[9] >> 16) | (s[10] << 16), s[10], s[11], s[12], s[13],
+		};
+		for (int k = 0; k < 15; k++) d[k] = o[k];
+		if (twice) {
+			for (int k = 0; k < 15; k++) d2[k] = o[k];
+			d2 += 15;
+		}
+	}
 }
 
 static void stretch(u16 *dst, const u16 *src) {
 	for (int x = 0; x < 400; x++, dst += 240) {
-		if (x && stretch_col[x] == stretch_col[x - 1]) { /* a doubled column: copy the one before */
-			memcpy(dst, dst - 240, 240 * 2);
-			continue;
-		}
-		const u16 *s = src + stretch_col[x];
-		for (int j = 0; j < 240; j++) dst[j] = s[stretch_row[j]];
+		const u32 *s = (const u32 *)(src + stretch_col[x] + 8);
+		if (x + 1 < 400 && stretch_col[x + 1] == stretch_col[x]) { /* the next column repeats this one */
+			stretch_column((u32 *)dst, (u32 *)(dst + 240), s, true);
+			x++, dst += 240;
+		} else stretch_column((u32 *)dst, NULL, s, false);
 	}
 }
 
