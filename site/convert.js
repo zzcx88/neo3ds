@@ -87,7 +87,7 @@ runBtn.addEventListener('click', () => {
       if (m.step === 'load' && m.frac === 0) log(t('[1/4] 롬셋 확인', '[1/4] Checking romset'));
       if (m.step === 'romfs' && !vals.romfsLogged) { vals.romfsLogged = true; log(t('[2/4] 그래픽 압축', '[2/4] Compressing graphics')); }
       if (m.step === 'art' && !vals.artLogged) { vals.artLogged = true; log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
-      if (m.step === 'cia' && !vals.ciaLogged) { vals.ciaLogged = true; log(t(`[4/4] CIA 생성 (${m.detail})`, `[4/4] Building CIA (${m.detail})`)); }
+      if (m.step === 'cia' && !vals.ciaLogged) { vals.ciaLogged = true; log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
     } else if (m.type === 'done') {
       finish();
       for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
@@ -143,9 +143,10 @@ function showDownload(bin, name) {
 
 function showStats(stats) {
   const st = $('gateStats');
+  const kind = (stats.mode ?? currentMode()) === 'pack' ? '.neo3ds' : 'CIA';
   st.textContent = t(
-    `CIA ${stats.ciaMB}MB · 메모리 ${stats.memMB ?? '?'}MB · 3DS 약 ${stats.totalMB}MB · ${stats.secs}초`,
-    `CIA ${stats.ciaMB}MB · memory ${stats.memMB ?? '?'}MB · 3DS ~${stats.totalMB}MB · ${stats.secs}s`,
+    `${kind} ${stats.ciaMB}MB · 메모리 ${stats.memMB ?? '?'}MB · 3DS 약 ${stats.totalMB}MB · ${stats.secs}초`,
+    `${kind} ${stats.ciaMB}MB · memory ${stats.memMB ?? '?'}MB · 3DS ~${stats.totalMB}MB · ${stats.secs}s`,
   );
   st.classList.remove('hidden');
 }
