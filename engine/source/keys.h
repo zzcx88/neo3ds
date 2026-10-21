@@ -10,6 +10,7 @@
 enum { NEO_A = 1, NEO_B = 2, NEO_C = 4, NEO_D = 8, NEO_START = 16, NEO_COIN = 32 };
 
 extern u32 keys_turbo; /* 3DS button with turbo, 0 = off */
+extern bool keys_full_screen; /* the picture stretched to the whole top screen instead of 1:1 */
 /* The BIOS to run, saved with the keys: 1 for the arcade (MVS) BIOS, 0 for the home (AES) one. */
 int keys_bios_mvs(void);
 

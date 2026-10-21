@@ -166,6 +166,7 @@ Tap **Key config** on the bottom screen; the game pauses and the config screen o
 - Tap the `<` `>` at the end of a line, or pick a line with Up/Down and change it with Left/Right (or A). The **turbo button** can be set here too.
 - **B** or `Save (B)` saves and returns to the game. `Default` restores the default layout.
 - **System** switches between the home (AES) and arcade (MVS) BIOS (like the System button on the bottom screen); saving restarts the game on it. On MVS, press SELECT to insert a coin before starting, and the BIOS's green test screen shows briefly at boot. If neogeo.zip had only one BIOS, it says `only` and can't be changed.
+- **Screen**: how the top screen shows the game. `Original (1:1)` keeps the 304×224 picture as is in the middle (black borders around it); `Full (stretched)` stretches it to fill the whole 400×240 top screen. That is about 1.3× wider and 1.07× taller, so round things look a little wide, and since it is not a whole multiple some pixels show twice as wide.
 - Settings are saved **per game** on the SD card in `/3ds/neo3ds/keys/` and kept across launches.
 
 ## Turbo (rapid fire)

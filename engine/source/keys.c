@@ -2,7 +2,8 @@
 //
 // Each 3DS button (directions excluded) presses one entry of `actions`: a Neo Geo button, a
 // combination such as A+B, Start or Coin. The mapping and the turbo button are saved per game
-// in sdmc:/3ds/neo3ds/keys/<title id>.bin, with the BIOS choice (home AES or arcade MVS).
+// in sdmc:/3ds/neo3ds/keys/<title id>.bin, with the BIOS choice (home AES or arcade MVS) and the
+// screen mode (1:1 or full screen).
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,6 +36,7 @@ static const u8 default_map[NBUTTONS] = {2, 1, 4, 3, 0, 0, 0, 0, 11, 12};
 
 static u8 map[NBUTTONS];
 u32 keys_turbo;
+bool keys_full_screen;
 static u8 bios; /* 0 = the converter's default, 1 = AES, 2 = MVS */
 
 typedef struct {
@@ -43,6 +45,7 @@ typedef struct {
 	u8 turbo; /* 0 = off, else 1 + index into buttons */
 	u8 map[NBUTTONS];
 	u8 bios; /* version 2 */
+	u8 screen; /* version 3: 0 = 1:1, 1 = full screen */
 } KeyFile;
 
 static void file_path(char *out, size_t n) {
@@ -59,16 +62,18 @@ static int turbo_index(void) {
 void keys_load(void) {
 	memcpy(map, default_map, sizeof map);
 	keys_turbo = 0;
+	keys_full_screen = false;
 	bios = 0;
 	char path[64];
 	file_path(path, sizeof path);
 	FILE *f = fopen(path, "rb");
 	if (!f) return;
 	KeyFile k = {{0}};
-	/* version 1 files end before the bios byte */
+	/* version 1 files end before the bios byte, version 2 before the screen byte */
 	if (fread(&k, 1, sizeof k, f) >= offsetof(KeyFile, bios) && !memcmp(k.magic, "NKEY", 4) &&
-	    (k.version == 1 || k.version == 2)) {
-		if (k.version == 2 && k.bios <= 2) bios = k.bios;
+	    k.version >= 1 && k.version <= 3) {
+		if (k.version >= 2 && k.bios <= 2) bios = k.bios;
+		if (k.version >= 3) keys_full_screen = k.screen == 1;
 		for (int i = 0; i < NBUTTONS; i++) map[i] = k.map[i] < NACTIONS ? k.map[i] : default_map[i];
 		if (k.turbo >= 1 && k.turbo <= TURBO_BUTTONS) keys_turbo = buttons[k.turbo - 1].key;
 	}
@@ -83,7 +88,7 @@ bool keys_save(void) {
 	file_path(path, sizeof path);
 	FILE *f = fopen(path, "wb");
 	if (!f) return false;
-	KeyFile k = {{'N', 'K', 'E', 'Y'}, 2, (u8)turbo_index(), {0}, bios};
+	KeyFile k = {{'N', 'K', 'E', 'Y'}, 3, (u8)turbo_index(), {0}, bios, keys_full_screen};
 	memcpy(k.map, map, sizeof map);
 	bool ok = fwrite(&k, sizeof k, 1, f) == 1;
 	return fclose(f) == 0 && ok;
@@ -134,10 +139,10 @@ void keys_set_bios_mvs(int mvs) {
 	keys_save();
 }
 
-/* ---- key config screen: the 10 buttons, turbo and system, then Default and Save ---- */
+/* ---- key config screen: the 10 buttons, turbo, system and screen, then Default and Save ---- */
 
-enum { ITEM_TURBO = NBUTTONS, ITEM_BIOS, NROWS, ITEM_DEFAULT = NROWS, ITEM_SAVE, NITEMS };
-enum { ROW_Y = 26, ROW_H = 15 };
+enum { ITEM_TURBO = NBUTTONS, ITEM_BIOS, ITEM_SCREEN, NROWS, ITEM_DEFAULT = NROWS, ITEM_SAVE, NITEMS };
+enum { ROW_Y = 26, ROW_H = 14 }; /* 13 rows end at y 208, above the bottom buttons */
 static const UiRect left_arrow = {226, 0, 40, 13}, right_arrow = {272, 0, 40, 13};
 static const UiRect bottom_buttons[2] = {{8, 212, 148, 24}, {164, 212, 148, 24}};
 
@@ -146,6 +151,7 @@ static UiRect row_rect(int i, UiRect r) { r.y = ROW_Y + i * ROW_H + 1; return r;
 static void row_value(int i, char *out, size_t n) {
 	if (i < NBUTTONS) snprintf(out, n, "%s", actions[map[i]].name);
 	else if (i == ITEM_TURBO) snprintf(out, n, "%s", keys_button_name(keys_turbo));
+	else if (i == ITEM_SCREEN) snprintf(out, n, "%s", keys_full_screen ? "Full (stretched)" : "Original (1:1)");
 	else snprintf(out, n, "%s%s", keys_bios_mvs() ? "MVS (arcade)" : "AES (home)",
 	              loader_has_bios(!keys_bios_mvs()) ? "" : " only");
 }
@@ -155,7 +161,7 @@ static void draw_row(int i, int cursor) {
 	const int y = ROW_Y + i * ROW_H;
 	ui_fill(0, y, 320, ROW_H, i == cursor ? UI_PANEL : UI_BG);
 	if (i == cursor) ui_fill(0, y, 3, ROW_H, UI_ACCENT);
-	ui_text(10, y + 4, i < NBUTTONS ? buttons[i].name : i == ITEM_TURBO ? "Turbo" : "System",
+	ui_text(10, y + 4, i < NBUTTONS ? buttons[i].name : i == ITEM_TURBO ? "Turbo" : i == ITEM_BIOS ? "System" : "Screen",
 	        i == cursor ? UI_ACCENT : UI_TEXT, 1);
 	row_value(i, value, sizeof value);
 	ui_text(80, y + 4, value, UI_TEXT, 1);
@@ -189,11 +195,15 @@ static void change(int item, int step) {
 	} else if (item == ITEM_TURBO) {
 		int t = (turbo_index() + step + TURBO_BUTTONS + 1) % (TURBO_BUTTONS + 1);
 		keys_turbo = t ? buttons[t - 1].key : 0;
-	}
+	} else if (item == ITEM_SCREEN) keys_full_screen = !keys_full_screen;
 }
 
 void keys_menu(void) {
+#ifdef NEO3DS_KEYCONFIG_ROW /* Azahar test (screenshots): start with the cursor on this row */
+	int cursor = NEO3DS_KEYCONFIG_ROW;
+#else
 	int cursor = 0;
+#endif
 	const char *status = NULL;
 	hidSetRepeatParameters(15, 5);
 	draw_menu(cursor, status);
@@ -236,6 +246,7 @@ void keys_menu(void) {
 			} else if (cursor == ITEM_DEFAULT) {
 				memcpy(map, default_map, sizeof map);
 				keys_turbo = 0;
+				keys_full_screen = false;
 				bios = 0;
 				status = "Defaults set";
 				all = true;

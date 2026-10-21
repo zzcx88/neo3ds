@@ -52,8 +52,17 @@ extern u64 prof_ticks[6];
  * memory: framebuffer format | BIT(6) (2D) | BIT(8). */
 #define TOP_MODE (GSP_RGB565_OES | BIT(6) | BIT(8))
 static u16 *top_bufs[3];
+static bool top_full[3]; /* the buffer was last drawn full screen (no black borders left) */
 static int top_shown = -1, top_pending = -1, top_target; /* indices into top_bufs, -1 = none */
 static unsigned top_swap;
+
+/* Full screen (keys_full_screen): the picture is drawn into stretch_src like into a top buffer,
+ * then its visible 304x224 (columns 48..351, rows 8..231) is stretched to 400x240, nearest
+ * neighbour. stretch_col: source column offset per screen column; stretch_row: source index
+ * within a column per screen index (columns are stored bottom row first, see video.c). */
+static u16 *stretch_src;
+static u32 stretch_col[400];
+static u8 stretch_row[240];
 
 static bool video_init(void) {
 	for (int i = 0; i < 3; i++) {
@@ -62,18 +71,42 @@ static bool video_init(void) {
 		memset(top_bufs[i], 0, TOP_BYTES); /* black borders around the 320x224 picture */
 		svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)top_bufs[i], TOP_BYTES);
 	}
+	stretch_src = malloc(TOP_BYTES); /* without it, full screen stays off */
+	for (int x = 0; x < 400; x++) stretch_col[x] = (48 + (2 * x + 1) * 304 / 800) * 240;
+	for (int j = 0; j < 240; j++) stretch_row[j] = 239 - (8 + (2 * (239 - j) + 1) * 224 / 480);
 	return true;
+}
+
+static void stretch(u16 *dst, const u16 *src) {
+	for (int x = 0; x < 400; x++, dst += 240) {
+		if (x && stretch_col[x] == stretch_col[x - 1]) { /* a doubled column: copy the one before */
+			memcpy(dst, dst - 240, 240 * 2);
+			continue;
+		}
+		const u16 *s = src + stretch_col[x];
+		for (int j = 0; j < 240; j++) dst[j] = s[stretch_row[j]];
+	}
 }
 
 // Draws the last snapshot into a free top-screen buffer and queues it for the next vblank.
 // No GPU work and no waiting on the GSP service.
 static void render_frame(void) {
 	u16 *fb = top_bufs[top_target];
-	video_render(fb);
+	const bool full = keys_full_screen && stretch_src;
+	const bool wipe = !full && top_full[top_target]; /* back to 1:1: the borders must be black again */
+	if (full) {
+		video_render(stretch_src);
+		stretch(fb, stretch_src);
+	} else {
+		if (wipe) memset(fb, 0, TOP_BYTES);
+		video_render(fb);
+	}
+	top_full[top_target] = full;
 	u64 t0 = svcGetSystemTick();
 	/* The kernel call directly: GSPGPU_FlushDataCache goes through the GSP service, which runs on
 	 * core 1 and gets little time while the render thread is busy there. */
-	svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)(fb + 40 * 240), 320 * 240 * 2);
+	if (full || wipe) svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)fb, TOP_BYTES);
+	else svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)(fb + 40 * 240), 320 * 240 * 2);
 	/* false: the previously presented buffer has been put on screen; true: it never was and is
 	 * replaced, so the one on screen stays. */
 	if (!gspPresentBuffer(GSP_SCREEN_TOP, top_swap, fb, fb, 240 * 2, TOP_MODE)) top_shown = top_pending;
