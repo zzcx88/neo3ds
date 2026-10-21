@@ -29,6 +29,11 @@ function refreshRun() {
 }
 
 document.querySelectorAll('input[name="gateMode"]').forEach((r) => r.addEventListener('change', refreshRun));
+{ // Deep-link: convert.html?mode=pack|launcher preselects the output (?mode=cia = default).
+  const m = new URLSearchParams(location.search).get('mode');
+  const radio = m && document.querySelector(`input[name="gateMode"][value="${m}"]`);
+  if (radio) { radio.checked = true; refreshRun(); }
+}
 input.addEventListener('change', () => ingest(input.files));
 for (const ev of ['dragover', 'dragenter']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); });
 for (const ev of ['dragleave', 'drop']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); });

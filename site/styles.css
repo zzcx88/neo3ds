@@ -172,9 +172,7 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .pipe li.done .pipe-no,.pipe li.done .pipe-val{color:var(--gold)}
 .pipe li.now{background:var(--panel-2)}
 .pipe li.now .pipe-no{color:#fff}
-.conv-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .conv-file{font:400 12px/1 var(--pixel-sm);color:var(--gold)}
-.conv-head .btn-primary{margin-left:auto}
 .log{margin:14px 0 0;background:#0D0D11;border:1px solid var(--line);border-radius:3px;padding:14px;
   font:400 11px/1.75 var(--pixel-sm);color:#C9C9D2;min-height:290px;max-height:340px;overflow:auto;white-space:pre-wrap}
 .log b{color:var(--gold);font-weight:400}
