@@ -8,6 +8,7 @@ on:
       - 'site/**'
       - 'engine/**'
       - 'converter/assets/**'
+      - 'converter/Directory.Build.props'  # <Version>, the web converter's version.js
       - 'scripts/build_wasm.sh'
       - 'scripts/wasm-shim/**'
       - 'scripts/gen_site_games.py'

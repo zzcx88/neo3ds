@@ -20,9 +20,13 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 - **Service menu and backup RAM (1.1.0)**: open the arcade (MVS) BIOS settings menu; settings and high scores the board saves are kept on the SD card.
 - **Region (1.1.0)**: Europe/Asia, Japan or USA. Japan gives the Japanese versions' content, such as the blood in Metal Slug.
 - **Batch conversion (1.1.0)**: drop several zips and they are converted one after the other.
+- **Full screen (1.2.0)**: **Screen** in the key config stretches the picture to fill the top screen, saved per game.
+- **Bottom screen off (1.2.0)**: **⏻** at the bottom screen's top right turns its backlight off; touch the bottom screen to turn it back on.
+- **Faster drawing (1.2.0)**: the picture is drawn in bands inside the cache, shared by both cores, so full screen and busy scenes (Metal Slug 3...) drop fewer frames.
+- **Linux and macOS offline converter (1.2.0)**: besides Windows, command-line converters for Linux x64 and macOS (Apple Silicon).
 - **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
 - **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 242 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
-- **Bottom screen GUI**: touch buttons for key config, turbo, system (AES/MVS), diagnostics, restart, the service menu and quick save, with the current key layout in the Neo Geo button colours.
+- **Bottom screen GUI**: touch buttons for key config, turbo, system (AES/MVS), diagnostics, restart, the service menu, quick save and screen off, with the current key layout in the Neo Geo button colours.
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Restart**: hold SELECT + START for a second to restart the game.
