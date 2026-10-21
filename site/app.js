@@ -55,6 +55,7 @@ const EN = {
   'conv.p5t': 'Make icon and banner', 'conv.p5d': 'Icon (48×48) and banner (256×128) drawn from the title.',
   'conv.p6t': 'Package the CIA (or launcher files)', 'conv.p6d': 'Engine and game data wrapped into an install file — or launcher files (.neo3ds) for the SD card.',
   'conv.run': 'Build CIA', 'conv.again': 'Again', 'conv.sets': 'Romsets', 'conv.logLabel': 'Converter log',
+  'conv.try': 'Open the real converter',
   'conv.logNote': 'Wording and layout match the real converter. Compression figures come from the KOF \'99 run we measured.',
   'speed.h2': 'Speed',
   'speed.lede': 'No GPU: the CPU draws the frame itself, and the work is split across both cores.',

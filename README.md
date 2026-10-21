@@ -80,8 +80,8 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 
 같은 게임이라면 CIA로 설치한 것과 런처로 실행한 것이 키 설정, 백업 RAM, 퀵세이브를 함께 씁니다.
 
-### 구(舊) 데스크톱 변환기
-이전 릴리스의 Windows exe·CLI는 더 이상 배포하지 않습니다. C# 소스(`converter/`)는 하네스 기준선·로컬 디버깅용으로 저장소에 남아 있습니다.
+### 데스크톱 변환기 (Windows)
+브라우저 대신 PC 프로그램으로 변환하고 싶으면 릴리스의 `neo3ds-converter.zip`을 받아 압축을 풉니다(exe와 `tools\` 폴더는 같이 둡니다). 웹 변환기와 같은 로직이며, 사용법은 [build.md](docs/build.md) §3을 봅니다.
 ## 조작법
 
 <img src="docs/images/main_kof99.png" width="400" alt="게임 실행 화면과 아래 화면의 버튼">
@@ -263,7 +263,7 @@ New 3DS에서는 804MHz와 L2 캐시가 켜지도록 설정해 두어서 훨씬 
 
 - 엔진: [devkitPro](https://devkitpro.org/)(devkitARM, libctru). `bash scripts/build_engine.sh` → `engine/engine.elf`
 - 웹 변환기: emsdk. `bash scripts/build_wasm.sh` → `site/vendor/` (WASM 3종 + 정적 자산) 후 `site/`를 정적 서버로
-- C# 변환기(보관용): .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
+- C# 변환기(Windows exe·기준선): .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
 - 게임 DB 갱신: MAME `src/mame/snk/neogeo.cpp`를 받아 `py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json`
 
 ## 법적 고지
