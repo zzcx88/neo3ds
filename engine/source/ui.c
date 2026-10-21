@@ -263,12 +263,13 @@ void ui_turbo_changed(void) {
  * turns it back on and does nothing else; so do the HOME menu, sleep and leaving the game. */
 static bool lcd_off, lcd_waking; /* waking: the touch that turned it on is still down */
 
+/* The gsp::Lcd session is opened for each call and closed at once: kept open, the HOME menu froze
+ * the console when it took over (it needs the service too). */
 static void set_backlight(bool on) {
-	static bool lcd_service;
-	if (!lcd_service && R_FAILED(gspLcdInit())) return;
-	lcd_service = true;
+	if (R_FAILED(gspLcdInit())) return;
 	if (on) GSPLCD_PowerOnBacklight(GSPLCD_SCREEN_BOTTOM);
 	else GSPLCD_PowerOffBacklight(GSPLCD_SCREEN_BOTTOM);
+	gspLcdExit();
 	lcd_off = !on;
 }
 
