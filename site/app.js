@@ -48,6 +48,7 @@ const EN = {
   'panel.map4': 'turbo on/off', 'panel.map5': 'quick save / load',
   'panel.mapNote': 'In KOF, L = A+B (evade) and R = C+D (blowback) is a good start.',
   'conv.p5d': 'Icon (48×48) and banner (256×128) drawn from the title.', /* convert.html gatePipe가 공유 */
+  'launch.kicker': 'Recommended · the way to go for several games',
   'launch.h2': 'Launcher: every game in one app',
   'launch.lede': 'Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.',
   'launch.imgAlt': 'Launcher game list',
