@@ -1,21 +1,21 @@
 # neo3ds - NeoGeo emulator for Nintendo 3DS
 
-**A NeoGeo (Neo Geo) emulator and converter that turns Neo Geo games into full-speed 3DS titles, even on the original (Old) 3DS.**
-Give it a Neo Geo ROM zip on your PC and it builds a 3DS install file (CIA) with the emulator inside.
-Each game gets its own HOME menu icon and starts straight away. New 3DS models run it with room to spare.
+**A NeoGeo (Neo Geo) emulator that runs Neo Geo games at full speed, even on the original (Old) 3DS.**
+Install the **launcher app** once, convert your Neo Geo ROM zips into game files (`.neo3ds`) with the web converter, put them on the SD card and pick a game from the list.
+When a new version comes out, reinstall just the launcher and keep your game files. New 3DS models run it with room to spare.
+If you'd rather have a HOME menu icon per game, you can also build a separate install file (CIA) for each game.
 
-[Project page](https://zzcx88.github.io/neo3ds/) · [한국어](README.md) · [Web converter](https://zzcx88.github.io/neo3ds/convert.html)
+[Project page](https://zzcx88.github.io/neo3ds/) · [한국어](README.md) · [Web converter](https://zzcx88.github.io/neo3ds/convert.html) · [Get the offline converter](https://github.com/zzcx88/neo3ds/releases/latest)
 
-| Metal Slug 3 (Old 3DS hardware) | KOF '99 (Old 3DS hardware) |
+| Launcher game list (Old 3DS hardware) | Metal Slug 3 (Old 3DS hardware) |
 |---|---|
-| [![Metal Slug 3 on hardware](docs/images/thumb_mslug3_black.jpg)](https://youtube.com/shorts/tM-fU44WTpA) | [![KOF99 on hardware](docs/images/thumb_kof99_black.jpg)](https://youtube.com/shorts/EF6eDKhlq-E) |
-| Click to watch on YouTube (41 s) | Click to watch on YouTube (66 s) |
+| <img src="docs/images/hw_launcher.jpg" width="400" alt="Launcher game list on an Old 3DS"> | <img src="docs/images/hw_mslug3.jpg" width="400" alt="Metal Slug 3 on an Old 3DS"> |
 
 ## Features
 
 - **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug, Metal Slug X, Metal Slug 3, SVC Chaos and Samurai Shodown V Special.
-- **One CIA per game** with its own HOME menu icon. No launcher in between.
-- **Launcher (1.1.0)**: or install one launcher app and pick games from the game files on the SD card.
+- **Launcher (1.1.0)**: install one launcher app and pick games from the game files on the SD card. Updating only takes a new launcher.
+- **Or one CIA per game**, each with its own HOME menu icon and no launcher in between.
 - **Quick save (1.1.0)**: three slots per game, from the bottom screen or SELECT + L/R.
 - **Service menu and backup RAM (1.1.0)**: open the arcade (MVS) BIOS settings menu; settings and high scores the board saves are kept on the SD card.
 - **Region (1.1.0)**: Europe/Asia, Japan or USA. Japan gives the Japanese versions' content, such as the blood in Metal Slug.

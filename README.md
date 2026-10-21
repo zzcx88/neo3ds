@@ -2,22 +2,22 @@
 
 *NeoGeo (Neo Geo) emulator for the Nintendo 3DS: converts MAME romsets into CIAs that run at full speed on the Old 3DS.*
 
-**구형 3DS에서도 풀 스피드로 돌아가는 네오지오 게임을 만들어 주는 변환기**입니다.
-PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3DS 설치 파일(CIA)이 만들어집니다.
-설치하면 HOME 메뉴에 게임별 아이콘으로 나타나고, 바로 실행됩니다. New 3DS 계열에서는 더 여유롭게 돌아갑니다.
+**구형 3DS에서도 풀 스피드로 돌아가는 네오지오 에뮬레이터**입니다.
+**런처 앱**을 한 번 설치하고, 웹 변환기로 네오지오 롬(zip)을 변환한 게임 파일(`.neo3ds`)을 SD 카드에 넣으면 게임 목록에서 골라 바로 실행합니다.
+새 버전이 나와도 런처만 다시 설치하면 되고, 게임 파일은 그대로 씁니다. New 3DS 계열에서는 더 여유롭게 돌아갑니다.
+게임마다 HOME 메뉴 아이콘을 따로 두고 싶으면 게임별 설치 파일(CIA)로 만들 수도 있습니다.
 
-[소개 페이지](https://zzcx88.github.io/neo3ds/) · [English](README.en.md) · [웹 변환기](https://zzcx88.github.io/neo3ds/convert.html)
+[소개 페이지](https://zzcx88.github.io/neo3ds/) · [English](README.en.md) · [웹 변환기](https://zzcx88.github.io/neo3ds/convert.html) · [오프라인 변환기 받기](https://github.com/zzcx88/neo3ds/releases/latest)
 
-| 메탈슬러그 3 (구형 3DS 실기) | KOF '99 (구형 3DS 실기) |
+| 런처 게임 목록 (구형 3DS 실기) | 메탈슬러그 3 (구형 3DS 실기) |
 |---|---|
-| [![메탈슬러그 3 실기 영상](docs/images/thumb_mslug3_black.jpg)](https://youtube.com/shorts/tM-fU44WTpA) | [![KOF99 실기 영상](docs/images/thumb_kof99_black.jpg)](https://youtube.com/shorts/EF6eDKhlq-E) |
-| 이미지를 누르면 YouTube 영상(41초)이 열립니다 | 이미지를 누르면 YouTube 영상(66초)이 열립니다 |
+| <img src="docs/images/hw_launcher.jpg" width="400" alt="구형 3DS에서 실행한 런처 게임 목록"> | <img src="docs/images/hw_mslug3.jpg" width="400" alt="구형 3DS에서 실행한 메탈슬러그 3"> |
 
 ## 특징
 
 - **구형 3DS(268MHz)에서 60fps**: KOF98·KOF99·KOF2000·KOF2002·메탈슬러그·메탈슬러그 X·메탈슬러그 3·SVC Chaos·사무라이 쇼다운 5 스페셜을 실기에서 확인했습니다.
-- **게임마다 독립된 HOME 메뉴 아이콘**: 게임 하나가 CIA 하나입니다. 런처를 거치지 않습니다.
-- **런처 (1.1.0)**: 게임마다 CIA를 설치하는 대신, 런처 앱 하나를 설치하고 SD 카드에 넣은 게임 파일 목록에서 골라 실행할 수도 있습니다.
+- **런처 (1.1.0)**: 런처 앱 하나를 설치하고 SD 카드에 넣은 게임 파일 목록에서 골라 실행합니다. 업데이트는 런처만 다시 설치하면 됩니다.
+- **게임별 CIA도 가능**: 게임 하나를 CIA 하나로 만들면 HOME 메뉴에 게임마다 아이콘이 생기고, 런처를 거치지 않습니다.
 - **퀵세이브 (1.1.0)**: 게임마다 슬롯 3개. 아래 화면 버튼이나 SELECT + L/R로 저장하고 불러옵니다.
 - **서비스 메뉴와 백업 RAM (1.1.0)**: 아케이드(MVS) 바이오스의 설정 메뉴를 열 수 있고, 기판에 저장되는 설정·하이스코어가 SD 카드에 남습니다.
 - **지역 선택 (1.1.0)**: 유럽·아시아 / 일본 / 미국. 일본으로 만들면 메탈슬러그의 피 표현 같은 일본판 내용이 나옵니다.
