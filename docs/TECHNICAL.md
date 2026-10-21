@@ -57,7 +57,7 @@ the accuracy baseline and for the offline converter release (Windows GUI, Linux 
 
 ```
 core 0: | 68k + Z80 + timers, frame N+1 (264 scanline slices)  | snapshot |
-core 1:                          | sound N | draw N into the framebuffer |
+core 1:                          | sound N | draw N in bands |
 ```
 
 - **Core 0** runs the 68000, the Z80 and the timers interleaved scanline by scanline (264 slices a
@@ -65,6 +65,9 @@ core 1:                          | sound N | draw N into the framebuffer |
   the palette, the frame counter) and hands it to core 1.
 - **Core 1** synthesizes that frame's sound and draws it while core 0 already emulates the next one.
   Picture and sound come out one frame late.
+- The picture is drawn as 16 bands of 14 lines ("Drawing in bands" below). When core 0 finishes its
+  frame first, it takes the remaining bands instead of waiting for core 1; in busy scenes core 1
+  draws them all.
 
 ### The sound chip, twice
 
@@ -85,15 +88,37 @@ The YM2610 is emulated by two copies of the same code.
 
 The first versions used citro3d to scale and rotate the picture. Every GPU step goes through the GSP
 service on core 1, and the frame missed its vblank almost every time. Copying a finished picture into
-the rotated framebuffer with the CPU cost 7.5 ms on core 1 (4.3 ms on core 0). So the renderer now
-draws straight into the top screen's framebuffer, which is stored rotated (one column of 240 pixels
-after another): one pixel to the right is +240, one line down is -1.
+the rotated framebuffer with the CPU cost 7.5 ms on core 1 (4.3 ms on core 0). So the CPU now draws
+in the top screen framebuffer's own rotated layout (one column of 240 pixels after another): one
+pixel to the right is one column further, one line down is -1.
 
 - **Triple buffering** with `gspPresentBuffer`, and its return value tells which buffer is on screen.
 - **Cache flushes** use `svcStoreProcessDataCache` directly, never `GSPGPU_FlushDataCache` (5.6 ms when
   core 1 is busy).
 - **Only the visible 304×224** is drawn, as on a TV (the outer 8 columns are overscan games don't keep
   clean).
+
+### Drawing in bands (tile-based)
+
+At first sprites were drawn straight over the 192 KB framebuffer. One pixel to the right is 480 bytes
+on, so a 16-pixel row touches 16 cache lines, and the overdraw goes over a buffer far larger than the
+Old 3DS's 16 KB L1 data cache.
+
+- The 224 visible lines are cut into **16 bands of 14 lines**. Each band is drawn (backdrop, sprites,
+  fix layer) into a buffer of 320 columns × 16 pixels (10 KB) and then written to the framebuffer
+  once. Overdraw stays in the cache, and the framebuffer gets 28 contiguous bytes per column.
+- Sprite positions and the lines they cover are worked out once a frame; each band draws only the
+  sprites crossing it, over its own lines. The per-line logic (after MAME) and the pixel code are
+  unchanged.
+- **Full screen** is stretched as a band is written out: its 14 lines become exactly 15 screen rows
+  (the 8th twice), and 304 columns become 400 (19 for every 25) by writing some columns twice. There is
+  no separate stretch buffer or pass.
+- Both cores draw bands, each into its own buffer, and each cleans the framebuffer cache lines it
+  wrote. The sprite block cache takes a lock only to unpack a block.
+- Full screen first stretched a finished 1:1 picture. On hardware, Metal Slug X then took 4.45 ms of
+  sound + 10.71 ms of drawing per frame on core 1 and dropped frames. With bands the full-screen frame
+  drops clearly went down on hardware, and 1:1 got better in Metal Slug 3's heaviest scenes (by eye, not
+  measured).
 
 ### The sprite renderer
 
@@ -171,6 +196,7 @@ How it got there, KOF98 / Metal Slug 2:
 | Drawing on core 1 with citro3d or a CPU rotate | 30-50 fps (GSP waits, rotate copy) |
 | Drawing straight into the rotated framebuffer, triple buffered | 59 fps, no tearing |
 | ARM assembly runs, sound synthesis on core 1 | Metal Slug 2 playable |
+| Drawing in bands, shared by both cores | fewer full-screen frame drops, Metal Slug 3 slowdowns eased (by eye) |
 
 Metal Slug 2, X and 3 also slow down on the original arcade board in their busiest scenes. neo3ds
 drops frames in the same places, and so do PC emulators.
