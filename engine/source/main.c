@@ -30,8 +30,8 @@ u32 __ctru_linear_heap_size = 2u << 20;
 /* KOF98 uses ~52MB with zstd sprites; the code, static data and stack take ~1.9MB of the 64MB. */
 u32 __ctru_heap_size = 58u << 20;
 
-/* The renderer draws straight into the top-screen framebuffer (video_render). gngeo's own
- * 352x256 surface is only used by its unused scanline renderer. */
+/* The renderer draws the top-screen framebuffer in bands (video_band). gngeo's own 352x256
+ * surface is only used by its unused scanline renderer. */
 static SDL_Surface frame = {352, 256, 352 * 2, NULL, {0, 0, 352, 256}};
 SDL_Surface *buffer = &frame;
 SDL_Rect visible_area = {16, 16, 320, 224};
@@ -39,7 +39,7 @@ SDL_Rect visible_area = {16, 16, 320, 224};
 static PrintConsole bottom;
 
 /* Profiling, ms/frame: 0 = 68k/Z80, 1 = frame end on the main core (snapshot and waiting for the
- * core 1), 2 = cache clean and buffer swap, 3 = sound, 4 = rendering (includes 2), 5 = YM2610
+ * core 1), 2 = buffer swap, 3 = sound, 4 = rendering (includes 2), 5 = YM2610
  * synthesis (part of 3). 3-5 run on core 1 when threaded. */
 extern u64 prof_ticks[6];
 
@@ -56,13 +56,6 @@ static bool top_full[3]; /* the buffer was last drawn full screen (no black bord
 static int top_shown = -1, top_pending = -1, top_target; /* indices into top_bufs, -1 = none */
 static unsigned top_swap;
 
-/* Full screen (keys_full_screen): the picture is drawn into stretch_src like into a top buffer,
- * then its visible 304x224 (columns 48..351, rows 8..231) is stretched to 400x240, nearest
- * neighbour. stretch_col: the source column (pixel offset) of each screen column; every 25
- * screen columns take 19 source columns, so 96 of them repeat the one before. */
-static u16 *stretch_src;
-static u32 stretch_col[400];
-
 static bool video_init(void) {
 	for (int i = 0; i < 3; i++) {
 		top_bufs[i] = linearAlloc(TOP_BYTES);
@@ -70,63 +63,33 @@ static bool video_init(void) {
 		memset(top_bufs[i], 0, TOP_BYTES); /* black borders around the 320x224 picture */
 		svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)top_bufs[i], TOP_BYTES);
 	}
-	stretch_src = malloc(TOP_BYTES); /* without it, full screen stays off */
-	for (int x = 0; x < 400; x++) stretch_col[x] = (48 + (2 * x + 1) * 304 / 800) * 240;
 	return true;
 }
 
-/* One source column (224 pixels from row index 8) to one or two screen columns of 240, two
- * pixels per word. Every 30 screen pixels take 28 source pixels: screen pixels 7 and 22 repeat
- * the one before. */
-static inline __attribute__((always_inline)) void stretch_column(u32 *d, u32 *d2, const u32 *s, bool twice) {
-	for (int b = 0; b < 8; b++, s += 14, d += 15) {
-		const u32 o[15] = {
-			s[0], s[1], s[2], (s[3] & 0xFFFF) | (s[3] << 16),
-			(s[3] >> 16) | (s[4] << 16), (s[4] >> 16) | (s[5] << 16), (s[5] >> 16) | (s[6] << 16),
-			(s[6] >> 16) | (s[7] << 16), (s[7] >> 16) | (s[8] << 16), (s[8] >> 16) | (s[9] << 16),
-			(s[9] >> 16) | (s[10] << 16), s[10], s[11], s[12], s[13],
-		};
-		for (int k = 0; k < 15; k++) d[k] = o[k];
-		if (twice) {
-			for (int k = 0; k < 15; k++) d2[k] = o[k];
-			d2 += 15;
-		}
-	}
-}
+/* The picture is drawn in bands (video_band). Core 1 opens them for each frame, and the main core
+ * takes bands too while it would otherwise wait for core 1 at the end of its frame. Each core has
+ * its own band buffer and cleans the cache lines it wrote. */
+static int band_next = VIDEO_BANDS, band_done; /* atomic: next band to take, bands finished */
+static u16 *band_fb;
+static bool band_full; /* the frame is stretched to the full screen */
+static u16 band_bufs[2][VIDEO_BAND_PIXELS] __attribute__((aligned(32))); /* core 1, main core */
+static unsigned bands_helped; /* bands drawn by the main core (diagnostics) */
 
-/* The stretch is split into parts of 25 screen columns (whole periods of stretch_col). Core 1
- * opens them once the picture is drawn, and the main core takes parts too while it would
- * otherwise wait for core 1 at the end of its frame. Each core cleans the cache lines it wrote. */
-enum { STRETCH_PARTS = 16, PART_COLUMNS = 400 / STRETCH_PARTS };
-static int stretch_next = STRETCH_PARTS, stretch_done; /* atomic: next part to take, parts finished */
-static u16 *stretch_dst;
-static u64 stretch_ticks; /* core 1, from opening the parts to all done (diagnostics) */
-static unsigned stretch_helped; /* parts done by the main core (diagnostics) */
-
-static void stretch_part(int p) {
-	const int x0 = p * PART_COLUMNS, x1 = x0 + PART_COLUMNS;
-	u16 *dst = stretch_dst + x0 * 240;
-	for (int x = x0; x < x1; x++, dst += 240) {
-		const u32 *s = (const u32 *)(stretch_src + stretch_col[x] + 8);
-		if (x + 1 < x1 && stretch_col[x + 1] == stretch_col[x]) { /* the next column repeats this one */
-			stretch_column((u32 *)dst, (u32 *)(dst + 240), s, true);
-			x++, dst += 240;
-		} else stretch_column((u32 *)dst, NULL, s, false);
-	}
-	svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)(stretch_dst + x0 * 240), PART_COLUMNS * 240 * 2);
-}
-
-/* Takes parts until none is left; returns how many this core did. */
-static unsigned stretch_work(void) {
+/* Takes bands until none is left; returns how many this core drew. */
+static unsigned band_work(u16 *buf) {
 	unsigned n = 0;
-	for (int p; (p = __atomic_fetch_add(&stretch_next, 1, __ATOMIC_ACQUIRE)) < STRETCH_PARTS; n++) {
-		stretch_part(p);
-		__atomic_fetch_add(&stretch_done, 1, __ATOMIC_RELEASE);
-	}
+	for (int b; (b = __atomic_fetch_add(&band_next, 1, __ATOMIC_ACQUIRE)) < VIDEO_BANDS; n++)
+		video_band(b, buf, band_fb, band_full);
+	if (!n) return 0;
+	/* The kernel call directly: GSPGPU_FlushDataCache goes through the GSP service, which runs on
+	 * core 1 and gets little time while the render thread is busy there. */
+	if (band_full) svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)band_fb, TOP_BYTES);
+	else svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)(band_fb + 40 * 240), 320 * 240 * 2);
+	__atomic_fetch_add(&band_done, n, __ATOMIC_RELEASE); /* counted once they reach memory */
 	return n;
 }
 
-/* Signalled once per frame by core 1: the stretch parts are open, or the frame needs none */
+/* Signalled once per frame by core 1 when the bands are open */
 static LightEvent render_help;
 static Thread render_thread;
 
@@ -134,29 +97,21 @@ static Thread render_thread;
 // No GPU work and no waiting on the GSP service.
 static void render_frame(void) {
 	u16 *fb = top_bufs[top_target];
-	const bool full = keys_full_screen && stretch_src;
-	const bool wipe = !full && top_full[top_target]; /* back to 1:1: the borders must be black again */
-	if (full) {
-		video_render(stretch_src);
-		u64 ts = svcGetSystemTick();
-		stretch_dst = fb;
-		stretch_done = 0;
-		__atomic_store_n(&stretch_next, 0, __ATOMIC_RELEASE);
-		if (render_thread) LightEvent_Signal(&render_help);
-		stretch_work();
-		while (__atomic_load_n(&stretch_done, __ATOMIC_ACQUIRE) < STRETCH_PARTS) {} /* the main core's last part */
-		stretch_ticks += svcGetSystemTick() - ts;
-	} else {
-		if (wipe) memset(fb, 0, TOP_BYTES);
-		video_render(fb);
-		if (render_thread) LightEvent_Signal(&render_help);
+	const bool full = keys_full_screen;
+	if (!full && top_full[top_target]) { /* back to 1:1: the borders must be black again */
+		memset(fb, 0, TOP_BYTES);
+		svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)fb, TOP_BYTES);
 	}
 	top_full[top_target] = full;
+	video_prepare();
+	band_fb = fb;
+	band_full = full;
+	band_done = 0;
+	__atomic_store_n(&band_next, 0, __ATOMIC_RELEASE);
+	if (render_thread) LightEvent_Signal(&render_help);
+	band_work(band_bufs[0]);
+	while (__atomic_load_n(&band_done, __ATOMIC_ACQUIRE) < VIDEO_BANDS) {} /* the main core's last band */
 	u64 t0 = svcGetSystemTick();
-	/* The kernel call directly: GSPGPU_FlushDataCache goes through the GSP service, which runs on
-	 * core 1 and gets little time while the render thread is busy there. Full screen: done by parts. */
-	if (wipe) svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)fb, TOP_BYTES);
-	else if (!full) svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)(fb + 40 * 240), 320 * 240 * 2);
 	/* false: the previously presented buffer has been put on screen; true: it never was and is
 	 * replaced, so the one on screen stays. */
 	if (!gspPresentBuffer(GSP_SCREEN_TOP, top_swap, fb, fb, 240 * 2, TOP_MODE)) top_shown = top_pending;
@@ -232,8 +187,8 @@ void screen_frame_end(void) {
 		prof_ticks[4] += svcGetSystemTick() - t1;
 		return;
 	}
-	LightEvent_Wait(&render_help); /* full screen: help core 1 with the stretch */
-	stretch_helped += stretch_work();
+	LightEvent_Wait(&render_help); /* help core 1 with the bands */
+	bands_helped += band_work(band_bufs[1]);
 	LightEvent_Wait(&render_idle); /* core 1 is done with the previous frame */
 	audio_end_frame(conf.sample_rate);
 	video_snapshot();
@@ -614,7 +569,14 @@ int main(void) {
 #ifdef NEO3DS_AUTODUMP
 		{
 			static int frame_no;
-			if (++frame_no % NEO3DS_AUTODUMP == 0) dump_video_state();
+			if (++frame_no % NEO3DS_AUTODUMP == 0) {
+				/* the last frame finished, so the dump is the same frame on every run */
+				if (render_thread) {
+					LightEvent_Wait(&render_idle);
+					LightEvent_Signal(&render_idle);
+				}
+				dump_video_state();
+			}
 		}
 #endif
 
@@ -647,11 +609,10 @@ int main(void) {
 				print_memory();
 				printf("main : cpu %5.2f end %4.2f present %5.2f  \n", prof_ticks[0] * k, prof_ticks[1] * k,
 				       present_ticks * k);
-				/* str: the full-screen stretch (part of rnd), h: its parts done by the main core */
-				printf("core1: snd %4.2f rnd %5.2f str %4.2f h%2u \n", prof_ticks[3] * k, prof_ticks[4] * k,
-				       stretch_ticks * k, stretch_helped / frames);
-				stretch_ticks = 0;
-				stretch_helped = 0;
+				/* h: bands of the 16 drawn by the main core */
+				printf("core1: snd %4.2f (ym %4.2f) rnd %5.2f h%2u  \n", prof_ticks[3] * k, prof_ticks[5] * k,
+				       prof_ticks[4] * k, bands_helped / frames);
+				bands_helped = 0;
 				{
 					extern u64 prof_split[3];
 					extern unsigned prof_split_frames;

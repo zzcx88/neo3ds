@@ -131,7 +131,7 @@ static Uint16 fix_addr[40][32];
 static Uint8 fix_shift[40];
 
 
-static ZSTD_DCtx *zstd_ctx; /* only the render thread decompresses */
+static ZSTD_DCtx *zstd_ctx; /* used under cache_lock */
 
 int init_sprite_cache(Uint32 size, Uint32 bsize, int codec, const Uint8 *packed, const Uint32 *offset, Uint32 nb_blocks) {
 	GFX_CACHE *gcache = &memory.vid.spr_cache;
@@ -170,6 +170,11 @@ void free_sprite_cache(void) {
 	gcache->usage = NULL;
 }
 
+/* Both cores draw bands, so a miss is handled under a lock; hits read the table without one. A
+ * slot evicted while the other core still draws from it would show wrong pixels for that frame,
+ * which takes a frame needing about as many slots as the cache has. */
+static int cache_lock;
+
 Uint8 *get_cached_sprite_ptr(Uint32 tileno) {
 	GFX_CACHE *gcache = &memory.vid.spr_cache;
 	static int pos = 0;
@@ -180,6 +185,11 @@ Uint8 *get_cached_sprite_ptr(Uint32 tileno) {
 	if (gcache->ptr[bank])
 		return gcache->ptr[bank];
 
+	while (__atomic_exchange_n(&cache_lock, 1, __ATOMIC_ACQUIRE)) {}
+	if ((slot = gcache->ptr[bank])) { /* the other core just decompressed it */
+		__atomic_store_n(&cache_lock, 0, __ATOMIC_RELEASE);
+		return slot;
+	}
 	/* Round-robin replacement: evict whatever held the next slot. */
 	a = pos;
 	if (++pos >= gcache->max_slot) pos = 0;
@@ -196,9 +206,10 @@ Uint8 *get_cached_sprite_ptr(Uint32 tileno) {
 		} else
 			LZ4_decompress_safe((const char *) src, (char *) slot, n, gcache->slot_size);
 	}
-	gcache->ptr[bank] = slot;
 	gcache->usage[a] = bank;
 	gcache->misses++;
+	__atomic_store_n(&gcache->ptr[bank], slot, __ATOMIC_RELEASE); /* published once filled */
+	__atomic_store_n(&cache_lock, 0, __ATOMIC_RELEASE);
 	return slot;
 }
 
@@ -298,111 +309,80 @@ static Uint32 snap_pal[4096];
 static unsigned int snap_frame_counter, snap_irq2control;
 static const Uint8 *snap_fix, *snap_fix_usage;
 
-/* The renderer draws straight into the 3DS top framebuffer, which is the screen rotated: 400
- * columns of 240 pixels, each column stored bottom row first. Moving one pixel right is +XSTEP,
- * one line down is -1. canvas points at visible column 0, scanline 0 (scanlines 16..239 are
- * visible), with the 320x224 picture centered on the 400x240 screen. */
-#define XSTEP 240
-static Uint16 *canvas;
-#define CANVAS(fb) ((fb) + ((400 - 320) / 2) * XSTEP + (240 - (240 - 224) / 2 - 1) + 16)
+/* Tile-based rendering: the 224 visible lines are drawn as VIDEO_BANDS bands of VIDEO_BAND_LINES
+ * lines, each into a band buffer small enough to stay in the L1 cache, and only the finished band
+ * is written to the 3DS top framebuffer. Overdraw then never leaves the cache, and the framebuffer
+ * is written once, in runs of whole columns.
+ * A band buffer is laid out like the framebuffer, the screen rotated: 320 columns of XSTEP
+ * pixels, each column bottom line first. Moving one pixel right is +XSTEP, one line down is -1.
+ * The draw functions take cv, the address of column 0 on scanline 0 (visible scanlines are
+ * 16..239), which for a band lies outside its buffer; only the band's lines are drawn. */
+#define XSTEP VIDEO_BAND_STRIDE
 
-static __inline__ void draw_fix_char(unsigned char *buf, int start, int end) {
-	unsigned int *gfxdata, myword;
-	int x, y, yy;
-	unsigned char col;
-	unsigned short *br;
-	unsigned int *paldata;
-	unsigned int byte1, byte2;
-	int banked, garouoffsets[32];
-	SDL_Rect clip;
-	int ystart = 2, yend = 30; /* fix rows on visible scanlines 16..239 */
+/* Fix layer banking for the frame (Garou, Metal Slug 3/4, KOF2000...), set by prepare_fix */
+static int fix_banked, fix_garou[32];
 
-	//banked = (snap_fix == memory.rom.game_sfix.p && memory.rom.game_sfix.size > 0x1000) ? 1 : 0;
-	/* as MAME: only fix ROMs past 128KB are banked (Garou, MSlug 3/4, KOF2000...) */
-	banked = (snap_fix == memory.rom.game_sfix.p && neogeo_fix_bank_type && memory.rom.game_sfix.size > 0x20000) ? 1 : 0;
-	//if (banked && conf.rom_type==MVS_CMC42)
-	if (banked && neogeo_fix_bank_type == 1) {
-		int garoubank = 0;
-		int k = 0;
-		y = 0;
-
+static void prepare_fix(void) {
+	/* as MAME: only fix ROMs past 128KB are banked */
+	fix_banked = snap_fix == memory.rom.game_sfix.p && neogeo_fix_bank_type && memory.rom.game_sfix.size > 0x20000;
+	if (fix_banked && neogeo_fix_bank_type == 1) {
+		int bank = 0, k = 0, y = 0;
 		while (y < 32) {
 			if (READ_WORD(&snap_vram[0xea00 + (k << 1)]) == 0x0200 &&
 					(READ_WORD(&snap_vram[0xeb00 + (k << 1)]) & 0xff00) == 0xff00) {
-
-				garoubank = READ_WORD(&snap_vram[0xeb00 + (k << 1)]) & 3;
-				garouoffsets[y++] = garoubank;
+				bank = READ_WORD(&snap_vram[0xeb00 + (k << 1)]) & 3;
+				fix_garou[y++] = bank;
 				if (y == 32) break; /* neo3ds: the next write would be past the array */
 			}
-			garouoffsets[y++] = garoubank;
+			fix_garou[y++] = bank;
 			k += 2;
 		}
 	}
+}
 
-	if (start != 0 && end != 0) {
-		ystart = start >> 3;
-		yend = (end >> 3) + 1;
-		if (ystart < 1) ystart = 1;
-		clip.x = 0;
-		clip.y = start + 16;
-		clip.w = buffer->w;
-		clip.h = (end - start) + 16;
-		SDL_SetClipRect(buffer, &clip);
-	}
-
-	for (y = ystart; y < yend; y++)
+/* The fix layer (8x8 characters, pen 0 transparent) on scanlines first..last-1 */
+static void draw_fix_band(Uint16 *cv, int first, int last) {
+	int y, x, yy;
+	for (y = first >> 3; y <= (last - 1) >> 3; y++) { /* rows 2..29 cover scanlines 16..239 */
+		const int top = y << 3;
+		const int y0 = first > top ? first - top : 0, y1 = last < top + 8 ? last - top : 8;
 		for (x = 1; x < 39; x++) {
-			byte1 = (READ_WORD(&snap_vram[0xE000 + ((y + (x << 5)) << 1)]));
-			byte2 = byte1 >> 12;
-			byte1 = byte1 & 0xfff;
+			unsigned int byte1 = READ_WORD(&snap_vram[0xE000 + ((y + (x << 5)) << 1)]);
+			const unsigned int byte2 = byte1 >> 12;
+			const Uint32 *pal, *gfx;
+			Uint16 *br;
 
-			if (banked) {
+			byte1 &= 0xfff;
+			if (fix_banked) {
 				switch (neogeo_fix_bank_type) {
-					case 1:
-						/* Garou, MSlug 3 */
-						byte1 += 0x1000 * (garouoffsets[(y - 2)&31] ^ 3);
+					case 1: /* Garou, MSlug 3 */
+						byte1 += 0x1000 * (fix_garou[(y - 2) & 31] ^ 3);
 						break;
 					case 2:
 						byte1 += 0x1000 * fix_add(x, y);
 						break;
 				}
 			}
-
 			if ((byte1 >= (memory.rom.game_sfix.size >> 5)) || (snap_fix_usage[byte1] == 0x00)) continue;
 
-			br = canvas + (x << 3) * XSTEP - (y << 3);
-#ifdef PROCESSOR_ARM
-			draw_one_char_arm(byte1, byte2, br);
-#elif I386_ASM
-			draw_one_char_i386(byte1, byte2, br);
-#else
-			paldata = (unsigned int *) &snap_pal[16 * byte2];
-			gfxdata = (unsigned int *) &snap_fix[ byte1 << 5];
-
-			for (yy = 0; yy < 8; yy++) {
-				myword = gfxdata[yy];
-				col = (myword >> 28)&0xf;
-				if (col) br[7 * XSTEP] = paldata[col];
-				col = (myword >> 24)&0xf;
-				if (col) br[6 * XSTEP] = paldata[col];
-				col = (myword >> 20)&0xf;
-				if (col) br[5 * XSTEP] = paldata[col];
-				col = (myword >> 16)&0xf;
-				if (col) br[4 * XSTEP] = paldata[col];
-				col = (myword >> 12)&0xf;
-				if (col) br[3 * XSTEP] = paldata[col];
-				col = (myword >> 8)&0xf;
-				if (col) br[2 * XSTEP] = paldata[col];
-				col = (myword >> 4)&0xf;
-				if (col) br[1 * XSTEP] = paldata[col];
-				col = (myword >> 0)&0xf;
-				if (col) br[0 * XSTEP] = paldata[col];
-				br--;
+			pal = &snap_pal[byte2 << 4];
+			gfx = (const Uint32 *) &snap_fix[byte1 << 5];
+			br = cv + (x << 3) * XSTEP - top;
+			for (yy = y0; yy < y1; yy++) {
+				const Uint32 w = gfx[yy];
+				Uint16 *const p = br - yy;
+				unsigned int c;
+				if ((c = (w >> 28) & 0xf)) p[7 * XSTEP] = pal[c];
+				if ((c = (w >> 24) & 0xf)) p[6 * XSTEP] = pal[c];
+				if ((c = (w >> 20) & 0xf)) p[5 * XSTEP] = pal[c];
+				if ((c = (w >> 16) & 0xf)) p[4 * XSTEP] = pal[c];
+				if ((c = (w >> 12) & 0xf)) p[3 * XSTEP] = pal[c];
+				if ((c = (w >> 8) & 0xf)) p[2 * XSTEP] = pal[c];
+				if ((c = (w >> 4) & 0xf)) p[1 * XSTEP] = pal[c];
+				if ((c = w & 0xf)) p[0] = pal[c];
 			}
-#endif
-
 		}
-	if (start != 0 && end != 0) SDL_SetClipRect(buffer, NULL);
+	}
 }
 
 /* Sprite renderer following MAME's neosprite.cpp: every visible scanline of every sprite looks
@@ -627,8 +607,8 @@ static __inline__ const Uint32 *sprite_tile(int sprite, int tile, const Uint16 *
 
 /* Lines first..last-1 of a sprite with no y zoom and no x zoom, fully inside
  * the visible columns: a tile at a time, so the per-line work is just reading the tile row. */
-static void draw_sprite_tiles(int sprite, int first, int last, int y, int x, const Uint16 *vram) {
-	Uint16 *const col = canvas + x * XSTEP;
+static void draw_sprite_tiles(Uint16 *cv, int sprite, int first, int last, int y, int x, const Uint16 *vram) {
+	Uint16 *const col = cv + x * XSTEP;
 	int line = first;
 
 	while (line < last) {
@@ -669,7 +649,7 @@ int render_zoom_fast = 1; /* the benchmark compares the renderer with and withou
  * screen edge, 3 y zoom), summed until main.c reads and clears them. */
 unsigned spr_lines[4];
 
-static void draw_sprite_lines(int sprite, int first, int last, int y, int x, int zoom_x, int zoom_y,
+static void draw_sprite_lines(Uint16 *cv, int sprite, int first, int last, int y, int x, int zoom_x, int zoom_y,
 		int size, const Uint16 *vram) {
 	const int animate = !(snap_irq2control & 0x08);
 	const int fast = zoom_x == 15 && x <= 320 - 16;
@@ -683,7 +663,7 @@ static void draw_sprite_lines(int sprite, int first, int last, int y, int x, int
 
 	spr_lines[unzoomed ? (fast ? 0 : 2) : 3] += last - first;
 	if (unzoomed && fast) {
-		draw_sprite_tiles(sprite, first, last, y, x, vram);
+		draw_sprite_tiles(cv, sprite, first, last, y, x, vram);
 		return;
 	}
 	for (line = first; line < last; line++) {
@@ -738,21 +718,43 @@ have_tile:
 		src = tile_data + (tile_y << 1);
 		if (!(src[0] | src[1])) continue;
 		if (fast)
-			put_row16(canvas + x * XSTEP - line, src[0], src[1], pal, attr & 0x01);
+			put_row16(cv + x * XSTEP - line, src[0], src[1], pal, attr & 0x01);
 		else if (inside)
-			put_row_zoomed_in(canvas + x * XSTEP - line, zoom_x, src[0], src[1], pal, attr & 0x01);
+			put_row_zoomed_in(cv + x * XSTEP - line, zoom_x, src[0], src[1], pal, attr & 0x01);
 		else
-			put_row_zoomed(canvas - line, x, zoom_x, src[0], src[1], pal, attr & 0x01);
+			put_row_zoomed(cv - line, x, zoom_x, src[0], src[1], pal, attr & 0x01);
 	}
 }
 
-static void draw_sprites(void) {
+/* Sprites in drawing order with the visible lines they cover (at most two runs each: the 512-line
+ * space wraps), found once per frame by prepare_sprites; each band draws the runs it crosses. */
+typedef struct {
+	short sprite, first, last, y, x;
+	Uint8 zoom_x, zoom_y, size;
+} SpriteRun;
+static SpriteRun runs[2 * MAX_SPRITES];
+static int nruns;
+
+static void add_run(int sprite, int first, int last, int y, int x, int zoom_x, int zoom_y, int size) {
+	SpriteRun *r = &runs[nruns++];
+	r->sprite = sprite;
+	r->first = first;
+	r->last = last;
+	r->y = y;
+	r->x = x;
+	r->zoom_x = zoom_x;
+	r->zoom_y = zoom_y;
+	r->size = size;
+}
+
+static void prepare_sprites(void) {
 	const Uint16 *vram = (const Uint16 *) snap_vram;
 	int x = 0, y = 0, zoom_x = 0, zoom_y = 0, size = 0;
 	int sprite;
 
 	if (!zoom_width[0]) init_zoom_cols();
 
+	nruns = 0;
 	for (sprite = 0; sprite < MAX_SPRITES; sprite++) {
 		int y_control = vram[0x8200 + sprite];
 		int zoom_control = vram[0x8000 + sprite];
@@ -779,13 +781,13 @@ static void draw_sprites(void) {
 		if (off < height) {
 			n = height - off;
 			if (n > LAST_LINE - FIRST_LINE) n = LAST_LINE - FIRST_LINE;
-			draw_sprite_lines(sprite, FIRST_LINE, FIRST_LINE + n, y, x, zoom_x, zoom_y, size, vram);
+			add_run(sprite, FIRST_LINE, FIRST_LINE + n, y, x, zoom_x, zoom_y, size);
 		}
 		start = y & 0x1ff;
 		if (start >= FIRST_LINE + n && start < LAST_LINE) {
 			int end = start + height;
 			if (end > LAST_LINE) end = LAST_LINE;
-			draw_sprite_lines(sprite, start, end, y, x, zoom_x, zoom_y, size, vram);
+			add_run(sprite, start, end, y, x, zoom_x, zoom_y, size);
 		}
 	}
 }
@@ -801,28 +803,107 @@ void video_snapshot(void) {
 	snap_fix_usage = fix_usage;
 }
 
-/* Fills the visible picture with the backdrop color (palette entry 4095). */
 /* Games only keep the middle 304 of the 320 columns clean; the 8 at each side, hidden by TV
  * overscan, show sprites popping in and the backdrop. Like FinalBurn Neo, show 304x224. */
 #define EDGE 8
 
-static void fill_columns(int first, int last, Uint16 color) {
+/* Full screen: the band column shown in each of the 400 screen columns (304 stretched to 400,
+ * nearest neighbour; every 25 screen columns take 19 band columns). */
+static Uint16 full_col[400];
+
+/* Fills columns first..last-1 of a band buffer with one color. */
+static void fill_band(Uint16 *buf, int first, int last, Uint16 color) {
 	const Uint32 c = color | ((Uint32) color << 16);
+	Uint32 *col = (Uint32 *) (buf + first * XSTEP);
 	int x, k;
-	for (x = first; x < last; x++) {
-		Uint32 *col = (Uint32 *) (canvas + x * XSTEP - (LAST_LINE - 1)); /* 224 pixels, bottom first */
-		for (k = 0; k < 224 / 2; k++) col[k] = c;
+	for (x = first; x < last; x++, col += XSTEP / 2)
+		for (k = 0; k < VIDEO_BAND_LINES / 2; k++) col[k] = c;
+}
+
+/* 1:1, the 320x224 picture centered on the 400x240 screen: each band column goes to screen
+ * column 40 + x, 14 pixels from row index 218 - 14 * band up (the screen's row 21 + 14 * band is
+ * the band's bottom line). */
+static void band_out(const Uint16 *buf, Uint16 *fb, int band) {
+	const Uint32 *s = (const Uint32 *) buf;
+	Uint32 *d = (Uint32 *) (fb + 40 * 240 + 218 - VIDEO_BAND_LINES * band);
+	int x;
+	for (x = 0; x < 320; x++, s += XSTEP / 2, d += 240 / 2) {
+		d[0] = s[0], d[1] = s[1], d[2] = s[2], d[3] = s[3];
+		d[4] = s[4], d[5] = s[5], d[6] = s[6];
 	}
 }
 
-/* Draws the last snapshot into fb, the 400x240 rotated top-screen framebuffer. */
+/* Full screen: the 14 band lines become 15 screen rows (224 to 240, the 8th line shown twice),
+ * from row index 225 - 15 * band up. That start alternates between odd and even, so the 15
+ * pixels are written as a halfword and seven words, or seven words and a halfword. */
+static void band_out_full(const Uint16 *buf, Uint16 *fb, int band) {
+	const int odd = !(band & 1); /* 225 - 15 * band is odd */
+	Uint16 *d = fb + 225 - 15 * band;
+	int x;
+	for (x = 0; x < 400; x++, d += 240) {
+		const Uint32 *s = (const Uint32 *) (buf + full_col[x] * XSTEP);
+		const Uint32 w0 = s[0], w1 = s[1], w2 = s[2], w3 = s[3], w4 = s[4], w5 = s[5], w6 = s[6];
+		const int twice = x + 1 < 400 && full_col[x + 1] == full_col[x];
+		int k;
+		for (k = 0; k <= twice; k++) {
+			Uint16 *const p = d + k * 240;
+			if (odd) {
+				Uint32 *const q = (Uint32 *) (p + 1);
+				p[0] = w0;
+				q[0] = (w0 >> 16) | (w1 << 16), q[1] = (w1 >> 16) | (w2 << 16), q[2] = (w2 >> 16) | (w3 << 16);
+				q[3] = w3, q[4] = w4, q[5] = w5, q[6] = w6;
+			} else {
+				Uint32 *const q = (Uint32 *) p;
+				q[0] = w0, q[1] = w1, q[2] = w2, q[3] = (w3 & 0xffff) | (w3 << 16);
+				q[4] = (w3 >> 16) | (w4 << 16), q[5] = (w4 >> 16) | (w5 << 16), q[6] = (w5 >> 16) | (w6 << 16);
+				p[14] = w6 >> 16;
+			}
+		}
+		if (twice) x++, d += 240;
+	}
+}
+
+/* Per-frame setup from the last snapshot, before any band is drawn. */
+void video_prepare(void) {
+	if (!full_col[399]) {
+		int x;
+		for (x = 0; x < 400; x++) full_col[x] = EDGE + (2 * x + 1) * 304 / 800;
+	}
+	prepare_sprites();
+	prepare_fix();
+}
+
+/* Draws one band of the last snapshot into buf (VIDEO_BAND_PIXELS, 32-byte aligned) and writes it
+ * to fb, the 400x240 rotated top-screen framebuffer, 1:1 or stretched to the full screen. Bands
+ * may be drawn in any order and on both cores at once, each with its own buf. */
+void video_band(int band, Uint16 *buf, Uint16 *fb, int full) {
+	const Uint16 *vram = (const Uint16 *) snap_vram;
+	const int first = FIRST_LINE + VIDEO_BAND_LINES * band, last = first + VIDEO_BAND_LINES;
+	Uint16 *const cv = buf + last - 1; /* the band's bottom line is index 0 of each column */
+	int i;
+
+	fill_band(buf, EDGE, 320 - EDGE, snap_pal[4095]); /* backdrop color */
+	for (i = 0; i < nruns; i++) {
+		const SpriteRun *r = &runs[i];
+		if (r->first < last && r->last > first)
+			draw_sprite_lines(cv, r->sprite, r->first > first ? r->first : first, r->last < last ? r->last : last,
+					r->y, r->x, r->zoom_x, r->zoom_y, r->size, vram);
+	}
+	draw_fix_band(cv, first, last);
+	if (full) band_out_full(buf, fb, band);
+	else {
+		fill_band(buf, 0, EDGE, 0); /* black edges */
+		fill_band(buf, 320 - EDGE, 320, 0);
+		band_out(buf, fb, band);
+	}
+}
+
+/* Draws the last snapshot 1:1 into fb on this core alone. */
 void video_render(Uint16 *fb) {
-	canvas = CANVAS(fb);
-	fill_columns(EDGE, 320 - EDGE, snap_pal[4095]); /* backdrop color */
-	draw_sprites();
-	draw_fix_char(NULL, 0, 0);
-	fill_columns(0, EDGE, 0); /* black edges */
-	fill_columns(320 - EDGE, 320, 0);
+	static Uint16 buf[VIDEO_BAND_PIXELS] __attribute__((aligned(32)));
+	int band;
+	video_prepare();
+	for (band = 0; band < VIDEO_BANDS; band++) video_band(band, buf, fb, 0);
 }
 
 void draw_screen(void) {
@@ -1002,7 +1083,6 @@ void draw_screen_scanline(int start_line, int end_line, int refresh) {
 	} /* for count */
 
 	if (refresh) {
-		draw_fix_char(buffer->pixels, 0, 0);
 
 		if (conf.do_message) {
 			SDL_textout(buffer, visible_area.x, visible_area.h + visible_area.y - 13, conf.message);

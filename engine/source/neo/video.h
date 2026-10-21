@@ -80,6 +80,14 @@ void debug_draw_tile(unsigned int tileno,int sx,int sy,int zx,int zy,
 void draw_screen_scanline(int start_line, int end_line, int refresh);
 void draw_screen(void);
 void video_snapshot(void);
+/* Tile-based renderer: 16 bands of 14 of the 224 visible lines, drawn in a band buffer of 320
+ * columns of VIDEO_BAND_STRIDE pixels (see video.c). */
+#define VIDEO_BANDS 16
+#define VIDEO_BAND_LINES 14
+#define VIDEO_BAND_STRIDE 16
+#define VIDEO_BAND_PIXELS (320 * VIDEO_BAND_STRIDE)
+void video_prepare(void);
+void video_band(int band, Uint16 *buf, Uint16 *fb, int full);
 void video_render(Uint16 *fb);
 // void show_cache(void);
 int init_sprite_cache(Uint32 size, Uint32 bsize, int codec, const Uint8 *packed, const Uint32 *offset, Uint32 nb_blocks);
