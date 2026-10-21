@@ -29,11 +29,13 @@
 #gateDl:hover{background:var(--gold);border-color:#fff;color:#16161C}
 #gateBatch a.btn{border-color:var(--gold);color:var(--gold)}
 .mode-label{display:block;margin:0 0 6px}
-.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+.mode-group{display:block;margin:10px 0 6px;color:var(--gold);font-size:10px}
+.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 4px}
+.mode-pick.one{grid-template-columns:1fr}
 .mode-pick .chip input{position:absolute;opacity:0;pointer-events:none}
 .mode-pick .chip:has(input:checked){background:var(--marquee);border-color:var(--marquee);color:#fff}
 .mode-out{display:block;font-size:9px;color:var(--dim);margin-top:5px}
-.mode-pick .chip:has(input:checked) .mode-out{color:#ffd9dc}
+.mode-pick .chip:has(input:checked) .mode-out{color:#fff}
 </style>
 </head>
 <body>
@@ -93,9 +95,13 @@
         </label>
       </div>
       <span class="tiny mode-label" data-i18n="gate.mLabel">출력 선택</span>
-      <div class="chips mode-pick" role="group" aria-label="출력" data-i18n-attr="aria-label:gate.mGroup">
-        <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span data-i18n="gate.mCia">게임 CIA</span><span class="mode-out" data-i18n="gate.mCiaOut">.cia → 3DS에 설치</span></label>
-        <label class="chip"><input type="radio" name="gateMode" value="pack"> <span data-i18n="gate.mPack">런처용 파일</span><span class="mode-out" data-i18n="gate.mPackOut">.neo3ds → SD 카드</span></label>
+      <span class="tiny mode-group" data-i18n="gate.mGame">게임별 — HOME 메뉴에 바로 뜸</span>
+      <div class="chips mode-pick one" role="group" aria-label="게임별" data-i18n-attr="aria-label:gate.mGameGroup">
+        <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span data-i18n="gate.mCia">게임 CIA</span><span class="mode-out" data-i18n="gate.mCiaOut">.cia → FBI로 설치</span></label>
+      </div>
+      <span class="tiny mode-group" data-i18n="gate.mLaunch">런처용 — 앱 하나로 여러 게임</span>
+      <div class="chips mode-pick" role="group" aria-label="런처용" data-i18n-attr="aria-label:gate.mLaunchGroup">
+        <label class="chip"><input type="radio" name="gateMode" value="pack"> <span data-i18n="gate.mPack">런처용 파일</span><span class="mode-out" data-i18n="gate.mPackOut">.neo3ds → /neo3ds/games/</span></label>
         <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span data-i18n="gate.mLaunch">런처 CIA</span><span class="mode-out" data-i18n="gate.mLaunchOut">.cia → 1회만 설치</span></label>
       </div>
       <div class="cta-row">
@@ -119,7 +125,7 @@
         <li data-step="load"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">롬셋 확인</h3><p data-i18n="gate.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다.</p></div><span class="pipe-val" data-pipe="1"></span></li>
         <li data-step="romfs"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">그래픽 압축</h3><p data-i18n="gate.p2d">스프라이트를 4KB 블록으로 zstd 압축합니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
         <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
-        <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">엔진 ELF + RomFS를 WASM makerom으로 묶습니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
+        <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">WASM 도구로 결과물을 묶습니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
       </ol>
       <div class="conv-side">
         <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>

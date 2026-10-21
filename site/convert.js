@@ -143,10 +143,11 @@ function showDownload(bin, name) {
 
 function showStats(stats) {
   const st = $('gateStats');
-  const kind = downloadName(stats).endsWith('.neo3ds') ? '.neo3ds' : 'CIA';
-  const base = `${kind} ${stats.ciaMB}MB · ${t('메모리', 'memory')} ${stats.memMB ?? '?'}MB`;
-  const tail = stats.totalMB ? ` · 3DS ${t('약', '~')}${stats.totalMB}MB` : '';
-  st.textContent = `${base}${tail} · ${stats.secs}${t('초', 's')}`;
+  const kind = (stats.mode ?? currentMode()) === 'pack' ? '.neo3ds' : 'CIA';
+  st.textContent = t(
+    `${kind} ${stats.ciaMB}MB · 메모리 ${stats.memMB ?? '?'}MB · 3DS 약 ${stats.totalMB}MB · ${stats.secs}초`,
+    `${kind} ${stats.ciaMB}MB · memory ${stats.memMB ?? '?'}MB · 3DS ~${stats.totalMB}MB · ${stats.secs}s`,
+  );
   st.classList.remove('hidden');
 }
 
