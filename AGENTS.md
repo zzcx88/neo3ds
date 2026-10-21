@@ -41,7 +41,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 
 - 게임 DB 변경 시 `scripts/gen_site_games.py`로 `site/games.js` 재생성 — 수동 편집 금지
 - VERIFIED 수 변경 시 README 호환성 표 + `site/` 문구를 같은 커밋에 함께 갱신
 - 호환성 표는 실기 확인 결과만, 미확인은 "추정" 표기
-- 버전은 2곳 일치: `converter/Directory.Build.props`의 `<Version>` + `site/vendor/conv/version.js`의 `CONVERTER_VERSION` (릴리스 시 함께 올리기)
+- 버전 단일 출처: `converter/Directory.Build.props`의 `<Version>` (릴리스 시 여기만 올리기). 웹용 `site/vendor/conv/version.js`는 `scripts/build_wasm.sh`가 여기서 생성 (git 제외)
 - `site/` 색·폰트·수치는 실제 코드에서만(`ui.h` 팔레트, `ui.c` 좌표, 진단 화면 값) — 창작 금지
 - 문서 전용 변경은 `docs/`·`site/`·README 범위 유지
 
@@ -50,7 +50,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 
 - 엔진: `bash scripts/build_engine.sh` / 웹: `bash scripts/build_wasm.sh` / `site/`: `node --check` + 태그 균형 + i18n 누락 0 / `scripts/`: `bash -n`·`py_compile` / C#(exe): `dotnet build -c Release`
 - 엔진 동작 변경 시 `scripts/azahar_test.sh` 통과 후 커밋
 - 커밋 전: 산출물·롬·바이오스 혼입 없음, 무관 파일 없음, 한·영 쌍 일치, 이슈 번호 참조
-- 금지: 바이너리 커밋, 롬/바이오스 저장, 버전 2곳 관리, 실측 없는 성능 수치 기재
+- 금지: 바이너리 커밋, 롬/바이오스 저장, 실측 없는 성능 수치 기재
 - 도구 출력 접두사(`36:` 같은 줄번호)를 코드로 오인 금지 — 의심되면 `od -c`로 바이트 확인
 - 공유 파일(`neogeo_games.json`, `games.js`, README 표) 수정 전 이슈에 사전 선언
 - 무관 변경 발견 시 즉시 revert

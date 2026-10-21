@@ -33,7 +33,7 @@ dotnet build -c Release converter/Neo3dsConverter
 
 - 산출물: `converter/Neo3dsConverter/bin/Release/net10.0-windows/` — exe + `tools\` (`engine.elf`, `neo3ds.rsf`, `makerom.exe`, `bannertool.exe`)
 - exe와 `tools\` 폴더는 항상 같이 둔다
-- 버전: `converter/Directory.Build.props`의 `<Version>` + `site/vendor/conv/version.js`의 `CONVERTER_VERSION` 2곳 일치 (릴리스 시 함께 올리기, §7)
+- 버전: `converter/Directory.Build.props`의 `<Version>`이 단일 출처 (웹용 `version.js`는 `build_wasm.sh`가 생성, git 제외)
 
 ## 3. CIA 만들기 (수동 확인)
 
@@ -91,8 +91,8 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 릴리스는 두 산출물이다: 웹 변환기 배포(메인) + 오프라인 변환기 패키지(Windows GUI, Linux·macOS CLI).
 
-공통: `converter/Directory.Build.props`의 `<Version>`과 `site/vendor/conv/version.js`의
-`CONVERTER_VERSION`을 함께 올린다 (AGENTS.md 버전 규칙).
+공통: `converter/Directory.Build.props`의 `<Version>`을 올린다 (단일 출처, AGENTS.md 버전 규칙).
+웹용 `site/vendor/conv/version.js`는 `build_wasm.sh`가 `<Version>`에서 자동 생성한다.
 
 ### 7.1 웹 변환기 (Pages)
 
@@ -116,7 +116,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가 3종 패키지를 만들고
 GitHub Release에 올린다 (#55에서 복원).
 
-1. 버전 2곳 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
+1. `<Version>` 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
    (CI가 검증: 태그 ≠ `<Version>`이면 실패)
 2. `git tag vX.Y.Z && git push origin vX.Y.Z`
 3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package` 매트릭스 3종

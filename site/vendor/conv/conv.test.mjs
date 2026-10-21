@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 // until the corresponding conv/ module lands.
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 // ROM zips are git-excluded: skip ROM-dependent tests when absent (CI).
-const HAS_ROMS = (() => { try { readFileSync(join(ROOT, 'roms/kof98.zip')); return true; } catch { return false; } })();
-if (!HAS_ROMS) console.log('SKIP rom-dependent tests (no roms/*.zip)');
+// Gate on the files actually opened below (kof98h.zip + parent kof98.zip),
+// so a merged set (parent only) skips instead of failing with ENOENT.
+const HAS_ROMS = (() => { try { readFileSync(join(ROOT, 'roms/kof98h.zip')); readFileSync(join(ROOT, 'roms/kof98.zip')); return true; } catch { return false; } })();
+if (!HAS_ROMS) console.log('SKIP rom-dependent tests (need roms/kof98h.zip + roms/kof98.zip)');
 let fail = 0;
 let skipped = 0;
 const t = async (name, fn, needsRoms = false) => {
