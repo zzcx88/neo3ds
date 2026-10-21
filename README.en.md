@@ -80,6 +80,8 @@ Instead of installing a CIA per game, pick games from one app. Only one HOME men
 
 The same game shares its key config, backup RAM and quick saves whether it runs as a CIA or from the launcher.
 
+**Updating only takes the launcher.** The engine lives in the launcher, so when a new version comes out, installing the new launcher CIA is enough: the `.neo3ds` files you already made run on the new version without converting them again. Per-game CIAs carry their own engine and have to be converted again. Key configs and backup RAM carry over; quick saves from another version can't be loaded.
+
 ### Optional: the offline converter
 
 A converter you download and keep on your PC instead of using the browser. It works without internet and you can keep a copy. It builds the same files as the web converter; setting your own title, icon and banner is only in the offline converter.
