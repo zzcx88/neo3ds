@@ -76,7 +76,7 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 10px}
 .device-col{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px}
 
-/* ── 3DS 본체 목업 (위 400×240, 아래 320×240) ─────────────────────────── */
+/* ── 3DS 본체 목업 (위 360×216, 아래 288×194 — hero 축소, #52) ─────────── */
 .device{--u:min(1px,calc((100vw - 24px)/480));width:calc(480*var(--u));display:flex;flex-direction:column}
 .shell{background:#26262F;border:1px solid #34343E;width:100%;border-radius:calc(14*var(--u));position:relative}
 .shell-top{display:grid;grid-template-columns:calc(24*var(--u)) calc(360*var(--u)) 1fr;
