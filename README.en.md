@@ -78,8 +78,8 @@ Instead of installing a CIA per game, pick games from one app. Only one HOME men
 
 The same game shares its key config, backup RAM and quick saves whether it runs as a CIA or from the launcher.
 
-### The old desktop converter
-The Windows exe and CLI from earlier releases are no longer published. The C# sources (`converter/`) stay in the repo as the harness baseline and for local debugging.
+### The desktop converter (Windows)
+Prefer a PC program over the browser? Grab `neo3ds-converter.zip` from the releases and unpack it (keep the exe and the `tools\` folder together). It runs the same logic as the web converter; see [build.md](docs/build.md) §3 for usage.
 
 ## Controls
 
@@ -262,7 +262,7 @@ The [technical write-up](docs/TECHNICAL.md) goes into more detail: measurements,
 
 - Engine: [devkitPro](https://devkitpro.org/) (devkitARM, libctru). `bash scripts/build_engine.sh` → `engine/engine.elf`
 - Converter (web): emsdk. `bash scripts/build_wasm.sh` → `site/vendor/` (3 WASM builds + static assets), then serve `site/` statically
-- Converter (C#, archived): .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
+- Converter (C#, Windows exe + baseline): .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
 - Game DB: fetch MAME's `src/mame/snk/neogeo.cpp` and run `py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json`.
 
 ## Legal

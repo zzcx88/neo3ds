@@ -8,7 +8,9 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 
 ## 레이아웃
 
 - `engine/source/` — 3DS 엔진 (devkitARM/libctru)
-- `converter/Neo3dsConverter/` — .NET 10 WinForms 변환기
+- `site/` — 소개 페이지 + 웹 변환기 (`convert.html`, 정적 호스팅)
+- `site/vendor/conv/` — 웹 변환기 로직 (C# 포팅 ES 모듈 + Worker)
+- `converter/` — C# 변환기 (정확도 기준선 + Windows exe 릴리스용)
 - `converter/assets/` — 게임 DB, RSF
 - `scripts/` — 빌드·Azahar 테스트 스크립트
 - 로컬 준비 (git 제외): `tools/` (makerom, bannertool, Azahar), `roms/`, `dist/`, `out/`
@@ -45,7 +47,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 
 
 ## 검증 게이트 · AI 작업 수칙
 
-- 엔진: `bash scripts/build_engine.sh` / 웹: `bash scripts/build_wasm.sh` / `site/`: `node --check` + 태그 균형 + i18n 누락 0 / `scripts/`: `bash -n`·`py_compile` / C#(보관): `dotnet build -c Release`
+- 엔진: `bash scripts/build_engine.sh` / 웹: `bash scripts/build_wasm.sh` / `site/`: `node --check` + 태그 균형 + i18n 누락 0 / `scripts/`: `bash -n`·`py_compile` / C#(exe): `dotnet build -c Release`
 - 엔진 동작 변경 시 `scripts/azahar_test.sh` 통과 후 커밋
 - 커밋 전: 산출물·롬·바이오스 혼입 없음, 무관 파일 없음, 한·영 쌍 일치, 이슈 번호 참조
 - 금지: 바이너리 커밋, 롬/바이오스 저장, 버전 2곳 관리, 실측 없는 성능 수치 기재

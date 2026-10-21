@@ -33,7 +33,7 @@ dotnet build -c Release converter/Neo3dsConverter
 
 - 산출물: `converter/Neo3dsConverter/bin/Release/net10.0-windows/` — exe + `tools\` (`engine.elf`, `neo3ds.rsf`, `makerom.exe`, `bannertool.exe`)
 - exe와 `tools\` 폴더는 항상 같이 둔다
-- 버전: `converter/Directory.Build.props`의 `<Version>` 한 곳에서 관리
+- 버전: `converter/Directory.Build.props`의 `<Version>` + `site/vendor/conv/version.js`의 `CONVERTER_VERSION` 2곳 일치 (릴리스 시 함께 올리기, §7)
 
 ## 3. CIA 만들기 (수동 확인)
 
@@ -87,17 +87,21 @@ MAME `src/mame/snk/neogeo.cpp`를 받아서:
 py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 ```
 
-## 7. 릴리스 (웹 변환기)
+## 7. 릴리스 (웹 + Windows)
 
-릴리스는 웹 변환기 배포다. `main` 푸시 1회로 GitHub Actions(`.github/workflows/pages.yml`)가
-`site/`를 빌드·검증 후 Pages에 배포한다. 플랫폼별 패키지는 만들지 않는다 (#31·#35).
+릴리스는 두 산출물이다: 웹 변환기 배포 + Windows exe 패키지.
 
-1. `converter/Directory.Build.props`의 `<Version>` 올리기
-   (`site/vendor/conv/version.js`의 `CONVERTER_VERSION`과 반드시 일치 — 손으로 맞춤)
-2. 커밋 후 `main` 푸시
-3. Actions → Pages 워크플로 확인: `build`(devkitARM Docker로 `engine.elf` 빌드 +
+공통: `converter/Directory.Build.props`의 `<Version>`과 `site/vendor/conv/version.js`의
+`CONVERTER_VERSION`을 함께 올린다 (AGENTS.md 버전 규칙).
+
+### 7.1 웹 변환기 (Pages)
+
+`main` 푸시 1회로 GitHub Actions(`.github/workflows/pages.yml`)가 `site/`를 빌드·검증 후 Pages에 배포한다.
+
+1. 커밋 후 `main` 푸시
+2. Actions → Pages 워크플로 확인: `build`(devkitARM Docker로 `engine.elf` 빌드 +
    emsdk로 WASM 3종 빌드 + `site/` 검증 게이트 + `conv.test.mjs`) → `deploy`
-4. https://zzcx88.github.io/neo3ds/convert.html 에서 변환 1회 확인
+3. https://zzcx88.github.io/neo3ds/convert.html 에서 변환 1회 확인
 
 배포물 (`site/`, 전부 정적):
 
@@ -107,7 +111,16 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 수동 실행: Actions → Pages → Run workflow.
 로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.
 
-### 데스크톱 변환기 (보관)
+### 7.2 Windows exe 패키지
 
-`converter/` C# 소스는 하네스 기준선·로컬 디버깅용으로 유지한다. 릴리스 패키지는 만들지 않으며,
-`scripts/build_unix_tools.sh`·`scripts/package_release.ps1`·`build-release.yml`은 #35에서 삭제했다.
+태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가
+Windows GUI exe + `tools\`를 묶어 `neo3ds-converter.zip`을 만들고 GitHub Release에 올린다.
+
+1. 버전 2곳 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
+   (CI가 검증: 태그 ≠ `<Version>`이면 실패)
+2. `git tag vX.Y.Z && git push origin vX.Y.Z`
+3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker) → `package`(win-x64) → `release`
+4. 릴리스 페이지에서 `neo3ds-converter.zip` + `neo3ds-launcher.cia` 확인
+
+Windows 도구는 최신 릴리스 zip에서 부트스트랩한다(최초 1회는 수동 배치, §2).
+Unix 패키지(linux/macOS)는 웹 변환기로 대체되어 만들지 않는다 (#35).

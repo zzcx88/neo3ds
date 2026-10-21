@@ -35,10 +35,12 @@ its ARM assembly CPU cores: Cyclone (68000) and DrZ80 (Z80). Both are fast, but 
 for memory access without clearing the upper bits of the argument registers, so every callback takes
 `unsigned int` and masks for itself. Getting that wrong was the single biggest bug of the port.
 
-The PC side is a C# converter that reads a MAME romset zip, decrypts it and builds a CIA. All the
-protection schemes (CMC42/CMC50 sprite and sound encryption, SMA and PVC program encryption, PCM2,
-the KOF2002-type program shuffle, the SVC Chaos Plus bootleg) are undone on the PC, following MAME.
-The 3DS never spends memory or time on decryption.
+The PC side is a web converter that reads a MAME romset zip, decrypts it and builds a CIA, all inside
+the browser (ROMs are never uploaded). All the protection schemes (CMC42/CMC50 sprite and sound
+encryption, SMA and PVC program encryption, PCM2, the KOF2002-type program shuffle, the SVC Chaos
+Plus bootleg) are undone during conversion, following MAME. The 3DS never spends memory or time on
+decryption. The C# converter (`converter/`) is the desktop implementation of the same logic, kept as
+the accuracy baseline and for the Windows exe release.
 
 ## Memory: 64 MB of sprites in 58 MB of heap
 
