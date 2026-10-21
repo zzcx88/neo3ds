@@ -260,7 +260,7 @@ void ui_turbo_changed(void) {
 }
 
 /* [LCD off] turns the bottom screen's backlight off for the session (never saved). The next touch
- * turns it back on and does nothing else; so do the HOME menu, sleep and leaving the game. */
+ * turns it back on and does nothing else; so do going to the HOME menu or to sleep and leaving the game. */
 static bool lcd_off, lcd_waking; /* waking: the touch that turned it on is still down */
 
 /* The gsp::Lcd session is opened for each call and closed at once: kept open, the HOME menu froze

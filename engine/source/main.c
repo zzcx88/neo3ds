@@ -371,8 +371,10 @@ static void state_action(bool save, int slot) {
 static aptHookCookie apt_cookie;
 static void on_apt(APT_HookType type, void *param) {
 	(void)param;
-	if (type == APTHOOK_ONSUSPEND || type == APTHOOK_ONSLEEP) save_flush();
-	if (type == APTHOOK_ONRESTORE || type == APTHOOK_ONWAKEUP) ui_screen_on(); /* [LCD off] lasts until then */
+	if (type == APTHOOK_ONSUSPEND || type == APTHOOK_ONSLEEP) {
+		save_flush();
+		ui_screen_on(); /* [LCD off] ends here: the HOME menu would come up with a dark bottom screen */
+	}
 }
 
 int main(void) {
