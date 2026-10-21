@@ -125,6 +125,7 @@ const EN = {
   'gate.p3d': 'Pack the engine ELF + RomFS with WASM makerom.',
   'gate.logLabel': 'Converter log', 'gate.logNote': 'Log lines match the desktop converter. CIAs are usually tens of MB.',
   'gate.issue': 'Web converter issue', 'gate.home': 'Intro page',
+  'gate.mCia': 'Game CIA', 'gate.mPack': 'Launcher file', 'gate.mLaunch': 'Launcher CIA',
   /* JS가 그리는 문구 */
   'budget.main': 'main core', 'budget.core1': 'core 1', 'budget.idle': 'idle',
   'budget.d68k': '68000 (game code)', 'budget.dz80': 'Z80 (sound CPU)', 'budget.dtmr': 'timers',
