@@ -79,14 +79,14 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 /* ── 3DS 본체 목업 (위 400×240, 아래 320×240) ─────────────────────────── */
 .device{--u:min(1px,calc((100vw - 24px)/480));width:calc(480*var(--u));display:flex;flex-direction:column}
 .shell{background:#26262F;border:1px solid #34343E;width:100%;border-radius:calc(14*var(--u));position:relative}
-.shell-top{display:grid;grid-template-columns:calc(24*var(--u)) calc(400*var(--u)) 1fr;
-  align-items:center;padding:calc(20*var(--u)) calc(16*var(--u));gap:calc(10*var(--u))}
+.shell-top{display:grid;grid-template-columns:calc(24*var(--u)) calc(360*var(--u)) 1fr;
+  align-items:center;padding:calc(16*var(--u)) calc(16*var(--u));gap:calc(10*var(--u))}
 .shell-top > .screen-outer{grid-column:2;grid-row:1}
-.speaker{grid-column:1;grid-row:1;justify-self:center;width:calc(8*var(--u));height:calc(90*var(--u));
+.speaker{grid-column:1;grid-row:1;justify-self:center;width:calc(8*var(--u));height:calc(80*var(--u));
   background:radial-gradient(circle,#3A3A44 1px,transparent 1.2px) 0 0/calc(4*var(--u)) calc(4*var(--u))}
 .cam{position:absolute;top:calc(7*var(--u));left:50%;transform:translateX(-50%);width:calc(6*var(--u));
   height:calc(6*var(--u));border-radius:50%;background:#0C0C10;box-shadow:inset 0 0 0 1px #3A3A44}
-.screen-outer{width:calc(400*var(--u));height:calc(240*var(--u));background:#0B0B0F;
+.screen-outer{width:calc(360*var(--u));height:calc(216*var(--u));background:#0B0B0F;
   border-radius:calc(2*var(--u));overflow:hidden}
 .screen-top{width:100%;height:100%}
 .screen-bottom{width:100%;height:100%}
@@ -104,8 +104,8 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
   background:#26262F;border:1px solid #34343E;border-bottom:0}
 .hinge span:first-child{left:calc(22*var(--u));border-radius:calc(8*var(--u)) calc(8*var(--u)) 0 0}
 .hinge span:last-child{right:calc(22*var(--u));border-radius:calc(8*var(--u)) calc(8*var(--u)) 0 0}
-.shell-bottom{padding:calc(18*var(--u)) calc(16*var(--u)) calc(10*var(--u));
-  display:grid;grid-template-columns:calc(64*var(--u)) calc(320*var(--u)) calc(64*var(--u));
+.shell-bottom{padding:calc(16*var(--u)) calc(16*var(--u)) calc(10*var(--u));
+  display:grid;grid-template-columns:calc(64*var(--u)) calc(288*var(--u)) calc(64*var(--u));
   grid-template-rows:auto auto;justify-content:center;align-items:start;gap:calc(10*var(--u))}
 .pad-wrap{display:flex;flex-direction:column;align-items:center;gap:calc(10*var(--u));padding-top:calc(28*var(--u))}
 .circle-pad{width:calc(40*var(--u));height:calc(40*var(--u));border-radius:50%;background:#1E1E25;
@@ -116,7 +116,7 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .dpad::before,.dpad::after{content:"";position:absolute;background:#1E1E25;box-shadow:inset 0 0 0 1px #3A3A44}
 .dpad::before{left:calc(15*var(--u));top:0;width:calc(16*var(--u));height:100%}
 .dpad::after{top:calc(15*var(--u));left:0;height:calc(16*var(--u));width:100%}
-.touch-outer{width:calc(320*var(--u));height:calc(240*var(--u));background:#0B0B0F;
+.touch-outer{width:calc(288*var(--u));height:calc(194*var(--u));background:#0B0B0F;
   border-radius:calc(2*var(--u));overflow:hidden}
 .face{position:relative;width:calc(64*var(--u));height:calc(64*var(--u));margin-top:calc(28*var(--u))}
 .shell-btn{background:#2A2A33;border:1px solid #3A3A44;color:var(--dim);font:400 10px/1 var(--pixel-sm);
