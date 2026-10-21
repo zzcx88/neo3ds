@@ -14,6 +14,7 @@ out/
 site/vendor/*.wasm
 site/vendor/makerom.js
 site/vendor/bannertool.js
+site/vendor/zstd.js
 site/vendor/engine.elf
 site/vendor/neo3ds.rsf
 site/vendor/neogeo_games.json

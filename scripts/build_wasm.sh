@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Build makerom + bannertool to WASM with Emscripten (#32 Phase 0).
+# Build makerom + bannertool + zstd to WASM with Emscripten (#32 Phase 0, #33 Phase 1).
 # Usage: bash scripts/build_wasm.sh [--skip-existing]
-# Prereqs: emsdk on PATH (source ~/emsdk/emsdk_env.sh), git, patch.
+# Prereqs: emsdk on PATH (source ~/emsdk/emsdk_env.sh), git, patch, curl.
 # Upstream (same pins as scripts/build_unix_tools.sh):
-#   Project_CTR @ makerom-v0.19.0 (e8f5f52), bannertool @ 1.2.0 (16d8c5a).
+#   Project_CTR @ makerom-v0.19.0 (e8f5f52), bannertool @ 1.2.0 (16d8c5a),
+#   zstd @ 1.5.6 (sha256 pinned below).
 # Shims (scripts/wasm-shim/): oschar iconv -> manual UTF-8<->UTF-16LE;
 #   bannertool <codecvt> -> manual decode. mbedtls excludes net/entropy/timing/
 #   thread/ssl/x509/havege (socket/signal/syscall blockers, unused by makerom).
 # Sources/log: out/wasm-build.XXXXXX (kept for diagnosis, git-excluded).
-# Outputs: site/vendor/{makerom,bannertool}.{js,wasm} (git-excluded build products).
+# Outputs: site/vendor/{makerom,bannertool,zstd}.{js,wasm} + static copies
+#   (engine.elf, neo3ds.rsf, neogeo_games.json) — all git-excluded build products.
 set -euo pipefail
 
 skip_existing=0
@@ -17,11 +19,12 @@ for arg in "$@"; do
 done
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-for tool in git patch mktemp; do
+for tool in git patch mktemp curl shasum; do
   command -v "$tool" >/dev/null || { echo "missing: $tool" >&2; exit 1; }
 done
 command -v emcc >/dev/null || { echo "emcc not on PATH — run: source ~/emsdk/emsdk_env.sh" >&2; exit 1; }
 
+out="$root/site/vendor"
 mkdir -p "$root/out" "$out"
 if [[ "$skip_existing" == 1 && -s "$out/makerom.wasm" && -s "$out/bannertool.wasm" ]]; then
   echo "WASM tools already built, skipping."
@@ -79,4 +82,17 @@ emcc -std=c11 -O2 -D_GNU_SOURCE \
   -sMODULARIZE=1 -sEXPORT_ES6=1 \
   -sALLOW_MEMORY_GROWTH=1 -sFORCE_FILESYSTEM=1 \
   -sEXPORTED_RUNTIME_METHODS='["FS","callMain"]' -sEXIT_RUNTIME=1 -sINVOKE_RUN=0
+
+echo "== zstd =="
+zstd_ref=1.5.6
+zstd_sha=8c29e06cf42aacc1eafc4077ae2ec6c6fcb96a626157e0593d5e82a34fd403c1
+curl -sL "https://github.com/facebook/zstd/releases/download/v${zstd_ref}/zstd-${zstd_ref}.tar.gz" -o zstd.tgz
+echo "${zstd_sha}  zstd.tgz" | shasum -a 256 -c - || { echo "zstd tarball checksum mismatch" >&2; exit 1; }
+tar xzf zstd.tgz
+emcc -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sALLOW_MEMORY_GROWTH=1 \
+  -Izstd-${zstd_ref}/lib "$root/scripts/wasm-shim/zstd_wrap.c" \
+  zstd-${zstd_ref}/lib/common/*.c zstd-${zstd_ref}/lib/compress/*.c zstd-${zstd_ref}/lib/decompress/*.c \
+  -sEXPORTED_FUNCTIONS='["_zstd_compress_simple","_zstd_decompress_simple","_zstd_compress_bound","_malloc","_free"]' \
+  -sEXPORTED_RUNTIME_METHODS='["HEAPU8"]' \
+  -o "$out/zstd.js"
 echo "WASM_BUILD_OK (sources kept: $work)"
