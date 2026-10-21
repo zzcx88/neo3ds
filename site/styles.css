@@ -74,6 +74,19 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,520px);gap:44px;align-items:start}
 .kicker{font-family:var(--pixel-sm);font-size:11px;color:var(--gold);margin:0 0 14px}
 .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 10px}
+/* ── 다운로드 드롭다운 (오프라인 3종, #58) ─────────────────────────────── */
+.dl-drop{position:relative}
+.dl-drop summary{list-style:none}
+.dl-drop summary::-webkit-details-marker{display:none}
+.dl-drop summary::after{content:"▾";color:var(--gold);margin-left:8px}
+.dl-drop[open] summary::after{content:"▴"}
+.dl-panel{position:absolute;top:calc(100% + 6px);left:0;min-width:280px;z-index:20;
+  background:var(--panel);border:1px solid var(--gold);border-radius:3px;overflow:hidden}
+.dl-row{display:block;font:400 12px/1.5 var(--pixel-sm);color:var(--paper);
+  padding:11px 14px;text-decoration:none;border-top:1px solid var(--line)}
+.dl-row:first-child{border-top:0}
+a.dl-row:hover{background:var(--panel-2);color:var(--gold)}
+.dl-row.off{color:var(--dim);cursor:default}
 .device-col{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px}
 
 /* ── 3DS 본체 목업 (위 360×216, 아래 288×194 — hero 축소, #52) ─────────── */
