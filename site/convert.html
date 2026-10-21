@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>neo3ds — 브라우저에서 CIA 만들기 (Phase 0)</title>
-<meta name="description" data-i18n-attr="content:gate.meta" content="데스크톱 변환기의 RomFS 보관 폴더를 브라우저 안에서 WASM makerom·bannertool로 CIA로 묶습니다. 파일은 외부로 전송되지 않습니다.">
+<title>neo3ds — 브라우저에서 변환하기</title>
+<meta name="description" data-i18n-attr="content:gate.meta" content="게임 zip을 올리면 브라우저 안에서 변환합니다. 파일은 외부로 전송되지 않습니다.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23B01420'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='3' fill='none' stroke='%23F8C428' stroke-width='2'/%3E%3Cg fill='%23F8C428'%3E%3Crect x='8' y='7' width='4' height='18'/%3E%3Crect x='20' y='7' width='4' height='18'/%3E%3Crect x='12' y='10' width='4' height='4'/%3E%3Crect x='16' y='15' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
@@ -28,6 +28,12 @@
 #gateDl{background:var(--gold);border-color:var(--gold);color:#16161C;font-weight:700}
 #gateDl:hover{background:var(--gold);border-color:#fff;color:#16161C}
 #gateBatch a.btn{border-color:var(--gold);color:var(--gold)}
+.mode-label{display:block;margin:0 0 6px}
+.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+.mode-pick .chip input{position:absolute;opacity:0;pointer-events:none}
+.mode-pick .chip:has(input:checked){background:var(--marquee);border-color:var(--marquee);color:#fff}
+.mode-out{display:block;font-size:9px;color:var(--dim);margin-top:5px}
+.mode-pick .chip:has(input:checked) .mode-out{color:#ffd9dc}
 </style>
 </head>
 <body>
@@ -57,8 +63,8 @@
   <div class="wrap gate-hero-grid">
     <div class="hero-copy">
       <p class="kicker" data-i18n="gate.kicker">웹 변환기 · 서버 없음 · 파일은 이 탭 안에만</p>
-      <h1 data-i18n="gate.h1">브라우저에서<br>CIA 만들기.</h1>
-      <p class="lede" data-i18n="gate.lede">게임 zip + neogeo.zip을 올리면 이 탭 안에서 CIA를 만듭니다. 롬도 결과물도 외부로 나가지 않습니다.</p>
+      <h1 data-i18n="gate.h1">브라우저에서<br>변환하기.</h1>
+      <p class="lede" data-i18n="gate.lede">게임 zip + neogeo.zip을 올리면 이 탭 안에서 변환합니다. 롬도 결과물도 외부로 나가지 않습니다.</p>
       <p class="tiny" data-i18n="gate.req">합본 롬은 게임·부모 zip을 함께 올리세요 (예: kof98h.zip + kof98.zip + neogeo.zip)</p>
     </div>
 
@@ -86,15 +92,16 @@
           </select>
         </label>
       </div>
-      <div class="row chips" role="group" aria-label="출력" style="margin:0 0 12px">
-        <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span data-i18n="gate.mCia">게임 CIA</span></label>
-        <label class="chip"><input type="radio" name="gateMode" value="pack"> <span data-i18n="gate.mPack">런처용 파일</span></label>
-        <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span data-i18n="gate.mLaunch">런처 CIA</span></label>
+      <span class="tiny mode-label" data-i18n="gate.mLabel">출력 선택</span>
+      <div class="chips mode-pick" role="group" aria-label="출력" data-i18n-attr="aria-label:gate.mGroup">
+        <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span data-i18n="gate.mCia">게임 CIA</span><span class="mode-out" data-i18n="gate.mCiaOut">.cia → 3DS에 설치</span></label>
+        <label class="chip"><input type="radio" name="gateMode" value="pack"> <span data-i18n="gate.mPack">런처용 파일</span><span class="mode-out" data-i18n="gate.mPackOut">.neo3ds → SD 카드</span></label>
+        <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span data-i18n="gate.mLaunch">런처 CIA</span><span class="mode-out" data-i18n="gate.mLaunchOut">.cia → 1회만 설치</span></label>
       </div>
       <div class="cta-row">
-        <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">CIA 만들기</button>
+        <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">변환하기</button>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
-        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">CIA 받기</a>
+        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">다운로드</a>
       </div>
       <div class="cta-row hidden" id="gateBatch" style="gap:8px"></div>
       <p class="tiny hidden" id="gateStats"></p>
@@ -106,17 +113,17 @@
 <section class="sec" id="progress">
   <div class="wrap">
     <h2 data-i18n="gate.progH2">진행</h2>
-    <p class="lede narrow" data-i18n="gate.progLede">변환 단계마다 결과가 표시됩니다. 완료되면 위에서 CIA를 받으세요.</p>
+    <p class="lede narrow" data-i18n="gate.progLede">변환 단계마다 결과가 표시됩니다. 완료되면 위에서 다운로드하세요.</p>
     <div class="conv-grid">
       <ol class="pipe" id="gatePipe">
         <li data-step="load"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">롬셋 확인</h3><p data-i18n="gate.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다.</p></div><span class="pipe-val" data-pipe="1"></span></li>
         <li data-step="romfs"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">그래픽 압축</h3><p data-i18n="gate.p2d">스프라이트를 4KB 블록으로 zstd 압축합니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
         <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
-        <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">CIA 묶기</h3><p data-i18n="gate.p3d">엔진 ELF + RomFS를 WASM makerom으로 묶습니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
+        <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">엔진 ELF + RomFS를 WASM makerom으로 묶습니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
       </ol>
       <div class="conv-side">
         <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>
-        <p class="tiny" data-i18n="gate.logNote">로그 형식은 데스크톱 변환기와 같습니다. CIA 크기는 보통 수십 MB입니다.</p>
+        <p class="tiny" data-i18n="gate.logNote">로그 형식은 데스크톱 변환기와 같습니다. 결과물은 보통 수십 MB입니다.</p>
       </div>
     </div>
   </div>
