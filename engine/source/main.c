@@ -372,6 +372,7 @@ static aptHookCookie apt_cookie;
 static void on_apt(APT_HookType type, void *param) {
 	(void)param;
 	if (type == APTHOOK_ONSUSPEND || type == APTHOOK_ONSLEEP) save_flush();
+	if (type == APTHOOK_ONRESTORE || type == APTHOOK_ONWAKEUP) ui_screen_on(); /* [LCD off] lasts until then */
 }
 
 int main(void) {
@@ -656,6 +657,7 @@ int main(void) {
 	}
 
 	aptUnhook(&apt_cookie);
+	ui_screen_on();
 	save_exit();
 	render_thread_stop();
 	audio_exit();

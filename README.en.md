@@ -151,6 +151,7 @@ These are the defaults. Buttons can be changed per game in [Key config](#key-con
 | **Service** | Opens the MVS BIOS service menu (see below). Shows `Service: MVS only` on AES (`(MVS only)` in the launcher) |
 | **Slot / Save / Load** | Pick a quick save slot / save / load (tap twice) (see below) |
 | **Game list** | Only when started from the launcher: tap twice to go back to the game list. Restart then reads `Hold: reset` |
+| **⏻** (LCD off) | The small square button at the top right. Turns the bottom screen's backlight off (saves battery); touch the bottom screen anywhere to turn it back on, and that touch presses nothing. Not saved; it comes back on after the HOME menu or sleep |
 
 Below them is the current key layout as `3DS button > Neo Geo button`, in the colours of the arcade panel (A red, B yellow, C green, D blue); START and SELECT are left out while they are Start and Coin. The game title and fps are at the top.
 

@@ -37,6 +37,7 @@ void ui_status(const char *msg); /* a one-line message at the bottom (NULL resto
 void ui_fps(double fps);         /* once a second */
 UiAction ui_main_update(void);   /* every frame: touch handling */
 void ui_turbo_changed(void);     /* redraws the turbo button */
+void ui_screen_on(void);         /* the bottom backlight back on if [LCD off] turned it off */
 int ui_state_slot(void);         /* the quick save slot picked on the main screen (0-2) */
 
 #endif
