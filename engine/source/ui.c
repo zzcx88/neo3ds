@@ -63,10 +63,11 @@ void ui_flush(void) {
 
 /* ---- main screen ---- */
 
-enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, B_SERVICE, B_SLOT, B_SAVE, B_LOAD, B_LIST, NB };
+enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, B_SERVICE, B_SLOT, B_SAVE, B_LOAD, B_LIST, B_OFF, NB };
 static UiRect rects[NB] = {
 	{8, 44, 148, 30}, {164, 44, 148, 30}, {8, 80, 148, 30}, {164, 80, 148, 30}, {8, 116, 148, 26}, {164, 116, 148, 26},
 	{8, 148, 96, 26}, {112, 148, 96, 26}, {216, 148, 96, 26}, {0, 0, 0, 0}, /* B_LIST: launcher only */
+	{290, 3, 20, 20}, /* B_OFF: a small square in the header */
 };
 static bool launcher; /* the third row is then Reset / Service / Game list */
 
@@ -132,7 +133,33 @@ static void button_label(int b, char *out, size_t n) {
 	}
 }
 
+/* [LCD off]: a power symbol on a dark square */
+static void draw_off_button(void) {
+	static const char *const icon[11] = {
+		"     #     ",
+		"  #  #  #  ",
+		" #   #   # ",
+		"#    #    #",
+		"#    #    #",
+		"#         #",
+		"#         #",
+		" #       # ",
+		"  #     #  ",
+		"   #####   ",
+		"",
+	};
+	const UiRect r = rects[B_OFF];
+	ui_fill(r.x, r.y, r.w, r.h, pressed == B_OFF ? UI_PRESSED : UI_BG);
+	for (int y = 0; icon[y][0]; y++)
+		for (int x = 0; icon[y][x]; x++)
+			if (icon[y][x] == '#') ui_fill(r.x + 4 + x, r.y + 5 + y, 1, 1, UI_TEXT);
+}
+
 static void draw_button(int b) {
+	if (b == B_OFF) {
+		draw_off_button();
+		return;
+	}
 	char label[40];
 	button_label(b, label, sizeof label);
 	const UiRect r = rects[b];
@@ -218,11 +245,12 @@ void ui_status(const char *msg) {
 	ui_flush();
 }
 
+enum { FPS_RIGHT = 282 }; /* left of [LCD off] */
 void ui_fps(double fps) {
 	char s[16];
 	snprintf(s, sizeof s, "%4.1f fps", fps);
-	ui_fill(320 - 8 - 72, 9, 72, 8, UI_HEADER);
-	ui_text(320 - 8 - ui_text_width(s, 1), 9, s, UI_TEXT, 1);
+	ui_fill(FPS_RIGHT - 72, 9, 72, 8, UI_HEADER);
+	ui_text(FPS_RIGHT - ui_text_width(s, 1), 9, s, UI_TEXT, 1);
 	ui_flush();
 }
 
@@ -231,10 +259,37 @@ void ui_turbo_changed(void) {
 	ui_flush();
 }
 
+/* [LCD off] turns the bottom screen's backlight off for the session (never saved). The next touch
+ * turns it back on and does nothing else; so do going to the HOME menu or to sleep and leaving the game. */
+static bool lcd_off, lcd_waking; /* waking: the touch that turned it on is still down */
+
+/* The gsp::Lcd session is opened for each call and closed at once: kept open, the HOME menu froze
+ * the console when it took over (it needs the service too). */
+static void set_backlight(bool on) {
+	if (R_FAILED(gspLcdInit())) return;
+	if (on) GSPLCD_PowerOnBacklight(GSPLCD_SCREEN_BOTTOM);
+	else GSPLCD_PowerOffBacklight(GSPLCD_SCREEN_BOTTOM);
+	gspLcdExit();
+	lcd_off = !on;
+}
+
+void ui_screen_on(void) {
+	if (lcd_off) set_backlight(true);
+}
+
 UiAction ui_main_update(void) {
 	const u32 down = hidKeysDown(), held = hidKeysHeld(), up = hidKeysUp();
 	UiAction action = UI_NONE;
 	bool dirty = false;
+
+	if (lcd_off || lcd_waking) {
+		if (lcd_off && (down & KEY_TOUCH)) {
+			set_backlight(true);
+			lcd_waking = true;
+		}
+		if (lcd_waking && !(held & KEY_TOUCH)) lcd_waking = false;
+		return UI_NONE;
+	}
 
 	if (confirm && --confirm == 0) {
 		draw_button(B_SYSTEM);
@@ -296,6 +351,7 @@ UiAction ui_main_update(void) {
 			break;
 		}
 		case B_SAVE: action = UI_STATE_SAVE; break;
+		case B_OFF: set_backlight(false); break;
 		case B_LIST:
 			if (list_confirm) {
 				list_confirm = 0;
