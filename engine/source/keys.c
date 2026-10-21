@@ -45,7 +45,9 @@ typedef struct {
 	u8 turbo; /* 0 = off, else 1 + index into buttons */
 	u8 map[NBUTTONS];
 	u8 bios; /* version 2 */
-	u8 screen; /* version 3: 0 = 1:1, 1 = full screen */
+	/* Added after 1.1.0 without a new version: older engines read the 17 bytes before it and keep
+	 * the mapping, files from them end before it (1:1). */
+	u8 screen; /* 0 = 1:1, 1 = full screen */
 } KeyFile;
 
 static void file_path(char *out, size_t n) {
@@ -69,11 +71,11 @@ void keys_load(void) {
 	FILE *f = fopen(path, "rb");
 	if (!f) return;
 	KeyFile k = {{0}};
-	/* version 1 files end before the bios byte, version 2 before the screen byte */
+	/* version 1 files end before the bios byte, 1.1.0's before the screen byte (k is zeroed) */
 	if (fread(&k, 1, sizeof k, f) >= offsetof(KeyFile, bios) && !memcmp(k.magic, "NKEY", 4) &&
-	    k.version >= 1 && k.version <= 3) {
-		if (k.version >= 2 && k.bios <= 2) bios = k.bios;
-		if (k.version >= 3) keys_full_screen = k.screen == 1;
+	    (k.version == 1 || k.version == 2)) {
+		if (k.version == 2 && k.bios <= 2) bios = k.bios;
+		keys_full_screen = k.screen == 1;
 		for (int i = 0; i < NBUTTONS; i++) map[i] = k.map[i] < NACTIONS ? k.map[i] : default_map[i];
 		if (k.turbo >= 1 && k.turbo <= TURBO_BUTTONS) keys_turbo = buttons[k.turbo - 1].key;
 	}
@@ -88,7 +90,7 @@ bool keys_save(void) {
 	file_path(path, sizeof path);
 	FILE *f = fopen(path, "wb");
 	if (!f) return false;
-	KeyFile k = {{'N', 'K', 'E', 'Y'}, 3, (u8)turbo_index(), {0}, bios, keys_full_screen};
+	KeyFile k = {{'N', 'K', 'E', 'Y'}, 2, (u8)turbo_index(), {0}, bios, keys_full_screen};
 	memcpy(k.map, map, sizeof map);
 	bool ok = fwrite(&k, sizeof k, 1, f) == 1;
 	return fclose(f) == 0 && ok;
