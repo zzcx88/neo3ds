@@ -199,10 +199,6 @@ try {
 }
 $$('.lang button').forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lang); refreshDynamic(); }));
 
-/* 모션을 줄이는 설정이면 GIF 대신 같은 프레임의 정지 이미지를 씁니다. */
-if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  $$('.device img').forEach((img) => { img.src = img.src.replace(/\.gif$/, '.png'); });
-}
 
 /* 게임 DB (예산·호환성 섹션이 씀) + 해독 체인 표시 (호환성 상세) */
 const DB = window.NEO3DS_DB || { counts: { total: 0, ok: 0, no: 0, verified: 0 }, games: [] };
