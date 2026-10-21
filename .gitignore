@@ -18,6 +18,7 @@ site/vendor/zstd.js
 site/vendor/engine.elf
 site/vendor/neo3ds.rsf
 site/vendor/neogeo_games.json
+site/vendor/conv/version.js
 site/vendor/conv/node_modules/
 docs/PROGRESS.md
 .DS_Store
