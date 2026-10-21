@@ -87,9 +87,9 @@ MAME `src/mame/snk/neogeo.cpp`를 받아서:
 py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 ```
 
-## 7. 릴리스 (웹 + Windows)
+## 7. 릴리스 (웹 + 오프라인 3종)
 
-릴리스는 두 산출물이다: 웹 변환기 배포 + Windows exe 패키지.
+릴리스는 두 산출물이다: 웹 변환기 배포(메인) + 오프라인 변환기 패키지(Windows GUI, Linux·macOS CLI).
 
 공통: `converter/Directory.Build.props`의 `<Version>`과 `site/vendor/conv/version.js`의
 `CONVERTER_VERSION`을 함께 올린다 (AGENTS.md 버전 규칙).
@@ -111,16 +111,27 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 수동 실행: Actions → Pages → Run workflow.
 로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.
 
-### 7.2 Windows exe 패키지
+### 7.2 오프라인 변환기 패키지 (Windows GUI + Linux·macOS CLI)
 
-태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가
-Windows GUI exe + `tools\`를 묶어 `neo3ds-converter.zip`을 만들고 GitHub Release에 올린다.
+태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가 3종 패키지를 만들고
+GitHub Release에 올린다 (#55에서 복원).
 
 1. 버전 2곳 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
    (CI가 검증: 태그 ≠ `<Version>`이면 실패)
 2. `git tag vX.Y.Z && git push origin vX.Y.Z`
-3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker) → `package`(win-x64) → `release`
-4. 릴리스 페이지에서 `neo3ds-converter.zip` + `neo3ds-launcher.cia` 확인
+3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package` 매트릭스 3종
+   (windows-latest + ubuntu-latest + macos-14) → `release`(Release 생성 + 4개 파일 첨부)
+4. 릴리스 페이지에서 4개 파일 확인
+
+산출물 (파일명 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게):
+
+- `neo3ds-converter.zip` — Windows GUI (exe + `tools\` + 런처 CIA)
+- `neo3ds-converter-linux-x64.zip`, `neo3ds-converter-osx-arm64.zip` — CLI (해당 OS용 makerom·bannertool 포함)
+- `neo3ds-launcher.cia` — 별도 첨부
 
 Windows 도구는 최신 릴리스 zip에서 부트스트랩한다(최초 1회는 수동 배치, §2).
-Unix 패키지(linux/macOS)는 웹 변환기로 대체되어 만들지 않는다 (#35).
+Linux·macOS 도구는 CI가 `scripts/build_unix_tools.sh`로 소스에서 빌드한다(upstream 태그 고정).
+
+수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성. 3종 산출물은 Artifacts로 받음).
+로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`
+(전제: §1 엔진 빌드 + §2 외부 도구 배치. Unix는 해당 OS에서 `bash scripts/build_unix_tools.sh` 먼저)

@@ -26,7 +26,7 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Restart**: hold SELECT + START for a second to restart the game.
-- **Generated icon and banner** from the game title, or use your own pictures.
+- **Generated icon and banner** from the game title, or use your own pictures (offline converter).
 - Converter in **English and Korean**.
 
 ## What you need
@@ -34,11 +34,13 @@ Each game gets its own HOME menu icon and starts straight away. New 3DS models r
 | | |
 |---|---|
 | 3DS | Old 3DS / 2DS / New 3DS / New 2DS XL with [Luma3DS](https://github.com/LumaTeam/Luma3DS) custom firmware and a CIA installer such as [FBI](https://github.com/lifehackerhansol/FBI). |
-| PC | A web browser (Chrome, Edge, Firefox, Safari). Roms stay inside the browser and are never uploaded. |
+| PC | A web browser (Chrome, Edge, Firefox, Safari). Roms stay inside the browser and are never uploaded. With the [offline converter](#optional-the-offline-converter) you can also convert without internet on Windows 10/11 64-bit, Linux x64 or macOS (Apple Silicon). |
 | ROMs | **MAME romset zips** of games you own, plus **neogeo.zip (BIOS)**. No ROMs are included here. |
 | Sound | `/3ds/dspfirm.cdc` on the SD card (dump it once with DSP1). |
 
 ## How to use
+
+The main way is the **web converter**, with nothing to install. If you'd rather keep a converter on your PC and use it offline, there is also the [offline converter](#optional-the-offline-converter). Both produce the same files.
 
 ### 1. Open the web converter
 Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing to install.
@@ -70,7 +72,7 @@ Copy the `.cia` to the SD card, then in FBI: SD → pick the file → **Install 
 
 Instead of installing a CIA per game, pick games from one app. Only one HOME menu icon is added.
 
-1. Install `neo3ds-launcher.cia`, built in **[Launcher CIA]** mode of the web converter, with FBI, **once**.
+1. Install `neo3ds-launcher.cia`, built in **[Launcher CIA]** mode of the web converter, with FBI, **once**. The Windows offline converter zip includes it too.
 2. Convert a game zip in **[Launcher file]** mode to get a `.neo3ds` file. The settings (system, region) work as for a CIA.
 3. Copy the `.neo3ds` files to `/neo3ds/games/` on the SD card.
 4. Start the launcher: pick a game with Up/Down (L/R for a page) or by touch, and start it with **A** or **a double tap**.
@@ -78,8 +80,48 @@ Instead of installing a CIA per game, pick games from one app. Only one HOME men
 
 The same game shares its key config, backup RAM and quick saves whether it runs as a CIA or from the launcher.
 
-### The desktop converter (Windows)
-Prefer a PC program over the browser? Grab `neo3ds-converter.zip` from the releases and unpack it (keep the exe and the `tools\` folder together). It runs the same logic as the web converter; see [build.md](docs/build.md) §3 for usage.
+### Optional: the offline converter
+
+A converter you download and keep on your PC instead of using the browser. It works without internet and you can keep a copy. It builds the same files as the web converter; setting your own title, icon and banner is only in the offline converter.
+
+| PC | Download | How |
+|---|---|---|
+| Windows 10/11 64-bit | [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) | Window + command line |
+| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (from 1.2.0) | Command line |
+| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (from 1.2.0) | Command line |
+
+No .NET runtime to install. Keep the unpacked folder together; the program does not run without its `tools` folder.
+
+#### Windows: the converter window
+
+<img src="docs/images/converter2_en.png" width="520" alt="Offline converter window">
+
+1. Download and unzip. The `neo3ds-converter` folder holds `Neo3dsConverter.exe`, the `tools` folder, `README.txt` and the launcher app `neo3ds-launcher.cia`. If Windows shows an "unknown publisher" warning on first run, click **[More info] → [Run anyway]**.
+2. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names.
+3. Run `Neo3dsConverter.exe` and drop the game zip on the window, or press **[Browse...]**.
+4. If the **Romset** line turns green, the game can be converted. Change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like; the preview shows the HOME menu art as it will be built.
+5. Press **[Build CIA]**. **[Launcher file]** builds a `.neo3ds` file for the launcher, and **[Build the launcher CIA]** the launcher app.
+
+Drop several zips at once to convert them one after the other. The **[한국어]** button at the bottom right switches the window to Korean.
+
+#### Command line (Windows, Linux, macOS)
+
+The same options work with `Neo3dsConverter.exe` on Windows and `./neo3ds-converter` on Linux and macOS.
+
+```
+neo3ds-converter <game.zip> [game2.zip ...] [out-dir] [--title "Name"] [--icon pic.png] [--banner pic.png] [--set romset] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
+neo3ds-converter --launcher [out-dir]
+neo3ds-converter --help
+```
+- Several zips are converted one after the other (`--title`, `--icon`, `--banner` and `--set` need a single zip).
+- `--set` picks another version inside a merged zip (e.g. `kof98.zip --set kof98h`).
+- `--system` picks the BIOS the game starts on (home `aes` / arcade `mvs`); automatic when left out.
+- `--region`: Europe/Asia `eu`, Japan `jp` or USA `us`; `eu` when left out.
+- `--pack` builds a `.neo3ds` file for the launcher instead of a CIA. `--launcher` builds the launcher CIA (`neo3ds-launcher.cia`).
+- `--icon` / `--banner`: pictures for the icon (48×48) and banner (256×128); other sizes are scaled and cropped to fit.
+- `--lang`: switches the language (`ko` / `en`); remembered for the window too.
+- **macOS**: files downloaded with a browser may be blocked from running. After unzipping, run `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64` once in Terminal.
+- **Linux**: the icon and banner text is drawn with the system fonts (fontconfig). If it fails on a minimal install, install `fontconfig` and a font package.
 
 ## Controls
 

@@ -40,7 +40,7 @@ the browser (ROMs are never uploaded). All the protection schemes (CMC42/CMC50 s
 encryption, SMA and PVC program encryption, PCM2, the KOF2002-type program shuffle, the SVC Chaos
 Plus bootleg) are undone during conversion, following MAME. The 3DS never spends memory or time on
 decryption. The C# converter (`converter/`) is the desktop implementation of the same logic, kept as
-the accuracy baseline and for the Windows exe release.
+the accuracy baseline and for the offline converter release (Windows GUI, Linux and macOS CLI).
 
 ## Memory: 64 MB of sprites in 58 MB of heap
 
