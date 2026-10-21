@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>neo3ds — 브라우저에서 CIA 만들기 (Phase 0)</title>
+<meta name="description" data-i18n-attr="content:gate.meta" content="데스크톱 변환기의 RomFS 보관 폴더를 브라우저 안에서 WASM makerom·bannertool로 CIA로 묶습니다. 파일은 외부로 전송되지 않습니다.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#16161C">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23B01420'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='3' fill='none' stroke='%23F8C428' stroke-width='2'/%3E%3Cg fill='%23F8C428'%3E%3Crect x='8' y='7' width='4' height='18'/%3E%3Crect x='20' y='7' width='4' height='18'/%3E%3Crect x='12' y='10' width='4' height='4'/%3E%3Crect x='16' y='15' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+.gate-hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:36px;align-items:start}
+@media(max-width:960px){.gate-hero-grid{grid-template-columns:1fr}}
+.drop{display:block;border:2px dashed var(--line-2,#4a4a55);border-radius:6px;padding:28px 20px;text-align:center;
+  background:var(--panel-2);cursor:pointer;transition:border-color .15s;position:relative;overflow:hidden}
+.drop:hover,.drop.over{border-color:var(--gold)}
+.drop b{display:block;font-family:var(--pixel-sm);font-size:13px;color:var(--gold);margin-bottom:8px}
+.drop .tiny{display:block}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;top:0;left:0}
+.drop-meta{display:block;font:400 11px/1.6 var(--pixel-sm);color:var(--dim);margin-top:10px;word-break:break-all}
+.gate-side{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px}
+.gate-side .conv-file{display:block;margin-bottom:14px}
+</style>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="a11y.skip">본문으로 건너뛰기</a>
+<header class="bar">
+  <a class="brand" href="index.html" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
+  <nav class="bar-nav" aria-label="섹션" data-i18n-attr="aria-label:a11y.sections">
+    <a href="index.html#steps" data-i18n="nav.steps">설치 3단계</a>
+    <a href="index.html#panel" data-i18n="nav.panel">터치 조작</a>
+    <a href="index.html#convert" data-i18n="nav.convert">변환 과정</a>
+    <a href="index.html#speed" data-i18n="nav.speed">성능</a>
+    <a href="index.html#games" data-i18n="nav.games">게임 호환성</a>
+  </nav>
+  <div class="bar-end">
+    <div class="lang" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+      <button type="button" data-lang="ko" aria-pressed="true">KO</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <a class="btn btn-primary" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.download">변환기 받기</a>
+  </div>
+</header>
+<main id="main">
+<noscript><p style="padding:12px 24px">이 페이지는 JavaScript가 필요합니다.</p></noscript>
+
+<!-- ── HERO ────────────────────────────────────────────────────────────── -->
+<section class="hero" id="top">
+  <div class="wrap gate-hero-grid">
+    <div class="hero-copy">
+      <p class="kicker" data-i18n="gate.kicker">웹 변환기 Phase 0 · 서버 없음 · 파일은 이 탭 안에만</p>
+      <h1 data-i18n="gate.h1">브라우저에서<br>CIA 만들기.</h1>
+      <p class="lede" data-i18n="gate.lede">데스크톱 변환기가 보관한 RomFS 폴더를 올리면, WASM으로 빌드한 makerom·bannertool이 이 탭 안에서 CIA를 묶습니다. 롬도 결과물도 외부로 나가지 않습니다.</p>
+      <p class="tiny" data-i18n="gate.req">보관 폴더 만드는 법: NEO3DS_KEEP=1 neo3ds-converter kof98h.zip out → 임시 폴더의 kof98h-* 폴더</p>
+    </div>
+
+    <div class="gate-side">
+      <span class="conv-file" id="gateFile" data-i18n="gate.nofile">폴더를 올리세요</span>
+      <label class="drop" id="gateDrop">
+        <input type="file" id="gateDir" webkitdirectory multiple>
+        <b data-i18n="gate.dropT">보관 폴더 올리기</b>
+        <span class="tiny" data-i18n="gate.dropD">클릭하거나 여기로 드래그 (romfs/ + icon.png·banner.png·banner.wav)</span>
+        <span class="drop-meta" id="gateMeta"></span>
+      </label>
+      <div class="cta-row">
+        <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">CIA 만들기</button>
+        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="wasm-gate.cia" data-i18n="gate.dl">CIA 받기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 진행 ─────────────────────────────────────────────────────────────── -->
+<section class="sec" id="progress">
+  <div class="wrap">
+    <h2 data-i18n="gate.progH2">진행</h2>
+    <p class="lede narrow" data-i18n="gate.progLede">변환 단계마다 결과가 표시됩니다. 완료되면 위에서 CIA를 받으세요.</p>
+    <div class="conv-grid">
+      <ol class="pipe" id="gatePipe">
+        <li data-step="stage"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">파일 올리기</h3><p data-i18n="gate.p1d">romfs/ 14종 + 아이콘·배너 재료를 메모리에 올립니다.</p></div><span class="pipe-val" data-pipe="1"></span></li>
+        <li data-step="art"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
+        <li data-step="cia"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">CIA 묶기</h3><p data-i18n="gate.p3d">엔진 ELF + RomFS를 WASM makerom으로 묶습니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
+      </ol>
+      <div class="conv-side">
+        <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>
+        <p class="tiny" data-i18n="gate.logNote">로그 형식은 데스크톱 변환기와 같습니다. CIA 크기는 보통 수십 MB입니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <span class="brand-plate">neo3ds</span>
+    <nav>
+      <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
+      <a href="https://github.com/zzcx88/neo3ds/issues/32" data-i18n="gate.issue">Phase 0 이슈</a>
+      <a href="index.html" data-i18n="gate.home">소개 페이지</a>
+    </nav>
+    <p class="tiny" data-i18n="foot.note">게임 화면과 상표의 권리는 각 권리자에게 있습니다.</p>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+<script type="module" src="convert.js"></script>
+</body>
+</html>

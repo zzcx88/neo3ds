@@ -9,6 +9,14 @@ converter/**/bin/
 converter/**/obj/
 dist/
 out/
+# Phase 0 web gate: WASM build products + staged static copies.
+# Rebuild with scripts/build_wasm.sh (sources: engine/, converter/assets/).
+site/vendor/*.wasm
+site/vendor/makerom.js
+site/vendor/bannertool.js
+site/vendor/engine.elf
+site/vendor/neo3ds.rsf
+site/vendor/neogeo_games.json
 docs/PROGRESS.md
 .DS_Store
 .idea/

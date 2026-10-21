@@ -1,0 +1,18 @@
+--- a/Project_CTR/makerom/src/oschar.c	2026-10-21 12:36:37.699102000 +0900
++++ b/Project_CTR/makerom/src/oschar.c	2026-10-21 12:36:37.699400000 +0900
+@@ -1,5 +1,5 @@
+ #include <stdlib.h>
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__EMSCRIPTEN__)
+ #ifndef __CYGWIN__
+ #define LIBICONV_PLUG
+ #endif
+@@ -111,7 +111,7 @@
+ 	return dst;
+ }
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__EMSCRIPTEN__)
+ utf16char_t* strcopy_UTF8toUTF16(const char *src)
+ {
+ 	uint32_t src_len, dst_len;
