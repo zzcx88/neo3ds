@@ -28,7 +28,7 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 - **키 설정**: 버튼마다 네오지오 버튼이나 동시 누르기(A+B 등)를 지정하고, 게임별로 저장합니다.
 - **연사(매크로)**: R + 버튼으로 켜고 끕니다. 초당 20회입니다.
 - **재시작**: SELECT + START를 1초 누르면 게임을 처음부터 다시 시작합니다.
-- **아이콘·배너 자동 생성**: 게임 이름으로 만들어 줍니다. 원하는 그림을 직접 넣을 수도 있습니다.
+- **아이콘·배너 자동 생성**: 게임 이름으로 만들어 줍니다. 원하는 그림을 직접 넣을 수도 있습니다(오프라인 변환기).
 - **한국어 / 영어** 변환기 화면을 지원합니다.
 
 ## 준비물
@@ -36,11 +36,13 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 | | |
 |---|---|
 | 3DS | 구형 3DS / 2DS / New 3DS / New 2DS XL. [Luma3DS](https://github.com/LumaTeam/Luma3DS) 커스텀 펌웨어와 [FBI](https://github.com/lifehackerhansol/FBI) 같은 CIA 설치 도구가 필요합니다. |
-| PC | 웹 브라우저 (Chrome·Edge·Firefox·Safari). 롬은 브라우저 안에서만 처리되고 외부로 전송되지 않습니다. |
+| PC | 웹 브라우저 (Chrome·Edge·Firefox·Safari). 롬은 브라우저 안에서만 처리되고 외부로 전송되지 않습니다. [오프라인 변환기](#선택-오프라인-변환기)를 받으면 Windows 10/11 64비트 · Linux x64 · macOS(Apple Silicon)에서 인터넷 없이 변환할 수 있습니다. |
 | 롬 | 직접 가진 게임의 **MAME 롬셋 zip**과 **neogeo.zip(바이오스)**. 이 저장소에는 롬이 들어 있지 않습니다. |
 | 사운드 | 3DS SD 카드에 `/3ds/dspfirm.cdc`가 있어야 소리가 납니다(DSP1 등으로 한 번 만들어 두면 됩니다). |
 
 ## 사용법
+
+기본은 설치할 것이 없는 **웹 변환기**입니다. PC에 받아 두고 인터넷 없이 쓰고 싶으면 [오프라인 변환기](#선택-오프라인-변환기)도 있습니다. 두 변환기의 결과물은 같습니다.
 
 ### 1. 웹 변환기 열기
 [웹 변환기](https://zzcx88.github.io/neo3ds/convert.html)를 엽니다. 설치할 것이 없습니다.
@@ -72,7 +74,7 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 
 게임마다 CIA를 설치하지 않고, 앱 하나에서 게임을 골라 실행하는 방법입니다. HOME 메뉴 아이콘이 하나만 생깁니다.
 
-1. 웹 변환기에서 **[런처 CIA]** 모드로 만든 `neo3ds-launcher.cia`를 FBI로 **한 번만** 설치합니다.
+1. 웹 변환기의 **[런처 CIA]** 모드로 만든 `neo3ds-launcher.cia`를 FBI로 **한 번만** 설치합니다. Windows 오프라인 변환기 zip에도 들어 있습니다.
 2. 변환기에서 **[런처용 파일]** 모드로 롬 zip을 넣고 변환하면 `.neo3ds` 파일이 나옵니다. 설정(시스템, 지역)은 CIA와 같습니다.
 3. `.neo3ds` 파일을 SD 카드의 `/neo3ds/games/` 폴더에 복사합니다.
 4. 런처를 켜면 게임 목록이 나옵니다. 십자키 위/아래(L/R은 한 페이지씩)로 고르거나 터치로 고르고, **A**나 **두 번 터치**로 실행합니다.
@@ -80,8 +82,49 @@ PC에서 네오지오 롬(zip)을 넣으면, 에뮬레이터가 들어 있는 3D
 
 같은 게임이라면 CIA로 설치한 것과 런처로 실행한 것이 키 설정, 백업 RAM, 퀵세이브를 함께 씁니다.
 
-### 데스크톱 변환기 (Windows)
-브라우저 대신 PC 프로그램으로 변환하고 싶으면 릴리스의 `neo3ds-converter.zip`을 받아 압축을 풉니다(exe와 `tools\` 폴더는 같이 둡니다). 웹 변환기와 같은 로직이며, 사용법은 [build.md](docs/build.md) §3을 봅니다.
+### 선택: 오프라인 변환기
+
+웹 변환기 대신 PC에 받아 두고 쓰는 변환기입니다. 인터넷 없이 쓸 수 있고, 파일로 보관해 둘 수 있습니다. 변환 결과는 웹 변환기와 같고, 게임 이름·아이콘·배너를 직접 지정하는 기능은 오프라인 변환기에만 있습니다.
+
+| PC | 받기 | 쓰는 방법 |
+|---|---|---|
+| Windows 10/11 64비트 | [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) | 창 + 명령줄 |
+| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (1.2.0부터) | 명령줄 |
+| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (1.2.0부터) | 명령줄 |
+
+.NET 런타임을 따로 설치하지 않아도 됩니다. 압축을 푼 폴더는 통째로 두고, 실행 파일만 따로 꺼내지 마세요(`tools` 폴더가 함께 있어야 합니다).
+
+#### Windows: 창으로 쓰기
+
+<img src="docs/images/converter2_ko.png" width="520" alt="오프라인 변환기 화면">
+
+1. zip을 받아 압축을 풉니다. `neo3ds-converter` 폴더에 `Neo3dsConverter.exe`, `tools` 폴더, `README.txt`, 런처 앱 `neo3ds-launcher.cia`가 들어 있습니다. 처음 실행할 때 Windows가 "알 수 없는 게시자" 경고를 띄우면 **[추가 정보] → [실행]** 을 누르세요.
+2. 게임 롬 zip과 `neogeo.zip`을 **같은 폴더**에 둡니다. zip 파일 이름은 MAME 이름 그대로 두세요.
+3. `Neo3dsConverter.exe`를 실행하고, 롬 zip을 창에 끌어다 놓거나 **[찾아보기...]** 를 누릅니다.
+4. **롬셋** 줄에 인식된 게임이 초록색으로 나오면 변환할 수 있습니다. 필요하면 **게임 이름**, **시스템**, **지역**, **아이콘**, **배너**를 바꿉니다. 아래 미리보기가 실제 HOME 메뉴 모양입니다.
+5. **[CIA 만들기]** 를 누릅니다. 런처용 파일은 **[런처용 파일 만들기]**, 런처 앱은 **[런처 CIA 만들기]** 로 만듭니다.
+
+zip을 여러 개 한꺼번에 넣으면 차례로 변환합니다. 창 오른쪽 아래 **[English]** 버튼으로 언어를 바꿀 수 있습니다.
+
+#### 명령줄로 쓰기 (Windows · Linux · macOS)
+
+Windows는 `Neo3dsConverter.exe`, Linux·macOS는 `./neo3ds-converter`로 같은 옵션을 씁니다.
+
+```
+neo3ds-converter <게임.zip> [게임2.zip ...] [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
+neo3ds-converter --launcher [저장 폴더]
+neo3ds-converter --help
+```
+- zip을 여러 개 주면 차례로 변환합니다(`--title`, `--icon`, `--banner`, `--set`은 zip이 하나일 때만).
+- `--set`: 합본 zip 안의 다른 판을 직접 고릅니다(예: `kof98.zip --set kof98h`).
+- `--system`: 처음 켤 때 쓸 바이오스(가정용 `aes` / 아케이드 `mvs`)를 정합니다. 생략하면 자동입니다.
+- `--region`: 지역(유럽·아시아 `eu` / 일본 `jp` / 미국 `us`). 생략하면 `eu`입니다.
+- `--pack`: CIA 대신 런처용 `.neo3ds` 파일을 만듭니다. `--launcher`는 런처 CIA(`neo3ds-launcher.cia`)를 만듭니다.
+- `--icon` / `--banner`: 아이콘(48×48)과 배너(256×128)로 쓸 그림입니다. 크기가 달라도 비율에 맞춰 잘라서 맞춥니다.
+- `--lang`: 화면 언어(`ko` / `en`)를 바꿉니다. 기억해 두었다가 창을 열 때도 씁니다.
+- **macOS**: 브라우저로 받은 파일은 실행이 막힐 수 있습니다. 압축을 푼 뒤 터미널에서 `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64`를 한 번 실행하세요.
+- **Linux**: 아이콘·배너 글자를 그릴 때 시스템 글꼴(fontconfig)을 씁니다. 최소 설치 환경에서 오류가 나면 `fontconfig`와 글꼴 패키지를 설치하세요.
+
 ## 조작법
 
 <img src="docs/images/main_kof99.png" width="400" alt="게임 실행 화면과 아래 화면의 버튼">
