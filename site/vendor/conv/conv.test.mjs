@@ -5,8 +5,13 @@ import { fileURLToPath } from 'node:url';
 // Seam A (red): module equivalence vs C# behavior. Each test below must fail
 // until the corresponding conv/ module lands.
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+// ROM zips are git-excluded: skip ROM-dependent tests when absent (CI).
+const HAS_ROMS = (() => { try { readFileSync(join(ROOT, 'roms/kof98.zip')); return true; } catch { return false; } })();
+if (!HAS_ROMS) console.log('SKIP rom-dependent tests (no roms/*.zip)');
 let fail = 0;
-const t = async (name, fn) => {
+let skipped = 0;
+const t = async (name, fn, needsRoms = false) => {
+  if (needsRoms && !HAS_ROMS) { skipped++; console.log(`SKIP ${name}`); return; }
   try { await fn(); console.log(`PASS ${name}`); }
   catch (e) { fail++; console.log(`FAIL ${name} — ${String(e.message || e).slice(0, 120)}`); }
 };
@@ -33,7 +38,7 @@ await t('zipset/split-crc', async () => {
   ]);
   const p1 = await rom.read('242-pn1.p1', 0x61ac868a, 'kof98h');
   if (p1.length !== 1048576) throw new Error('p1 len ' + p1.length);
-});
+}, true);
 
 // BuildRegions: kof98h sprites 64MB via 16b interleave
 await t('rompack/regions', async () => {
@@ -44,7 +49,7 @@ await t('rompack/regions', async () => {
   const rom = await RomSet.open([join(ROOT, 'roms/kof98h.zip'), join(ROOT, 'roms/kof98.zip')]);
   const r = await buildRegions(db.find('kof98h'), rom);
   if (r.get('sprites').length !== 67108864) throw new Error('sprites len');
-});
+}, true);
 
 // Art: icon 48x48 + banner 256x128 PNG (node: canvas stub via pure-JS PNG writer)
 await t('art/png-spec', async () => {
