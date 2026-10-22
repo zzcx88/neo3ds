@@ -30,7 +30,7 @@ If you'd rather have a HOME menu icon per game, you can also build a separate in
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Restart**: hold SELECT + START for a second to restart the game.
-- **Generated icon and banner** from the game title — or replace them with your own pictures when building a single-game CIA in the web converter, or in the offline converter (automatic by default).
+- **Generated icon and banner** from the game title — or replace them with your own pictures when building a single-game or multi-game CIA in the web converter, or in the offline converter (automatic by default). In a multi-game run, select a row in the list to set that game's picture.
 - Converter in **English and Korean**.
 
 ## What you need
@@ -52,15 +52,15 @@ Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing 
 ### 2. Build a CIA
 
 1. Drop the game zip together with `neogeo.zip`. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...). For merged sets, drop the game + parent zips together.
-2. With **two or more** game zips, the list of recognized games appears before converting. Each row shows the zip name, the game title, whether it can be converted and the reason (unknown romset, missing chips, missing `neogeo.zip`, unsupported cart); only convertible games are converted. A single game converts right away without the list.
+2. With **two or more** game zips, the list of recognized games appears before converting. Each row shows the zip name, the game title, whether it can be converted and the reason (unknown romset, missing chips, missing `neogeo.zip`, unsupported cart); only convertible games are converted. A single game converts right away without the list. Select a row to set that game's icon and banner; games you do not edit keep the generated art.
 3. Change the **System** or **Region** if you like.
    - **System** is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too.
    - **Region** is the console region the game sees. The default is Europe/Asia; **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug, and Japanese text (varies by game). If neogeo.zip has no BIOS for that region, another region's BIOS is used and the log says so.
-4. When building one game as a CIA, an **Icon and banner** preview appears before converting. Leave it alone to use the generated art, choose **[Choose file]** to use your own picture, or **[Automatic]** to go back. Pictures are centre-cropped to 48×48 / 256×128.
+4. When building a CIA, an **Icon and banner** preview appears before converting. With several games, select a game row to open that game's icon and banner (one game at a time). Leave it alone to use the generated art, choose **[Choose file]** to use your own picture, or **[Automatic]** to go back. Pictures are centre-cropped to 48×48 / 256×128 and apply only to that game's CIA.
 5. Press **[Build CIA]**. A game takes tens of seconds to a minute or two (graphics compression).
 6. When done, save it with **[Get the CIA]**. The CIA size, browser memory and estimated 3DS memory are shown below.
 
-While converting, each game shows its status; one failing game does not stop the others. When it finishes, a success/fail count and a download link per game stay on the page. Starting a new run clears the previous links.
+While converting, each game shows its status; one failing game does not stop the others. The icon and banner can only be changed before the run starts. When it finishes, a success/fail count and a download link per game stay on the page. Starting a new run clears the previous links.
 
 The **KO/EN** buttons at the top right switch the language.
 

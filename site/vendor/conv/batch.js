@@ -14,7 +14,7 @@ export const STATUS = Object.freeze({
   BLOCKED: 'blocked',
 });
 
-const at = (batch, i) => (i >= 0 && i < batch.length ? batch[i] : null);
+const at = (batch, i) => (Array.isArray(batch) && i >= 0 && i < batch.length ? batch[i] : null);
 
 export function createBatch(rows = []) {
   return rows.map((r) => ({
@@ -26,7 +26,43 @@ export function createBatch(rows = []) {
     step: null,
     detail: '',
     result: null,
+    // #76: per-game icon/banner Files. A null slot keeps the automatic picture.
+    art: { icon: null, banner: null },
   }));
+}
+
+/* ── #76 per-row icon/banner choice ───────────────────────────────────────
+   The page owns the File objects picked for one row; this module only keeps
+   them next to the row so a re-render, progress update or cancel cannot drop
+   them. Blocked rows never run, so their art stays automatic. */
+export function setArt(batch, i, art = null) {
+  const row = at(batch, i);
+  if (row?.ok) row.art = { icon: art?.icon ?? null, banner: art?.banner ?? null };
+  return batch;
+}
+
+export function clearArt(batch, i) {
+  return setArt(batch, i, null);
+}
+
+// Which slots are user pictures: '' (automatic), 'icon', 'banner', 'icon+banner'.
+export function artLabel(row) {
+  const icon = !!row?.art?.icon, banner = !!row?.art?.banner;
+  if (icon && banner) return 'icon+banner';
+  if (icon) return 'icon';
+  if (banner) return 'banner';
+  return '';
+}
+
+export function hasArt(row) {
+  return artLabel(row) !== '';
+}
+
+// Conversion message entry: null when the row is automatic (or blocked), so
+// the worker takes exactly the old automatic-art path.
+export function artPayload(row) {
+  if (!row?.ok || !hasArt(row)) return null;
+  return { icon: row.art.icon ?? null, banner: row.art.banner ?? null };
 }
 
 export function markRunning(batch, i) {

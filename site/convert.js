@@ -2,8 +2,11 @@
 // #74: 2+ game zips get a preflight game list before conversion, then per-row
 // status. The pure list/status rules live in vendor/conv/batch.js (Node-tested).
 // #75: a single CIA run previews the auto icon/banner and allows image overrides.
+// #76: in the multi-game CIA list, clicking a row opens that game's art editor;
+// each row keeps its own icon/banner Files (batch.js) for its own CIA.
 import {
-  createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary, STATUS,
+  createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary,
+  setArt, artLabel, artPayload, STATUS,
 } from './vendor/conv/batch.js';
 import {
   iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
@@ -16,18 +19,20 @@ const log = (s) => { logEl.textContent += s + '\n'; logEl.scrollTop = logEl.scro
 
 let files = [];
 let worker = null, jobId = 0, running = false;
-let preflightWorker = null, preflightId = 0, preflighting = false;
+let preflightWorker = null, preflightSeq = 0, preflighting = false;
 let batch = null, batchSource = null, batchFiles = null;
 let batchStarted = false, batchError = '', readyIndexes = [];
-let artEditor = null, artWorker = null, artId = 0;
+let artEditor = null, artCancel = null;
 let artLoading = false, artLoadingFiles = null, artTitle = null, artTitleFiles = null, artProblem = null;
+let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
 const batchPanel = $('gateBatchList'), batchRowsEl = $('gateBatchRows');
 const batchCount = $('gateBatchCount'), batchMsg = $('gateBatchMsg'), batchSummary = $('gateBatchSummary');
 const artPanel = $('gateArt'), artTitleEl = $('gateArtTitle'), artMsgEl = $('gateArtMsg');
-const rowEls = new Map(); // batch index -> { li, state, detail, link }
+const artBack = $('gateArtBack'), artLock = $('gateArtLock');
+const rowEls = new Map(); // batch index -> { li, state, detail, link, art, index }
 
 function currentMode() {
   return document.querySelector('input[name="gateMode"]:checked')?.value ?? 'cia';
@@ -78,20 +83,23 @@ const ART_ROWS = {
 };
 const artEditors = new WeakMap();
 
-function renderArtEditor(container, { title = '', art = null, onChange = null } = {}) {
+function renderArtEditor(container, { title = '', art = null, onChange = null, locked } = {}) {
   let ed = artEditors.get(container);
   if (!ed) {
     ed = createArtEditor(container);
     artEditors.set(container, ed);
   }
-  ed.configure({ title, art, onChange });
+  ed.configure({ title, art, onChange, locked });
   return ed;
 }
 
 function createArtEditor(container) {
   const keys = Object.keys(ART_ROWS);
   const slots = {};
-  const state = { title: '', icon: null, banner: null, onChange: null, urls: { icon: null, banner: null } };
+  const state = {
+    title: '', icon: null, banner: null, onChange: null, locked: false,
+    urls: { icon: null, banner: null },
+  };
 
   for (const key of keys) {
     const row = container.querySelector(`[data-art="${key}"]`);
@@ -135,8 +143,9 @@ function createArtEditor(container) {
     for (const key of keys) {
       const s = slots[key];
       if (!s) continue;
-      s.pick.disabled = !state.title;
-      s.clear.disabled = !state.title;
+      const off = state.locked || !state.title;
+      s.pick.disabled = off;
+      s.clear.disabled = off;
     }
   }
 
@@ -185,7 +194,7 @@ function createArtEditor(container) {
 
   async function choose(key, file) {
     const s = slots[key];
-    if (!s || !state.title) return;
+    if (!s || !state.title || state.locked) return;
     if (!file) {
       state[key] = null;
       s.error = null;
@@ -211,35 +220,36 @@ function createArtEditor(container) {
     return { icon: state.icon ?? null, banner: state.banner ?? null };
   }
 
-  function setTitle(title) {
-    const next = title ?? '';
-    const changed = next !== state.title;
-    state.title = next;
-    setEnabled();
-    if (changed) {
-      state.icon = null;
-      state.banner = null;
-      for (const key of keys) {
-        if (!slots[key]) continue;
-        slots[key].error = null;
-        clearPreview(key);
-      }
-    }
-    refreshNotes();
-    if (state.title) for (const key of keys) void draw(key);
-  }
-
   return {
-    configure({ title, art, onChange }) {
-      if (onChange) state.onChange = onChange;
-      if (art) {
-        state.icon = art.icon ?? null;
-        state.banner = art.banner ?? null;
+    // Configure the one editor for whichever game is shown. `art` is applied
+    // in the same pass as `title` (#75 review: setting art then changing the
+    // title used to clear it), so switching rows redraws once with that row's
+    // Files. `locked` disables both pickers while a conversion is running.
+    configure({ title = '', art = null, onChange = null, locked = state.locked } = {}) {
+      const next = title ?? '';
+      const nextIcon = art?.icon ?? null;
+      const nextBanner = art?.banner ?? null;
+      const changed = next !== state.title || nextIcon !== state.icon || nextBanner !== state.banner;
+      state.title = next;
+      state.icon = nextIcon;
+      state.banner = nextBanner;
+      state.onChange = onChange ?? null;
+      state.locked = !!locked;
+      setEnabled();
+      if (changed) {
+        for (const key of keys) {
+          if (!slots[key]) continue;
+          slots[key].error = null;
+          clearPreview(key);
+        }
       }
-      setTitle(title ?? '');
+      refreshNotes();
+      if (changed && state.title) for (const key of keys) void draw(key);
     },
-    setTitle,
-    reset() { setTitle(''); },
+    setLocked(locked) {
+      state.locked = !!locked;
+      setEnabled();
+    },
     refresh() {
       refreshNotes();
       for (const key of keys) if (slots[key] && state.urls[key]) slots[key].img.alt = altText(key);
@@ -252,9 +262,13 @@ function artEligible() {
   return currentMode() === 'cia' && gameZips().length === 1;
 }
 
+// Multi-game CIA list only: pack output has no icon/banner to edit.
+function batchArtEligible() {
+  return currentMode() === 'cia' && wantsBatch();
+}
+
 function stopArtTitle() {
-  artId++;
-  if (artWorker) { artWorker.terminate(); artWorker = null; }
+  if (artCancel) { artCancel(); artCancel = null; }
   artLoading = false;
   artLoadingFiles = null;
 }
@@ -282,64 +296,172 @@ function startArtTitle() {
   artLoadingFiles = files;
   artTitle = null; artTitleFiles = null; artProblem = null;
   artTitleEl.textContent = '';
-  artEditor.reset();
+  artEditor.configure({ title: '', art: null, locked: running, onChange: null });
   renderArtMsg();
-  const id = artId, myFiles = files;
+  refreshArtLock();
+  const myFiles = files;
+  artCancel = runPreflight(myFiles, {
+    onRows(rows) {
+      artLoading = false;
+      artLoadingFiles = null;
+      artTitle = rows?.[0]?.title ?? null;
+      artProblem = artTitle ? null : { kind: 'unknown' };
+      artTitleFiles = myFiles;
+      artTitleEl.textContent = artTitle ?? '';
+      artEditor.configure({ title: artTitle ?? '', art: null, locked: running, onChange: null });
+      renderArtMsg();
+      refreshArtLock();
+    },
+    onError(message, kind) {
+      artLoading = false;
+      artLoadingFiles = null;
+      artProblem = kind === 'worker'
+        ? { kind: 'preview', detail: message }
+        : { kind: 'error', detail: message };
+      artTitleFiles = myFiles;
+      artTitle = null;
+      artTitleEl.textContent = '';
+      artEditor.configure({ title: '', art: null, locked: running, onChange: null });
+      renderArtMsg();
+      refreshArtLock();
+    },
+  });
+}
+
+/* ── #76 per-game art panel (one row at a time) ─────────────────────────── */
+function artBadgeText(label) {
+  if (label === 'icon+banner') return t('아이콘·배너 지정', 'Custom art');
+  if (label === 'icon') return t('아이콘 지정', 'Custom icon');
+  return t('배너 지정', 'Custom banner');
+}
+
+function canEditRow(row) {
+  return batchArtEligible() && !!row?.ok && !running;
+}
+
+function refreshArtLock() {
+  artLock.classList.toggle('hidden', !(running && !artPanel.classList.contains('hidden')));
+  artEditor.setLocked(running);
+}
+
+function hideArtPanel() {
+  artPanel.classList.add('hidden');
+  artBack.classList.add('hidden');
+  artLock.classList.add('hidden');
+  artTitleEl.textContent = '';
+}
+
+function paintSelection() {
+  for (const [i, host] of rowEls) {
+    const selected = i === selectedIndex;
+    host.li.dataset.selected = String(selected);
+    if (host.li.getAttribute('role') === 'button') host.li.setAttribute('aria-pressed', String(selected));
+  }
+}
+
+function showRowArt(index) {
+  const row = batch?.[index];
+  if (!row?.ok) return;
+  artPanel.classList.remove('hidden');
+  artBack.classList.remove('hidden');
+  artTitleEl.textContent = row.title ?? '';
+  artLoading = false;
+  artLoadingFiles = null;
+  artProblem = null;
+  renderArtMsg();
+  artEditor.configure({
+    title: row.title ?? '',
+    art: artPayload(row),
+    locked: running,
+    onChange: (chosen) => {
+      if (index !== selectedIndex || running) return;
+      setArt(batch, index, chosen);
+      updateRow(index);
+      paintSelection();
+    },
+  });
+  refreshArtLock();
+}
+
+function selectRow(index) {
+  if (!canEditRow(batch?.[index])) return;
+  selectedIndex = index;
+  paintSelection();
+  showRowArt(index);
+  artPanel.scrollIntoView?.({ block: 'nearest' });
+}
+
+function closeRowArt({ focus = false } = {}) {
+  const prev = selectedIndex;
+  selectedIndex = -1;
+  paintSelection();
+  hideArtPanel();
+  artLoading = false;
+  artLoadingFiles = null;
+  artProblem = null;
+  artEditor.configure({ title: '', art: null, locked: true, onChange: null });
+  renderArtMsg();
+  if (focus && prev >= 0) rowEls.get(prev)?.li.focus({ preventScroll: true });
+}
+
+// Single CIA: the panel shows the one game directly. Multi-game CIA: it shows
+// the selected row (one at a time). Pack/launcher never show it.
+function syncArt() {
+  if (artEligible()) {
+    artPanel.classList.remove('hidden');
+    artBack.classList.add('hidden');
+    refreshArtLock();
+    if (artLoading && artLoadingFiles === files) { renderArtMsg(); return; }
+    if (artTitleFiles === files) { renderArtMsg(); return; }
+    startArtTitle();
+    return;
+  }
+  if (batchArtEligible() && selectedIndex >= 0 && batch?.[selectedIndex]?.ok) {
+    showRowArt(selectedIndex);
+    return;
+  }
+  if (selectedIndex >= 0) { selectedIndex = -1; paintSelection(); }
+  stopArtTitle();
+  hideArtPanel();
+  artTitle = null; artTitleFiles = null; artProblem = null;
+  artEditor.configure({ title: '', art: null, locked: true, onChange: null });
+  renderArtMsg();
+}
+
+artEditor = renderArtEditor(artPanel, { title: '', art: null, onChange: null, locked: true });
+artBack.addEventListener('click', () => closeRowArt({ focus: true }));
+
+/* ── Preflight worker protocol (batch list #74 + single title #75) ─────── */
+// One helper for both callers: hand it files, get rows or a typed error back.
+// The returned function cancels the request (worker terminated, no callback).
+function runPreflight(fileList, { onRows, onError } = {}) {
+  const id = ++preflightSeq;
   const w = new Worker('vendor/conv/worker.js', { type: 'module' });
-  artWorker = w;
+  let done = false;
+  const stop = () => {
+    if (done) return false;
+    done = true;
+    w.terminate();
+    return true;
+  };
   w.onerror = (e) => {
-    if (id !== artId) return;
-    stopArtTitle();
-    artProblem = { kind: 'preview', detail: e.message || 'worker error' };
-    artTitleFiles = myFiles;
-    artEditor.setTitle('');
-    renderArtMsg();
+    if (!stop()) return;
+    onError?.(e.message || 'worker error', 'worker');
   };
   w.onmessage = (e) => {
     const m = e.data;
-    if (id !== artId || m.id !== id) return;
-    stopArtTitle();
-    if (m.type === 'preflight') {
-      const row = m.rows?.[0];
-      artTitle = row?.title ?? null;
-      artProblem = artTitle ? null : { kind: 'unknown' };
-    } else if (m.type === 'error') {
-      artProblem = { kind: 'error', detail: m.message };
-    } else {
-      artProblem = { kind: 'error', detail: m.type };
-    }
-    artTitleFiles = myFiles;
-    artTitleEl.textContent = artTitle ?? '';
-    artEditor.setTitle(artTitle ?? '');
-    renderArtMsg();
+    if (done || m.id !== id) return;
+    stop();
+    if (m.type === 'preflight') onRows?.(Array.isArray(m.rows) ? m.rows : []);
+    else if (m.type === 'error') onError?.(m.message, 'error');
+    else onError?.(m.type, 'unexpected');
   };
-  w.postMessage({ id, type: 'preflight', files: myFiles });
+  w.postMessage({ id, type: 'preflight', files: fileList });
+  return stop;
 }
 
-// Visible only for one game in CIA mode; launcher, pack and batch runs keep
-// their old flow untouched.
-function syncArt() {
-  const on = artEligible();
-  artPanel.classList.toggle('hidden', !on);
-  if (!on) {
-    stopArtTitle();
-    artEditor.setTitle('');
-    artTitle = null; artTitleFiles = null; artProblem = null;
-    artTitleEl.textContent = '';
-    renderArtMsg();
-    return;
-  }
-  if (artLoading && artLoadingFiles === files) return;
-  if (artTitleFiles === files) { renderArtMsg(); return; }
-  startArtTitle();
-}
-
-artEditor = renderArtEditor(artPanel, { title: '', art: null, onChange: null });
-
-/* ── Preflight list ─────────────────────────────────────────────────────── */
 function stopPreflight() {
-  preflightId++; // invalidate messages from an older request
-  if (preflightWorker) { preflightWorker.terminate(); preflightWorker = null; }
+  if (preflightWorker) { preflightWorker(); preflightWorker = null; }
   preflighting = false;
 }
 
@@ -347,6 +469,7 @@ function dropBatchModel() {
   if (batch) for (const row of batch) if (row.result?.url) revokeUrl(row.result.url);
   batch = null; batchSource = null; batchFiles = null;
   batchStarted = false; batchError = ''; readyIndexes = [];
+  selectedIndex = -1;
 }
 
 function startPreflight() {
@@ -355,34 +478,26 @@ function startPreflight() {
   preflighting = true;
   renderBatch();
   refreshRun();
-  const id = preflightId;
-  const w = new Worker('vendor/conv/worker.js', { type: 'module' });
-  preflightWorker = w;
-  w.onerror = (e) => {
-    if (id !== preflightId) return;
-    stopPreflight();
-    batchError = t(`목록을 읽지 못했습니다 (${e.message || 'worker error'})`,
-      `Could not read the game list (${e.message || 'worker error'})`);
-    renderBatch();
-    refreshRun();
-  };
-  w.onmessage = (e) => {
-    const m = e.data;
-    if (id !== preflightId || m.id !== id) return;
-    stopPreflight();
-    if (m.type === 'preflight') {
-      batchSource = m.rows;
-      batch = createBatch(m.rows);
+  preflightWorker = runPreflight(files, {
+    onRows(rows) {
+      preflighting = false;
+      batchSource = rows;
+      batch = createBatch(rows);
       batchFiles = files;
-    } else if (m.type === 'error') {
-      batchError = t(`목록 확인 실패: ${m.message}`, `Preflight failed: ${m.message}`);
-    } else {
-      batchError = t(`알 수 없는 응답: ${m.type}`, `Unexpected response: ${m.type}`);
-    }
-    renderBatch();
-    refreshRun();
-  };
-  w.postMessage({ id, type: 'preflight', files });
+      renderBatch();
+      refreshRun();
+    },
+    onError(message, kind) {
+      preflighting = false;
+      batchError = kind === 'worker'
+        ? t(`목록을 읽지 못했습니다 (${message})`, `Could not read the game list (${message})`)
+        : kind === 'error'
+          ? t(`목록 확인 실패: ${message}`, `Preflight failed: ${message}`)
+          : t(`알 수 없는 응답: ${message}`, `Unexpected response: ${message}`);
+      renderBatch();
+      refreshRun();
+    },
+  });
 }
 
 // Called when the dropped files or the output mode change (never mid-run).
@@ -391,6 +506,13 @@ function syncBatch() {
   if (!wantsBatch()) { stopPreflight(); dropBatchModel(); renderBatch(); return; }
   if (batch && batchFiles === files && !preflighting && !batchError) { renderBatch(); return; }
   startPreflight();
+}
+
+// One entry point for every files/mode/finish change: the list and the art
+// panel must agree on whether they are visible and which row is selected.
+function syncOutput() {
+  syncBatch();
+  syncArt();
 }
 
 /* ── Rendering the list / per-row status ───────────────────────────────── */
@@ -433,6 +555,24 @@ function paintRow(host, row) {
   host.li.dataset.status = row.status;
   host.state.textContent = statusLabel(row);
   host.detail.textContent = detailText(row);
+  const label = artLabel(row);
+  host.art.textContent = label ? artBadgeText(label) : '';
+  host.art.classList.toggle('hidden', !label);
+  const interactive = !!row.ok && batchArtEligible();
+  const selected = host.index === selectedIndex;
+  host.li.dataset.selected = String(selected);
+  host.li.dataset.edit = String(interactive && !running); // clickable only before a run
+  if (interactive) {
+    host.li.setAttribute('role', 'button');
+    host.li.setAttribute('aria-pressed', String(selected));
+    host.li.setAttribute('aria-disabled', String(running));
+    host.li.tabIndex = running ? -1 : 0;
+  } else {
+    host.li.removeAttribute('role');
+    host.li.removeAttribute('aria-pressed');
+    host.li.removeAttribute('aria-disabled');
+    host.li.tabIndex = -1;
+  }
   if (row.status === STATUS.DONE && row.result?.url) {
     host.link.href = row.result.url;
     host.link.download = row.result.name;
@@ -456,15 +596,30 @@ function makeRow(row, index) {
   const state = document.createElement('span');
   state.className = 'batch-state';
   head.append(name, state);
+  const titleRow = document.createElement('div');
+  titleRow.className = 'batch-row-title';
   const title = document.createElement('span');
   title.className = 'batch-title';
   title.textContent = row.title ?? t('게임을 인식하지 못함', 'Game not recognized');
+  const art = document.createElement('span');
+  art.className = 'batch-art hidden'; // paintRow shows it when the row has custom art
+  titleRow.append(title, art);
   const detail = document.createElement('span');
   detail.className = 'batch-detail';
   const link = document.createElement('a');
   link.className = 'btn btn-ghost btn-sm batch-dl';
-  li.append(head, title, detail, link);
-  rowEls.set(index, { li, state, detail, link });
+  li.append(head, titleRow, detail, link);
+  li.addEventListener('click', (e) => {
+    if (e.target.closest?.('a')) return; // download link, not row selection
+    if (canEditRow(batch?.[index])) selectRow(index);
+  });
+  li.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.target.closest?.('a') || !canEditRow(batch?.[index])) return;
+    e.preventDefault();
+    selectRow(index);
+  });
+  rowEls.set(index, { li, state, detail, link, art, index });
   paintRow(rowEls.get(index), row);
   return li;
 }
@@ -498,6 +653,7 @@ function renderBatch() {
     batchRowsEl.replaceChildren();
     return;
   }
+  if (selectedIndex >= 0 && !batch?.[selectedIndex]?.ok) selectedIndex = -1;
   rowEls.clear();
   const frag = document.createDocumentFragment();
   (batch ?? []).forEach((row, i) => frag.appendChild(makeRow(row, i)));
@@ -508,7 +664,7 @@ function renderBatch() {
 /* ── File intake / run button state ────────────────────────────────────── */
 function ingest(list) {
   files = [...list].filter((f) => f.name.toLowerCase().endsWith('.zip'));
-  if (!running) { syncBatch(); syncArt(); }
+  if (!running) syncOutput();
   refreshRun();
 }
 
@@ -532,15 +688,15 @@ function refreshRun() {
 }
 
 document.querySelectorAll('input[name="gateMode"]').forEach((r) => r.addEventListener('change', () => {
-  if (!running) { syncBatch(); syncArt(); }
+  if (!running) syncOutput();
   refreshRun();
 }));
 { // Deep-link: convert.html?mode=pack|launcher preselects the output (?mode=cia = default).
   const m = new URLSearchParams(location.search).get('mode');
   const radio = m && document.querySelector(`input[name="gateMode"][value="${m}"]`);
-  if (radio) { radio.checked = true; syncBatch(); syncArt(); refreshRun(); }
+  if (radio) { radio.checked = true; syncOutput(); refreshRun(); }
 }
-syncArt(); // initial state: no files -> hidden
+syncOutput(); // initial state: no files -> everything hidden
 input.addEventListener('change', () => ingest(input.files));
 for (const ev of ['dragover', 'dragenter']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); });
 for (const ev of ['dragleave', 'drop']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); });
@@ -602,13 +758,17 @@ runBtn.addEventListener('click', () => {
   resetPipe();
 
   if (isBatch) {
+    // Fresh statuses for this run, but keep every row's chosen picture (#76).
+    const prevArt = new Map((batch ?? []).map((row) => [row.name, row.art]));
     batch = createBatch(batchSource);
+    for (let i = 0; i < batch.length; i++) setArt(batch, i, prevArt.get(batch[i].name) ?? null);
     readyIndexes = batch.map((row, i) => (row.ok ? i : -1)).filter((i) => i >= 0);
     batchStarted = true;
     markRunning(batch, readyIndexes[0]);
     renderBatch();
     log(t(`배치 ${readyIndexes.length}종 시작`, `Batch start: ${readyIndexes.length} games`));
   }
+  refreshArtLock(); // editing is only possible before the run starts
 
   worker = new Worker('vendor/conv/worker.js', { type: 'module' });
   const id = ++jobId;
@@ -682,7 +842,8 @@ runBtn.addEventListener('click', () => {
   worker.postMessage({
     id, files, region: $('gateRegion').value, system: $('gateSystem').value, mode,
     art: artEligible() ? artEditor.getFiles() : null,
-    batch: isBatch ? readyIndexes.map((i) => ({ name: batch[i].name })) : null,
+    // Automatic/blocked rows send art:null, i.e. exactly the old worker path.
+    batch: isBatch ? readyIndexes.map((i) => ({ name: batch[i].name, art: artPayload(batch[i]) })) : null,
   });
 });
 
@@ -717,8 +878,7 @@ function finish() {
   running = false;
   cancelBtn.classList.add('hidden');
   if (worker) { worker.terminate(); worker = null; }
-  syncBatch(); // refresh the list, or start a preflight for files changed mid-run
-  syncArt();
+  syncOutput(); // refresh the list, or start a preflight for files changed mid-run
   refreshRun();
 }
 
