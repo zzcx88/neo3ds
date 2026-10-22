@@ -230,4 +230,101 @@ await t('art/image-needs-browser-canvas', async () => {
   if (!/browser-only/.test(message)) throw new Error('expected browser-only error, got ' + JSON.stringify(message));
 });
 
+// ── #76 icon/banner choices per batch row (pure, DOM-free) ────────────────
+// A batch row starts automatic. The page can set an icon and/or banner File
+// on one row without touching the others; status transitions and blocked rows
+// must leave that choice alone. The conversion message is built from
+// artPayload(): null means "keep the automatic picture".
+const artFile = (name) => ({ name });
+
+await t('batch/art-starts-empty', async () => {
+  const { createBatch, hasArt, artLabel } = await import('./batch.js');
+  const b = createBatch(TWO_READY_ONE_BLOCKED());
+  for (const row of b) {
+    if (JSON.stringify(row.art) !== '{"icon":null,"banner":null}') throw new Error('art ' + JSON.stringify(row.art));
+    if (hasArt(row) || artLabel(row) !== '') throw new Error('row should start automatic');
+  }
+});
+
+await t('batch/art-per-row-independent', async () => {
+  const { createBatch, setArt, clearArt, hasArt } = await import('./batch.js');
+  const b = createBatch([
+    { name: 'nam1975.zip', title: 'NAM-1975', ok: true, problem: null },
+    { name: 'kof98.zip', title: "The King of Fighters '98", ok: true, problem: null },
+    { name: 'mslug.zip', title: 'Metal Slug', ok: true, problem: null },
+  ]);
+  const aIcon = artFile('a-icon.png'), bBanner = artFile('b-banner.png');
+  setArt(b, 0, { icon: aIcon, banner: null });
+  setArt(b, 1, { icon: null, banner: bBanner });
+  if (b[0].art.icon !== aIcon || b[0].art.banner !== null) throw new Error('row 0 art wrong');
+  if (b[1].art.icon !== null || b[1].art.banner !== bBanner) throw new Error('row 1 art wrong');
+  if (hasArt(b[2])) throw new Error('row 2 should stay automatic');
+  clearArt(b, 0);
+  if (hasArt(b[0]) || !hasArt(b[1])) throw new Error('clearing row 0 touched row 1');
+  setArt(b, 1, null);
+  if (hasArt(b[1]) || b[1].art.icon !== null || b[1].art.banner !== null) throw new Error('setArt(null) did not clear');
+});
+
+await t('batch/art-survives-status-transitions', async () => {
+  const {
+    createBatch, setArt, markRunning, progress, markDone, markFailed, markPending, artLabel,
+  } = await import('./batch.js');
+  const b = createBatch([
+    { name: 'a.zip', title: 'A', ok: true, problem: null },
+    { name: 'b.zip', title: 'B', ok: true, problem: null },
+    { name: 'c.zip', title: 'C', ok: true, problem: null },
+  ]);
+  const icon = artFile('a.png'), banner = artFile('banner.png');
+  setArt(b, 0, { icon, banner });
+  markRunning(b, 0);
+  progress(b, 0, 'art', 'icon + banner');
+  markDone(b, 0, { name: 'a-web.cia', mb: 1 });
+  if (b[0].art.icon !== icon || b[0].art.banner !== banner || artLabel(b[0]) !== 'icon+banner')
+    throw new Error('done dropped art');
+  markRunning(b, 1);
+  markFailed(b, 1, 'boom');
+  if (b[1].art.icon !== null || b[1].art.banner !== null) throw new Error('failure invented art');
+  setArt(b, 2, { icon: null, banner });
+  markRunning(b, 2);
+  markPending(b, 2);
+  if (b[2].art.banner !== banner) throw new Error('cancel dropped art');
+  // A failed row keeps its picture: editing the row before a later retry is
+  // allowed, and the list still shows what was chosen.
+  setArt(b, 1, { icon, banner: null });
+  if (b[1].art.icon !== icon) throw new Error('failed row cannot hold art');
+});
+
+await t('batch/art-blocked-rows-ignore-set', async () => {
+  const { createBatch, setArt, clearArt, hasArt, artLabel, artPayload } = await import('./batch.js');
+  const b = createBatch(TWO_READY_ONE_BLOCKED());
+  setArt(b, 1, { icon: artFile('x.png'), banner: artFile('y.png') });
+  if (hasArt(b[1]) || artLabel(b[1]) !== '') throw new Error('blocked row got art');
+  if (artPayload(b[1]) !== null) throw new Error('blocked row payload');
+  clearArt(b, 1);
+  if (JSON.stringify(b[1].art) !== '{"icon":null,"banner":null}') throw new Error('blocked row art changed');
+  // Out-of-range / missing rows are inert, not a crash.
+  setArt(b, 99, { icon: artFile('z.png') });
+  setArt(null, 0, { icon: artFile('z.png') });
+});
+
+await t('batch/art-label-and-payload', async () => {
+  const { createBatch, setArt, artLabel, hasArt, artPayload } = await import('./batch.js');
+  const b = createBatch([
+    { name: 'a.zip', title: 'A', ok: true, problem: null },
+    { name: 'b.zip', title: 'B', ok: true, problem: null },
+    { name: 'c.zip', title: 'C', ok: true, problem: null },
+  ]);
+  const icon = artFile('icon.png'), banner = artFile('banner.png');
+  setArt(b, 0, { icon, banner: null });
+  setArt(b, 1, { icon, banner });
+  if (artLabel(b[0]) !== 'icon' || artLabel(b[1]) !== 'icon+banner' || artLabel(b[2]) !== '')
+    throw new Error(`${artLabel(b[0])} / ${artLabel(b[1])} / ${artLabel(b[2])}`);
+  if (!hasArt(b[0]) || hasArt(b[2])) throw new Error('hasArt wrong');
+  if (JSON.stringify(artPayload(b[0])) !== '{"icon":{"name":"icon.png"},"banner":null}')
+    throw new Error('icon-only payload ' + JSON.stringify(artPayload(b[0])));
+  if (artPayload(b[2]) !== null) throw new Error('automatic row must send null art');
+  setArt(b, 0, { icon: null, banner });
+  if (artLabel(b[0]) !== 'banner') throw new Error('banner-only label');
+});
+
 process.exit(fail ? 1 : 0);

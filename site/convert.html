@@ -37,13 +37,20 @@
 .batch-rows{border-top:1px solid var(--line)}
 .batch-row{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 4px;border-bottom:1px solid var(--line)}
 .batch-row[data-status="running"]{background:var(--panel);box-shadow:inset 3px 0 0 var(--gold)}
+.batch-row[data-edit="true"]{cursor:pointer}
+.batch-row[data-edit="true"]:hover{background:var(--panel)}
+.batch-row[data-edit="true"]:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.batch-row[data-selected="true"]{background:var(--panel)}
+.batch-row[data-selected="true"] .batch-title{color:var(--gold)}
 .batch-row-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
 .batch-zip{font:400 10px/1.5 var(--pixel-sm);color:var(--dim);min-width:0;overflow-wrap:anywhere}
 .batch-state{font:400 9px/1.4 var(--pixel-sm);color:var(--gold);text-align:right;white-space:nowrap}
 .batch-row[data-status="blocked"] .batch-state{color:var(--dim)}
 .batch-row[data-status="failed"] .batch-state{color:var(--a)}
+.batch-row-title{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
 .batch-title{font-size:13.5px;line-height:1.4;color:var(--paper);overflow-wrap:anywhere}
 .batch-row[data-status="blocked"] .batch-title{color:var(--dim)}
+.batch-art{font:400 9px/1.4 var(--pixel-sm);color:var(--gold);border:1px solid var(--gold);border-radius:2px;padding:1px 4px;white-space:nowrap}
 .batch-detail{font-size:12px;line-height:1.5;color:var(--dim);overflow-wrap:anywhere}
 .batch-dl{max-width:100%;margin-top:4px;white-space:normal;overflow-wrap:anywhere;text-align:left}
 .batch-summary{margin:8px 0 0;color:var(--gold)}
@@ -55,6 +62,8 @@
 .mode-pick .chip:has(input:checked){background:var(--marquee);border-color:var(--marquee);color:#fff}
 .mode-out{display:block;font-size:9px;color:var(--dim);margin-top:5px}
 .mode-pick .chip:has(input:checked) .mode-out{color:#fff}
+.art-back{margin-left:auto}
+.art-lock{margin:0 0 8px;color:var(--gold)}
 </style>
 </head>
 <body>
@@ -129,7 +138,7 @@
           <h3 id="gateBatchH" data-i18n="gate.listH">인식된 게임</h3>
           <span class="batch-count" id="gateBatchCount"></span>
         </div>
-        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.</p>
+        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘·배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.</p>
         <p class="tiny batch-msg hidden" id="gateBatchMsg" role="status"></p>
         <ol class="batch-rows" id="gateBatchRows"></ol>
         <p class="tiny batch-summary hidden" id="gateBatchSummary" aria-live="polite"></p>
@@ -138,8 +147,10 @@
         <div class="art-head">
           <h3 id="gateArtH" data-i18n="gate.artH">아이콘·배너</h3>
           <span class="art-title" id="gateArtTitle"></span>
+          <button type="button" class="btn btn-ghost btn-sm art-back hidden" id="gateArtBack" data-i18n="gate.artBack">목록으로</button>
         </div>
         <p class="tiny art-hint" data-i18n="gate.artHint">변환하기 전에 HOME 메뉴에 나올 모습을 확인하세요. 직접 고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다.</p>
+        <p class="tiny art-lock hidden" id="gateArtLock" role="status" data-i18n="gate.artLock">변환 중에는 아이콘·배너를 바꿀 수 없습니다.</p>
         <div class="art-row" data-art="icon">
           <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>
           <div class="art-info">
