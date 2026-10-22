@@ -65,7 +65,7 @@ public sealed class CiaJob
     static (MameGame?, string?) PickGame(string name, string dir, string? set)
     {
         var exact = GameDb.Find(set ?? name);
-        if (exact == null) return (null, L($"'{name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. zip 파일 이름을 바꾸지 마세요.", $"'{name}' is not a MAME Neo Geo romset name. Keep the zip's original file name."));
+        if (exact == null) return (null, L($"'{name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. MAME 롬셋 zip만 지원합니다. zip 파일 이름을 바꾸지 마세요.", $"'{name}' is not a MAME Neo Geo romset name. Only MAME romset zips are supported; keep the zip's original file name."));
         string? problem = null;
         foreach (var g in set != null ? new[] { exact } : new[] { exact }.Concat(GameDb.ClonesOf(exact.Name)))
         {

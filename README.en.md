@@ -1,7 +1,7 @@
 # neo3ds - NeoGeo emulator for Nintendo 3DS
 
 **A NeoGeo (Neo Geo) emulator that runs Neo Geo games at full speed, even on the original (Old) 3DS.**
-Install the **launcher app** once, convert your Neo Geo ROM zips into game files (`.neo3ds`) with the web converter, put them on the SD card and pick a game from the list.
+Install the **launcher app** once, convert your MAME Neo Geo romset zips into game files (`.neo3ds`) with the web converter, put them on the SD card and pick a game from the list.
 When a new version comes out, reinstall just the launcher and keep your game files. New 3DS models run it with room to spare.
 If you'd rather have a HOME menu icon per game, you can also build a separate install file (CIA) for each game.
 
@@ -39,7 +39,7 @@ If you'd rather have a HOME menu icon per game, you can also build a separate in
 |---|---|
 | 3DS | Old 3DS / 2DS / New 3DS / New 2DS XL with [Luma3DS](https://github.com/LumaTeam/Luma3DS) custom firmware and a CIA installer such as [FBI](https://github.com/lifehackerhansol/FBI). |
 | PC | A web browser (Chrome, Edge, Firefox, Safari). Roms stay inside the browser and are never uploaded. With the [offline converter](#optional-the-offline-converter) you can also convert without internet on Windows 10/11 64-bit, Linux x64 or macOS (Apple Silicon). |
-| ROMs | **MAME romset zips** of games you own, plus **neogeo.zip (BIOS)**. No ROMs are included here. |
+| ROMs | **MAME romset zips** of games you own, plus **neogeo.zip (BIOS)**. Only MAME romset zips are supported; a romset whose names or chip CRCs differ from MAME's does not convert. No ROMs are included here. |
 | Sound | `/3ds/dspfirm.cdc` on the SD card (dump it once with DSP1). |
 
 ## How to use
@@ -51,7 +51,7 @@ Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing 
 
 ### 2. Build a CIA
 
-1. Drop the game zip together with `neogeo.zip`. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...). For merged sets, drop the game + parent zips together.
+1. Drop the game zip together with `neogeo.zip`. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...). For merged sets, drop the game + parent zips together. Zips that are not MAME romsets do not convert.
 2. With **two or more** game zips, the list of recognized games appears before converting. Each row shows the zip name, the game title, whether it can be converted and the reason (unknown romset, missing chips, missing `neogeo.zip`, unsupported cart); only convertible games are converted. A single game converts right away without the list. Select a row to set that game's icon and banner; games you do not edit keep the generated art.
 3. Change the **System** or **Region** if you like.
    - **System** is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too.
@@ -106,7 +106,7 @@ No .NET runtime to install. Keep the unpacked folder together; the program does 
 <img src="docs/images/converter2_en.png" width="520" alt="Offline converter window">
 
 1. Download and unzip. The `neo3ds-converter` folder holds `Neo3dsConverter.exe`, the `tools` folder, `README.txt` and the launcher app `neo3ds-launcher.cia`. If Windows shows an "unknown publisher" warning on first run, click **[More info] → [Run anyway]**.
-2. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names.
+2. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names. Zips that are not MAME romsets do not convert.
 3. Run `Neo3dsConverter.exe` and drop the game zip on the window, or press **[Browse...]**.
 4. If the **Romset** line turns green, the game can be converted. Change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like; the preview shows the HOME menu art as it will be built.
 5. Press **[Build CIA]**. **[Launcher file]** builds a `.neo3ds` file for the launcher, and **[Build the launcher CIA]** the launcher app.
