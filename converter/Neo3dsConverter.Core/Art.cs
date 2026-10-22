@@ -70,6 +70,63 @@ public static class Art
     static SKTypeface? Face(string family, SKFontStyle style) => SKFontManager.Default.MatchFamily(family, style);
     static SKFontStyle Weight(SKFontStyleWeight w) => new(w, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
 
+    static readonly Dictionary<(SKTypeface, int), SKTypeface> Fallbacks = new();
+
+    /// <summary>Skia draws only the glyphs of the face it is given, so characters the face lacks
+    /// (Hangul, kana...) go to the system face the platform picks for them, in the same style.</summary>
+    static List<(string text, SKTypeface face)> Runs(string text, SKFont font)
+    {
+        var runs = new List<(string, SKTypeface)>();
+        int start = 0, i = 0;
+        SKTypeface? current = null;
+        foreach (var rune in text.EnumerateRunes())
+        {
+            var f = font.ContainsGlyph(rune.Value) ? font.Typeface : Fallback(font.Typeface, rune.Value);
+            if (current != null && f != current)
+            {
+                runs.Add((text[start..i], current));
+                start = i;
+            }
+            current = f;
+            i += rune.Utf16SequenceLength;
+        }
+        if (current != null) runs.Add((text[start..], current));
+        return runs;
+    }
+
+    static SKTypeface Fallback(SKTypeface face, int c)
+    {
+        lock (Fallbacks)
+        {
+            if (!Fallbacks.TryGetValue((face, c), out var f))
+                Fallbacks[(face, c)] = f = SKFontManager.Default.MatchCharacter(face.FamilyName, face.FontStyle, null, c) ?? face;
+            return f;
+        }
+    }
+
+    static float Measure(string text, SKFont font)
+    {
+        float width = 0;
+        foreach (var (run, face) in Runs(text, font))
+        {
+            using var f = new SKFont(face, font.Size);
+            width += f.MeasureText(run);
+        }
+        return width;
+    }
+
+    /// <summary>Draws one line centered on x, run by run.</summary>
+    static void DrawLine(SKCanvas canvas, string text, float x, float y, SKFont font, SKPaint paint)
+    {
+        x -= Measure(text, font) / 2;
+        foreach (var (run, face) in Runs(text, font))
+        {
+            using var f = new SKFont(face, font.Size);
+            canvas.DrawText(run, x, y, SKTextAlign.Left, f, paint);
+            x += f.MeasureText(run);
+        }
+    }
+
     /// <summary>Banner: NEO·GEO tag, the main title as large as fits, the subtitle under it.</summary>
     static SKBitmap RenderBanner(string title)
     {
@@ -122,7 +179,7 @@ public static class Art
             var metrics = font.Metrics;
             float lineHeight = metrics.Descent - metrics.Ascent + metrics.Leading;
             float height = lines.Count * lineHeight;
-            if ((lines.All(line => font.MeasureText(line) <= box.Width) && height <= box.Height
+            if ((lines.All(line => Measure(line, font) <= box.Width) && height <= box.Height
                  && lines.Count <= maxLines && !BreaksWord(text, font, box.Width)) || size <= 6f)
             {
                 using var paint = new SKPaint { IsAntialias = true, Color = color };
@@ -132,8 +189,8 @@ public static class Art
                 canvas.ClipRect(SKRect.Create(box.Left, box.Top, box.Width + 1, box.Height + 1));
                 foreach (string line in lines)
                 {
-                    canvas.DrawText(line, box.MidX + 1, y + 1, SKTextAlign.Center, font, shadow);
-                    canvas.DrawText(line, box.MidX, y, SKTextAlign.Center, font, paint);
+                    DrawLine(canvas, line, box.MidX + 1, y + 1, font, shadow);
+                    DrawLine(canvas, line, box.MidX, y, font, paint);
                     y += lineHeight;
                 }
                 canvas.Restore();
@@ -152,16 +209,16 @@ public static class Art
             foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             {
                 string next = line.Length == 0 ? word : line + " " + word;
-                if (line.Length > 0 && font.MeasureText(next) > width)
+                if (line.Length > 0 && Measure(next, font) > width)
                 {
                     lines.Add(line);
                     line = word;
                 }
                 else line = next;
-                while (font.Size <= 6f && line.Length > 1 && font.MeasureText(line) > width)
+                while (font.Size <= 6f && line.Length > 1 && Measure(line, font) > width)
                 {
                     int length = 1;
-                    while (length < line.Length && font.MeasureText(line[..(length + 1)]) <= width) length++;
+                    while (length < line.Length && Measure(line[..(length + 1)], font) <= width) length++;
                     lines.Add(line[..length]);
                     line = line[length..];
                 }
@@ -173,7 +230,7 @@ public static class Art
 
     /// <summary>True when a single word is wider than the box (it would be split mid-word).</summary>
     static bool BreaksWord(string text, SKFont font, float width) =>
-        text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(w => font.MeasureText(w) > width);
+        text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(w => Measure(w, font) > width);
 
     /// <summary>"Metal Slug X - Super Vehicle-001" -> ("Metal Slug X", "Super Vehicle-001").</summary>
     public static (string main, string? sub) SplitTitle(string title)
