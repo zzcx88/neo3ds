@@ -1,25 +1,36 @@
-// MVP conversion worker (#33, extended #34): zip files -> CIA / .neo3ds / launcher.
+// MVP conversion worker (#33, extended #34, batch list #74): zip files -> CIA / .neo3ds / launcher.
 // Message in: {id, files: File[], region, system, mode: 'cia'|'pack'|'launcher', batch: [{name}]?}
-// Messages out: {id, type:'progress', step, frac, detail} | {id, type:'done', cia, stats}
-//   | {id, type:'batch-done', outs: [{name, bin, stats}]} | {id, type:'error', message}
+//   or the non-converting preflight: {id, type:'preflight', files: File[]}
+// Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia, stats}
+//   | {id, type:'batch-one', batch, bin, stats} | {id, type:'batch-error', index, name, message}
+//   | {id, type:'batch-done', count, ok, failed, secs}
+//   | {id, type:'preflight', rows} | {id, type:'error', message}
 // Cancellation: the page calls worker.terminate() directly.
 import { GameDb, Region } from './gamedb.js';
 import { RomSet, BiosSet } from './zipset.js';
 import { pickGame, titleId, uniqueId, productCode } from './job.js';
 import { writeGameFiles, buildPack } from './pack.js';
 import { iconPng, bannerPng, silentWav } from './art.js';
+import { preflight, BIOS_MISSING } from './preflight.js';
 import { loadZstd } from './zstd-adapter.js';
-import { CONVERTER_VERSION } from './version.js';
-import initMakerom from '../makerom.js';
-import initBannertool from '../bannertool.js';
+
+// Build products are gitignored: load them only when something is actually
+// built (#74), so preflight answers in a checkout without a WASM build.
+const initMakerom = async () => (await import('../makerom.js')).default();
+const initBannertool = async () => (await import('../bannertool.js')).default();
+const converterVersion = async () => (await import('./version.js')).CONVERTER_VERSION;
 
 self.onmessage = async (e) => {
   const msg = e.data;
   const { id, files, region, system, mode = 'cia', batch = null } = msg;
   const post = (m) => self.postMessage({ id, ...m });
   try {
-    const t0 = performance.now();
     const db = await GameDb.load('../neogeo_games.json');
+    if (msg.type === 'preflight') {
+      post({ type: 'preflight', rows: await preflight(db, RomSet, files) });
+      return;
+    }
+    const t0 = performance.now();
     if (mode === 'launcher') return await buildLauncher(post, t0);
     if (batch) return await buildBatch(db, files, batch, { region, system, mode }, post, t0);
     const one = await buildOneCapture(db, files, null, { region, system, mode }, post);
@@ -89,8 +100,9 @@ async function buildLauncher(post, t0) {
     '-p', smdh('neo3ds', 64), '-i', '/work/icon.png', '-o', '/work/icon.icn']);
   post({ type: 'progress', step: 'cia', frac: 0.5, detail: 'Title ID 000400000BFF0000' });
   const enc = new TextEncoder();
+  const ver = await converterVersion();
   const cia = await runMakerom(await initMakerom(), bt,
-    new Map([['launcher.txt', enc.encode(`neo3ds launcher ${CONVERTER_VERSION}\n`)]]),
+    new Map([['launcher.txt', enc.encode(`neo3ds launcher ${ver}\n`)]]),
     'NEO3DS-LAUNCHER', 0xBFF00);
   post({
     type: 'done', cia, stats: {
@@ -103,13 +115,21 @@ async function buildLauncher(post, t0) {
 
 async function buildBatch(db, files, zips, opts, post, t0) {
   // Stream one result at a time: the page adds a download link per game,
-  // so N games never sit in RAM + postMessage all at once.
+  // so N games never sit in RAM + postMessage all at once. A failed game is
+  // reported and the loop continues (#74).
+  let ok = 0, failed = 0;
   for (let i = 0; i < zips.length; i++) {
-    post({ type: 'progress', step: 'load', frac: i / zips.length, detail: `game ${i + 1}/${zips.length}: ${zips[i].name}` });
-    const one = await buildOneCapture(db, files, zips[i].name, opts, (m) => post({ ...m, batch: i }));
-    post({ type: 'batch-one', bin: one.bin, stats: one.stats });
+    post({ type: 'progress', step: 'load', frac: i / zips.length, detail: `game ${i + 1}/${zips.length}: ${zips[i].name}`, batch: i });
+    try {
+      const one = await buildOneCapture(db, files, zips[i].name, opts, (m) => post({ ...m, batch: i }));
+      post({ type: 'batch-one', batch: i, bin: one.bin, stats: one.stats });
+      ok++;
+    } catch (err) {
+      failed++;
+      post({ type: 'batch-error', index: i, name: zips[i].name, message: String(err?.message ?? err) });
+    }
   }
-  post({ type: 'batch-done', count: zips.length, secs: ((performance.now() - t0) / 1000).toFixed(1) });
+  post({ type: 'batch-done', count: zips.length, ok, failed, secs: ((performance.now() - t0) / 1000).toFixed(1) });
 }
 
 async function buildOneCapture(db, files, forceZip, opts, post) {
@@ -123,7 +143,7 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   const { game, problem, romset } = await pickGame(db, RomSet, files, zipName);
   if (!game) throw new Error(problem);
   const biosFile = files.find((f) => f.name.toLowerCase() === 'neogeo.zip');
-  if (!biosFile) throw new Error('neogeo.zip (BIOS) not found. Drop it together with the game zip.');
+  if (!biosFile) throw new Error(BIOS_MISSING);
   const tid = titleId(zipName), uid = uniqueId(zipName);
 
   const Z = await loadZstd('../zstd.js');
@@ -135,7 +155,7 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
     onProgress: (f) => post({ type: 'progress', step: 'romfs', frac: 0.05 + f * 0.55, detail: `compressing ${(f * 100).toFixed(0)}%` }),
   });
   const enc = new TextEncoder();
-  const ver = CONVERTER_VERSION;
+  const ver = await converterVersion();
   const title = db.title(game);
   gameFiles.set('title.txt', enc.encode(title));
   gameFiles.set('version.txt', enc.encode(ver));
