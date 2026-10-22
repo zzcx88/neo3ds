@@ -19,10 +19,11 @@ const log = (s) => { logEl.textContent += s + '\n'; logEl.scrollTop = logEl.scro
 
 let files = [];
 let worker = null, jobId = 0, running = false;
-let preflightWorker = null, preflightSeq = 0, preflighting = false;
+let preflightCancel = null, preflightSeq = 0, preflighting = false;
 let batch = null, batchSource = null, batchFiles = null;
 let batchStarted = false, batchError = '', readyIndexes = [];
 let artEditor = null, artCancel = null;
+let artBusy = false; // a picture is being decoded/validated before it can be applied
 let artLoading = false, artLoadingFiles = null, artTitle = null, artTitleFiles = null, artProblem = null;
 let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
@@ -83,22 +84,22 @@ const ART_ROWS = {
 };
 const artEditors = new WeakMap();
 
-function renderArtEditor(container, { title = '', art = null, onChange = null, locked } = {}) {
+function renderArtEditor(container, { title = '', art = null, onChange = null, locked, onBusy = null } = {}) {
   let ed = artEditors.get(container);
   if (!ed) {
-    ed = createArtEditor(container);
+    ed = createArtEditor(container, { onBusy });
     artEditors.set(container, ed);
   }
   ed.configure({ title, art, onChange, locked });
   return ed;
 }
 
-function createArtEditor(container) {
+function createArtEditor(container, { onBusy = null } = {}) {
   const keys = Object.keys(ART_ROWS);
   const slots = {};
   const state = {
-    title: '', icon: null, banner: null, onChange: null, locked: false,
-    urls: { icon: null, banner: null },
+    title: '', icon: null, banner: null, onChange: null, locked: false, busy: false,
+    gen: 0, onBusy, urls: { icon: null, banner: null },
   };
 
   for (const key of keys) {
@@ -143,7 +144,7 @@ function createArtEditor(container) {
     for (const key of keys) {
       const s = slots[key];
       if (!s) continue;
-      const off = state.locked || !state.title;
+      const off = state.locked || state.busy || !state.title;
       s.pick.disabled = off;
       s.clear.disabled = off;
     }
@@ -194,26 +195,40 @@ function createArtEditor(container) {
 
   async function choose(key, file) {
     const s = slots[key];
-    if (!s || !state.title || state.locked) return;
-    if (!file) {
-      state[key] = null;
-      s.error = null;
+    if (!s || !state.title || state.locked || state.busy) return;
+    const gen = state.gen;
+    state.busy = true;
+    setEnabled();
+    state.onBusy?.(true);
+    try {
+      if (!file) {
+        if (gen !== state.gen) return;
+        state[key] = null;
+        s.error = null;
+        refreshNotes();
+        state.onChange?.(selectedFiles());
+        await draw(key);
+        return;
+      }
+      let ok = false;
+      try {
+        const bmp = await createImageBitmap(file);
+        ok = bmp.width > 0 && bmp.height > 0;
+        bmp.close?.();
+      } catch { ok = false; }
+      // The editor can be re-pointed at another row while the decode runs:
+      // drop the stale pick instead of applying it to the new row (#76 review).
+      if (gen !== state.gen) return;
+      if (ok) { state[key] = file; s.error = null; }
+      else { state[key] = null; s.error = file.name; }
       refreshNotes();
       state.onChange?.(selectedFiles());
-      await draw(key);
-      return;
+      await draw(key); // rejected image: redraw the automatic picture
+    } finally {
+      state.busy = false;
+      setEnabled();
+      state.onBusy?.(false);
     }
-    let ok = false;
-    try {
-      const bmp = await createImageBitmap(file);
-      ok = bmp.width > 0 && bmp.height > 0;
-      bmp.close?.();
-    } catch { ok = false; }
-    if (ok) { state[key] = file; s.error = null; }
-    else { state[key] = null; s.error = file.name; }
-    refreshNotes();
-    state.onChange?.(selectedFiles());
-    await draw(key); // rejected image: redraw the automatic picture
   }
 
   function selectedFiles() {
@@ -230,6 +245,7 @@ function createArtEditor(container) {
       const nextIcon = art?.icon ?? null;
       const nextBanner = art?.banner ?? null;
       const changed = next !== state.title || nextIcon !== state.icon || nextBanner !== state.banner;
+      state.gen++; // invalidate any picture still decoding for the old row
       state.title = next;
       state.icon = nextIcon;
       state.banner = nextBanner;
@@ -336,12 +352,21 @@ function artBadgeText(label) {
 }
 
 function canEditRow(row) {
-  return batchArtEligible() && !!row?.ok && !running;
+  return batchArtEligible() && !!row?.ok && !running && !artBusy;
+}
+
+// A pick is decoded/validated off the main flow: keep Run and row switching
+// inert until it lands, so a conversion cannot start with stale art.
+function handleArtBusy(busy) {
+  artBusy = !!busy;
+  refreshRun();
+  refreshArtLock();
 }
 
 function refreshArtLock() {
-  artLock.classList.toggle('hidden', !(running && !artPanel.classList.contains('hidden')));
-  artEditor.setLocked(running);
+  const locked = running || artBusy;
+  artLock.classList.toggle('hidden', !(locked && !artPanel.classList.contains('hidden')));
+  artEditor.setLocked(locked);
 }
 
 function hideArtPanel() {
@@ -428,8 +453,8 @@ function syncArt() {
   renderArtMsg();
 }
 
-artEditor = renderArtEditor(artPanel, { title: '', art: null, onChange: null, locked: true });
-artBack.addEventListener('click', () => closeRowArt({ focus: true }));
+artEditor = renderArtEditor(artPanel, { title: '', art: null, onChange: null, locked: true, onBusy: handleArtBusy });
+artBack.addEventListener('click', () => { if (!artBusy) closeRowArt({ focus: true }); });
 
 /* ── Preflight worker protocol (batch list #74 + single title #75) ─────── */
 // One helper for both callers: hand it files, get rows or a typed error back.
@@ -461,7 +486,7 @@ function runPreflight(fileList, { onRows, onError } = {}) {
 }
 
 function stopPreflight() {
-  if (preflightWorker) { preflightWorker(); preflightWorker = null; }
+  if (preflightCancel) { preflightCancel(); preflightCancel = null; }
   preflighting = false;
 }
 
@@ -478,7 +503,7 @@ function startPreflight() {
   preflighting = true;
   renderBatch();
   refreshRun();
-  preflightWorker = runPreflight(files, {
+  preflightCancel = runPreflight(files, {
     onRows(rows) {
       preflighting = false;
       batchSource = rows;
@@ -557,7 +582,7 @@ function paintRow(host, row) {
   host.detail.textContent = detailText(row);
   const label = artLabel(row);
   host.art.textContent = label ? artBadgeText(label) : '';
-  host.art.classList.toggle('hidden', !label);
+  host.art.classList.toggle('hidden', !label || !batchArtEligible());
   const interactive = !!row.ok && batchArtEligible();
   const selected = host.index === selectedIndex;
   host.li.dataset.selected = String(selected);
@@ -626,6 +651,12 @@ function makeRow(row, index) {
 
 function paintBatchHeader() {
   const s = summary(batch ?? []);
+  const hint = $('gateBatchHint');
+  hint.textContent = batchArtEligible()
+    ? t('변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘·배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
+      'Check before converting. Select a game row to change that game\'s icon and banner. Games that cannot be converted show why and are skipped.')
+    : t('변환하기 전에 확인하세요. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
+      'Check before converting. Games that cannot be converted show why and are skipped.');
   batchCount.textContent = preflighting
     ? t('확인 중…', 'Checking…')
     : batch
@@ -678,7 +709,7 @@ function refreshRun() {
   $('gateMeta').textContent = files.length > 0 && !hasBios && mode !== 'launcher'
     ? t('neogeo.zip이 없습니다', 'neogeo.zip missing') : '';
 
-  let disabled = running;
+  let disabled = running || artBusy;
   if (mode !== 'launcher' && files.length === 0) disabled = true;
   if (mode !== 'launcher' && gameZips().length > 1) {
     if (preflighting || batchError || !batch || batchFiles !== files) disabled = true;
@@ -745,7 +776,7 @@ function markRunningRowsFailed(message) {
 /* ── Run ───────────────────────────────────────────────────────────────── */
 runBtn.addEventListener('click', () => {
   const mode = currentMode();
-  if (running || (files.length === 0 && mode !== 'launcher')) return;
+  if (running || artBusy || (files.length === 0 && mode !== 'launcher')) return;
   const isBatch = wantsBatch();
   if (isBatch && (!batch || batchFiles !== files || batchError || summary(batch).ready === 0)) return;
 
