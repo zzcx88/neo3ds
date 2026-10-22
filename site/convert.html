@@ -134,6 +134,38 @@
         <ol class="batch-rows" id="gateBatchRows"></ol>
         <p class="tiny batch-summary hidden" id="gateBatchSummary" aria-live="polite"></p>
       </div>
+      <div class="art hidden" id="gateArt" role="region" aria-labelledby="gateArtH">
+        <div class="art-head">
+          <h3 id="gateArtH" data-i18n="gate.artH">아이콘·배너</h3>
+          <span class="art-title" id="gateArtTitle"></span>
+        </div>
+        <p class="tiny art-hint" data-i18n="gate.artHint">변환하기 전에 HOME 메뉴에 나올 모습을 확인하세요. 직접 고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다.</p>
+        <div class="art-row" data-art="icon">
+          <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>
+          <div class="art-info">
+            <span class="art-label" data-i18n="gate.artIcon">아이콘 48×48</span>
+            <div class="art-actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-art-pick data-i18n="gate.artPick">파일 선택</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-art-clear data-i18n="gate.artClear">자동 생성</button>
+              <input type="file" class="sr-only" accept="image/*" tabindex="-1" aria-hidden="true" data-art-file>
+            </div>
+            <span class="art-note" data-art-note aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="art-row" data-art="banner">
+          <div class="art-shot art-shot-banner"><img class="art-img" alt=""></div>
+          <div class="art-info">
+            <span class="art-label" data-i18n="gate.artBanner">배너 256×128</span>
+            <div class="art-actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-art-pick data-i18n="gate.artPick">파일 선택</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-art-clear data-i18n="gate.artClear">자동 생성</button>
+              <input type="file" class="sr-only" accept="image/*" tabindex="-1" aria-hidden="true" data-art-file>
+            </div>
+            <span class="art-note" data-art-note aria-live="polite"></span>
+          </div>
+        </div>
+        <p class="tiny art-msg hidden" id="gateArtMsg" role="status"></p>
+      </div>
       <div class="cta-row">
         <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">변환하기</button>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
@@ -153,7 +185,7 @@
       <ol class="pipe" id="gatePipe">
         <li data-step="load"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">롬셋 확인</h3><p data-i18n="gate.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다.</p></div><span class="pipe-val" data-pipe="1"></span></li>
         <li data-step="romfs"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">그래픽 압축</h3><p data-i18n="gate.p2d">스프라이트를 4KB 블록으로 zstd 압축합니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
-        <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름으로 아이콘(48×48)과 배너(256×128)를 그립니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
+        <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름 또는 직접 지정한 그림으로 아이콘(48×48)과 배너(256×128)를 만듭니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
         <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">WASM 도구로 결과물을 묶습니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
       </ol>
       <div class="conv-side">

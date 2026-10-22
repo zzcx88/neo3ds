@@ -49,7 +49,7 @@ const EN = {
   'panel.map1k': 'D-pad', 'panel.map1': 'lever', 'panel.map2': 'Neo Geo A · B · C · D', 'panel.map3': 'coin · start',
   'panel.map4': 'turbo on/off', 'panel.map5': 'quick save / load',
   'panel.mapNote': 'In KOF, L = A+B (evade) and R = C+D (blowback) is a good start.',
-  'conv.p5d': 'Icon (48×48) and banner (256×128) drawn from the title.', /* convert.html gatePipe가 공유 */
+  'conv.p5d': 'Icon (48×48) and banner (256×128) from the title or from a picture you pick.', /* convert.html gatePipe가 공유 */
   'launch.kicker': 'Recommended · the way to go for several games',
   'launch.h2': 'Launcher: every game in one app',
   'launch.lede': 'Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.',
@@ -137,6 +137,10 @@ const EN = {
   'gate.mUpd': 'To update, just install the new launcher CIA. Your existing .neo3ds files run on the new version as they are.',
   'gate.listH': 'Recognized games',
   'gate.listHint': 'Check before converting. Games that cannot be converted show why and are skipped.',
+  'gate.artH': 'Icon and banner',
+  'gate.artHint': 'Check the HOME menu art before converting. A picture you pick is centre-cropped to 48×48 / 256×128.',
+  'gate.artIcon': 'Icon 48×48', 'gate.artBanner': 'Banner 256×128',
+  'gate.artPick': 'Choose file', 'gate.artClear': 'Automatic',
   /* JS가 그리는 문구 */
   'budget.main': 'main core', 'budget.core1': 'core 1', 'budget.idle': 'idle',
   'budget.d68k': '68000 (game code)', 'budget.dz80': 'Z80 (sound CPU)', 'budget.dtmr': 'timers',

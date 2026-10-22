@@ -30,7 +30,7 @@ If you'd rather have a HOME menu icon per game, you can also build a separate in
 - **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
 - **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
 - **Restart**: hold SELECT + START for a second to restart the game.
-- **Generated icon and banner** from the game title, or use your own pictures (offline converter).
+- **Generated icon and banner** from the game title — or replace them with your own pictures when building a single-game CIA in the web converter, or in the offline converter (automatic by default).
 - Converter in **English and Korean**.
 
 ## What you need
@@ -56,14 +56,15 @@ Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing 
 3. Change the **System** or **Region** if you like.
    - **System** is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too.
    - **Region** is the console region the game sees. The default is Europe/Asia; **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug, and Japanese text (varies by game). If neogeo.zip has no BIOS for that region, another region's BIOS is used and the log says so.
-4. Press **[Build CIA]**. A game takes tens of seconds to a minute or two (graphics compression).
-5. When done, save it with **[Get the CIA]**. The CIA size, browser memory and estimated 3DS memory are shown below.
+4. When building one game as a CIA, an **Icon and banner** preview appears before converting. Leave it alone to use the generated art, choose **[Choose file]** to use your own picture, or **[Automatic]** to go back. Pictures are centre-cropped to 48×48 / 256×128.
+5. Press **[Build CIA]**. A game takes tens of seconds to a minute or two (graphics compression).
+6. When done, save it with **[Get the CIA]**. The CIA size, browser memory and estimated 3DS memory are shown below.
 
 While converting, each game shows its status; one failing game does not stop the others. When it finishes, a success/fail count and a download link per game stay on the page. Starting a new run clears the previous links.
 
 The **KO/EN** buttons at the top right switch the language.
 
-Examples of the generated icons (abbreviation + series number) and banners (game title), sized so no text is cut off:
+Examples of the generated icons (abbreviation + series number) and banners (game title), sized so no text is cut off. You can replace either before converting:
 
 <img src="docs/images/art_examples.png" width="760" alt="Generated icon and banner examples">
 
@@ -88,7 +89,7 @@ The same game shares its key config, backup RAM and quick saves whether it runs 
 
 ### Optional: the offline converter
 
-A converter you download and keep on your PC instead of using the browser. It works without internet and you can keep a copy. It builds the same files as the web converter; setting your own title, icon and banner is only in the offline converter.
+A converter you download and keep on your PC instead of using the browser. It works without internet and you can keep a copy. It builds the same files as the web converter; the title can only be changed in the offline converter, while the icon and banner can also be replaced in the web converter (automatic by default).
 
 | PC | Download | How |
 |---|---|---|

@@ -1,5 +1,7 @@
-// MVP conversion worker (#33, extended #34, batch list #74): zip files -> CIA / .neo3ds / launcher.
-// Message in: {id, files: File[], region, system, mode: 'cia'|'pack'|'launcher', batch: [{name}]?}
+// MVP conversion worker (#33, extended #34, batch list #74, art override #75):
+// zip files -> CIA / .neo3ds / launcher.
+// Message in: {id, files: File[], region, system, mode: 'cia'|'pack'|'launcher',
+//   art?: {icon: File|null, banner: File|null}, batch: [{name, art?}]?}
 //   or the non-converting preflight: {id, type:'preflight', files: File[]}
 // Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia, stats}
 //   | {id, type:'batch-one', batch, bin, stats} | {id, type:'batch-error', index, name, message}
@@ -22,7 +24,7 @@ const converterVersion = async () => (await import('./version.js')).CONVERTER_VE
 
 self.onmessage = async (e) => {
   const msg = e.data;
-  const { id, files, region, system, mode = 'cia', batch = null } = msg;
+  const { id, files, region, system, mode = 'cia', batch = null, art = null } = msg;
   const post = (m) => self.postMessage({ id, ...m });
   try {
     const db = await GameDb.load('../neogeo_games.json');
@@ -33,7 +35,7 @@ self.onmessage = async (e) => {
     const t0 = performance.now();
     if (mode === 'launcher') return await buildLauncher(post, t0);
     if (batch) return await buildBatch(db, files, batch, { region, system, mode }, post, t0);
-    const one = await buildOneCapture(db, files, null, { region, system, mode }, post);
+    const one = await buildOneCapture(db, files, null, { region, system, mode, art }, post);
     post({ type: 'done', cia: one.bin, stats: { ...one.stats, memMB: memMB(), secs: ((performance.now() - t0) / 1000).toFixed(1) } });
   } catch (err) {
     post({ type: 'error', message: String(err?.message ?? err) });
@@ -116,12 +118,12 @@ async function buildLauncher(post, t0) {
 async function buildBatch(db, files, zips, opts, post, t0) {
   // Stream one result at a time: the page adds a download link per game,
   // so N games never sit in RAM + postMessage all at once. A failed game is
-  // reported and the loop continues (#74).
+  // reported and the loop continues (#74). #76 can put art on each entry.
   let ok = 0, failed = 0;
   for (let i = 0; i < zips.length; i++) {
     post({ type: 'progress', step: 'load', frac: i / zips.length, detail: `game ${i + 1}/${zips.length}: ${zips[i].name}`, batch: i });
     try {
-      const one = await buildOneCapture(db, files, zips[i].name, opts, (m) => post({ ...m, batch: i }));
+      const one = await buildOneCapture(db, files, zips[i].name, { ...opts, art: zips[i].art ?? null }, (m) => post({ ...m, batch: i }));
       post({ type: 'batch-one', batch: i, bin: one.bin, stats: one.stats });
       ok++;
     } catch (err) {
@@ -132,8 +134,20 @@ async function buildBatch(db, files, zips, opts, post, t0) {
   post({ type: 'batch-done', count: zips.length, ok, failed, secs: ((performance.now() - t0) / 1000).toFixed(1) });
 }
 
+// User pictures arrive as File objects; decode in the worker so the same bytes
+// feed bannertool. No override keeps the exact automatic path below.
+async function decodeArt(file) {
+  if (!file) return null;
+  if (typeof createImageBitmap !== 'function') throw new Error('Cannot decode image: browser has no createImageBitmap.');
+  try {
+    return await createImageBitmap(file);
+  } catch {
+    throw new Error(`Cannot decode image: ${file.name}`);
+  }
+}
+
 async function buildOneCapture(db, files, forceZip, opts, post) {
-  const { region, system, mode } = opts;
+  const { region, system, mode, art = null } = opts;
   post({ type: 'progress', step: 'load', frac: 0, detail: 'reading zips' });
   const gameFile = forceZip
     ? files.find((f) => f.name.toLowerCase() === forceZip.toLowerCase())
@@ -173,7 +187,15 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   gameFiles.clear();
   post({ type: 'progress', step: 'art', frac: 0.62, detail: 'icon + banner' });
 
-  const [icon, banner] = await Promise.all([iconPng(title), bannerPng(title)]);
+  const iconImage = await decodeArt(art?.icon);
+  const bannerImage = await decodeArt(art?.banner);
+  let icon, banner;
+  try {
+    [icon, banner] = await Promise.all([iconPng(title, iconImage), bannerPng(title, bannerImage)]);
+  } finally {
+    iconImage?.close?.();
+    bannerImage?.close?.();
+  }
   const bt = await initBannertool();
   await prepArt(bt, icon, banner);
   const run = makeRun();

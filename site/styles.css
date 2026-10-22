@@ -202,6 +202,28 @@ a.dl-row:hover{background:var(--panel-2);color:var(--gold)}
 .log b{color:var(--gold);font-weight:400}
 .log i{color:var(--dim);font-style:normal}
 
+/* ── #75 아이콘·배너 미리보기 / 직접 지정 ─────────────────────────────── */
+.art{margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);min-width:0}
+.art-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.art-head h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0}
+.art-title{font:400 10px/1.4 var(--pixel-sm);color:var(--dim);min-width:0;overflow-wrap:anywhere}
+.art-hint{margin:6px 0 10px}
+.art-row{display:grid;gap:10px;align-items:center;min-width:0;padding:9px 0;border-top:1px solid var(--line)}
+.art-row[data-art="icon"]{grid-template-columns:52px minmax(0,1fr)}
+.art-shot{background:var(--ink);border:1px solid var(--line);border-radius:3px;overflow:hidden;min-width:0}
+.art-shot-icon{display:grid;place-items:center;width:52px;height:52px;padding:1px}
+.art-shot-banner{width:100%;max-width:256px;aspect-ratio:2 / 1}
+.art-img{display:block;width:100%;height:100%}
+.art-shot-icon .art-img{width:48px;height:48px}
+.art-shot-banner .art-img{height:auto;aspect-ratio:2 / 1}
+.art-info{display:grid;gap:6px;min-width:0}
+.art-label{font:400 10px/1.4 var(--pixel-sm);color:var(--dim)}
+.art-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.art-actions .btn:disabled{opacity:.55;cursor:default}
+.art-note{font-size:11px;line-height:1.5;color:var(--dim);overflow-wrap:anywhere}
+.art-note.err{color:var(--a)}
+.art-msg{margin:8px 0 0;color:var(--gold);overflow-wrap:anywhere}
+
 /* ── 성능 ───────────────────────────────────────────────────────────── */
 .fig{margin:34px 0 0}
 .fig figcaption{font-family:var(--pixel-sm);font-size:11px;color:var(--dim);
