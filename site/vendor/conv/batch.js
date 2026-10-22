@@ -47,6 +47,19 @@ export function progress(batch, i, step, detail = '') {
   return batch;
 }
 
+// A running row goes back to pending when the run is cancelled: nothing was
+// produced for it, so it must not be counted as a failure in the summary.
+export function markPending(batch, i) {
+  const row = at(batch, i);
+  if (row?.ok && row.status === STATUS.RUNNING) {
+    row.status = STATUS.PENDING;
+    row.step = null;
+    row.detail = '';
+    row.result = null;
+  }
+  return batch;
+}
+
 // `result` is page-owned (download URL, file name, size): the pure model only
 // carries it so a re-render keeps per-game links.
 export function markDone(batch, i, result = null) {

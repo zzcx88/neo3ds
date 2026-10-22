@@ -135,4 +135,61 @@ await t('batch/failure-is-isolated', async () => {
   if (b[1].result.name !== 'b-web.cia' || b[2].result.name !== 'c-web.cia') throw new Error('other results lost');
 });
 
+await t('batch/cancel-returns-running-row-to-pending', async () => {
+  const { createBatch, markRunning, markPending, summary, STATUS } = await import('./batch.js');
+  const b = createBatch([{ name: 'a.zip', title: 'A', ok: true, problem: null }]);
+  markRunning(b, 0);
+  markPending(b, 0);
+  if (b[0].status !== STATUS.PENDING) throw new Error('status ' + b[0].status);
+  const s = summary(b);
+  if (s.running !== 0 || s.failed !== 0 || s.done !== 0) throw new Error(JSON.stringify(s));
+  markRunning(b, 0);
+  if (b[0].status !== STATUS.RUNNING) throw new Error('cannot restart after cancel');
+});
+
+// ── #74 preflight judgment against real romsets (skipped when roms/ absent) ──
+// The list's "convertible / why not" rules must be the same ones conversion
+// uses, so these drive the real GameDb/pickGame path with real zip files.
+const romFile = (name) => ({
+  name,
+  arrayBuffer: async () => {
+    const d = readFileSync(join(ROOT, 'roms', name));
+    return d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength);
+  },
+});
+const fakeZip = (name) => ({ name, arrayBuffer: async () => new ArrayBuffer(0) });
+const preflightFixture = async () => {
+  const { GameDb } = await import('./gamedb.js');
+  const { RomSet } = await import('./zipset.js');
+  const mod = await import('./preflight.js');
+  return { db: await GameDb.load(join(ROOT, 'converter/assets/neogeo_games.json')), RomSet, ...mod };
+};
+
+await t('preflight/ready-blocked-reasons', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [
+    romFile('nam1975.zip'), romFile('kof98h.zip'), fakeZip('notagame.zip'), romFile('neogeo.zip'),
+  ]);
+  const by = Object.fromEntries(rows.map((r) => [r.name, r]));
+  if (rows.length !== 3) throw new Error('rows ' + rows.length);
+  if (!by['nam1975.zip'].ok) throw new Error('nam1975 blocked: ' + by['nam1975.zip'].problem);
+  if (by['kof98h.zip'].ok || !/missing/i.test(by['kof98h.zip'].problem))
+    throw new Error('kof98h should miss its parent chips: ' + JSON.stringify(by['kof98h.zip']));
+  if (by['notagame.zip'].ok || !/not a MAME Neo Geo romset/.test(by['notagame.zip'].problem))
+    throw new Error('unknown zip reason: ' + JSON.stringify(by['notagame.zip']));
+}, true);
+
+await t('preflight/missing-bios-blocks-ready-game', async () => {
+  const { db, RomSet, preflight, BIOS_MISSING } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [romFile('nam1975.zip')]);
+  if (rows[0].ok !== false || rows[0].problem !== BIOS_MISSING) throw new Error(JSON.stringify(rows[0]));
+}, true);
+
+await t('preflight/clone-with-parent-zip-is-ready', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [romFile('kof98h.zip'), romFile('kof98.zip'), romFile('neogeo.zip')]);
+  const k = rows.find((r) => r.name === 'kof98h.zip');
+  if (!k?.ok) throw new Error('kof98h with parent should be ready: ' + JSON.stringify(rows));
+}, true);
+
 process.exit(fail ? 1 : 0);

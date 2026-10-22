@@ -2,7 +2,7 @@
 // #74: 2+ game zips get a preflight game list before conversion, then per-row
 // status. The pure list/status rules live in vendor/conv/batch.js (Node-tested).
 import {
-  createBatch, markRunning, markDone, markFailed, progress as rowProgress, summary, STATUS,
+  createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary, STATUS,
 } from './vendor/conv/batch.js';
 
 const $ = (id) => document.getElementById(id);
@@ -14,7 +14,7 @@ let files = [];
 let worker = null, jobId = 0, running = false;
 let preflightWorker = null, preflightId = 0, preflighting = false;
 let batch = null, batchSource = null, batchFiles = null;
-let batchStarted = false, batchError = '', activeRows = [];
+let batchStarted = false, batchError = '', readyIndexes = [];
 const urls = new Set();
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
@@ -71,7 +71,7 @@ function stopPreflight() {
 function dropBatchModel() {
   if (batch) for (const row of batch) if (row.result?.url) revokeUrl(row.result.url);
   batch = null; batchSource = null; batchFiles = null;
-  batchStarted = false; batchError = ''; activeRows = [];
+  batchStarted = false; batchError = ''; readyIndexes = [];
 }
 
 function startPreflight() {
@@ -312,7 +312,7 @@ function markRunningRowsFailed(message) {
 runBtn.addEventListener('click', () => {
   const mode = currentMode();
   if (running || (files.length === 0 && mode !== 'launcher')) return;
-  const isBatch = mode !== 'launcher' && gameZips().length > 1;
+  const isBatch = wantsBatch();
   if (isBatch && (!batch || batchFiles !== files || batchError || summary(batch).ready === 0)) return;
 
   running = true;
@@ -325,11 +325,11 @@ runBtn.addEventListener('click', () => {
 
   if (isBatch) {
     batch = createBatch(batchSource);
-    activeRows = batch.map((row, i) => (row.ok ? i : -1)).filter((i) => i >= 0);
+    readyIndexes = batch.map((row, i) => (row.ok ? i : -1)).filter((i) => i >= 0);
     batchStarted = true;
-    markRunning(batch, activeRows[0]);
+    markRunning(batch, readyIndexes[0]);
     renderBatch();
-    log(t(`배치 ${activeRows.length}종 시작`, `Batch start: ${activeRows.length} games`));
+    log(t(`배치 ${readyIndexes.length}종 시작`, `Batch start: ${readyIndexes.length} games`));
   }
 
   worker = new Worker('vendor/conv/worker.js', { type: 'module' });
@@ -354,7 +354,7 @@ runBtn.addEventListener('click', () => {
       if (m.step === 'art' && !vals.artLogged) { vals.artLogged = true; log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
       if (m.step === 'cia' && !vals.ciaLogged) { vals.ciaLogged = true; log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
       if (isBatch && typeof m.batch === 'number') {
-        const rowIndex = activeRows[m.batch];
+        const rowIndex = readyIndexes[m.batch];
         if (rowIndex != null) {
           markRunning(batch, rowIndex);
           rowProgress(batch, rowIndex, m.step, m.detail);
@@ -372,7 +372,7 @@ runBtn.addEventListener('click', () => {
         `  ${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`));
     } else if (m.type === 'batch-one') {
       if (!isBatch) return;
-      const rowIndex = activeRows[m.batch];
+      const rowIndex = readyIndexes[m.batch];
       if (rowIndex == null) return;
       // One game done: keep a per-row link (auto-clicking N files gets blocked).
       const name = downloadName({ ...m.stats, mode });
@@ -382,7 +382,7 @@ runBtn.addEventListener('click', () => {
       log(t(`[완료] ${name} (${m.stats.ciaMB} MB)`, `[Done] ${name} (${m.stats.ciaMB} MB)`));
     } else if (m.type === 'batch-error') {
       if (!isBatch) return;
-      const rowIndex = activeRows[m.index];
+      const rowIndex = readyIndexes[m.index];
       if (rowIndex == null) return;
       markFailed(batch, rowIndex, m.message);
       updateRow(rowIndex);
@@ -393,9 +393,8 @@ runBtn.addEventListener('click', () => {
       finish();
       for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
       renderBatch();
-      const s = summary(batch ?? []);
-      log(t(`배치 완료: 성공 ${s.done} · 실패 ${s.failed} (${m.secs}초)`,
-        `Batch finished: ${s.done} done · ${s.failed} failed (${m.secs}s)`));
+      log(t(`배치 ${m.count}종 완료: 성공 ${m.ok} · 실패 ${m.failed} (${m.secs}초)`,
+        `Batch finished: ${m.count} games — ${m.ok} done · ${m.failed} failed (${m.secs}s)`));
     } else if (m.type === 'error') {
       markRunningRowsFailed(m.message);
       finish();
@@ -404,7 +403,7 @@ runBtn.addEventListener('click', () => {
   };
   worker.postMessage({
     id, files, region: $('gateRegion').value, system: $('gateSystem').value, mode,
-    batch: isBatch ? activeRows.map((i) => ({ name: batch[i].name })) : null,
+    batch: isBatch ? readyIndexes.map((i) => ({ name: batch[i].name })) : null,
   });
 });
 
@@ -447,7 +446,7 @@ cancelBtn.addEventListener('click', () => {
   if (!running) return;
   if (batch) {
     for (let i = 0; i < batch.length; i++) {
-      if (batch[i].status === STATUS.RUNNING) markFailed(batch, i, t('취소됨', 'Cancelled'));
+      if (batch[i].status === STATUS.RUNNING) markPending(batch, i);
     }
     renderBatch();
   }
