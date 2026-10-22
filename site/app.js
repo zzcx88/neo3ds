@@ -136,6 +136,7 @@ const EN = {
   'gate.mCiaOut': '.cia → install with FBI', 'gate.mPackOut': '.neo3ds → /neo3ds/games/', 'gate.mLaunchOut': '.cia → install once',
   'gate.mUpd': 'To update, just install the new launcher CIA. Your existing .neo3ds files run on the new version as they are.',
   'gate.listH': 'Recognized games',
+  'gate.recog': 'Checking…', 'gate.overallReady': 'Ready to convert',
   'gate.listHint': 'Check before converting. Select a game row to change that game\'s icon and banner. Games that cannot be converted show why and are skipped.',
   'gate.artH': 'Icon and banner',
   'gate.artHint': 'Check the HOME menu art before converting. A picture you pick is centre-cropped to 48×48 / 256×128.',

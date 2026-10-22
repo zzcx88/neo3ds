@@ -9,11 +9,14 @@ export const BIOS_MISSING = 'neogeo.zip (BIOS) not found. Drop it together with 
 
 // One row per game zip: {name, ok, title, problem}. The problem text is what
 // conversion would throw, so the list and the log tell the same story.
-export async function preflight(db, RomSet, files) {
+// `onProgress(done, total, name)` (#81) drives the recognition bar; `total` is
+// the number of game zips judged (neogeo.zip is checked once, not a row).
+export async function preflight(db, RomSet, files, onProgress = null) {
   const bios = files.some((f) => f.name.toLowerCase() === 'neogeo.zip');
+  const games = files.filter((f) => f.name.toLowerCase() !== 'neogeo.zip');
   const rows = [];
-  for (const f of files) {
-    if (f.name.toLowerCase() === 'neogeo.zip') continue;
+  onProgress?.(0, games.length, null);
+  for (const f of games) {
     const zipName = f.name.replace(/\.zip$/i, '').toLowerCase();
     const known = db.find(zipName);
     const row = { name: f.name, ok: false, title: null, problem: null };
@@ -29,6 +32,7 @@ export async function preflight(db, RomSet, files) {
       row.problem = String(err?.message ?? err);
     }
     rows.push(row);
+    onProgress?.(rows.length, games.length, f.name);
   }
   return rows;
 }

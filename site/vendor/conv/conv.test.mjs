@@ -327,4 +327,110 @@ await t('batch/art-label-and-payload', async () => {
   if (artLabel(b[0]) !== 'banner') throw new Error('banner-only label');
 });
 
+// ── #81 recognition/overall progress + all-results ZIP (pure) ────────────
+// The recognition bar counts game zips, the overall bar maps a worker stage
+// onto one game (or completed games + current game), and "download all" zips
+// the finished files byte-for-byte under their per-row names.
+
+await t('preflight/progress-callback-per-game-zip', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const calls = [];
+  await preflight(db, RomSet, [fakeZip('a.zip'), fakeZip('b.zip'), fakeZip('neogeo.zip')], (done, total, name) =>
+    calls.push([done, total, name]));
+  const want = [[0, 2, null], [1, 2, 'a.zip'], [2, 2, 'b.zip']];
+  if (JSON.stringify(calls) !== JSON.stringify(want)) throw new Error(JSON.stringify(calls));
+});
+
+await t('progress/stage-fraction-windows', async () => {
+  const { stageFraction } = await import('./progress.js');
+  if (stageFraction('load', 0.05) !== 0.05) throw new Error('load');
+  if (stageFraction('romfs', 0.1) !== 0.1 || stageFraction('romfs', 0.65) !== 0.65) throw new Error('romfs');
+  if (stageFraction('art', 0) !== 0.7 || stageFraction('cia', 0) !== 0.85) throw new Error('stage floors');
+  if (stageFraction('cia', 0.9) !== 0.9) throw new Error('pack');
+  if (stageFraction('cia', 99) !== 1) throw new Error('high clamp');
+  if (stageFraction('load', undefined) !== 0 || stageFraction('bogus', 0.5) !== 0) throw new Error('missing stage');
+});
+
+await t('progress/overall-batch-capped-until-done', async () => {
+  const { overallFraction } = await import('./progress.js');
+  const near = (got, want, tag) => { if (Math.abs(got - want) > 1e-9) throw new Error(`${tag}: ${got} != ${want}`); };
+  near(overallFraction({ ready: 3, index: 0, step: 'load', frac: 0.05 }), 0.05 / 3, 'first game');
+  near(overallFraction({ ready: 3, index: 1, step: 'romfs', frac: 0.65 }), 1.65 / 3, 'second game');
+  near(overallFraction({ ready: 3, index: 2, step: 'cia', frac: 0.85 }), 2.85 / 3, 'third game');
+  if (overallFraction({ ready: 3, index: 2, step: 'cia', frac: 1 }) !== 0.99) throw new Error('not capped at 99%');
+  near(overallFraction({ ready: 2, index: 9, step: 'load', frac: 0 }), 0.5, 'index clamp');
+  near(overallFraction({ ready: 0 }), 0, 'empty ready');
+});
+
+await t('progress/percent-text', async () => {
+  const { percentText } = await import('./progress.js');
+  if (percentText(0.678) !== '68%' || percentText(0) !== '0%' || percentText(1) !== '100%') throw new Error('percent');
+  if (percentText(-1) !== '0%' || percentText(2) !== '100%') throw new Error('percent clamp');
+});
+
+await t('bundle/zip-roundtrip-stored', async () => {
+  const { zipResults } = await import('./bundle.js');
+  const { unzipSync } = await import('./fflate.js');
+  const a = new Uint8Array([1, 2, 3, 4, 5]);
+  const b = new Uint8Array(1024).fill(7);
+  const zip = zipResults([{ name: 'a-web.cia', bytes: a }, { name: 'b.neo3ds', bytes: b }]);
+  if (!(zip instanceof Uint8Array)) throw new Error('not a Uint8Array');
+  const out = unzipSync(zip);
+  if (JSON.stringify(Object.keys(out).sort()) !== '["a-web.cia","b.neo3ds"]') throw new Error('names ' + Object.keys(out));
+  if (out['a-web.cia'].join(',') !== '1,2,3,4,5') throw new Error('a bytes');
+  if (out['b.neo3ds'].length !== 1024 || out['b.neo3ds'][1023] !== 7) throw new Error('b bytes');
+});
+
+await t('bundle/rejects-empty-duplicate-unsafe', async () => {
+  const { zipResults } = await import('./bundle.js');
+  const one = () => new Uint8Array([1]);
+  const err = (fn) => { try { fn(); } catch (e) { return String(e.message); } return ''; };
+  if (!/at least one/.test(err(() => zipResults([])))) throw new Error('empty accepted');
+  if (!/duplicate/.test(err(() => zipResults([{ name: 'x.cia', bytes: one() }, { name: 'x.cia', bytes: one() }]))))
+    throw new Error('duplicate accepted');
+  for (const name of ['', '../x.cia', '/abs.cia', 'a/../b.cia', 'a\\b.cia', 'a//b.cia', 'dir/', 'bad\u0000.cia']) {
+    if (!/name/.test(err(() => zipResults([{ name, bytes: one() }]))))
+      throw new Error('unsafe name accepted: ' + JSON.stringify(name));
+  }
+  if (!/Uint8Array/.test(err(() => zipResults([{ name: 'x.cia', bytes: [1, 2] }]))))
+    throw new Error('non-byte payload accepted');
+});
+
+// Duplicate result names (same zip dropped twice) must still bundle: the page
+// asks for " (2)"-style unique entry names before zipping.
+await t('bundle/unique-entry-names', async () => {
+  const { uniqueEntryName } = await import('./bundle.js');
+  const used = new Set();
+  const seq = [
+    ['a.cia', 'a.cia'],
+    ['a.cia', 'a (2).cia'],
+    ['a.cia', 'a (3).cia'],
+    ['noext', 'noext'],
+    ['noext', 'noext (2)'],
+    ['dir/x.neo3ds', 'dir/x.neo3ds'],
+  ];
+  for (const [input, want] of seq) {
+    const got = uniqueEntryName(input, used);
+    if (got !== want) throw new Error(`${input} -> ${got}, want ${want}`);
+  }
+});
+
+// Producer contract: every frac the worker posts must already lie inside its
+// stage window, otherwise stageFraction clamps it and the overall bar jumps.
+// (Regression: the launcher path used art 0.1 / cia 0.5, clamped to 70%/85%.)
+await t('progress/producer-fracs-stay-in-stage', async () => {
+  const { STAGES, stageFraction } = await import('./progress.js');
+  const producers = [
+    ['load', 0], ['load', 0.05],
+    ['romfs', 0.1], ['romfs', 0.65],
+    ['art', 0.7], ['art', 0.75],
+    ['cia', 0.85], ['cia', 0.9], ['cia', 0.92],
+  ];
+  for (const [step, frac] of producers) {
+    const [lo, hi] = STAGES[step];
+    if (frac < lo || frac > hi) throw new Error(`${step} ${frac} outside [${lo},${hi}]`);
+    if (stageFraction(step, frac) !== frac) throw new Error(`${step} ${frac} was clamped`);
+  }
+});
+
 process.exit(fail ? 1 : 0);

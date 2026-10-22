@@ -60,7 +60,9 @@ Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing 
 5. Press **[Build CIA]**. A game takes tens of seconds to a minute or two (graphics compression).
 6. When done, save it with **[Get the CIA]**. The CIA size, browser memory and estimated 3DS memory are shown below.
 
-While converting, each game shows its status; one failing game does not stop the others. The icon and banner can only be changed before the run starts. When it finishes, a success/fail count and a download link per game stay on the page. Starting a new run clears the previous links.
+While converting, the **Progress** section shows an overall bar (for several games: completed games + the current game's stage), and pressing **[Build CIA]** scrolls to that section automatically. While the rom zips are being recognized, a zip-count bar (Checking 2/4) appears above the list.
+
+Each game shows its status; one failing game does not stop the others. The icon and banner can only be changed before the run starts. When it finishes, a success/fail count and a download link per game stay on the page; after converting several games to CIA or launcher files, **[Download all (N)]** saves every completed result as one ZIP. Starting a new run clears the previous links.
 
 The **KO/EN** buttons at the top right switch the language.
 
