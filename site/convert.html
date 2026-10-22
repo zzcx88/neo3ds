@@ -27,7 +27,26 @@
 .gate-side .conv-file{display:block;margin-bottom:14px}
 #gateDl{background:var(--gold);border-color:var(--gold);color:#16161C;font-weight:700}
 #gateDl:hover{background:var(--gold);border-color:#fff;color:#16161C}
-#gateBatch a.btn{border-color:var(--gold);color:var(--gold)}
+/* #74: preflight game list + per-row batch status (existing tokens only) */
+.batch{margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);min-width:0}
+.batch-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.batch-head h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0}
+.batch-count{font:400 10px/1.4 var(--pixel-sm);color:var(--dim)}
+.batch-hint{margin:6px 0 8px}
+.batch-msg{margin:0 0 8px;color:var(--gold);overflow-wrap:anywhere}
+.batch-rows{border-top:1px solid var(--line)}
+.batch-row{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 4px;border-bottom:1px solid var(--line)}
+.batch-row[data-status="running"]{background:var(--panel);box-shadow:inset 3px 0 0 var(--gold)}
+.batch-row-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+.batch-zip{font:400 10px/1.5 var(--pixel-sm);color:var(--dim);min-width:0;overflow-wrap:anywhere}
+.batch-state{font:400 9px/1.4 var(--pixel-sm);color:var(--gold);text-align:right;white-space:nowrap}
+.batch-row[data-status="blocked"] .batch-state{color:var(--dim)}
+.batch-row[data-status="failed"] .batch-state{color:var(--a)}
+.batch-title{font-size:13.5px;line-height:1.4;color:var(--paper);overflow-wrap:anywhere}
+.batch-row[data-status="blocked"] .batch-title{color:var(--dim)}
+.batch-detail{font-size:12px;line-height:1.5;color:var(--dim);overflow-wrap:anywhere}
+.batch-dl{max-width:100%;margin-top:4px;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.batch-summary{margin:8px 0 0;color:var(--gold)}
 .mode-label{display:block;margin:0 0 6px}
 .mode-group{display:block;margin:10px 0 6px;color:var(--gold);font-size:10px}
 .mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 4px}
@@ -105,12 +124,21 @@
         <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span data-i18n="gate.mLaunch">런처 CIA</span><span class="mode-out" data-i18n="gate.mLaunchOut">.cia → 1회만 설치</span></label>
       </div>
       <p class="tiny" data-i18n="gate.mUpd">업데이트는 런처 CIA만 새로 설치하면 됩니다. 기존 .neo3ds 파일은 그대로 새 버전으로 실행됩니다.</p>
+      <div class="batch hidden" id="gateBatchList" role="region" aria-labelledby="gateBatchH">
+        <div class="batch-head">
+          <h3 id="gateBatchH" data-i18n="gate.listH">인식된 게임</h3>
+          <span class="batch-count" id="gateBatchCount"></span>
+        </div>
+        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.</p>
+        <p class="tiny batch-msg hidden" id="gateBatchMsg" role="status"></p>
+        <ol class="batch-rows" id="gateBatchRows"></ol>
+        <p class="tiny batch-summary hidden" id="gateBatchSummary" aria-live="polite"></p>
+      </div>
       <div class="cta-row">
         <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">변환하기</button>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
         <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">다운로드</a>
       </div>
-      <div class="cta-row hidden" id="gateBatch" style="gap:8px"></div>
       <p class="tiny hidden" id="gateStats"></p>
     </div>
   </div>

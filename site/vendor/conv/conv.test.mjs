@@ -63,4 +63,76 @@ await t('art/png-spec', async () => {
   if (JSON.stringify(dim(bn)) !== '[256,128]') throw new Error('banner dim');
 });
 
+// ── #74 batch list/status model (pure, DOM-free) ──────────────────────────
+// The page shows the recognized-games list before converting, then tracks
+// each row through pending → running → done/failed. Blocked rows never run,
+// and one failure must not stop the others.
+const TWO_READY_ONE_BLOCKED = () => ([
+  { name: 'nam1975.zip', title: 'NAM-1975', rom: 'nam1975', ok: true, problem: null },
+  { name: 'notagame.zip', title: null, rom: null, ok: false, problem: "'notagame' is not a MAME Neo Geo romset name." },
+  { name: 'mslug.zip', title: 'Metal Slug', rom: 'mslug', ok: true, problem: null },
+]);
+
+await t('batch/create-lists-ready-and-blocked', async () => {
+  const { createBatch, STATUS } = await import('./batch.js');
+  const b = createBatch(TWO_READY_ONE_BLOCKED());
+  if (b.length !== 3) throw new Error('rows ' + b.length);
+  if (b[0].status !== STATUS.PENDING || b[1].status !== STATUS.BLOCKED || b[2].status !== STATUS.PENDING)
+    throw new Error('statuses ' + b.map((r) => r.status));
+  if (b[1].problem == null || b[0].title !== 'NAM-1975' || b[0].name !== 'nam1975.zip')
+    throw new Error('row fields lost');
+});
+
+await t('batch/summary-counts-ready-blocked', async () => {
+  const { createBatch, summary } = await import('./batch.js');
+  const s = summary(createBatch(TWO_READY_ONE_BLOCKED()));
+  const want = { total: 3, ready: 2, blocked: 1, done: 0, failed: 0, running: 0, finished: 0 };
+  if (JSON.stringify(s) !== JSON.stringify(want)) throw new Error(JSON.stringify(s));
+});
+
+await t('batch/blocked-never-runs', async () => {
+  const { createBatch, markRunning, markFailed, markDone, summary, STATUS } = await import('./batch.js');
+  const b = createBatch(TWO_READY_ONE_BLOCKED());
+  markRunning(b, 1);
+  markFailed(b, 1, 'must not run');
+  markDone(b, 1, { name: 'nope' });
+  if (b[1].status !== STATUS.BLOCKED) throw new Error('blocked row changed to ' + b[1].status);
+  if (b[1].detail !== '') throw new Error('blocked row got detail');
+  const s = summary(b);
+  if (s.running !== 0 || s.done !== 0 || s.failed !== 0) throw new Error(JSON.stringify(s));
+});
+
+await t('batch/running-progress-done', async () => {
+  const { createBatch, markRunning, progress, markDone, summary, STATUS } = await import('./batch.js');
+  const b = createBatch(TWO_READY_ONE_BLOCKED());
+  markRunning(b, 0);
+  progress(b, 0, 'romfs', 'compressing 42%');
+  if (b[0].status !== STATUS.RUNNING) throw new Error('not running');
+  if (b[0].step !== 'romfs' || b[0].detail !== 'compressing 42%') throw new Error('progress not stored');
+  if (summary(b).running !== 1) throw new Error('running count');
+  markDone(b, 0, { name: 'nam1975-web.cia', mb: 12.3 });
+  const s = summary(b);
+  if (b[0].status !== STATUS.DONE || b[0].result.name !== 'nam1975-web.cia') throw new Error('not done');
+  if (s.done !== 1 || s.running !== 0 || s.finished !== 1) throw new Error(JSON.stringify(s));
+});
+
+await t('batch/failure-is-isolated', async () => {
+  const { createBatch, markRunning, progress, markDone, markFailed, summary, STATUS } = await import('./batch.js');
+  const b = createBatch([
+    { name: 'a.zip', title: 'A', ok: true, problem: null },
+    { name: 'b.zip', title: 'B', ok: true, problem: null },
+    { name: 'c.zip', title: 'C', ok: true, problem: null },
+  ]);
+  markRunning(b, 0); progress(b, 0, 'load', 'reading zips');
+  markFailed(b, 0, 'ROM files are missing (201-p1.p1)');
+  if (b[0].status !== STATUS.FAILED || b[0].detail === '') throw new Error('failure not recorded');
+  markRunning(b, 1); markDone(b, 1, { name: 'b-web.cia', mb: 9 });
+  markRunning(b, 2); markDone(b, 2, { name: 'c-web.cia', mb: 9 });
+  const s = summary(b);
+  const want = { total: 3, ready: 3, blocked: 0, done: 2, failed: 1, running: 0, finished: 3 };
+  if (JSON.stringify(s) !== JSON.stringify(want)) throw new Error(JSON.stringify(s));
+  if (b[0].detail !== 'ROM files are missing (201-p1.p1)') throw new Error('failure reason lost');
+  if (b[1].result.name !== 'b-web.cia' || b[2].result.name !== 'c-web.cia') throw new Error('other results lost');
+});
+
 process.exit(fail ? 1 : 0);

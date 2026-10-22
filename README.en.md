@@ -19,7 +19,7 @@ If you'd rather have a HOME menu icon per game, you can also build a separate in
 - **Quick save (1.1.0)**: three slots per game, from the bottom screen or SELECT + L/R.
 - **Service menu and backup RAM (1.1.0)**: open the arcade (MVS) BIOS settings menu; settings and high scores the board saves are kept on the SD card.
 - **Region (1.1.0)**: Europe/Asia, Japan or USA. Japan gives the Japanese versions' content, such as the blood in Metal Slug.
-- **Batch conversion (1.1.0)**: drop several zips and they are converted one after the other.
+- **Batch conversion (1.1.0)**: drop several zips and see the recognized games before converting; one failing game does not stop the rest.
 - **Full screen (1.2.0)**: **Screen** in the key config stretches the picture to fill the top screen, saved per game.
 - **Bottom screen off (1.2.0)**: **⏻** at the bottom screen's top right turns its backlight off; touch the bottom screen to turn it back on.
 - **Faster drawing (1.2.0)**: the picture is drawn in bands inside the cache, shared by both cores, so full screen and busy scenes (Metal Slug 3...) drop fewer frames.
@@ -52,14 +52,14 @@ Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing 
 ### 2. Build a CIA
 
 1. Drop the game zip together with `neogeo.zip`. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...). For merged sets, drop the game + parent zips together.
-2. If the game is recognised, it can be converted. If it is red, the reason is shown.
+2. With **two or more** game zips, the list of recognized games appears before converting. Each row shows the zip name, the game title, whether it can be converted and the reason (unknown romset, missing chips, missing `neogeo.zip`, unsupported cart); only convertible games are converted. A single game converts right away without the list.
 3. Change the **System** or **Region** if you like.
    - **System** is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too.
    - **Region** is the console region the game sees. The default is Europe/Asia; **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug, and Japanese text (varies by game). If neogeo.zip has no BIOS for that region, another region's BIOS is used and the log says so.
 4. Press **[Build CIA]**. A game takes tens of seconds to a minute or two (graphics compression).
 5. When done, save it with **[Get the CIA]**. The CIA size, browser memory and estimated 3DS memory are shown below.
 
-Drop **several** game zips at once to convert them one after the other; each finished file gets its own download link.
+While converting, each game shows its status; one failing game does not stop the others. When it finishes, a success/fail count and a download link per game stay on the page. Starting a new run clears the previous links.
 
 The **KO/EN** buttons at the top right switch the language.
 

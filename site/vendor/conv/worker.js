@@ -1,7 +1,10 @@
-// MVP conversion worker (#33, extended #34): zip files -> CIA / .neo3ds / launcher.
+// MVP conversion worker (#33, extended #34, batch list #74): zip files -> CIA / .neo3ds / launcher.
 // Message in: {id, files: File[], region, system, mode: 'cia'|'pack'|'launcher', batch: [{name}]?}
-// Messages out: {id, type:'progress', step, frac, detail} | {id, type:'done', cia, stats}
-//   | {id, type:'batch-done', outs: [{name, bin, stats}]} | {id, type:'error', message}
+//   or the non-converting preflight: {id, type:'preflight', files: File[]}
+// Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia, stats}
+//   | {id, type:'batch-one', batch, bin, stats} | {id, type:'batch-error', index, name, message}
+//   | {id, type:'batch-done', count, ok, failed, secs}
+//   | {id, type:'preflight', bios, rows} | {id, type:'error', message}
 // Cancellation: the page calls worker.terminate() directly.
 import { GameDb, Region } from './gamedb.js';
 import { RomSet, BiosSet } from './zipset.js';
@@ -10,16 +13,25 @@ import { writeGameFiles, buildPack } from './pack.js';
 import { iconPng, bannerPng, silentWav } from './art.js';
 import { loadZstd } from './zstd-adapter.js';
 import { CONVERTER_VERSION } from './version.js';
-import initMakerom from '../makerom.js';
-import initBannertool from '../bannertool.js';
+
+// WASM tools are loaded only when something is actually built (#74): preflight
+// must answer without the gitignored WASM build products.
+const initMakerom = async () => (await import('../makerom.js')).default();
+const initBannertool = async () => (await import('../bannertool.js')).default();
+
+const BIOS_MISSING = 'neogeo.zip (BIOS) not found. Drop it together with the game zip.';
 
 self.onmessage = async (e) => {
   const msg = e.data;
   const { id, files, region, system, mode = 'cia', batch = null } = msg;
   const post = (m) => self.postMessage({ id, ...m });
   try {
-    const t0 = performance.now();
     const db = await GameDb.load('../neogeo_games.json');
+    if (msg.type === 'preflight') {
+      post({ type: 'preflight', ...(await preflight(db, files)) });
+      return;
+    }
+    const t0 = performance.now();
     if (mode === 'launcher') return await buildLauncher(post, t0);
     if (batch) return await buildBatch(db, files, batch, { region, system, mode }, post, t0);
     const one = await buildOneCapture(db, files, null, { region, system, mode }, post);
@@ -28,6 +40,38 @@ self.onmessage = async (e) => {
     post({ type: 'error', message: String(err?.message ?? err) });
   }
 };
+
+// Same judgment as conversion (pickGame + neogeo.zip) but nothing is built.
+// Each row keeps the exact problem string buildOneCapture would throw.
+async function preflight(db, files) {
+  const bios = files.some((f) => f.name.toLowerCase() === 'neogeo.zip');
+  const rows = [];
+  for (const f of files) {
+    if (f.name.toLowerCase() === 'neogeo.zip') continue;
+    const zipName = f.name.replace(/\.zip$/i, '').toLowerCase();
+    const row = { name: f.name, ok: false, title: null, rom: null, problem: null };
+    const known = db.find(zipName);
+    try {
+      const { game, problem } = await pickGame(db, RomSet, files, zipName);
+      const label = game ?? known;
+      if (label) {
+        row.title = db.title(label);
+        row.rom = label.name;
+      }
+      if (!game) row.problem = problem;
+      else if (!bios) row.problem = BIOS_MISSING;
+      else row.ok = true;
+    } catch (err) {
+      if (known) {
+        row.title = db.title(known);
+        row.rom = known.name;
+      }
+      row.problem = String(err?.message ?? err);
+    }
+    rows.push(row);
+  }
+  return { bios, rows };
+}
 
 function memMB() {
   return performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(0) : null;
@@ -103,13 +147,21 @@ async function buildLauncher(post, t0) {
 
 async function buildBatch(db, files, zips, opts, post, t0) {
   // Stream one result at a time: the page adds a download link per game,
-  // so N games never sit in RAM + postMessage all at once.
+  // so N games never sit in RAM + postMessage all at once. A failed game is
+  // reported and the loop continues (#74).
+  let ok = 0, failed = 0;
   for (let i = 0; i < zips.length; i++) {
-    post({ type: 'progress', step: 'load', frac: i / zips.length, detail: `game ${i + 1}/${zips.length}: ${zips[i].name}` });
-    const one = await buildOneCapture(db, files, zips[i].name, opts, (m) => post({ ...m, batch: i }));
-    post({ type: 'batch-one', bin: one.bin, stats: one.stats });
+    post({ type: 'progress', step: 'load', frac: i / zips.length, detail: `game ${i + 1}/${zips.length}: ${zips[i].name}`, batch: i });
+    try {
+      const one = await buildOneCapture(db, files, zips[i].name, opts, (m) => post({ ...m, batch: i }));
+      post({ type: 'batch-one', batch: i, bin: one.bin, stats: one.stats });
+      ok++;
+    } catch (err) {
+      failed++;
+      post({ type: 'batch-error', index: i, name: zips[i].name, message: String(err?.message ?? err) });
+    }
   }
-  post({ type: 'batch-done', count: zips.length, secs: ((performance.now() - t0) / 1000).toFixed(1) });
+  post({ type: 'batch-done', count: zips.length, ok, failed, secs: ((performance.now() - t0) / 1000).toFixed(1) });
 }
 
 async function buildOneCapture(db, files, forceZip, opts, post) {
