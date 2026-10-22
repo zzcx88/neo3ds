@@ -1,8 +1,9 @@
 // MVP conversion worker (#33, extended #34, batch list #74, art override #75):
 // zip files -> CIA / .neo3ds / launcher.
 // Message in: {id, files: File[], region, system, mode: 'cia'|'pack'|'launcher',
-//   art?: {icon: File|null, banner: File|null}, batch: [{name, art?}]?}
-//   or the non-converting preflight: {id, type:'preflight', files: File[]}
+//   lang?: 'ko'|'en', art?: {icon: File|null, banner: File|null}, batch: [{name, art?}]?}
+//   or the non-converting preflight: {id, type:'preflight', files: File[], lang?}
+//   `lang` picks the romset/BIOS/image failure reasons and preflight row text (#79).
 // Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia, stats}
 //   | {id, type:'batch-one', batch, bin, stats} | {id, type:'batch-error', index, name, message}
 //   | {id, type:'batch-done', count, ok, failed, secs}
@@ -14,7 +15,8 @@ import { RomSet, BiosSet } from './zipset.js';
 import { pickGame, titleId, uniqueId, productCode } from './job.js';
 import { writeGameFiles, buildPack } from './pack.js';
 import { iconPng, bannerPng, silentWav } from './art.js';
-import { preflight, BIOS_MISSING } from './preflight.js';
+import { preflight, biosMissing } from './preflight.js';
+import { L } from './lang.js';
 import { loadZstd } from './zstd-adapter.js';
 
 // Build products are gitignored: load them only when something is actually
@@ -25,7 +27,7 @@ const converterVersion = async () => (await import('./version.js')).CONVERTER_VE
 
 self.onmessage = async (e) => {
   const msg = e.data;
-  const { id, files, region, system, mode = 'cia', batch = null, art = null } = msg;
+  const { id, files, region, system, mode = 'cia', batch = null, art = null, lang = 'en' } = msg;
   const post = (m) => self.postMessage({ id, ...m });
   try {
     const db = await GameDb.load('../neogeo_games.json');
@@ -33,15 +35,17 @@ self.onmessage = async (e) => {
       // #81: the recognition bar follows the same zip-by-zip loop as the judgment.
       post({
         type: 'preflight',
-        rows: await preflight(db, RomSet, files, (done, total, name) =>
-          post({ type: 'preflight-progress', done, total, name })),
+        rows: await preflight(db, RomSet, files, {
+          lang,
+          onProgress: (done, total, name) => post({ type: 'preflight-progress', done, total, name }),
+        }),
       });
       return;
     }
     const t0 = performance.now();
     if (mode === 'launcher') return await buildLauncher(post, t0);
-    if (batch) return await buildBatch(db, files, batch, { region, system, mode }, post, t0);
-    const one = await buildOneCapture(db, files, null, { region, system, mode, art }, post);
+    if (batch) return await buildBatch(db, files, batch, { region, system, mode, lang }, post, t0);
+    const one = await buildOneCapture(db, files, null, { region, system, mode, art, lang }, post);
     post({ type: 'done', cia: one.bin, stats: { ...one.stats, memMB: memMB(), secs: ((performance.now() - t0) / 1000).toFixed(1) } });
   } catch (err) {
     post({ type: 'error', message: String(err?.message ?? err) });
@@ -144,29 +148,31 @@ async function buildBatch(db, files, zips, opts, post, t0) {
 
 // User pictures arrive as File objects; decode in the worker so the same bytes
 // feed bannertool. No override keeps the exact automatic path below.
-async function decodeArt(file) {
+async function decodeArt(file, lang) {
   if (!file) return null;
-  if (typeof createImageBitmap !== 'function') throw new Error('Cannot decode image: browser has no createImageBitmap.');
+  if (typeof createImageBitmap !== 'function')
+    throw new Error(L(lang, '이미지를 읽을 수 없습니다: 이 브라우저에는 createImageBitmap이 없습니다.',
+      'Cannot decode image: browser has no createImageBitmap.'));
   try {
     return await createImageBitmap(file);
   } catch {
-    throw new Error(`Cannot decode image: ${file.name}`);
+    throw new Error(L(lang, `이미지를 읽을 수 없습니다: ${file.name}`, `Cannot decode image: ${file.name}`));
   }
 }
 
 async function buildOneCapture(db, files, forceZip, opts, post) {
-  const { region, system, mode, art = null } = opts;
+  const { region, system, mode, art = null, lang = 'en' } = opts;
   // #81: fracs are normalized to this game's 0..1 timeline (see progress.js).
   post({ type: 'progress', step: 'load', frac: 0.05, detail: 'reading zips' });
   const gameFile = forceZip
     ? files.find((f) => f.name.toLowerCase() === forceZip.toLowerCase())
     : files.find((f) => f.name.toLowerCase() !== 'neogeo.zip');
-  if (!gameFile) throw new Error('Drop a game zip together with neogeo.zip.');
+  if (!gameFile) throw new Error(L(lang, '게임 zip과 neogeo.zip을 함께 올려 주세요.', 'Drop a game zip together with neogeo.zip.'));
   const zipName = gameFile.name.replace(/\.zip$/i, '').toLowerCase();
-  const { game, problem, romset } = await pickGame(db, RomSet, files, zipName);
+  const { game, problem, romset } = await pickGame(db, RomSet, files, zipName, { lang });
   if (!game) throw new Error(problem);
   const biosFile = files.find((f) => f.name.toLowerCase() === 'neogeo.zip');
-  if (!biosFile) throw new Error(BIOS_MISSING);
+  if (!biosFile) throw new Error(biosMissing(lang));
   const tid = titleId(zipName), uid = uniqueId(zipName);
 
   const Z = await loadZstd('../zstd.js');
@@ -196,8 +202,8 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   gameFiles.clear();
   post({ type: 'progress', step: 'art', frac: 0.7, detail: 'icon + banner' });
 
-  const iconImage = await decodeArt(art?.icon);
-  const bannerImage = await decodeArt(art?.banner);
+  const iconImage = await decodeArt(art?.icon, lang);
+  const bannerImage = await decodeArt(art?.banner, lang);
   let icon, banner;
   try {
     [icon, banner] = await Promise.all([iconPng(title, iconImage), bannerPng(title, bannerImage)]);

@@ -116,6 +116,8 @@ public static class CommandLine
               {exe} --art-sheet sheet.png         전 롬셋 아트 덤프 (점검용)
               {exe} --help | -h                  이 도움말 출력
 
+            입력: MAME 네오지오 롬셋 zip(롬셋 이름 그대로). MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.
+
             옵션:
               --title "..."        타이틀 지정 (zip 1개만)
               --icon icon.png      아이콘 지정 (zip 1개만)
@@ -132,6 +134,8 @@ public static class CommandLine
               {exe} --launcher [out-dir]             build neo3ds-launcher.cia
               {exe} --art-sheet sheet.png            dump all romsets' art for checking
               {exe} --help | -h                      show this help
+
+            Input: MAME Neo Geo romset zips (keep the romset names). A romset that does not match MAME's names and chip CRCs will not convert.
 
             Options:
               --title "..."        custom title (one zip only)

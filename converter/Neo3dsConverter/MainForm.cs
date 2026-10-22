@@ -112,7 +112,8 @@ public sealed class MainForm : Form
         DragEnter += (_, e) => e.Effect = DroppedZips(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
         DragDrop += (_, e) => LoadRoms(DroppedZips(e));
 
-        Log(L("네오지오 롬 zip(예: kof98.zip)을 이 창에 끌어다 놓거나 [찾아보기]를 누르세요.", "Drop a Neo Geo ROM zip (e.g. kof98.zip) on this window or press [Browse...]."));
+        Log(L("MAME 네오지오 롬셋 zip(예: kof98.zip)을 이 창에 끌어다 놓거나 [찾아보기]를 누르세요.", "Drop a MAME Neo Geo romset zip (e.g. kof98.zip) on this window or press [Browse...]."));
+        Log(L("MAME 롬셋 zip만 지원합니다. MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.", "Only MAME romset zips are supported. A romset whose names or chip CRCs differ from MAME's does not convert."));
         Log(L("여러 개를 한꺼번에 놓거나 고르면 차례로 변환합니다.", "Drop or pick several to convert them one after the other."));
         Log(L("neogeo.zip(바이오스)은 롬과 같은 폴더에 있어야 합니다.", "neogeo.zip (BIOS) must be in the same folder as the game zip."));
     }
@@ -182,8 +183,8 @@ public sealed class MainForm : Form
     {
         using var dlg = new OpenFileDialog
         {
-            Filter = L("네오지오 롬", "Neo Geo ROM") + " (*.zip)|*.zip",
-            Title = L("롬 zip 선택 (여러 개 가능)", "Pick ROM zips (one or more)"),
+            Filter = L("MAME 네오지오 롬셋", "MAME Neo Geo romset") + " (*.zip)|*.zip",
+            Title = L("MAME 롬셋 zip 선택 (여러 개 가능)", "Pick MAME romset zips (one or more)"),
             Multiselect = true,
         };
         if (dlg.ShowDialog(this) == DialogResult.OK) LoadRoms(dlg.FileNames);
