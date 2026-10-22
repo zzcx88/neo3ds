@@ -1,5 +1,7 @@
 // CiaJob selection port (converter/Neo3dsConverter.Core/CiaBuilder.cs:10-101).
 // RomName/TitleId/PickGame. Zip paths become in-memory file lists in the browser.
+import { L } from './lang.js';
+
 export function crc32Bytes(data) {
   let crc = 0xFFFFFFFF;
   for (let i = 0; i < data.length; i++) {
@@ -33,13 +35,17 @@ export function zipsFor(g, files, zipName) {
 
 // The romset named like the zip when supported and complete; otherwise a
 // supported clone whose chips the zips hold (CiaBuilder.cs:65-81).
-export async function pickGame(db, RomSetCls, files, name, set = null) {
+// `lang` picks the reason text (C# Lang.L): a KO page gets KO reasons (#79).
+// Options keep the C# `set` argument and the page language distinct.
+export async function pickGame(db, RomSetCls, files, name, { set = null, lang = 'en' } = {}) {
   const exact = db.find(set ?? name);
-  if (!exact) return { game: null, problem: `'${name}' is not a MAME Neo Geo romset name. Keep the zip's original file name.` };
+  if (!exact) return { game: null, problem: L(lang,
+    `'${name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. MAME 롬셋 zip만 지원합니다. zip 파일 이름을 바꾸지 마세요.`,
+    `'${name}' is not a MAME Neo Geo romset name. Only MAME romset zips are supported; keep the zip's original file name.`) };
   let problem = null;
   const cands = set != null ? [exact] : [exact, ...db.clonesOf(exact.name)];
   for (const g of cands) {
-    const why = db.unsupported(g);
+    const why = db.unsupported(g, lang);
     if (why != null) { problem ??= `${db.title(exact)}: ${why}`; continue; }
     const zips = new RomSetCls(await Promise.all(zipsFor(g, files, name).map(async (f) => ({
       name: f.name, data: new Uint8Array(await f.arrayBuffer()),
@@ -47,7 +53,8 @@ export async function pickGame(db, RomSetCls, files, name, set = null) {
     const missing = zips.missing(g);
     if (missing.length === 0) return { game: g, problem: null, romset: zips };
     if (g === exact || problem == null)
-      problem = `${g.name}: ROM files are missing (${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ' ...' : ''})`;
+      problem = `${g.name}: ` + L(lang, '롬 파일이 빠졌습니다', 'ROM files are missing') +
+        ` (${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ' ...' : ''})`;
   }
   return { game: null, problem, romset: null };
 }

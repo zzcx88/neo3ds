@@ -179,11 +179,50 @@ await t('preflight/ready-blocked-reasons', async () => {
     throw new Error('unknown zip reason: ' + JSON.stringify(by['notagame.zip']));
 }, true);
 
+// #79: blocked reasons follow the page language, so the KO page does not show
+// the worker's English sentence; the reason names the MAME-only input rule.
+await t('preflight/korean-unknown-romset-reason', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [fakeZip('notagame.zip')], { lang: 'ko' });
+  if (rows[0].ok || !/MAME/.test(rows[0].problem) || !/롬셋/.test(rows[0].problem))
+    throw new Error('expected a Korean MAME romset reason: ' + JSON.stringify(rows[0]));
+});
+
+await t('preflight/korean-unsupported-cart-reason', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [fakeZip('fatfury2.zip')], { lang: 'ko' });
+  if (rows[0].ok || !/보호 칩/.test(rows[0].problem))
+    throw new Error('expected a Korean unsupported-cart reason: ' + JSON.stringify(rows[0]));
+});
+
 await t('preflight/missing-bios-blocks-ready-game', async () => {
   const { db, RomSet, preflight, BIOS_MISSING } = await preflightFixture();
   const rows = await preflight(db, RomSet, [romFile('nam1975.zip')]);
   if (rows[0].ok !== false || rows[0].problem !== BIOS_MISSING) throw new Error(JSON.stringify(rows[0]));
 }, true);
+
+await t('preflight/korean-missing-bios-reason', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [romFile('nam1975.zip')], { lang: 'ko' });
+  if (rows[0].ok !== false || !/neogeo\.zip/.test(rows[0].problem) || !/바이오스/.test(rows[0].problem))
+    throw new Error('expected a Korean missing-BIOS reason: ' + JSON.stringify(rows[0]));
+}, true);
+
+await t('preflight/korean-missing-chips-reason', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [romFile('kof98h.zip')], { lang: 'ko' });
+  // Missing chips is a parent-zip / revision problem, not a "wrong format" one:
+  // keep the C# CiaBuilder wording and do not append the MAME-only sentence.
+  if (rows[0].ok !== false || !/롬 파일이 빠졌습니다/.test(rows[0].problem) || /MAME/.test(rows[0].problem))
+    throw new Error('expected a Korean missing-chips reason: ' + JSON.stringify(rows[0]));
+}, true);
+
+await t('preflight/korean-corrupt-zip-reason', async () => {
+  const { db, RomSet, preflight } = await preflightFixture();
+  const rows = await preflight(db, RomSet, [fakeZip('nam1975.zip')], { lang: 'ko' });
+  if (rows[0].ok || !/읽지 못했습니다/.test(rows[0].problem))
+    throw new Error('expected a Korean unreadable-zip reason: ' + JSON.stringify(rows[0]));
+});
 
 await t('preflight/clone-with-parent-zip-is-ready', async () => {
   const { db, RomSet, preflight } = await preflightFixture();
@@ -335,8 +374,9 @@ await t('batch/art-label-and-payload', async () => {
 await t('preflight/progress-callback-per-game-zip', async () => {
   const { db, RomSet, preflight } = await preflightFixture();
   const calls = [];
-  await preflight(db, RomSet, [fakeZip('a.zip'), fakeZip('b.zip'), fakeZip('neogeo.zip')], (done, total, name) =>
-    calls.push([done, total, name]));
+  await preflight(db, RomSet, [fakeZip('a.zip'), fakeZip('b.zip'), fakeZip('neogeo.zip')], {
+    onProgress: (done, total, name) => calls.push([done, total, name]),
+  });
   const want = [[0, 2, null], [1, 2, 'a.zip'], [2, 2, 'b.zip']];
   if (JSON.stringify(calls) !== JSON.stringify(want)) throw new Error(JSON.stringify(calls));
 });

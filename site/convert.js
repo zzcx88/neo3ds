@@ -18,10 +18,16 @@ import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('gateLog'), pipe = $('gatePipe');
-const t = (ko, en) => (document.documentElement.lang === 'en' ? en : ko);
+const isEn = () => document.documentElement.lang === 'en';
+const t = (ko, en) => (isEn() ? en : ko);
+// Worker reasons are fixed at preflight/run time, like log lines: send the
+// language the page is in so a KO page gets KO reasons (#79).
+const uiLang = () => (isEn() ? 'en' : 'ko');
 const log = (s) => { logEl.textContent += s + '\n'; logEl.scrollTop = logEl.scrollHeight; };
 
 let files = [];
+let rejectedFiles = 0; // non-zip drops ignored by ingest (#79): say so instead of nothing
+let folderDropped = false; // folder drops arrive with no File entries; explain instead of silence
 let worker = null, jobId = 0, running = false;
 let preflightCancel = null, preflightSeq = 0, preflighting = false;
 let batch = null, batchSource = null, batchFiles = null;
@@ -536,7 +542,7 @@ function runPreflight(fileList, { onRows, onError, onProgress } = {}) {
     else if (m.type === 'error') onError?.(m.message, 'error');
     else onError?.(m.type, 'unexpected');
   };
-  w.postMessage({ id, type: 'preflight', files: fileList });
+  w.postMessage({ id, type: 'preflight', files: fileList, lang: uiLang() });
   return stop;
 }
 
@@ -816,8 +822,11 @@ function renderBatch() {
 }
 
 /* ── File intake / run button state ────────────────────────────────────── */
-function ingest(list) {
-  files = [...list].filter((f) => f.name.toLowerCase().endsWith('.zip'));
+function ingest(list, { folder = false } = {}) {
+  const dropped = [...list];
+  files = dropped.filter((f) => f.name.toLowerCase().endsWith('.zip'));
+  rejectedFiles = dropped.length - files.length;
+  folderDropped = folder;
   if (!running) { resetOverall(); syncOutput(); }
   refreshRun();
 }
@@ -829,11 +838,22 @@ function refreshRun() {
   $('gateFile').textContent = files.length === 0
     ? t('zip을 올리세요', 'Drop zips')
     : `${files.length}개: ${names}`;
-  $('gateMeta').textContent = files.length > 0 && !hasBios && mode !== 'launcher'
-    ? t('neogeo.zip이 없습니다', 'neogeo.zip missing') : '';
+  const notes = [];
+  if (folderDropped) {
+    notes.push(t('폴더는 지원하지 않습니다. 폴더 안의 게임 zip을 올려 주세요.',
+      'Folders are not supported. Drop the game zips inside it.'));
+  }
+  if (rejectedFiles > 0) {
+    notes.push(t(`zip 파일만 지원합니다 (${rejectedFiles}개 제외)`,
+      `Only .zip files are supported (${rejectedFiles} ignored)`));
+  }
+  if (files.length > 0 && !hasBios && mode !== 'launcher') notes.push(t('neogeo.zip이 없습니다', 'neogeo.zip missing'));
+  $('gateMeta').textContent = notes.join(' · ');
 
   let disabled = running || artBusy;
-  if (mode !== 'launcher' && files.length === 0) disabled = true;
+  // Launcher CIA needs no game zip; every other mode needs at least one (a lone
+  // neogeo.zip used to reach the worker and fail with an English error, #79).
+  if (mode !== 'launcher' && gameZips().length === 0) disabled = true;
   if (mode !== 'launcher' && gameZips().length > 1) {
     if (preflighting || batchError || !batch || batchFiles !== files) disabled = true;
     else if (summary(batch).ready === 0) disabled = true;
@@ -854,13 +874,21 @@ syncOutput(); // initial state: no files -> everything hidden
 input.addEventListener('change', () => ingest(input.files));
 for (const ev of ['dragover', 'dragenter']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); });
 for (const ev of ['dragleave', 'drop']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); });
-drop.addEventListener('drop', (e) => ingest(e.dataTransfer.files));
+drop.addEventListener('drop', (e) => {
+  // A dropped folder has no File entries in Chrome/Firefox, so detect it from
+  // the item list; otherwise it would disappear without any message (#79).
+  const items = [...(e.dataTransfer.items ?? [])];
+  const folder = items.some((it) => it.webkitGetAsEntry?.()?.isDirectory);
+  ingest(e.dataTransfer.files, { folder });
+});
 
 // app.js owns the language switch; its click listener runs first, so re-render
-// the dynamic list/summary in the new language.
+// the dynamic list/summary in the new language. Preflight reasons are data
+// fixed when the list was built (like log lines), so they keep their language.
 document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => {
   if (wantsBatch()) renderBatch();
   renderOverall();
+  refreshRun();
   artEditor.refresh();
   renderArtMsg();
 }));
@@ -1098,7 +1126,7 @@ runBtn.addEventListener('click', () => {
     }
   };
   worker.postMessage({
-    id, files, region: $('gateRegion').value, system: $('gateSystem').value, mode,
+    id, files, region: $('gateRegion').value, system: $('gateSystem').value, mode, lang: uiLang(),
     art: artEligible() ? artEditor.getFiles() : null,
     // Automatic/blocked rows send art:null, i.e. exactly the old worker path.
     batch: isBatch ? readyIndexes.map((i) => ({ name: batch[i].name, art: artPayload(batch[i]) })) : null,

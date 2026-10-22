@@ -2,6 +2,7 @@
 // MAME romset records + support rules. JSON shape matches neogeo_games.json
 // (see scripts/gen_gamedb.py); RomOp decoding mirrors GameDb.Load.
 import { supported as protectionSupported } from './protection.js';
+import { L } from './lang.js';
 
 export const Region = Object.freeze({ Europe: 0, Japan: 1, Usa: 2 });
 
@@ -62,17 +63,20 @@ export class GameDb {
   title(g) { return titleOf(g); }
 
   // Why the engine can't run this cart yet, or null when it can (GameDb.cs:49).
-  unsupported(g) {
-    if (g.machine === 'irrmaze') return 'needs a trackball';
+  // `lang` picks the reason text (C# Lang.L) — KO strings mirror GameDb.cs.
+  unsupported(g, lang = 'en') {
+    if (g.machine === 'irrmaze') return L(lang, '트랙볼 전용 게임', 'needs a trackball');
     if (protectionSupported(g.cart)) return null;
     switch (g.cart) {
-      case 'rom_kof98': return 'MVS version with a protection chip (the home version kof98h converts if its ROMs are in the zip)';
-      case 'rom_fatfur2': return 'protection chip not supported';
+      case 'rom_kof98': return L(lang,
+        '보호 칩이 달린 MVS판입니다 (가정용 kof98h 롬이 있으면 그걸로 변환됩니다)',
+        'MVS version with a protection chip (the home version kof98h converts if its ROMs are in the zip)');
+      case 'rom_fatfur2': return L(lang, '보호 칩 미지원', 'protection chip not supported');
       case 'rom_vliner':
-      case 'cmc50_jockeygp': return 'gambling board';
+      case 'cmc50_jockeygp': return L(lang, '도박기판 게임', 'gambling board');
       default:
-        if (g.cart.startsWith('boot_')) return 'bootleg romsets are not supported';
-        return 'protection chip not supported';
+        if (g.cart.startsWith('boot_')) return L(lang, '해적판(부트렉) 롬셋 미지원', 'bootleg romsets are not supported');
+        return L(lang, '보호 칩 미지원', 'protection chip not supported');
     }
   }
 
