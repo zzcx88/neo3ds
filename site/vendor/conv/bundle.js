@@ -21,6 +21,21 @@ function checkName(name) {
   return name;
 }
 
+// Keeps ZIP entry names unique when two results share a name (e.g. the same
+// zip dropped twice, or two folders with the same file). `used` is owned by the
+// caller: the first call adds `name`, later calls add " (2)", " (3)"… before the
+// last extension. Pure so conv.test.mjs can pin the naming rule.
+export function uniqueEntryName(name, used) {
+  if (!used.has(name)) { used.add(name); return name; }
+  const m = /^(.*?)(\.[^./]*)?$/.exec(name);
+  const base = m[1];
+  const ext = m[2] ?? '';
+  for (let n = 2; ; n++) {
+    const next = `${base} (${n})${ext}`;
+    if (!used.has(next)) { used.add(next); return next; }
+  }
+}
+
 // entries: [{ name: string, bytes: Uint8Array }] → one ZIP (Uint8Array).
 // Rejects an empty list, duplicate names, unsafe names and non-byte payloads.
 export function zipResults(entries) {

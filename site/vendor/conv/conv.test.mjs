@@ -396,6 +396,25 @@ await t('bundle/rejects-empty-duplicate-unsafe', async () => {
     throw new Error('non-byte payload accepted');
 });
 
+// Duplicate result names (same zip dropped twice) must still bundle: the page
+// asks for " (2)"-style unique entry names before zipping.
+await t('bundle/unique-entry-names', async () => {
+  const { uniqueEntryName } = await import('./bundle.js');
+  const used = new Set();
+  const seq = [
+    ['a.cia', 'a.cia'],
+    ['a.cia', 'a (2).cia'],
+    ['a.cia', 'a (3).cia'],
+    ['noext', 'noext'],
+    ['noext', 'noext (2)'],
+    ['dir/x.neo3ds', 'dir/x.neo3ds'],
+  ];
+  for (const [input, want] of seq) {
+    const got = uniqueEntryName(input, used);
+    if (got !== want) throw new Error(`${input} -> ${got}, want ${want}`);
+  }
+});
+
 // Producer contract: every frac the worker posts must already lie inside its
 // stage window, otherwise stageFraction clamps it and the overall bar jumps.
 // (Regression: the launcher path used art 0.1 / cia 0.5, clamped to 70%/85%.)

@@ -14,6 +14,7 @@ import {
 } from './vendor/conv/art.js';
 import { zipResults } from './vendor/conv/bundle.js';
 import { stageFraction, overallFraction, percentText } from './vendor/conv/progress.js';
+import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('gateLog'), pipe = $('gatePipe');
@@ -26,6 +27,7 @@ let preflightCancel = null, preflightSeq = 0, preflighting = false;
 let batch = null, batchSource = null, batchFiles = null;
 let batchStarted = false, batchError = '', readyIndexes = [];
 let artEditor = null, artCancel = null;
+let runInputs = null; // #81: {files, mode} the current run started with
 let artBusy = false; // a picture is being decoded/validated before it can be applied
 let artLoading = false, artLoadingFiles = null, artTitle = null, artTitleFiles = null, artProblem = null;
 let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
@@ -344,6 +346,11 @@ function startArtTitle() {
   refreshArtLock();
   const myFiles = files;
   artCancel = runPreflight(myFiles, {
+    onProgress(done, total) {
+      if (!artLoading) return;
+      artMsgEl.textContent = t(`게임 이름 확인 중… (${done}/${total})`, `Checking the game title… (${done}/${total})`);
+      artMsgEl.classList.remove('hidden');
+    },
     onRows(rows) {
       artLoading = false;
       artLoadingFiles = null;
@@ -751,11 +758,12 @@ async function downloadBatchZip() {
   paintBatchAll();
   try {
     const entries = [];
+    const used = new Set();
     for (const row of rows) {
       const res = await fetch(row.result.url);
       if (seq !== bundleSeq) return; // new run / file change revoked the blobs
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      entries.push({ name: row.result.name, bytes: new Uint8Array(await res.arrayBuffer()) });
+      entries.push({ name: uniqueEntryName(row.result.name, used), bytes: new Uint8Array(await res.arrayBuffer()) });
       if (seq !== bundleSeq) return;
     }
     const bin = zipResults(entries);
@@ -991,6 +999,7 @@ runBtn.addEventListener('click', () => {
 
   focusProgress(); // #81: show the progress section without hunting for it
   running = true;
+  runInputs = { files, mode };
   runBtn.disabled = true;
   cancelBtn.classList.remove('hidden');
   revokeAllUrls(); // #74: a new run drops every previous per-game download URL
@@ -1127,6 +1136,10 @@ function finish() {
   running = false;
   cancelBtn.classList.add('hidden');
   if (worker) { worker.terminate(); worker = null; }
+  // A run that finished after its inputs changed must not leave its 100% bar
+  // behind for the new file/mode selection (#81 review).
+  if (runInputs && (files !== runInputs.files || currentMode() !== runInputs.mode)) resetOverall();
+  runInputs = null;
   syncOutput(); // refresh the list, or start a preflight for files changed mid-run
   refreshRun();
 }
