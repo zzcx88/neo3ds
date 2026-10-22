@@ -4,6 +4,7 @@
 // #75: a single CIA run previews the auto icon/banner and allows image overrides.
 // #76: in the multi-game CIA list, clicking a row opens that game's art editor;
 // each row keeps its own icon/banner Files (batch.js) for its own CIA.
+// #81: determinate recognition/overall bars, progress focus, one ZIP for all.
 import {
   createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary,
   setArt, artLabel, artPayload, STATUS,
@@ -11,6 +12,8 @@ import {
 import {
   iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
 } from './vendor/conv/art.js';
+import { zipResults } from './vendor/conv/bundle.js';
+import { stageFraction, overallFraction, percentText } from './vendor/conv/progress.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('gateLog'), pipe = $('gatePipe');
@@ -27,6 +30,9 @@ let artBusy = false; // a picture is being decoded/validated before it can be ap
 let artLoading = false, artLoadingFiles = null, artTitle = null, artTitleFiles = null, artProblem = null;
 let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
+let preflightProgress = null; // #81 {done,total} while the batch preflight runs
+let overallView = null; // #81 {fraction, kind, index, ready, end} shown in #progress
+let bundleBusy = false, bundleUrl = null, bundleSeq = 0; // #81 "download all" ZIP
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
 const batchPanel = $('gateBatchList'), batchRowsEl = $('gateBatchRows');
@@ -34,6 +40,12 @@ const batchCount = $('gateBatchCount'), batchMsg = $('gateBatchMsg'), batchSumma
 const artPanel = $('gateArt'), artTitleEl = $('gateArtTitle'), artMsgEl = $('gateArtMsg');
 const artBack = $('gateArtBack'), artLock = $('gateArtLock');
 const rowEls = new Map(); // batch index -> { li, state, detail, link, art, index }
+const recogBox = $('gateBatchProg'), recogBar = $('gateBatchProgBar');
+const recogFill = $('gateBatchProgFill'), recogText = $('gateBatchProgText');
+const overallBox = $('gateOverall'), overallBar = $('gateOverallBar');
+const overallFill = $('gateOverallFill'), overallText = $('gateOverallText');
+const dlAllBtn = $('gateBatchAll');
+const progressSection = $('progress'), progressH2 = $('gateProgH2');
 
 function currentMode() {
   return document.querySelector('input[name="gateMode"]:checked')?.value ?? 'cia';
@@ -61,6 +73,19 @@ function revokeUrl(url) {
   if (url && urls.delete(url)) URL.revokeObjectURL(url);
 }
 
+// #81: the ZIP from "download all" is also an ObjectURL in `urls`, so a new
+// run / file change revokes it. A build still running when that happens must
+// not publish its URL afterwards, hence the generation counter.
+function revokeBundleUrl() {
+  if (bundleUrl) { revokeUrl(bundleUrl); bundleUrl = null; }
+}
+
+function cancelBundle() {
+  bundleSeq++;
+  bundleBusy = false;
+  revokeBundleUrl();
+}
+
 function clearSingleLink() {
   const dl = $('gateDl');
   if (dl.dataset.url) { revokeUrl(dl.dataset.url); delete dl.dataset.url; }
@@ -69,9 +94,11 @@ function clearSingleLink() {
 }
 
 function revokeAllUrls() {
+  cancelBundle();
   for (const url of urls) URL.revokeObjectURL(url);
   urls.clear();
   clearSingleLink();
+  paintBatchAll();
 }
 
 /* ── #75 single-game art preview / override ───────────────────────────────
@@ -456,10 +483,27 @@ function syncArt() {
 artEditor = renderArtEditor(artPanel, { title: '', art: null, onChange: null, locked: true, onBusy: handleArtBusy });
 artBack.addEventListener('click', () => { if (!artBusy) closeRowArt({ focus: true }); });
 
+/* ── #81 recognition bar (done/total game zips) ────────────────────────── */
+function paintPreflightProgress() {
+  const total = Math.max(0, preflightProgress?.total ?? 0);
+  const done = Math.max(0, Math.min(preflightProgress?.done ?? 0, total));
+  const show = preflighting && total > 0;
+  recogBox.classList.toggle('hidden', !show);
+  const pct = show && total ? Math.round((done / total) * 100) : 0;
+  recogFill.style.width = `${pct}%`;
+  recogBar.setAttribute('aria-valuemax', String(show ? total : 0));
+  recogBar.setAttribute('aria-valuenow', String(show ? done : 0));
+  const label = show ? t(`인식 중 ${done}/${total}`, `Checking ${done}/${total}`) : '';
+  if (show) recogText.textContent = label;
+  recogBar.setAttribute('aria-valuetext', label);
+}
+
 /* ── Preflight worker protocol (batch list #74 + single title #75) ─────── */
 // One helper for both callers: hand it files, get rows or a typed error back.
 // The returned function cancels the request (worker terminated, no callback).
-function runPreflight(fileList, { onRows, onError } = {}) {
+// #81: interleaved preflight-progress messages feed onProgress without ending
+// the request (the final preflight/error payload still stops it).
+function runPreflight(fileList, { onRows, onError, onProgress } = {}) {
   const id = ++preflightSeq;
   const w = new Worker('vendor/conv/worker.js', { type: 'module' });
   let done = false;
@@ -476,6 +520,10 @@ function runPreflight(fileList, { onRows, onError } = {}) {
   w.onmessage = (e) => {
     const m = e.data;
     if (done || m.id !== id) return;
+    if (m.type === 'preflight-progress') {
+      onProgress?.(m.done, m.total, m.name);
+      return;
+    }
     stop();
     if (m.type === 'preflight') onRows?.(Array.isArray(m.rows) ? m.rows : []);
     else if (m.type === 'error') onError?.(m.message, 'error');
@@ -488,9 +536,11 @@ function runPreflight(fileList, { onRows, onError } = {}) {
 function stopPreflight() {
   if (preflightCancel) { preflightCancel(); preflightCancel = null; }
   preflighting = false;
+  preflightProgress = null;
 }
 
 function dropBatchModel() {
+  cancelBundle();
   if (batch) for (const row of batch) if (row.result?.url) revokeUrl(row.result.url);
   batch = null; batchSource = null; batchFiles = null;
   batchStarted = false; batchError = ''; readyIndexes = [];
@@ -501,11 +551,17 @@ function startPreflight() {
   stopPreflight();
   dropBatchModel();
   preflighting = true;
+  preflightProgress = { done: 0, total: gameZips().length };
   renderBatch();
   refreshRun();
   preflightCancel = runPreflight(files, {
+    onProgress(done, total) {
+      preflightProgress = { done, total };
+      paintBatchHeader();
+    },
     onRows(rows) {
       preflighting = false;
+      preflightProgress = null;
       batchSource = rows;
       batch = createBatch(rows);
       batchFiles = files;
@@ -514,6 +570,7 @@ function startPreflight() {
     },
     onError(message, kind) {
       preflighting = false;
+      preflightProgress = null;
       batchError = kind === 'worker'
         ? t(`목록을 읽지 못했습니다 (${message})`, `Could not read the game list (${message})`)
         : kind === 'error'
@@ -669,7 +726,64 @@ function paintBatchHeader() {
   const showSummary = !!batch && batchStarted;
   batchSummary.classList.toggle('hidden', !showSummary);
   if (showSummary) batchSummary.textContent = summaryText(s);
+  paintPreflightProgress();
+  paintBatchAll();
 }
+
+/* ── #81 one ZIP with every completed result (per-row links stay) ───────── */
+function paintBatchAll() {
+  const n = batch ? summary(batch).done : 0;
+  const show = wantsBatch() && currentMode() !== 'launcher' && n > 0;
+  dlAllBtn.classList.toggle('hidden', !show);
+  dlAllBtn.disabled = show && bundleBusy;
+  if (!show) { dlAllBtn.textContent = ''; return; }
+  dlAllBtn.textContent = bundleBusy
+    ? t('ZIP 만드는 중…', 'Building ZIP…')
+    : t(`전체 다운로드 (${n})`, `Download all (${n})`);
+}
+
+async function downloadBatchZip() {
+  if (bundleBusy || !wantsBatch() || currentMode() === 'launcher') return;
+  const rows = (batch ?? []).filter((row) => row.status === STATUS.DONE && row.result?.url);
+  if (rows.length === 0) return;
+  const seq = ++bundleSeq;
+  bundleBusy = true;
+  paintBatchAll();
+  try {
+    const entries = [];
+    for (const row of rows) {
+      const res = await fetch(row.result.url);
+      if (seq !== bundleSeq) return; // new run / file change revoked the blobs
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      entries.push({ name: row.result.name, bytes: new Uint8Array(await res.arrayBuffer()) });
+      if (seq !== bundleSeq) return;
+    }
+    const bin = zipResults(entries);
+    if (seq !== bundleSeq) return;
+    revokeBundleUrl(); // a previous click's ZIP is superseded
+    const url = makeUrl(bin);
+    bundleUrl = url;
+    const name = `neo3ds-batch-${rows.length}games.zip`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.append(a);
+    a.click();
+    a.remove();
+    log(t(`[ZIP] ${rows.length}개 결과를 ${name}로 묶었습니다`, `[ZIP] Bundled ${rows.length} results into ${name}`));
+  } catch (err) {
+    if (seq === bundleSeq) log(t(`[ZIP 실패] ${err?.message ?? err}`, `[ZIP failed] ${err?.message ?? err}`));
+  } finally {
+    if (seq === bundleSeq) {
+      bundleBusy = false;
+      paintBatchAll();
+    }
+  }
+}
+
+dlAllBtn.addEventListener('click', () => { void downloadBatchZip(); });
 
 function updateRow(index) {
   if (!batch) return;
@@ -682,6 +796,7 @@ function renderBatch() {
   if (!wantsBatch()) {
     rowEls.clear();
     batchRowsEl.replaceChildren();
+    paintBatchAll();
     return;
   }
   if (selectedIndex >= 0 && !batch?.[selectedIndex]?.ok) selectedIndex = -1;
@@ -695,7 +810,7 @@ function renderBatch() {
 /* ── File intake / run button state ────────────────────────────────────── */
 function ingest(list) {
   files = [...list].filter((f) => f.name.toLowerCase().endsWith('.zip'));
-  if (!running) syncOutput();
+  if (!running) { resetOverall(); syncOutput(); }
   refreshRun();
 }
 
@@ -719,7 +834,7 @@ function refreshRun() {
 }
 
 document.querySelectorAll('input[name="gateMode"]').forEach((r) => r.addEventListener('change', () => {
-  if (!running) syncOutput();
+  if (!running) { resetOverall(); syncOutput(); }
   refreshRun();
 }));
 { // Deep-link: convert.html?mode=pack|launcher preselects the output (?mode=cia = default).
@@ -737,6 +852,7 @@ drop.addEventListener('drop', (e) => ingest(e.dataTransfer.files));
 // the dynamic list/summary in the new language.
 document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => {
   if (wantsBatch()) renderBatch();
+  renderOverall();
   artEditor.refresh();
   renderArtMsg();
 }));
@@ -763,6 +879,7 @@ function resetPipe() {
     delete vals[s];
   }
   delete vals.romfsLogged; delete vals.artLogged; delete vals.ciaLogged;
+  delete vals.loadLogged;
 }
 
 function markRunningRowsFailed(message) {
@@ -773,6 +890,98 @@ function markRunningRowsFailed(message) {
   renderBatch();
 }
 
+/* ── #81 overall progress bar + progress focus ────────────────────────── */
+// single: stage progress of this game. batch: completed games + the current
+// game's stage progress. Batch stays ≤99% until batch-done, and a cancelled /
+// errored run keeps the value it had (never claims 100%).
+function renderOverall() {
+  if (!overallView) return;
+  const f = Math.max(0, Math.min(1, Number(overallView.fraction) || 0));
+  const pct = percentText(f);
+  let label;
+  if (overallView.end === 'cancel') label = t(`취소됨 · ${pct}`, `Cancelled · ${pct}`);
+  else if (overallView.end === 'error') label = t(`중단됨 · ${pct}`, `Stopped · ${pct}`);
+  else if (overallView.kind === 'batch') {
+    const total = Math.max(1, overallView.ready);
+    const cur = Math.min(total, Math.max(1, (overallView.index ?? 0) + 1));
+    label = t(`게임 ${cur}/${total} · ${pct}`, `Game ${cur}/${total} · ${pct}`);
+  } else {
+    label = overallView.end === 'done' ? t(`완료 ${pct}`, `Done ${pct}`) : t(`변환 중 ${pct}`, `Converting ${pct}`);
+  }
+  const percent = Math.round(f * 100);
+  overallText.textContent = label;
+  overallBar.setAttribute('aria-valuenow', String(percent));
+  overallBar.setAttribute('aria-valuetext', label);
+  overallFill.style.width = `${percent}%`;
+}
+
+function resetOverall() {
+  overallView = null;
+  overallBox.classList.add('hidden');
+  overallFill.style.width = '0%';
+  overallBar.setAttribute('aria-valuenow', '0');
+  overallBar.setAttribute('aria-valuetext', '');
+}
+
+function startOverall(isBatch, ready) {
+  overallView = {
+    fraction: 0, kind: isBatch ? 'batch' : 'single', index: 0, ready: Math.max(1, ready), end: null,
+  };
+  overallBox.classList.remove('hidden');
+  renderOverall();
+}
+
+function updateOverallProgress(m) {
+  if (!overallView) return;
+  if (overallView.kind === 'batch') {
+    if (typeof m.batch === 'number') overallView.index = m.batch;
+    overallView.fraction = overallFraction({
+      ready: overallView.ready, index: overallView.index, step: m.step, frac: m.frac,
+    });
+  } else {
+    overallView.fraction = stageFraction(m.step, m.frac);
+  }
+  renderOverall();
+}
+
+// One batch row ended (done or failed): count that game as complete.
+function finishOverallRow(index) {
+  if (!overallView || overallView.kind !== 'batch') return;
+  if (typeof index === 'number') overallView.index = index;
+  overallView.fraction = overallFraction({
+    ready: overallView.ready, index: overallView.index, step: 'cia', frac: 1,
+  });
+  renderOverall();
+}
+
+function completeOverall() {
+  if (!overallView) return;
+  overallView.fraction = 1;
+  if (overallView.kind === 'batch') {
+    overallView.index = overallView.ready - 1;
+    overallView.end = null;
+  } else {
+    overallView.end = 'done';
+  }
+  renderOverall();
+}
+
+function endOverall(kind) {
+  if (!overallView) return;
+  overallView.end = kind;
+  renderOverall();
+}
+
+// #81: the run button scrolls to the progress section and puts focus on its
+// heading, so keyboard/screen-reader users land on the live progress. The
+// conversion never moves focus again.
+function focusProgress() {
+  if (!progressSection || !progressH2) return;
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
+  progressSection.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  progressH2.focus({ preventScroll: true });
+}
+
 /* ── Run ───────────────────────────────────────────────────────────────── */
 runBtn.addEventListener('click', () => {
   const mode = currentMode();
@@ -780,6 +989,7 @@ runBtn.addEventListener('click', () => {
   const isBatch = wantsBatch();
   if (isBatch && (!batch || batchFiles !== files || batchError || summary(batch).ready === 0)) return;
 
+  focusProgress(); // #81: show the progress section without hunting for it
   running = true;
   runBtn.disabled = true;
   cancelBtn.classList.remove('hidden');
@@ -799,12 +1009,14 @@ runBtn.addEventListener('click', () => {
     renderBatch();
     log(t(`배치 ${readyIndexes.length}종 시작`, `Batch start: ${readyIndexes.length} games`));
   }
+  startOverall(isBatch, isBatch ? readyIndexes.length : 1);
   refreshArtLock(); // editing is only possible before the run starts
 
   worker = new Worker('vendor/conv/worker.js', { type: 'module' });
   const id = ++jobId;
   worker.onerror = (e) => {
     markRunningRowsFailed(t('워커 오류', 'Worker error'));
+    endOverall('error');
     finish();
     log(t(`실패: 워커 오류 (${e.message || 'load failed'})`, `Failed: worker error (${e.message || 'load failed'})`));
   };
@@ -818,10 +1030,11 @@ runBtn.addEventListener('click', () => {
         if (i < idx) setStep(s, 'done');
         else if (i === idx) setStep(s, 'now', m.detail);
       });
-      if (m.step === 'load' && m.frac === 0) log(t('[1/4] 롬셋 확인', '[1/4] Checking romset'));
+      if (m.step === 'load' && !vals.loadLogged) { vals.loadLogged = true; log(t('[1/4] 롬셋 확인', '[1/4] Checking romset')); }
       if (m.step === 'romfs' && !vals.romfsLogged) { vals.romfsLogged = true; log(t('[2/4] 그래픽 압축', '[2/4] Compressing graphics')); }
       if (m.step === 'art' && !vals.artLogged) { vals.artLogged = true; log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
       if (m.step === 'cia' && !vals.ciaLogged) { vals.ciaLogged = true; log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
+      updateOverallProgress(m);
       if (isBatch && typeof m.batch === 'number') {
         const rowIndex = readyIndexes[m.batch];
         if (rowIndex != null) {
@@ -831,6 +1044,7 @@ runBtn.addEventListener('click', () => {
         }
       }
     } else if (m.type === 'done') {
+      completeOverall();
       finish();
       for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
       showDownload(m.cia, downloadName(m.stats));
@@ -847,6 +1061,7 @@ runBtn.addEventListener('click', () => {
       const name = downloadName({ ...m.stats, mode });
       markDone(batch, rowIndex, { url: makeUrl(m.bin), name, mb: m.stats.ciaMB });
       updateRow(rowIndex);
+      finishOverallRow(typeof m.batch === 'number' ? m.batch : rowIndex);
       paintBatchHeader();
       log(t(`[완료] ${name} (${m.stats.ciaMB} MB)`, `[Done] ${name} (${m.stats.ciaMB} MB)`));
     } else if (m.type === 'batch-error') {
@@ -855,10 +1070,12 @@ runBtn.addEventListener('click', () => {
       if (rowIndex == null) return;
       markFailed(batch, rowIndex, m.message);
       updateRow(rowIndex);
+      finishOverallRow(typeof m.index === 'number' ? m.index : rowIndex);
       paintBatchHeader();
       log(t(`[실패] ${m.name}: ${m.message}`, `[Failed] ${m.name}: ${m.message}`));
     } else if (m.type === 'batch-done') {
       if (!isBatch) return;
+      completeOverall();
       finish();
       for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
       renderBatch();
@@ -866,6 +1083,7 @@ runBtn.addEventListener('click', () => {
         `Batch finished: ${m.count} games — ${m.ok} done · ${m.failed} failed (${m.secs}s)`));
     } else if (m.type === 'error') {
       markRunningRowsFailed(m.message);
+      endOverall('error');
       finish();
       log(t(`실패: ${m.message}`, `Failed: ${m.message}`));
     }
@@ -921,6 +1139,7 @@ cancelBtn.addEventListener('click', () => {
     }
     renderBatch();
   }
+  endOverall('cancel');
   finish();
   log(t('취소됨', 'Cancelled'));
 });

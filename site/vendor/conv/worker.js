@@ -6,7 +6,8 @@
 // Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia, stats}
 //   | {id, type:'batch-one', batch, bin, stats} | {id, type:'batch-error', index, name, message}
 //   | {id, type:'batch-done', count, ok, failed, secs}
-//   | {id, type:'preflight', rows} | {id, type:'error', message}
+//   | {id, type:'preflight-progress', done, total, name} | {id, type:'preflight', rows}
+//   | {id, type:'error', message}
 // Cancellation: the page calls worker.terminate() directly.
 import { GameDb, Region } from './gamedb.js';
 import { RomSet, BiosSet } from './zipset.js';
@@ -29,7 +30,12 @@ self.onmessage = async (e) => {
   try {
     const db = await GameDb.load('../neogeo_games.json');
     if (msg.type === 'preflight') {
-      post({ type: 'preflight', rows: await preflight(db, RomSet, files) });
+      // #81: the recognition bar follows the same zip-by-zip loop as the judgment.
+      post({
+        type: 'preflight',
+        rows: await preflight(db, RomSet, files, (done, total, name) =>
+          post({ type: 'preflight-progress', done, total, name })),
+      });
       return;
     }
     const t0 = performance.now();
@@ -121,7 +127,9 @@ async function buildBatch(db, files, zips, opts, post, t0) {
   // reported and the loop continues (#74). #76 can put art on each entry.
   let ok = 0, failed = 0;
   for (let i = 0; i < zips.length; i++) {
-    post({ type: 'progress', step: 'load', frac: i / zips.length, detail: `game ${i + 1}/${zips.length}: ${zips[i].name}`, batch: i });
+    // #81: frac is per game (the page adds the completed-game count); it must
+    // not be i/zips.length or the overall bar would count this game twice.
+    post({ type: 'progress', step: 'load', frac: 0.05, detail: `game ${i + 1}/${zips.length}: ${zips[i].name}`, batch: i });
     try {
       const one = await buildOneCapture(db, files, zips[i].name, { ...opts, art: zips[i].art ?? null }, (m) => post({ ...m, batch: i }));
       post({ type: 'batch-one', batch: i, bin: one.bin, stats: one.stats });
@@ -148,7 +156,8 @@ async function decodeArt(file) {
 
 async function buildOneCapture(db, files, forceZip, opts, post) {
   const { region, system, mode, art = null } = opts;
-  post({ type: 'progress', step: 'load', frac: 0, detail: 'reading zips' });
+  // #81: fracs are normalized to this game's 0..1 timeline (see progress.js).
+  post({ type: 'progress', step: 'load', frac: 0.05, detail: 'reading zips' });
   const gameFile = forceZip
     ? files.find((f) => f.name.toLowerCase() === forceZip.toLowerCase())
     : files.find((f) => f.name.toLowerCase() !== 'neogeo.zip');
@@ -161,12 +170,12 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   const tid = titleId(zipName), uid = uniqueId(zipName);
 
   const Z = await loadZstd('../zstd.js');
-  post({ type: 'progress', step: 'romfs', frac: 0.05, detail: `romset ${game.name}` });
+  post({ type: 'progress', step: 'romfs', frac: 0.1, detail: `romset ${game.name}` });
   const { files: gameFiles, stats } = await writeGameFiles(game, romset, await BiosSet.open(biosFile), Z, {
     region: Region[region] ?? Region.Europe,
     startMvs: system === 'aes' ? false : system === 'mvs' ? true : null,
-    log: (s) => post({ type: 'progress', step: 'romfs', frac: 0.05, detail: s.trim() }),
-    onProgress: (f) => post({ type: 'progress', step: 'romfs', frac: 0.05 + f * 0.55, detail: `compressing ${(f * 100).toFixed(0)}%` }),
+    log: (s) => post({ type: 'progress', step: 'romfs', frac: 0.1, detail: s.trim() }),
+    onProgress: (f) => post({ type: 'progress', step: 'romfs', frac: 0.1 + f * 0.55, detail: `compressing ${(f * 100).toFixed(0)}%` }),
   });
   const enc = new TextEncoder();
   const ver = await converterVersion();
@@ -185,7 +194,7 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   for (const [n, d] of gameFiles) romfs.set('game/' + n, d);
   romfs.set('meta.txt', enc.encode(`title: ${title}\nrom: ${zipName}\nset: ${game.name}\ntitle id: ${tid}\nconverter: ${ver}.0-web\n`));
   gameFiles.clear();
-  post({ type: 'progress', step: 'art', frac: 0.62, detail: 'icon + banner' });
+  post({ type: 'progress', step: 'art', frac: 0.7, detail: 'icon + banner' });
 
   const iconImage = await decodeArt(art?.icon);
   const bannerImage = await decodeArt(art?.banner);
@@ -202,7 +211,7 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   run(bt, ['makebanner', '-i', '/work/banner.png', '-a', '/work/banner.wav', '-o', '/work/banner.bnr']);
   run(bt, ['makesmdh', '-s', smdh(title, 64), '-l', smdh(title + ' (neo3ds)', 128),
     '-p', smdh(game.maker ?? 'SNK', 64), '-i', '/work/icon.png', '-o', '/work/icon.icn']);
-  post({ type: 'progress', step: 'cia', frac: 0.7, detail: `Title ID ${tid}` });
+  post({ type: 'progress', step: 'cia', frac: 0.85, detail: `Title ID ${tid}` });
 
   const cia = await runMakerom(await initMakerom(), bt, romfs, productCode(zipName), uid);
   romfs.clear();
