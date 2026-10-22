@@ -98,7 +98,7 @@ async function runMakerom(mr, bt, romfs, product, uid) {
 
 async function buildLauncher(post, t0) {
   // CiaBuilder.cs:262 — no game in romfs, shows .neo3ds list from SD.
-  post({ type: 'progress', step: 'art', frac: 0.1, detail: 'launcher icon + banner' });
+  post({ type: 'progress', step: 'art', frac: 0.75, detail: 'launcher icon + banner' });
   const [icon, banner] = await Promise.all([iconPng('neo3ds'), bannerPng('neo3ds')]);
   const bt = await initBannertool();
   await prepArt(bt, icon, banner);
@@ -106,7 +106,7 @@ async function buildLauncher(post, t0) {
   run(bt, ['makebanner', '-i', '/work/banner.png', '-a', '/work/banner.wav', '-o', '/work/banner.bnr']);
   run(bt, ['makesmdh', '-s', smdh('neo3ds', 64), '-l', smdh('neo3ds - Neo Geo games on the SD card', 128),
     '-p', smdh('neo3ds', 64), '-i', '/work/icon.png', '-o', '/work/icon.icn']);
-  post({ type: 'progress', step: 'cia', frac: 0.5, detail: 'Title ID 000400000BFF0000' });
+  post({ type: 'progress', step: 'cia', frac: 0.9, detail: 'Title ID 000400000BFF0000' });
   const enc = new TextEncoder();
   const ver = await converterVersion();
   const cia = await runMakerom(await initMakerom(), bt,

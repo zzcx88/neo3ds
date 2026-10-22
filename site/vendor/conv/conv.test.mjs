@@ -396,4 +396,22 @@ await t('bundle/rejects-empty-duplicate-unsafe', async () => {
     throw new Error('non-byte payload accepted');
 });
 
+// Producer contract: every frac the worker posts must already lie inside its
+// stage window, otherwise stageFraction clamps it and the overall bar jumps.
+// (Regression: the launcher path used art 0.1 / cia 0.5, clamped to 70%/85%.)
+await t('progress/producer-fracs-stay-in-stage', async () => {
+  const { STAGES, stageFraction } = await import('./progress.js');
+  const producers = [
+    ['load', 0], ['load', 0.05],
+    ['romfs', 0.1], ['romfs', 0.65],
+    ['art', 0.7], ['art', 0.75],
+    ['cia', 0.85], ['cia', 0.9], ['cia', 0.92],
+  ];
+  for (const [step, frac] of producers) {
+    const [lo, hi] = STAGES[step];
+    if (frac < lo || frac > hi) throw new Error(`${step} ${frac} outside [${lo},${hi}]`);
+    if (stageFraction(step, frac) !== frac) throw new Error(`${step} ${frac} was clamped`);
+  }
+});
+
 process.exit(fail ? 1 : 0);

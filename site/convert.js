@@ -733,7 +733,7 @@ function paintBatchHeader() {
 /* ── #81 one ZIP with every completed result (per-row links stay) ───────── */
 function paintBatchAll() {
   const n = batch ? summary(batch).done : 0;
-  const show = wantsBatch() && currentMode() !== 'launcher' && n > 0;
+  const show = wantsBatch() && n > 0;
   dlAllBtn.classList.toggle('hidden', !show);
   dlAllBtn.disabled = show && bundleBusy;
   if (!show) { dlAllBtn.textContent = ''; return; }
@@ -743,7 +743,7 @@ function paintBatchAll() {
 }
 
 async function downloadBatchZip() {
-  if (bundleBusy || !wantsBatch() || currentMode() === 'launcher') return;
+  if (bundleBusy || !wantsBatch()) return;
   const rows = (batch ?? []).filter((row) => row.status === STATUS.DONE && row.result?.url);
   if (rows.length === 0) return;
   const seq = ++bundleSeq;
