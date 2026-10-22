@@ -2,6 +2,7 @@
 // HOME icon 48x48 + banner 256x128. Browser: Canvas 2D. Node (test): pure-JS
 // PNG writer (no fonts — geometry checks only; pixels are eyeball-compared).
 // Per #31 decision 10: pixel-parity waived, spec (48x48, 256x128 PNG) + eyeball only.
+// #75: a user picture goes through the same cover crop as C# Art.Fit.
 import { crc32Bytes } from './job.js';
 
 export const ICON_SIZE = 48, BANNER_W = 256, BANNER_H = 128;
@@ -114,20 +115,60 @@ function canCanvas() {
   return typeof document !== 'undefined' || typeof OffscreenCanvas !== 'undefined';
 }
 
-export async function iconPng(title) {
+function makeCanvas(w, h) {
+  if (typeof document !== 'undefined') {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    return cv;
+  }
+  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
+  return null;
+}
+
+// C# Art.Fit: scale = max(w/srcW, h/srcH), round the scaled size, then centre
+// the overflow (dx/dy are negative where the picture is cropped).
+export function coverRect(srcW, srcH, dstW, dstH) {
+  if (!(srcW > 0 && srcH > 0 && dstW > 0 && dstH > 0))
+    throw new RangeError('coverRect: source and target sizes must be positive');
+  const scale = Math.max(dstW / srcW, dstH / srcH);
+  const dw = Math.round(srcW * scale), dh = Math.round(srcH * scale);
+  return { dx: Math.round((dstW - dw) / 2), dy: Math.round((dstH - dh) / 2), dw, dh };
+}
+
+// Browser-only: draw a decoded picture (ImageBitmap/canvas) cover-cropped to
+// w x h and return a single-IDAT PNG. Throws a clear error off-canvas.
+export async function fitPng(source, w, h) {
+  const cv = makeCanvas(w, h);
+  if (!cv) throw new Error('Custom icon/banner needs a browser canvas (browser-only).');
+  const cx = cv.getContext('2d');
+  if (!cx) throw new Error('Custom icon/banner needs a 2D canvas (browser-only).');
+  const srcW = source?.width, srcH = source?.height;
+  if (!(srcW > 0 && srcH > 0)) throw new Error('Cannot decode image: the picture has no pixels.');
+  const { dx, dy, dw, dh } = coverRect(srcW, srcH, w, h);
+  cx.imageSmoothingEnabled = true;
+  cx.imageSmoothingQuality = 'high';
+  try {
+    cx.drawImage(source, dx, dy, dw, dh);
+  } catch (err) {
+    throw new Error(`Cannot draw image: ${err?.message ?? err}`);
+  }
+  return canvasToBytes(cv);
+}
+
+export async function iconPng(title, image = null) {
+  if (image) return fitPng(image, ICON_SIZE, ICON_SIZE);
   if (canCanvas()) return canvasIcon(title);
   return encodePng(ICON_SIZE, ICON_SIZE, gradient(ICON_SIZE, ICON_SIZE, 2));
 }
 
-export async function bannerPng(title) {
+export async function bannerPng(title, image = null) {
+  if (image) return fitPng(image, BANNER_W, BANNER_H);
   if (canCanvas()) return canvasBanner(title);
   return encodePng(BANNER_W, BANNER_H, gradient(BANNER_W, BANNER_H, 4));
 }
 
 function baseCanvas(w, h, border) {
-  const cv = typeof document !== 'undefined'
-    ? document.createElement('canvas')
-    : new OffscreenCanvas(w, h);
+  const cv = makeCanvas(w, h);
   cv.width = w; cv.height = h;
   const cx = cv.getContext('2d');
   const grad = cx.createLinearGradient(0, 0, 0, h);

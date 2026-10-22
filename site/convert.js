@@ -1,9 +1,13 @@
 // MVP page logic (#33): zip drop -> worker conversion -> CIA download.
 // #74: 2+ game zips get a preflight game list before conversion, then per-row
 // status. The pure list/status rules live in vendor/conv/batch.js (Node-tested).
+// #75: a single CIA run previews the auto icon/banner and allows image overrides.
 import {
   createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary, STATUS,
 } from './vendor/conv/batch.js';
+import {
+  iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
+} from './vendor/conv/art.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('gateLog'), pipe = $('gatePipe');
@@ -15,11 +19,14 @@ let worker = null, jobId = 0, running = false;
 let preflightWorker = null, preflightId = 0, preflighting = false;
 let batch = null, batchSource = null, batchFiles = null;
 let batchStarted = false, batchError = '', readyIndexes = [];
+let artEditor = null, artWorker = null, artId = 0;
+let artLoading = false, artLoadingFiles = null, artTitle = null, artTitleFiles = null, artProblem = null;
 const urls = new Set();
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
 const batchPanel = $('gateBatchList'), batchRowsEl = $('gateBatchRows');
 const batchCount = $('gateBatchCount'), batchMsg = $('gateBatchMsg'), batchSummary = $('gateBatchSummary');
+const artPanel = $('gateArt'), artTitleEl = $('gateArtTitle'), artMsgEl = $('gateArtMsg');
 const rowEls = new Map(); // batch index -> { li, state, detail, link }
 
 function currentMode() {
@@ -60,6 +67,274 @@ function revokeAllUrls() {
   urls.clear();
   clearSingleLink();
 }
+
+/* ── #75 single-game art preview / override ───────────────────────────────
+   The editor is a small factory so #76 can mount the same two-row UI on a
+   batch row: renderArtEditor(container, { title, art, onChange }). It draws
+   the exact PNG bytes the worker passes to bannertool (single-IDAT merge). */
+const ART_ROWS = {
+  icon: { w: ICON_SIZE, h: ICON_SIZE, ko: '아이콘', en: 'Icon' },
+  banner: { w: BANNER_W, h: BANNER_H, ko: '배너', en: 'Banner' },
+};
+const artEditors = new WeakMap();
+
+function renderArtEditor(container, { title = '', art = null, onChange = null } = {}) {
+  let ed = artEditors.get(container);
+  if (!ed) {
+    ed = createArtEditor(container);
+    artEditors.set(container, ed);
+  }
+  ed.configure({ title, art, onChange });
+  return ed;
+}
+
+function createArtEditor(container) {
+  const keys = Object.keys(ART_ROWS);
+  const slots = {};
+  const state = { title: '', icon: null, banner: null, onChange: null, urls: { icon: null, banner: null } };
+
+  for (const key of keys) {
+    const row = container.querySelector(`[data-art="${key}"]`);
+    if (!row) continue;
+    const slot = {
+      img: row.querySelector('.art-img'),
+      input: row.querySelector('[data-art-file]'),
+      pick: row.querySelector('[data-art-pick]'),
+      clear: row.querySelector('[data-art-clear]'),
+      note: row.querySelector('[data-art-note]'),
+      token: 0,
+      error: null,
+    };
+    slots[key] = slot;
+    slot.pick?.addEventListener('click', () => slot.input?.click());
+    slot.input?.addEventListener('change', () => {
+      const file = slot.input.files?.[0] ?? null;
+      slot.input.value = ''; // picking the same file again still fires change
+      if (file) void choose(key, file);
+    });
+    slot.clear?.addEventListener('click', () => void choose(key, null));
+  }
+
+  function altText(key) {
+    const { w, h, ko, en } = ART_ROWS[key];
+    return t(`${ko} 미리보기 (${w}×${h})`, `${en} preview (${w}×${h})`);
+  }
+
+  function refreshNotes() {
+    for (const key of keys) {
+      const s = slots[key];
+      if (!s) continue;
+      s.note.classList.toggle('err', !!s.error);
+      if (s.error) s.note.textContent = t(`이미지를 읽을 수 없습니다: ${s.error}`, `Cannot read image: ${s.error}`);
+      else if (state[key]) s.note.textContent = t('직접 지정', 'Custom image');
+      else s.note.textContent = state.title ? t('자동 생성', 'Automatic') : '';
+    }
+  }
+
+  function setEnabled() {
+    for (const key of keys) {
+      const s = slots[key];
+      if (!s) continue;
+      s.pick.disabled = !state.title;
+      s.clear.disabled = !state.title;
+    }
+  }
+
+  function showPreview(key, bytes) {
+    const s = slots[key];
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+    if (state.urls[key]) URL.revokeObjectURL(state.urls[key]);
+    state.urls[key] = url;
+    s.img.src = url;
+    s.img.alt = altText(key);
+  }
+
+  function clearPreview(key) {
+    const s = slots[key];
+    if (!s) return;
+    s.token++;
+    if (state.urls[key]) { URL.revokeObjectURL(state.urls[key]); state.urls[key] = null; }
+    s.img.removeAttribute('src');
+    s.img.alt = '';
+  }
+
+  async function draw(key) {
+    const s = slots[key];
+    if (!s || !state.title) return;
+    const token = ++s.token;
+    try {
+      let bytes;
+      if (state[key]) {
+        const bmp = await createImageBitmap(state[key]);
+        try {
+          bytes = key === 'icon' ? await iconPng(state.title, bmp) : await bannerPng(state.title, bmp);
+        } finally { bmp.close?.(); }
+      } else {
+        bytes = key === 'icon' ? await iconPng(state.title) : await bannerPng(state.title);
+      }
+      if (token === s.token) showPreview(key, bytes);
+    } catch {
+      if (token !== s.token) return;
+      const file = state[key];
+      state[key] = null;
+      s.error = file?.name ?? null;
+      refreshNotes();
+      if (file) void draw(key); // fall back to the automatic picture
+    }
+  }
+
+  async function choose(key, file) {
+    const s = slots[key];
+    if (!s || !state.title) return;
+    if (!file) {
+      state[key] = null;
+      s.error = null;
+      refreshNotes();
+      state.onChange?.(selectedFiles());
+      await draw(key);
+      return;
+    }
+    let ok = false;
+    try {
+      const bmp = await createImageBitmap(file);
+      ok = bmp.width > 0 && bmp.height > 0;
+      bmp.close?.();
+    } catch { ok = false; }
+    if (ok) { state[key] = file; s.error = null; }
+    else { state[key] = null; s.error = file.name; }
+    refreshNotes();
+    state.onChange?.(selectedFiles());
+    await draw(key); // rejected image: redraw the automatic picture
+  }
+
+  function selectedFiles() {
+    return { icon: state.icon ?? null, banner: state.banner ?? null };
+  }
+
+  function setTitle(title) {
+    const next = title ?? '';
+    const changed = next !== state.title;
+    state.title = next;
+    setEnabled();
+    if (changed) {
+      state.icon = null;
+      state.banner = null;
+      for (const key of keys) {
+        if (!slots[key]) continue;
+        slots[key].error = null;
+        clearPreview(key);
+      }
+    }
+    refreshNotes();
+    if (state.title) for (const key of keys) void draw(key);
+  }
+
+  return {
+    configure({ title, art, onChange }) {
+      if (onChange) state.onChange = onChange;
+      if (art) {
+        state.icon = art.icon ?? null;
+        state.banner = art.banner ?? null;
+      }
+      setTitle(title ?? '');
+    },
+    setTitle,
+    reset() { setTitle(''); },
+    refresh() {
+      refreshNotes();
+      for (const key of keys) if (slots[key] && state.urls[key]) slots[key].img.alt = altText(key);
+    },
+    getFiles: selectedFiles,
+  };
+}
+
+function artEligible() {
+  return currentMode() === 'cia' && gameZips().length === 1;
+}
+
+function stopArtTitle() {
+  artId++;
+  if (artWorker) { artWorker.terminate(); artWorker = null; }
+  artLoading = false;
+  artLoadingFiles = null;
+}
+
+function artProblemText() {
+  if (!artProblem) return '';
+  if (artProblem.kind === 'unknown') return t('게임을 인식하지 못해 아이콘·배너 미리보기를 만들 수 없습니다.',
+    'Game not recognized, so the icon and banner preview cannot be built.');
+  if (artProblem.kind === 'preview') return t('아이콘·배너 미리보기를 만들지 못했습니다.',
+    'Could not build the icon and banner preview.');
+  return t(`아이콘·배너 확인 실패: ${artProblem.detail}`, `Icon and banner check failed: ${artProblem.detail}`);
+}
+
+function renderArtMsg() {
+  const text = artLoading
+    ? t('게임 이름을 확인하는 중…', 'Checking the game title…')
+    : artProblemText();
+  artMsgEl.textContent = text;
+  artMsgEl.classList.toggle('hidden', !text);
+}
+
+function startArtTitle() {
+  stopArtTitle();
+  artLoading = true;
+  artLoadingFiles = files;
+  artTitle = null; artTitleFiles = null; artProblem = null;
+  artTitleEl.textContent = '';
+  artEditor.reset();
+  renderArtMsg();
+  const id = artId, myFiles = files;
+  const w = new Worker('vendor/conv/worker.js', { type: 'module' });
+  artWorker = w;
+  w.onerror = (e) => {
+    if (id !== artId) return;
+    stopArtTitle();
+    artProblem = { kind: 'preview', detail: e.message || 'worker error' };
+    artTitleFiles = myFiles;
+    artEditor.setTitle('');
+    renderArtMsg();
+  };
+  w.onmessage = (e) => {
+    const m = e.data;
+    if (id !== artId || m.id !== id) return;
+    stopArtTitle();
+    if (m.type === 'preflight') {
+      const row = m.rows?.[0];
+      artTitle = row?.title ?? null;
+      artProblem = artTitle ? null : { kind: 'unknown' };
+    } else if (m.type === 'error') {
+      artProblem = { kind: 'error', detail: m.message };
+    } else {
+      artProblem = { kind: 'error', detail: m.type };
+    }
+    artTitleFiles = myFiles;
+    artTitleEl.textContent = artTitle ?? '';
+    artEditor.setTitle(artTitle ?? '');
+    renderArtMsg();
+  };
+  w.postMessage({ id, type: 'preflight', files: myFiles });
+}
+
+// Visible only for one game in CIA mode; launcher, pack and batch runs keep
+// their old flow untouched.
+function syncArt() {
+  const on = artEligible();
+  artPanel.classList.toggle('hidden', !on);
+  if (!on) {
+    stopArtTitle();
+    artEditor.setTitle('');
+    artTitle = null; artTitleFiles = null; artProblem = null;
+    artTitleEl.textContent = '';
+    renderArtMsg();
+    return;
+  }
+  if (artLoading && artLoadingFiles === files) return;
+  if (artTitleFiles === files) { renderArtMsg(); return; }
+  startArtTitle();
+}
+
+artEditor = renderArtEditor(artPanel, { title: '', art: null, onChange: null });
 
 /* ── Preflight list ─────────────────────────────────────────────────────── */
 function stopPreflight() {
@@ -233,7 +508,7 @@ function renderBatch() {
 /* ── File intake / run button state ────────────────────────────────────── */
 function ingest(list) {
   files = [...list].filter((f) => f.name.toLowerCase().endsWith('.zip'));
-  if (!running) syncBatch();
+  if (!running) { syncBatch(); syncArt(); }
   refreshRun();
 }
 
@@ -257,14 +532,15 @@ function refreshRun() {
 }
 
 document.querySelectorAll('input[name="gateMode"]').forEach((r) => r.addEventListener('change', () => {
-  if (!running) syncBatch();
+  if (!running) { syncBatch(); syncArt(); }
   refreshRun();
 }));
 { // Deep-link: convert.html?mode=pack|launcher preselects the output (?mode=cia = default).
   const m = new URLSearchParams(location.search).get('mode');
   const radio = m && document.querySelector(`input[name="gateMode"][value="${m}"]`);
-  if (radio) { radio.checked = true; syncBatch(); refreshRun(); }
+  if (radio) { radio.checked = true; syncBatch(); syncArt(); refreshRun(); }
 }
+syncArt(); // initial state: no files -> hidden
 input.addEventListener('change', () => ingest(input.files));
 for (const ev of ['dragover', 'dragenter']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); });
 for (const ev of ['dragleave', 'drop']) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); });
@@ -274,6 +550,8 @@ drop.addEventListener('drop', (e) => ingest(e.dataTransfer.files));
 // the dynamic list/summary in the new language.
 document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => {
   if (wantsBatch()) renderBatch();
+  artEditor.refresh();
+  renderArtMsg();
 }));
 
 /* ── 4-step pipe (unchanged) ───────────────────────────────────────────── */
@@ -403,6 +681,7 @@ runBtn.addEventListener('click', () => {
   };
   worker.postMessage({
     id, files, region: $('gateRegion').value, system: $('gateSystem').value, mode,
+    art: artEligible() ? artEditor.getFiles() : null,
     batch: isBatch ? readyIndexes.map((i) => ({ name: batch[i].name })) : null,
   });
 });
@@ -439,6 +718,7 @@ function finish() {
   cancelBtn.classList.add('hidden');
   if (worker) { worker.terminate(); worker = null; }
   syncBatch(); // refresh the list, or start a preflight for files changed mid-run
+  syncArt();
   refreshRun();
 }
 

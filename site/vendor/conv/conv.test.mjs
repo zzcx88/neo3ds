@@ -192,4 +192,42 @@ await t('preflight/clone-with-parent-zip-is-ready', async () => {
   if (!k?.ok) throw new Error('kof98h with parent should be ready: ' + JSON.stringify(rows));
 }, true);
 
+// ── #75 custom art cover crop (Art.cs Fit: scale to fill, crop evenly) ─────
+// Fixed whole-pixel examples, no half-way rounding ties: dw/dh are the
+// rounded scaled size and dx/dy centre the overflow (negative = cropped).
+const sameRect = (got, want) => {
+  const g = JSON.stringify(got), w = JSON.stringify(want);
+  if (g !== w) throw new Error(`${g} != ${w}`);
+};
+
+await t('art/coverRect-landscape', async () => {
+  const { coverRect } = await import('./art.js');
+  sameRect(coverRect(300, 100, 48, 48), { dx: -48, dy: 0, dw: 144, dh: 48 });
+});
+
+await t('art/coverRect-portrait', async () => {
+  const { coverRect } = await import('./art.js');
+  sameRect(coverRect(100, 300, 48, 48), { dx: 0, dy: -48, dw: 48, dh: 144 });
+});
+
+await t('art/coverRect-exact-size', async () => {
+  const { coverRect } = await import('./art.js');
+  sameRect(coverRect(48, 48, 48, 48), { dx: 0, dy: 0, dw: 48, dh: 48 });
+  sameRect(coverRect(256, 128, 256, 128), { dx: 0, dy: 0, dw: 256, dh: 128 });
+});
+
+await t('art/coverRect-banner', async () => {
+  const { coverRect } = await import('./art.js');
+  sameRect(coverRect(800, 450, 256, 128), { dx: 0, dy: -8, dw: 256, dh: 144 });
+});
+
+// No canvas in Node: a custom picture must fail with a clear browser-only
+// message instead of silently drawing the automatic art.
+await t('art/image-needs-browser-canvas', async () => {
+  const { iconPng } = await import('./art.js');
+  let message = '';
+  try { await iconPng('NAM-1975', { width: 10, height: 10 }); } catch (e) { message = String(e.message); }
+  if (!/browser-only/.test(message)) throw new Error('expected browser-only error, got ' + JSON.stringify(message));
+});
+
 process.exit(fail ? 1 : 0);

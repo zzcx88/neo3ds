@@ -137,6 +137,10 @@ const EN = {
   'gate.mUpd': 'To update, just install the new launcher CIA. Your existing .neo3ds files run on the new version as they are.',
   'gate.listH': 'Recognized games',
   'gate.listHint': 'Check before converting. Games that cannot be converted show why and are skipped.',
+  'gate.artH': 'Icon and banner',
+  'gate.artHint': 'Check the HOME menu art before converting. A picture you pick is centre-cropped to 48×48 / 256×128.',
+  'gate.artIcon': 'Icon 48×48', 'gate.artBanner': 'Banner 256×128',
+  'gate.artPick': 'Choose file', 'gate.artClear': 'Automatic',
   /* JS가 그리는 문구 */
   'budget.main': 'main core', 'budget.core1': 'core 1', 'budget.idle': 'idle',
   'budget.d68k': '68000 (game code)', 'budget.dz80': 'Z80 (sound CPU)', 'budget.dtmr': 'timers',
