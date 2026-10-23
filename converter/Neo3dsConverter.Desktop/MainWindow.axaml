@@ -12,18 +12,18 @@
               HorizontalContentAlignment="Center" Padding="8"/>
       <Border x:Name="DropZone" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
               Padding="24" Background="#10000000">
-        <TextBlock Text="여기에 zip을 끌어다 놓기 (여러 개 가능)" HorizontalAlignment="Center"/>
+        <TextBlock x:Name="DropHint" Text="여기에 zip을 끌어다 놓기 (여러 개 가능)" HorizontalAlignment="Center"/>
       </Border>
       <TextBlock x:Name="StatusText" Text="롬을 선택하세요" TextWrapping="Wrap"/>
-      <TextBlock Text="게임 이름"/>
+      <TextBlock x:Name="LabelTitle" Text="게임 이름"/>
       <TextBox x:Name="TitleBox" PlaceholderText="제목"/>
-      <TextBlock Text="아이콘"/>
+      <TextBlock x:Name="LabelIcon" Text="아이콘"/>
       <Grid ColumnDefinitions="*,Auto,Auto">
         <TextBox x:Name="IconBox" IsReadOnly="True" PlaceholderText="자동 생성" Grid.Column="0"/>
         <Button x:Name="IconPickButton" Content="선택" Grid.Column="1" Margin="8,0,0,0"/>
         <Button x:Name="IconClearButton" Content="✕" Grid.Column="2" Margin="8,0,0,0"/>
       </Grid>
-      <TextBlock Text="배너"/>
+      <TextBlock x:Name="LabelBanner" Text="배너"/>
       <Grid ColumnDefinitions="*,Auto,Auto">
         <TextBox x:Name="BannerBox" IsReadOnly="True" PlaceholderText="자동 생성" Grid.Column="0"/>
         <Button x:Name="BannerPickButton" Content="선택" Grid.Column="1" Margin="8,0,0,0"/>
@@ -31,25 +31,25 @@
       </Grid>
       <Grid ColumnDefinitions="*,*" x:Name="OptionRow">
         <StackPanel Grid.Column="0" Margin="0,0,4,0">
-          <TextBlock Text="시스템"/>
+          <TextBlock x:Name="LabelSystem" Text="시스템"/>
           <ComboBox x:Name="SystemBox" HorizontalAlignment="Stretch" SelectedIndex="0"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Margin="4,0,0,0">
-          <TextBlock Text="지역"/>
+          <TextBlock x:Name="LabelRegion" Text="지역"/>
           <ComboBox x:Name="RegionBox" HorizontalAlignment="Stretch" SelectedIndex="0"/>
         </StackPanel>
       </Grid>
       <StackPanel Orientation="Horizontal" Spacing="12">
         <StackPanel>
-          <TextBlock Text="아이콘 (48×48)"/>
+          <TextBlock x:Name="LabelIconPreview" Text="아이콘 (48×48)"/>
           <Image x:Name="IconPreview" Width="96" Height="96" Stretch="None"/>
         </StackPanel>
         <StackPanel>
-          <TextBlock Text="배너 (256×128)"/>
+          <TextBlock x:Name="LabelBannerPreview" Text="배너 (256×128)"/>
           <Image x:Name="BannerPreview" Width="256" Height="128" Stretch="None"/>
         </StackPanel>
       </StackPanel>
-      <TextBlock Text="출력 폴더"/>
+      <TextBlock x:Name="LabelOutDir" Text="출력 폴더"/>
       <Grid ColumnDefinitions="*,Auto">
         <TextBox x:Name="OutDirBox" IsReadOnly="True" Grid.Column="0"/>
         <Button x:Name="OutDirButton" Content="변경" Grid.Column="1" Margin="8,0,0,0"/>
@@ -62,7 +62,7 @@
       </Grid>
       <Button x:Name="LauncherButton" Content="런처 CIA 만들기 (한 번만 설치)" HorizontalAlignment="Stretch"
               HorizontalContentAlignment="Center" Padding="8"/>
-      <TextBlock Text="로그"/>
+      <TextBlock x:Name="LabelLog" Text="로그"/>
       <TextBox x:Name="LogBox" Height="160" IsReadOnly="True" AcceptsReturn="True"
                TextWrapping="Wrap" VerticalAlignment="Stretch"/>
     </StackPanel>

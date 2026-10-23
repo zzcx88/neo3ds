@@ -1,5 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Xunit;
 namespace Neo3dsConverter.Desktop.Tests;
 
@@ -65,5 +68,74 @@ public class MainWindowTests
         Assert.Equal(expected, window.FindControl<Button>("LangButton")!.Content);
 
         window.Close();
+    }
+
+    /// <summary>#109: the launcher button must not read controls off the UI thread.</summary>
+    [AvaloniaFact]
+    public void LauncherButton_DoesNotThrowCrossThreadException()
+    {
+        var window = new MainWindow();
+        window.Show();
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        window.FindControl<TextBox>("OutDirBox")!.Text = tmp;
+
+        window.FindControl<Button>("LauncherButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        PumpUntil(window, () => window.FindControl<Button>("LauncherButton")!.IsEnabled, 30000);
+
+        string log = window.FindControl<TextBox>("LogBox")!.Text ?? "";
+        Assert.DoesNotContain("calling thread", log, StringComparison.OrdinalIgnoreCase);
+        window.Close();
+        try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+    }
+
+    /// <summary>#110: static labels must follow the language.</summary>
+    [AvaloniaFact]
+    public void StaticLabels_FollowLanguage()
+    {
+        bool saved = Lang.Korean;
+        try
+        {
+            Lang.Set(false, remember: false);
+            var window = new MainWindow();
+            window.Show();
+
+            Assert.Equal("Title", window.FindControl<TextBlock>("LabelTitle")!.Text);
+            Assert.Equal("Icon", window.FindControl<TextBlock>("LabelIcon")!.Text);
+            Assert.Equal("Banner", window.FindControl<TextBlock>("LabelBanner")!.Text);
+            Assert.Equal("System", window.FindControl<TextBlock>("LabelSystem")!.Text);
+            Assert.Equal("Region", window.FindControl<TextBlock>("LabelRegion")!.Text);
+            Assert.Equal("Output folder", window.FindControl<TextBlock>("LabelOutDir")!.Text);
+            Assert.Equal("Log", window.FindControl<TextBlock>("LabelLog")!.Text);
+            Assert.Equal("Drop zip files here (one or more)", window.FindControl<TextBlock>("DropHint")!.Text);
+            Assert.Equal("Icon (48×48)", window.FindControl<TextBlock>("LabelIconPreview")!.Text);
+            Assert.Equal("Banner (256×128)", window.FindControl<TextBlock>("LabelBannerPreview")!.Text);
+            Assert.Equal("Title", window.FindControl<TextBox>("TitleBox")!.PlaceholderText);
+
+            window.Close();
+        }
+        finally
+        {
+            Lang.Set(saved, remember: false);
+        }
+    }
+
+    static void PumpUntil(Window window, Func<bool> done, int timeoutMs)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            Dispatcher.UIThread.RunJobs();
+            CloseDialogs(window);
+            if (done()) return;
+            Thread.Sleep(20);
+        }
+    }
+
+    static void CloseDialogs(Window owner)
+    {
+        if (Application.Current?.ApplicationLifetime is not Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime life) return;
+        foreach (var w in life.Windows.ToList())
+            if (!ReferenceEquals(w, owner)) w.Close();
     }
 }
