@@ -10,6 +10,9 @@
     <ToolRuntimeIdentifier Condition="'$(ToolRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</ToolRuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Neo3dsConverter.Desktop.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
