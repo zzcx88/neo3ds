@@ -1,6 +1,6 @@
 # 빌드 · 테스트 · 릴리스
 
-모든 빌드와 테스트는 **Windows 10/11 64비트**에서 실행한다. 스크립트에 Windows 경로(`C:\devkitPro`, Azahar)가 하드코딩되어 있다.
+릴리스 패키징은 OS별 러너에서 수행하고, 일상 개발·검증은 macOS/Linux/Windows에서 가능하다. 단 Azahar 테스트 스크립트(§4)는 Windows 경로(`C:\devkitPro`, Azahar)가 하드코딩되어 있어 Windows에서만 실행한다.
 
 산출물 바이너리는 git에 커밋하지 않는다. `.gitignore` 대상: `engine/*.elf`, `converter/**/bin/`, `converter/**/obj/`, `dist/`, `out/`, `tools/`, `roms/`.
 
