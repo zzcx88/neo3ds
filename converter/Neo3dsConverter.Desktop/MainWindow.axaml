@@ -4,6 +4,10 @@
         Title="neo3ds-converter" Width="560" Height="780">
   <ScrollViewer>
     <StackPanel Margin="16" Spacing="10">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="neo3ds-converter" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Grid.Column="0"/>
+        <Button x:Name="LangButton" Content="English" Grid.Column="1"/>
+      </Grid>
       <Button x:Name="OpenButton" Content="롬 zip 열기 (여러 개 가능)" HorizontalAlignment="Stretch"
               HorizontalContentAlignment="Center" Padding="8"/>
       <Border x:Name="DropZone" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
@@ -24,6 +28,16 @@
         <TextBox x:Name="BannerBox" IsReadOnly="True" PlaceholderText="자동 생성" Grid.Column="0"/>
         <Button x:Name="BannerPickButton" Content="선택" Grid.Column="1" Margin="8,0,0,0"/>
         <Button x:Name="BannerClearButton" Content="✕" Grid.Column="2" Margin="8,0,0,0"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,*" x:Name="OptionRow">
+        <StackPanel Grid.Column="0" Margin="0,0,4,0">
+          <TextBlock Text="시스템"/>
+          <ComboBox x:Name="SystemBox" HorizontalAlignment="Stretch" SelectedIndex="0"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Margin="4,0,0,0">
+          <TextBlock Text="지역"/>
+          <ComboBox x:Name="RegionBox" HorizontalAlignment="Stretch" SelectedIndex="0"/>
+        </StackPanel>
       </Grid>
       <StackPanel Orientation="Horizontal" Spacing="12">
         <StackPanel>
