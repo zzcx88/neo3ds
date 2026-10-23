@@ -22,7 +22,7 @@ public partial class MainWindow : Window
         OutDirBox.Text = DefaultOutDir();
         OpenButton.Click += OnOpenClicked;
         OutDirButton.Click += OnOutDirClicked;
-        LangButton.Click += (_, _) => { Lang.Set(!Lang.Korean, remember: true); App.RestartRequested = true; Close(); };
+        LangButton.Click += (_, _) => { Lang.Set(!Lang.Korean, remember: true); ApplyLang(); };
         BuildButton.Click += async (_, _) => await BuildAsync(pack: false);
         PackButton.Click += async (_, _) => await BuildAsync(pack: true);
         LauncherButton.Click += async (_, _) => await BuildLauncherAsync();
@@ -38,6 +38,8 @@ public partial class MainWindow : Window
 
     void ApplyLang()
     {
+        // Rebuilding ItemsSource clears the selection, so keep what the user picked.
+        int system = SystemBox.SelectedIndex, region = RegionBox.SelectedIndex;
         LangButton.Content = Lang.Korean ? "English" : "한국어";
         OpenButton.Content = Lang.L("롬 zip 열기 (여러 개 가능)", "Open ROM zips (one or more)");
         DropHint.Text = Lang.L("여기에 zip을 끌어다 놓기 (여러 개 가능)", "Drop zip files here (one or more)");
@@ -55,8 +57,7 @@ public partial class MainWindow : Window
         IconBox.PlaceholderText = BannerBox.PlaceholderText = Lang.L("자동 생성", "Generated");
         IconPickButton.Content = BannerPickButton.Content = Lang.L("선택", "Pick");
         OutDirButton.Content = Lang.L("변경", "Change");
-        BuildButton.Content = Lang.L("CIA 만들기", "Build CIA");
-        PackButton.Content = Lang.L("런처용 파일 만들기", "Launcher file");
+        SetBuildLabels();
         LauncherButton.Content = Lang.L("런처 CIA 만들기 (한 번만 설치)", "Build the launcher CIA (install once)");
         SystemBox.ItemsSource = new[]
         {
@@ -64,12 +65,30 @@ public partial class MainWindow : Window
             Lang.L("AES (가정용)", "AES (home console)"),
             Lang.L("MVS (아케이드)", "MVS (arcade)"),
         };
+        SystemBox.SelectedIndex = Math.Clamp(system, 0, 2);
         RegionBox.ItemsSource = new[]
         {
             Lang.L("유럽·아시아 (기본)", "Europe/Asia (default)"),
             Lang.L("일본 (무검열, 일본어)", "Japan (uncensored, Japanese text)"),
             Lang.L("미국", "USA"),
         };
+        RegionBox.SelectedIndex = Math.Clamp(region, 0, 2);
+    }
+
+    /// <summary>Build buttons say how many games are queued when a batch is loaded.</summary>
+    void SetBuildLabels()
+    {
+        if (batch.Count > 0)
+        {
+            int ok = batch.Count(Buildable);
+            BuildButton.Content = Lang.L($"CIA {ok}개 만들기", $"Build {ok} CIAs");
+            PackButton.Content = Lang.L($"런처용 파일 {ok}개 만들기", $"{ok} launcher files");
+        }
+        else
+        {
+            BuildButton.Content = Lang.L("CIA 만들기", "Build CIA");
+            PackButton.Content = Lang.L("런처용 파일 만들기", "Launcher file");
+        }
     }
 
     bool? SelectedMvs => SystemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
@@ -157,8 +176,7 @@ public partial class MainWindow : Window
         }
         batch.Clear();
         SetSingleFields(true);
-        BuildButton.Content = Lang.L("CIA 만들기", "Build CIA");
-        PackButton.Content = Lang.L("런처용 파일 만들기", "Launcher file");
+        SetBuildLabels();
         try
         {
             job = CiaJob.FromRomZip(path);
@@ -197,8 +215,7 @@ public partial class MainWindow : Window
         StatusText.Text = ok == batch.Count
             ? Lang.L($"✔ 모두 변환 가능 ({ok}개)", $"✔ all {ok} can be converted")
             : Lang.L($"변환 가능 {ok}개 / 불가 {batch.Count - ok}개 (로그 참고)", $"{ok} can be converted, {batch.Count - ok} can't (see the log)");
-        BuildButton.Content = Lang.L($"CIA {ok}개 만들기", $"Build {ok} CIAs");
-        PackButton.Content = Lang.L($"런처용 파일 {ok}개 만들기", $"{ok} launcher files");
+        SetBuildLabels();
         SetBuildEnabled(ok > 0);
         Log(Lang.L($"{batch.Count}개 선택: 변환 가능 {ok}개", $"{batch.Count} zips picked, {ok} can be converted"));
     }

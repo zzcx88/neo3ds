@@ -10,14 +10,10 @@ sealed class Program
     {
         args = CommandLine.TakeLang(args);
         if (args.Length > 0) return CommandLine.Run(args);
-        while (true)
-        {
-            var lifetime = new Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime { Args = args };
-            BuildAvaloniaApp().SetupWithLifetime(lifetime);
-            lifetime.Start(args);
-            if (App.RestartRequested) { App.RestartRequested = false; continue; }
-            return 0;
-        }
+        // Avalonia initialises once per process, so the window cannot be re-created for a
+        // language switch (#112): MainWindow applies it in place instead.
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        return 0;
     }
 
     public static AppBuilder BuildAvaloniaApp()

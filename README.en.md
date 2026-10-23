@@ -120,7 +120,7 @@ Drop several zips at once to convert them one after the other. The **[한국어]
 3. Drop ROM zips on the window or press **[Open ROM zips]** (one or more).
 4. Once the game is recognized, change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like; the preview shows the HOME menu art as it will be built.
 5. Press **[Build CIA]**. **[Launcher file]** builds a `.neo3ds` file, **[Build the launcher CIA]** the launcher app. Files go to `~/Downloads` (`~/Documents` when there is no Downloads folder).
-6. The **[한국어]/[English]** button at the top left switches the language (the window reopens).
+6. The **[한국어]/[English]** button at the top left switches the language (it applies immediately).
 
 Drop several zips at once to convert them one after the other with automatic titles and art.
 

@@ -120,6 +120,39 @@ public class MainWindowTests
         }
     }
 
+    /// <summary>#112: the language button switches in place; the process must not restart (Avalonia cannot re-init).</summary>
+    [AvaloniaFact]
+    public void LangButton_SwitchesLive_AndKeepsComboSelection()
+    {
+        bool saved = Lang.Korean;
+        try
+        {
+            Lang.Set(false, remember: false);
+            var window = new MainWindow();
+            window.Show();
+            var system = window.FindControl<ComboBox>("SystemBox")!;
+            var region = window.FindControl<ComboBox>("RegionBox")!;
+            system.SelectedIndex = 2;
+            region.SelectedIndex = 1;
+
+            window.FindControl<Button>("LangButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            Assert.True(Lang.Korean);
+            Assert.True(window.IsVisible);                                  // stayed open
+            Assert.Equal("게임 이름", window.FindControl<TextBlock>("LabelTitle")!.Text);
+            Assert.Equal("출력 폴더", window.FindControl<TextBlock>("LabelOutDir")!.Text);
+            Assert.Equal(2, system.SelectedIndex);                          // selection kept
+            Assert.Equal(1, region.SelectedIndex);
+            Assert.Equal("English", window.FindControl<Button>("LangButton")!.Content /* target language */);
+
+            window.Close();
+        }
+        finally
+        {
+            Lang.Set(saved, remember: false);
+        }
+    }
+
     static void PumpUntil(Window window, Func<bool> done, int timeoutMs)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
