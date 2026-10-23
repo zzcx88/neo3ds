@@ -38,6 +38,14 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Stub runtime payload (build-only, no conversion runs)
+        shell: bash
+        run: |
+          touch engine/engine.elf
+          mkdir -p tools/makerom tools/bannertool/windows-x86_64 tools/linux-x64 tools/osx-arm64
+          touch tools/makerom/makerom.exe tools/bannertool/windows-x86_64/bannertool.exe
+          touch tools/linux-x64/makerom tools/linux-x64/bannertool
+          touch tools/osx-arm64/makerom tools/osx-arm64/bannertool
       - name: Build Desktop
         run: dotnet build converter/Neo3dsConverter.Desktop -c Release
       - name: Headless tests
