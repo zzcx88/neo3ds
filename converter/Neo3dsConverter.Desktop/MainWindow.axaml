@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Neo3dsConverter.Desktop.MainWindow"
+        Title="neo3ds-converter" Width="520" Height="680">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="10">
+      <Button x:Name="OpenButton" Content="롬 zip 열기" HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center" Padding="8"/>
+      <Border x:Name="DropZone" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
+              Padding="24" Background="#10000000">
+        <TextBlock Text="여기에 zip을 끌어다 놓기" HorizontalAlignment="Center"/>
+      </Border>
+      <TextBlock x:Name="StatusText" Text="롬을 선택하세요" TextWrapping="Wrap"/>
+      <TextBlock Text="게임 이름"/>
+      <TextBox x:Name="TitleBox" PlaceholderText="제목"/>
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <StackPanel>
+          <TextBlock Text="아이콘 (48×48)"/>
+          <Image x:Name="IconPreview" Width="96" Height="96" Stretch="None"/>
+        </StackPanel>
+        <StackPanel>
+          <TextBlock Text="배너 (256×128)"/>
+          <Image x:Name="BannerPreview" Width="256" Height="128" Stretch="None"/>
+        </StackPanel>
+      </StackPanel>
+      <TextBlock Text="출력 폴더"/>
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox x:Name="OutDirBox" IsReadOnly="True" Grid.Column="0"/>
+        <Button x:Name="OutDirButton" Content="변경" Grid.Column="1" Margin="8,0,0,0"/>
+      </Grid>
+      <Button x:Name="BuildButton" Content="CIA 만들기" HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center" Padding="8" IsEnabled="False"/>
+      <TextBlock Text="로그"/>
+      <TextBox x:Name="LogBox" Height="160" IsReadOnly="True" AcceptsReturn="True"
+               TextWrapping="Wrap" VerticalAlignment="Stretch"/>
+    </StackPanel>
+  </ScrollViewer>
+</Window>
