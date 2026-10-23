@@ -89,7 +89,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 ## 7. 릴리스 (웹 + 오프라인 3종)
 
-릴리스는 두 산출물이다: 웹 변환기 배포(메인) + 오프라인 변환기 패키지(Windows GUI, Linux·macOS CLI).
+릴리스는 두 산출물이다: 웹 변환기 배포(메인) + 오프라인 변환기 패키지(3종 모두 GUI + 명령줄).
 
 공통: `converter/Directory.Build.props`의 `<Version>`을 올린다 (단일 출처, AGENTS.md 버전 규칙).
 웹용 `site/vendor/conv/version.js`는 `build_wasm.sh`가 `<Version>`에서 자동 생성한다.
@@ -111,10 +111,10 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 수동 실행: Actions → Pages → Run workflow.
 로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.
 
-### 7.2 오프라인 변환기 패키지 (Windows GUI + Linux·macOS CLI)
+### 7.2 오프라인 변환기 패키지 (3종 GUI + 명령줄)
 
 태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가 3종 패키지를 만들고
-GitHub Release에 올린다 (#55에서 복원).
+GitHub Release에 올린다 (#55에서 복원, #102에서 GUI 동봉).
 
 1. `<Version>` 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
    (CI가 검증: 태그 ≠ `<Version>`이면 실패)
@@ -126,11 +126,18 @@ GitHub Release에 올린다 (#55에서 복원).
 산출물 (파일명 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게):
 
 - `neo3ds-converter.zip` — Windows GUI (exe + `tools\` + 런처 CIA)
-- `neo3ds-converter-linux-x64.zip`, `neo3ds-converter-osx-arm64.zip` — CLI (해당 OS용 makerom·bannertool 포함)
-- `neo3ds-launcher.cia` — 별도 첨부
+- `neo3ds-converter-linux-x64.zip` — Linux Desktop 단일 바이너리 (인자 없으면 창, 있으면 명령줄) + 런처 CIA
+- `neo3ds-converter-osx-arm64.zip` — macOS `.app` 번들 (폴더 안) + 런처 CIA
+- `neo3ds-launcher.cia` — 별도 첨부 (Windows에서 1회 생성, 3종에 동일 파일 주입)
 
 Windows 도구는 최신 릴리스 zip에서 부트스트랩한다(최초 1회는 수동 배치, §2).
 Linux·macOS 도구는 CI가 `scripts/build_unix_tools.sh`로 소스에서 빌드한다(upstream 태그 고정).
+
+미지원: Intel Mac, linux-arm64. Linux는 X11/XWayland 기본, Wayland 네이티브 미지원.
+
+릴리스 롤백: 깨진 Release는 GitHub에서 삭제 후 `<Version>`을 올린 새 태그로 다시 낸다. 기존 태그를 덮어쓰지 않는다.
+
+Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌드 + Headless 테스트 + no-ROM 스모크가 자동 실행된다.
 
 수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성. 3종 산출물은 Artifacts로 받음).
 로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`

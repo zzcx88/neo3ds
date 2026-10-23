@@ -11,9 +11,11 @@ https://github.com/zzcx88/neo3ds
       앱 하나에서 게임을 골라 실행합니다.
 퀵세이브: 아래 화면 [Slot] [Save] [Load] 또는 SELECT+L(저장) / SELECT+R(불러오기).
 처음 실행 때 Windows가 "알 수 없는 게시자" 경고를 띄우면 [추가 정보] -> [실행].
-Linux·macOS: 창 없이 터미널에서 씁니다. ./neo3ds-converter kof99.zip 처럼 실행하고, 옵션은 ./neo3ds-converter --help.
+Linux·macOS: 인자 없이 실행하면 창이 뜨고(Linux는 ./neo3ds-converter, macOS는 neo3ds-converter.app),
+             인자를 주면 명령줄로 동작합니다. ./neo3ds-converter kof99.zip 처럼 실행하고, 옵션은 --help.
              런처 CIA는 ./neo3ds-converter --launcher 로 만듭니다.
              macOS에서 실행이 막히면 터미널에서 xattr -dr com.apple.quarantine <이 폴더> 를 한 번 실행하세요.
+             Linux는 libx11-6, libice6, libsm6, libfontconfig1이 필요합니다.
 롬은 포함되어 있지 않습니다. 만든 CIA를 다른 사람에게 배포하지 마세요. 비상업적 용도로만 쓸 수 있습니다.
 
 [English]
@@ -26,9 +28,11 @@ Launcher: install neo3ds-launcher.cia once, then put the .neo3ds files made with
           on the SD card to pick games from one app.
 Quick save: [Slot] [Save] [Load] on the bottom screen, or SELECT+L (save) / SELECT+R (load).
 If Windows shows an "unknown publisher" warning on first run, click [More info] -> [Run anyway].
-Linux, macOS: used from a terminal, no window. Run it like ./neo3ds-converter kof99.zip; options: ./neo3ds-converter --help.
+Linux, macOS: with no arguments the window opens (Linux: ./neo3ds-converter, macOS: neo3ds-converter.app);
+              with arguments it runs as a command line. Run it like ./neo3ds-converter kof99.zip; options: --help.
               ./neo3ds-converter --launcher builds the launcher CIA.
               If macOS blocks it, run xattr -dr com.apple.quarantine <this folder> once in Terminal.
+              Linux needs libx11-6, libice6, libsm6, libfontconfig1.
 No ROMs are included. Do not share the CIAs you build. Non-commercial use only.
 
 Licenses: LICENSE.txt (GPL-2.0) and THIRD_PARTY_NOTICES.md
