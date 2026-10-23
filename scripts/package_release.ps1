@@ -1,11 +1,13 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  neo3ds converter release zip builder (Windows GUI / Linux and macOS CLI).
+  neo3ds converter release zip builder (Windows GUI / Linux and macOS Desktop).
 .DESCRIPTION
   Publishes self-contained releases under one top-level folder per RID.
   Windows keeps neo3ds-converter.zip and its existing GUI/tools layout.
-  Unix CLI archives include native libraries and executable Unix permissions.
+  Unix zips ship the Desktop single binary (GUI when run bare, CLI with args),
+  with native libraries and executable Unix permissions.
+  macOS additionally bundles a .app (ditto zip preserves permissions).
   Prerequisites: engine built (docs/build.md 1), Windows tools (2), or Unix
   tools built by scripts/build_unix_tools.sh under tools/{rid}/.
 .EXAMPLE
@@ -22,6 +24,7 @@ param(
   [string[]]$Runtimes = @("win-x64"),
   [switch]$FrameworkDependent,
   [switch]$WithLauncher,
+  [string]$LauncherCia = "",
   [string]$OutDir = "dist",
   [string]$VersionOverride = ""
 )
@@ -56,7 +59,7 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
     )
   } else {
     @(
-      ,@('converter', 'Neo3dsConverter.Cli', 'Neo3dsConverter.Cli.csproj'),
+      ,@('converter', 'Neo3dsConverter.Desktop', 'Neo3dsConverter.Desktop.csproj'),
       ,@('tools', $runtime, 'makerom'),
       ,@('tools', $runtime, 'bannertool')
     )
@@ -75,14 +78,14 @@ Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
   $isWindowsRid = $runtime -eq "win-x64"
   $packageName = if ($isWindowsRid) { "neo3ds-converter" } else { "neo3ds-converter-$runtime" }
-  $project = if ($isWindowsRid) { "Neo3dsConverter" } else { "Neo3dsConverter.Cli" }
+  $project = if ($isWindowsRid) { "Neo3dsConverter" } else { "Neo3dsConverter.Desktop" }
   $binary = if ($isWindowsRid) { "Neo3dsConverter.exe" } else { "neo3ds-converter" }
   $selfContained = -not ($isWindowsRid -and $FrameworkDependent)
   if (-not $isWindowsRid -and $WithLauncher) {
-    Write-Warning "${runtime}: -WithLauncher skipped; launcher CIA packaging requires win-x64."
+    Write-Warning "${runtime}: -WithLauncher skipped; the launcher CIA is built once on win-x64 and injected."
   }
   if (-not $isWindowsRid -and $FrameworkDependent) {
-    Write-Warning "${runtime}: -FrameworkDependent ignored; Unix CLI releases are self-contained."
+    Write-Warning "${runtime}: -FrameworkDependent ignored; Unix releases are self-contained."
   }
 
   # 3. Publish separately per RID so outputs cannot leak between packages.
@@ -129,6 +132,8 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
   if ($isWindowsRid) {
     Copy-Item (Join-Path $publishDir $binary) $stage
     Copy-Item (Join-Path $publishDir 'tools') (Join-Path $stage 'tools') -Recurse
+  } elseif ($runtime -eq 'osx-arm64') {
+    # .app only (§4b below); no flat publish copy (avoids 2x size).
   } else {
     Get-ChildItem $publishDir -Force | Copy-Item -Destination $stage -Recurse -Force
   }
@@ -138,7 +143,34 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
   Copy-Item (Join-Path $root 'LICENSE') (Join-Path $stage 'LICENSE.txt') -Force
   Copy-Item (Join-Path $root 'THIRD_PARTY_NOTICES.md') $stage -Force
 
-  # 5. Only the Windows GUI exe builds the optional launcher CIA.
+  # 4b. macOS: bundle the publish output as neo3ds-converter.app (D10).
+  # The .app lives inside the package folder (Q3); ditto re-zips it on the macOS runner.
+  $isMacRid = $runtime -eq 'osx-arm64'
+  if ($isMacRid) {
+    $app = Join-Path $stage 'neo3ds-converter.app' 'Contents'
+    New-Item (Join-Path $app 'MacOS') -ItemType Directory -Force | Out-Null
+    New-Item (Join-Path $app 'Resources') -ItemType Directory -Force | Out-Null
+    Get-ChildItem $publishDir -Force | Copy-Item -Destination (Join-Path $app 'MacOS') -Recurse -Force
+    $plist = @"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key><string>neo3ds-converter</string>
+  <key>CFBundleName</key><string>neo3ds-converter</string>
+  <key>CFBundleDisplayName</key><string>neo3ds-converter</string>
+  <key>CFBundleIdentifier</key><string>io.github.zzcx88.neo3ds-converter</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>CFBundleVersion</key><string>$version</string>
+  <key>CFBundleShortVersionString</key><string>$version</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+</dict>
+</plist>
+"@
+    Set-Content (Join-Path $app 'Info.plist') $plist -Encoding UTF8
+  }
+  # 5. Windows builds the launcher CIA once (D6); Unix zips get the same file injected.
   $includeLauncher = $isWindowsRid -and $WithLauncher
   if ($includeLauncher) {
     $exe = Join-Path $stage 'Neo3dsConverter.exe'
@@ -146,6 +178,10 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
     $cia = Join-Path $stage 'neo3ds-launcher.cia'
     if ($p.ExitCode -ne 0 -or -not (Test-Path $cia)) { throw "launcher CIA build failed (code $($p.ExitCode))" }
     Copy-Item $cia (Join-Path $root $OutDir 'neo3ds-launcher.cia') -Force
+  }
+  if (-not $isWindowsRid -and $LauncherCia) {
+    if (-not (Test-Path $LauncherCia -PathType Leaf)) { throw "LauncherCia not found: $LauncherCia" }
+    Copy-Item $LauncherCia (Join-Path $stage 'neo3ds-launcher.cia') -Force
   }
 
   # 6. Slash-separated entries; Windows asset name protects latest/download links.
@@ -160,7 +196,10 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
       if (-not $isWindowsRid) {
         $relative = $name.Substring($packageName.Length + 1)
         # Unix regular files: 0100755 for programs, 0100644 for data.
-        $mode = if ($relative -in @($binary, "tools/makerom", "tools/bannertool") -or
+        $mode = if ($relative -in @($binary, "tools/makerom", "tools/bannertool",
+            "neo3ds-converter.app/Contents/MacOS/neo3ds-converter",
+            "neo3ds-converter.app/Contents/MacOS/tools/osx-arm64/makerom",
+            "neo3ds-converter.app/Contents/MacOS/tools/osx-arm64/bannertool") -or
           $relative -match '\.(so(\.[0-9]+)*|dylib)$') { 33261 } else { 33188 }
         $entry.ExternalAttributes = $mode -shl 16
       }

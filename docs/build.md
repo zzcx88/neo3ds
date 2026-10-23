@@ -119,8 +119,8 @@ GitHub Release에 올린다 (#55에서 복원).
 1. `<Version>` 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
    (CI가 검증: 태그 ≠ `<Version>`이면 실패)
 2. `git tag vX.Y.Z && git push origin vX.Y.Z`
-3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package` 매트릭스 3종
-   (windows-latest + ubuntu-latest + macos-14) → `release`(Release 생성 + 4개 파일 첨부)
+3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package-windows` + `package-unix` 매트릭스 2종
+   (windows-latest + ubuntu-latest + macos-15) → `release`(Release 생성 + 4개 파일 첨부)
 4. 릴리스 페이지에서 4개 파일 확인
 
 산출물 (파일명 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게):
