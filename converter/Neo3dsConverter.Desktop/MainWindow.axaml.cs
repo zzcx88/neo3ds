@@ -16,9 +16,13 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        if (OperatingSystem.IsLinux())
+            FontFamily = new Avalonia.Media.FontFamily("fonts:NotoSansKR#Noto Sans KR");
+        ApplyLang();
         OutDirBox.Text = DefaultOutDir();
         OpenButton.Click += OnOpenClicked;
         OutDirButton.Click += OnOutDirClicked;
+        LangButton.Click += (_, _) => { Lang.Set(!Lang.Korean, remember: true); App.RestartRequested = true; Close(); };
         BuildButton.Click += async (_, _) => await BuildAsync(pack: false);
         PackButton.Click += async (_, _) => await BuildAsync(pack: true);
         LauncherButton.Click += async (_, _) => await BuildLauncherAsync();
@@ -31,6 +35,35 @@ public partial class MainWindow : Window
         DropZone.AddHandler(DragDrop.DropEvent, OnDrop);
         Log(Lang.L("MAME 네오지오 롬셋 zip을 끌어다 놓거나 [롬 zip 열기]를 누르세요.", "Drop MAME Neo Geo romset zips here or press [Open]."));
     }
+
+    void ApplyLang()
+    {
+        LangButton.Content = Lang.Korean ? "English" : "한국어";
+        OpenButton.Content = Lang.L("롬 zip 열기 (여러 개 가능)", "Open ROM zips (one or more)");
+        StatusText.Text = Lang.L("롬을 선택하세요", "Pick a ROM");
+        TitleBox.PlaceholderText = Lang.L("제목", "Title");
+        IconBox.PlaceholderText = BannerBox.PlaceholderText = Lang.L("자동 생성", "Generated");
+        IconPickButton.Content = BannerPickButton.Content = Lang.L("선택", "Pick");
+        OutDirButton.Content = Lang.L("변경", "Change");
+        BuildButton.Content = Lang.L("CIA 만들기", "Build CIA");
+        PackButton.Content = Lang.L("런처용 파일 만들기", "Launcher file");
+        LauncherButton.Content = Lang.L("런처 CIA 만들기 (한 번만 설치)", "Build the launcher CIA (install once)");
+        SystemBox.ItemsSource = new[]
+        {
+            Lang.L("자동 (가정용 AES, 필요한 게임만 MVS)", "Automatic (home AES, MVS where a game needs it)"),
+            Lang.L("AES (가정용)", "AES (home console)"),
+            Lang.L("MVS (아케이드)", "MVS (arcade)"),
+        };
+        RegionBox.ItemsSource = new[]
+        {
+            Lang.L("유럽·아시아 (기본)", "Europe/Asia (default)"),
+            Lang.L("일본 (무검열, 일본어)", "Japan (uncensored, Japanese text)"),
+            Lang.L("미국", "USA"),
+        };
+    }
+
+    bool? SelectedMvs => SystemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
+    Region SelectedRegion => RegionBox.SelectedIndex switch { 1 => Region.Japan, 2 => Region.Usa, _ => Region.Europe };
 
     static string DefaultOutDir()
     {
@@ -198,6 +231,8 @@ public partial class MainWindow : Window
         j.Title = CurrentTitle;
         j.IconImage = IconImage;
         j.BannerImage = BannerImage;
+        j.StartMvs = SelectedMvs;
+        j.Region = SelectedRegion;
         j.OutputDir = OutDir();
         SetBusy(true);
         var sw = Stopwatch.StartNew();
@@ -230,6 +265,8 @@ public partial class MainWindow : Window
             for (int i = 0; i < jobs.Count; i++)
             {
                 var j = jobs[i];
+                j.StartMvs = SelectedMvs;
+                j.Region = SelectedRegion;
                 j.OutputDir = outDir;
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");

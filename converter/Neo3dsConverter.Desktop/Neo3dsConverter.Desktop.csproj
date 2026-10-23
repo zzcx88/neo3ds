@@ -26,4 +26,8 @@
     <None Include="../../tools/$(ToolRuntimeIdentifier)/makerom" Link="tools/$(ToolRuntimeIdentifier)/makerom" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../tools/$(ToolRuntimeIdentifier)/bannertool" Link="tools/$(ToolRuntimeIdentifier)/bannertool" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <!-- D7a: bundled Korean UI font, Linux only (macOS/Windows use system fonts) -->
+  <ItemGroup Condition="'$(ToolRuntimeIdentifier)' == 'linux-x64'">
+    <AvaloniaResource Include="Assets/Fonts/*.ttf" />
+  </ItemGroup>
 </Project>

@@ -16,6 +16,9 @@ public class MainWindowTests
         Assert.NotNull(window.FindControl<Button>("BuildButton"));
         Assert.NotNull(window.FindControl<Button>("PackButton"));
         Assert.NotNull(window.FindControl<Button>("LauncherButton"));
+        Assert.NotNull(window.FindControl<Button>("LangButton"));
+        Assert.NotNull(window.FindControl<ComboBox>("SystemBox"));
+        Assert.NotNull(window.FindControl<ComboBox>("RegionBox"));
         Assert.NotNull(window.FindControl<TextBox>("TitleBox"));
         Assert.NotNull(window.FindControl<TextBox>("IconBox"));
         Assert.NotNull(window.FindControl<TextBox>("BannerBox"));
@@ -33,6 +36,8 @@ public class MainWindowTests
         Assert.False(window.FindControl<Button>("PackButton")!.IsEnabled);
         Assert.True(window.FindControl<Button>("LauncherButton")!.IsEnabled);
         Assert.NotNull(window.FindControl<TextBox>("OutDirBox")!.Text);
+        Assert.Equal(0, window.FindControl<ComboBox>("SystemBox")!.SelectedIndex);
+        Assert.Equal(0, window.FindControl<ComboBox>("RegionBox")!.SelectedIndex);
 
         window.Close();
     }
@@ -46,6 +51,18 @@ public class MainWindowTests
         Assert.True(window.FindControl<TextBox>("TitleBox")!.IsEnabled);
         Assert.True(window.FindControl<Button>("IconPickButton")!.IsEnabled);
         Assert.True(window.FindControl<Button>("BannerPickButton")!.IsEnabled);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void LangButton_ShowsOppositeLanguage()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        string expected = Lang.Korean ? "English" : "한국어";
+        Assert.Equal(expected, window.FindControl<Button>("LangButton")!.Content);
 
         window.Close();
     }
