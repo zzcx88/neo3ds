@@ -10,7 +10,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 릴리스 패키징�
 - `engine/source/` — 3DS 엔진 (devkitARM/libctru)
 - `site/` — 소개 페이지 + 웹 변환기 (`convert.html`, 정적 호스팅)
 - `site/vendor/conv/` — 웹 변환기 로직 (C# 포팅 ES 모듈 + Worker)
-- `converter/` — C# 변환기 (정확도 기준선 + 오프라인 변환기 릴리스: Windows GUI, Linux·macOS CLI)
+- `converter/` — C# 변환기 (정확도 기준선 + 오프라인 변환기 릴리스: 3종 모두 GUI + 명령줄)
 - `converter/assets/` — 게임 DB, RSF
 - `scripts/` — 빌드·Azahar 테스트 스크립트
 - 로컬 준비 (git 제외): `tools/` (makerom, bannertool, Azahar), `roms/`, `dist/`, `out/`

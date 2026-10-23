@@ -96,8 +96,8 @@ A converter you download and keep on your PC instead of using the browser. It wo
 | PC | Download | How |
 |---|---|---|
 | Windows 10/11 64-bit | [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) | Window + command line |
-| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (from 1.2.0) | Command line |
-| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (from 1.2.0) | Command line |
+| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (from 1.2.0, window from the next release) | Window + command line |
+| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (from 1.2.0, window from the next release) | Window + command line |
 
 No .NET runtime to install. Keep the unpacked folder together; the program does not run without its `tools` folder.
 
@@ -112,6 +112,21 @@ No .NET runtime to install. Keep the unpacked folder together; the program does 
 5. Press **[Build CIA]**. **[Launcher file]** builds a `.neo3ds` file for the launcher, and **[Build the launcher CIA]** the launcher app.
 
 Drop several zips at once to convert them one after the other. The **[한국어]** button at the bottom right switches the window to Korean.
+
+#### Linux and macOS: the converter window (from the next release)
+
+1. Download and unzip. On Linux run `neo3ds-converter`; on macOS open `neo3ds-converter.app`. With no arguments the window opens; with arguments it runs as a command line.
+2. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names.
+3. Drop ROM zips on the window or press **[Open ROM zips]** (one or more).
+4. Once the game is recognized, change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like; the preview shows the HOME menu art as it will be built.
+5. Press **[Build CIA]**. **[Launcher file]** builds a `.neo3ds` file, **[Build the launcher CIA]** the launcher app. Files go to `~/Downloads` (`~/Documents` when there is no Downloads folder).
+6. The **[한국어]/[English]** button at the top left switches the language (the window reopens).
+
+Drop several zips at once to convert them one after the other with automatic titles and art.
+
+- **macOS**: files downloaded with a browser may be blocked from running. After unzipping, run `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64` once in Terminal. The app is unsigned, so press **Open** if a warning appears on first launch.
+- **Linux**: needs `libx11-6`, `libice6`, `libsm6`, `libfontconfig1` (Ubuntu names). Korean UI fonts ship with the app. Wayland native is not supported; it runs on X11/XWayland.
+- **Not supported**: Intel Macs, linux-arm64.
 
 #### Command line (Windows, Linux, macOS)
 
@@ -128,9 +143,7 @@ neo3ds-converter --help
 - `--region`: Europe/Asia `eu`, Japan `jp` or USA `us`; `eu` when left out.
 - `--pack` builds a `.neo3ds` file for the launcher instead of a CIA. `--launcher` builds the launcher CIA (`neo3ds-launcher.cia`).
 - `--icon` / `--banner`: pictures for the icon (48×48) and banner (256×128); other sizes are scaled and cropped to fit.
-- `--lang`: switches the language (`ko` / `en`); remembered for the window too.
-- **macOS**: files downloaded with a browser may be blocked from running. After unzipping, run `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64` once in Terminal.
-- **Linux**: the icon and banner text is drawn with the system fonts (fontconfig). If it fails on a minimal install, install `fontconfig` and a font package.
+- `--lang`: switches the language (`ko` / `en`); remembered for the window too. (For first-run on macOS and Linux dependencies, see above.)
 
 ## Controls
 

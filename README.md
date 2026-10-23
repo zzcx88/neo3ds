@@ -98,8 +98,8 @@
 | PC | 받기 | 쓰는 방법 |
 |---|---|---|
 | Windows 10/11 64비트 | [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) | 창 + 명령줄 |
-| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (1.2.0부터) | 명령줄 |
-| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (1.2.0부터) | 명령줄 |
+| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (1.2.0부터, 창은 다음 릴리스부터) | 창 + 명령줄 |
+| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (1.2.0부터, 창은 다음 릴리스부터) | 창 + 명령줄 |
 
 .NET 런타임을 따로 설치하지 않아도 됩니다. 압축을 푼 폴더는 통째로 두고, 실행 파일만 따로 꺼내지 마세요(`tools` 폴더가 함께 있어야 합니다).
 
@@ -114,6 +114,21 @@
 5. **[CIA 만들기]** 를 누릅니다. 런처용 파일은 **[런처용 파일 만들기]**, 런처 앱은 **[런처 CIA 만들기]** 로 만듭니다.
 
 zip을 여러 개 한꺼번에 넣으면 차례로 변환합니다. 창 오른쪽 아래 **[English]** 버튼으로 언어를 바꿀 수 있습니다.
+
+#### Linux·macOS: 창으로 쓰기 (다음 릴리스부터)
+
+1. zip을 받아 압축을 풉니다. Linux는 `neo3ds-converter`를 실행하고, macOS는 `neo3ds-converter.app`을 엽니다. 인자 없이 실행하면 창이 뜨고, 인자를 주면 명령줄로 동작합니다.
+2. 게임 롬 zip과 `neogeo.zip`을 **같은 폴더**에 둡니다. zip 파일 이름은 MAME 이름 그대로 두세요.
+3. 롬 zip을 창에 끌어다 놓거나 **[롬 zip 열기]** 를 누릅니다(여러 개 가능).
+4. 인식된 게임이 나오면 필요에 따라 **게임 이름**, **시스템**, **지역**, **아이콘**, **배너**를 바꿉니다. 아래 미리보기가 실제 HOME 메뉴 모양입니다.
+5. **[CIA 만들기]** 를 누릅니다. 런처용 파일은 **[런처용 파일 만들기]**, 런처 앱은 **[런처 CIA 만들기]** 로 만듭니다. 결과는 `~/Downloads`(없으면 `~/Documents`)에 저장됩니다.
+6. 창 왼쪽 위 **[English]/[한국어]** 버튼으로 언어를 바꿀 수 있습니다(창이 다시 열립니다).
+
+zip을 여러 개 한꺼번에 넣으면 차례로 변환하고 게임마다 자동 이름·자동 아트로 만듭니다.
+
+- **macOS**: 브라우저로 받은 파일은 실행이 막힐 수 있습니다. 압축을 푼 뒤 터미널에서 `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64`를 한 번 실행하세요. 서명하지 않은 앱이라 처음 열 때 경고가 나오면 **열기**를 누르세요.
+- **Linux**: `libx11-6`, `libice6`, `libsm6`, `libfontconfig1`이 필요합니다(Ubuntu 기준). 한글 화면 글꼴은 앱에 들어 있어 별도 설치가 필요 없습니다. Wayland 네이티브는 지원하지 않고 X11/XWayland로 실행됩니다.
+- **미지원**: Intel Mac, linux-arm64.
 
 #### 명령줄로 쓰기 (Windows · Linux · macOS)
 
@@ -130,9 +145,7 @@ neo3ds-converter --help
 - `--region`: 지역(유럽·아시아 `eu` / 일본 `jp` / 미국 `us`). 생략하면 `eu`입니다.
 - `--pack`: CIA 대신 런처용 `.neo3ds` 파일을 만듭니다. `--launcher`는 런처 CIA(`neo3ds-launcher.cia`)를 만듭니다.
 - `--icon` / `--banner`: 아이콘(48×48)과 배너(256×128)로 쓸 그림입니다. 크기가 달라도 비율에 맞춰 잘라서 맞춥니다.
-- `--lang`: 화면 언어(`ko` / `en`)를 바꿉니다. 기억해 두었다가 창을 열 때도 씁니다.
-- **macOS**: 브라우저로 받은 파일은 실행이 막힐 수 있습니다. 압축을 푼 뒤 터미널에서 `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64`를 한 번 실행하세요.
-- **Linux**: 아이콘·배너 글자를 그릴 때 시스템 글꼴(fontconfig)을 씁니다. 최소 설치 환경에서 오류가 나면 `fontconfig`와 글꼴 패키지를 설치하세요.
+- `--lang`: 화면 언어(`ko` / `en`)를 바꿉니다. 기억해 두었다가 창을 열 때도 씁니다. (macOS 첫 실행·Linux 의존성은 위 창 쓰기 참고)
 
 ## 조작법
 
