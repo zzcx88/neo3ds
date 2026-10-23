@@ -1,6 +1,6 @@
 name: Release
 
-# Builds the three release packages: Windows GUI + Linux/macOS CLI (#23).
+# Builds the three release packages: Windows GUI + Linux/macOS Desktop (#23, #102).
 # Tags (v1.2.3) trigger the full flow: engine ELF -> per-OS packages -> GitHub Release.
 # Manual runs (workflow_dispatch) build the same artifacts without creating a release.
 on:
@@ -42,27 +42,10 @@ jobs:
           path: engine/engine.elf
           if-no-files-found: error
 
-  package:
-    name: package (${{ matrix.runtime }})
+  package-windows:
+    name: package (win-x64)
     needs: engine
-    strategy:
-      # One OS build must not cancel the others: a macOS outage still yields Windows+Linux.
-      fail-fast: false
-      matrix:
-        include:
-          - runtime: win-x64
-            os: windows-latest
-            project: Neo3dsConverter
-            launcher: '-WithLauncher'
-          - runtime: linux-x64
-            os: ubuntu-latest
-            project: Neo3dsConverter.Cli
-            launcher: ''
-          - runtime: osx-arm64
-            os: macos-14
-            project: Neo3dsConverter.Cli
-            launcher: ''
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -72,28 +55,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Guard runner architecture
-        shell: bash
-        run: |
-          arch=$(uname -m)
-          case "${{ matrix.runtime }}/$arch" in
-            win-x64/x86_64|linux-x64/x86_64) ;;
-            osx-arm64/arm64) ;;
-            *) echo "::error::${{ matrix.runtime }} needs a different runner (got $arch)"; exit 1 ;;
-          esac
-      - name: Build Unix tools (makerom, bannertool)
-        if: matrix.runtime != 'win-x64'
-        shell: bash
-        run: |
-          if [ "${{ matrix.runtime }}" = "linux-x64" ]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq build-essential git zip libyaml-dev
-          fi
-          bash scripts/build_unix_tools.sh
-          test -s "tools/${{ matrix.runtime }}/makerom"
-          test -s "tools/${{ matrix.runtime }}/bannertool"
       - name: Fetch Windows tools from latest release
-        if: matrix.runtime == 'win-x64'
         shell: pwsh
         run: |
           # tools/ is git-ignored, so the Windows runner bootstraps makerom/bannertool
@@ -110,21 +72,90 @@ jobs:
       - name: Package release zip
         shell: pwsh
         run: |
-          ./scripts/package_release.ps1 -Runtimes ${{ matrix.runtime }} `
-            -OutDir dist ${{ matrix.launcher }} `
+          ./scripts/package_release.ps1 -Runtimes win-x64 `
+            -OutDir dist -WithLauncher `
             -VersionOverride '${{ inputs.version }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-win-x64
+          path: |
+            dist/*.zip
+            dist/*.cia
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-cia
+          path: dist/neo3ds-launcher.cia
+          if-no-files-found: error
+
+  package-unix:
+    name: package (${{ matrix.runtime }})
+    needs: [engine, package-windows]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: linux-x64
+            os: ubuntu-latest
+          - runtime: osx-arm64
+            os: macos-15
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: engine-elf
+          path: engine
+      - uses: actions/download-artifact@v4
+        with:
+          name: launcher-cia
+          path: launcher-inject
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Guard runner architecture
+        shell: bash
+        run: |
+          arch=$(uname -m)
+          case "${{ matrix.runtime }}/$arch" in
+            linux-x64/x86_64) ;;
+            osx-arm64/arm64) ;;
+            *) echo "::error::${{ matrix.runtime }} needs a different runner (got $arch)"; exit 1 ;;
+          esac
+      - name: Build Unix tools (makerom, bannertool)
+        shell: bash
+        run: |
+          if [ "${{ matrix.runtime }}" = "linux-x64" ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq build-essential git zip libyaml-dev
+          fi
+          bash scripts/build_unix_tools.sh
+          test -s "tools/${{ matrix.runtime }}/makerom"
+          test -s "tools/${{ matrix.runtime }}/bannertool"
+      - name: Package release zip
+        shell: pwsh
+        run: |
+          ./scripts/package_release.ps1 -Runtimes ${{ matrix.runtime }} `
+            -OutDir dist -LauncherCia launcher-inject/neo3ds-launcher.cia `
+            -VersionOverride '${{ inputs.version }}'
+      - name: Re-zip macOS package with ditto
+        if: matrix.runtime == 'osx-arm64'
+        shell: bash
+        run: |
+          rm dist/neo3ds-converter-osx-arm64.zip
+          ditto -c -k --sequesterRsrc --keepParent dist/stage/neo3ds-converter-osx-arm64 dist/neo3ds-converter-osx-arm64.zip
+          unzip -l dist/neo3ds-converter-osx-arm64.zip | head -8
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.runtime }}
           path: |
             dist/*.zip
-            dist/*.cia
           if-no-files-found: error
 
   release:
     name: GitHub Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: package
+    needs: [package-windows, package-unix]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -143,6 +174,10 @@ jobs:
             exit 1
           }
           ls -la dist
+          test $(ls dist/neo3ds-launcher.cia | wc -l) -eq 1 || {
+            echo "::error::expected exactly one dist/neo3ds-launcher.cia (D6: built once on win-x64)"
+            exit 1
+          }
       - uses: softprops/action-gh-release@v2
         with:
           files: |

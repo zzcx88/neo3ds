@@ -1,0 +1,69 @@
+name: Desktop
+
+# Converter CI: build + headless tests + no-ROM smoke on all three OSes (D13).
+# Runs on converter changes and PRs touching the desktop projects.
+on:
+  push:
+    branches: [main]
+    paths: ['converter/**', '.github/workflows/desktop.yml']
+  pull_request:
+    paths: ['converter/**', '.github/workflows/desktop.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build-test:
+    name: build+test (${{ matrix.runtime }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: win-x64
+            os: windows-latest
+          - runtime: linux-x64
+            os: ubuntu-latest
+          - runtime: osx-arm64
+            os: macos-15
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Stub runtime payload (build-only, no conversion runs)
+        shell: bash
+        run: |
+          touch engine/engine.elf
+          mkdir -p tools/makerom tools/bannertool/windows-x86_64 tools/linux-x64 tools/osx-arm64
+          touch tools/makerom/makerom.exe tools/bannertool/windows-x86_64/bannertool.exe
+          touch tools/linux-x64/makerom tools/linux-x64/bannertool
+          touch tools/osx-arm64/makerom tools/osx-arm64/bannertool
+      - name: Build Desktop
+        run: dotnet build converter/Neo3dsConverter.Desktop -c Release
+      - name: Headless tests
+        run: dotnet test converter/Neo3dsConverter.Desktop.Tests -c Release --no-build
+      - name: No-ROM smoke (help + version paths)
+        shell: bash
+        run: |
+          if [ "${{ matrix.runtime }}" = "win-x64" ]; then
+            exe=converter/Neo3dsConverter.Desktop/bin/Release/net10.0/neo3ds-converter.dll
+            dotnet "$exe" --help | head -3
+          else
+            exe=converter/Neo3dsConverter.Desktop/bin/Release/net10.0/neo3ds-converter
+            chmod +x "$exe"
+            "$exe" --help | head -3
+          fi
+      - name: Verify SkiaSharp unification
+        shell: bash
+        run: |
+          dotnet list converter/Neo3dsConverter.Desktop package --include-transitive | grep -i 'skiasharp ' | grep -q '4.153.1' || {
+            echo "::error::SkiaSharp did not unify to 4.153.1"; exit 1
+          }
