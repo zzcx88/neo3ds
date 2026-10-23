@@ -40,7 +40,17 @@ public partial class MainWindow : Window
     {
         LangButton.Content = Lang.Korean ? "English" : "한국어";
         OpenButton.Content = Lang.L("롬 zip 열기 (여러 개 가능)", "Open ROM zips (one or more)");
+        DropHint.Text = Lang.L("여기에 zip을 끌어다 놓기 (여러 개 가능)", "Drop zip files here (one or more)");
         StatusText.Text = Lang.L("롬을 선택하세요", "Pick a ROM");
+        LabelTitle.Text = Lang.L("게임 이름", "Title");
+        LabelIcon.Text = Lang.L("아이콘", "Icon");
+        LabelBanner.Text = Lang.L("배너", "Banner");
+        LabelSystem.Text = Lang.L("시스템", "System");
+        LabelRegion.Text = Lang.L("지역", "Region");
+        LabelIconPreview.Text = Lang.L("아이콘 (48×48)", "Icon (48×48)");
+        LabelBannerPreview.Text = Lang.L("배너 (256×128)", "Banner (256×128)");
+        LabelOutDir.Text = Lang.L("출력 폴더", "Output folder");
+        LabelLog.Text = Lang.L("로그", "Log");
         TitleBox.PlaceholderText = Lang.L("제목", "Title");
         IconBox.PlaceholderText = BannerBox.PlaceholderText = Lang.L("자동 생성", "Generated");
         IconPickButton.Content = BannerPickButton.Content = Lang.L("선택", "Pick");
@@ -300,7 +310,8 @@ public partial class MainWindow : Window
         SetBusy(true);
         try
         {
-            string cia = await Task.Run(() => new CiaBuilder(Log).BuildLauncher(OutDir()));
+            string dir = OutDir();
+            string cia = await Task.Run(() => new CiaBuilder(Log).BuildLauncher(dir));
             Log(Lang.L("FBI로 한 번만 설치하세요.", "Install it once with FBI."));
             await ShowDialog(Lang.L("완료", "Done"), cia);
         }
