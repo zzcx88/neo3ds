@@ -127,7 +127,7 @@ zip을 여러 개 한꺼번에 넣으면 차례로 변환합니다. 창 오른�
 zip을 여러 개 한꺼번에 넣으면 차례로 변환하고 게임마다 자동 이름·자동 아트로 만듭니다.
 
 - **macOS**: 브라우저로 받은 파일은 실행이 막힐 수 있습니다. 압축을 푼 뒤 터미널에서 `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64`를 한 번 실행하세요. 서명하지 않은 앱이라 처음 열 때 경고가 나오면 **열기**를 누르세요.
-- **Linux**: `libx11-6`, `libice6`, `libsm6`, `libfontconfig1`이 필요합니다(Ubuntu 기준). 한글 화면 글꼴은 앱에 들어 있어 별도 설치가 필요 없습니다. Wayland 네이티브는 지원하지 않고 X11/XWayland로 실행됩니다.
+- **Linux**: `libx11-6`, `libice6`, `libsm6`, `libfontconfig1`이 필요합니다(Ubuntu 기준). 창 화면의 한글은 앱에 든 글꼴로 나오지만, 아이콘·배너의 한글 제목은 시스템 한글 글꼴로 그립니다. 시스템에 한글 글꼴이 없으면 제목이 □로 나오니 `fonts-noto-cjk` 같은 한글 글꼴 패키지를 설치하세요. Wayland 네이티브는 지원하지 않고 X11/XWayland로 실행됩니다.
 - **미지원**: Intel Mac, linux-arm64.
 
 #### 명령줄로 쓰기 (Windows · Linux · macOS)

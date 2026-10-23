@@ -16,6 +16,8 @@ Linux·macOS: 인자 없이 실행하면 창이 뜨고(Linux는 ./neo3ds-convert
              런처 CIA는 ./neo3ds-converter --launcher 로 만듭니다.
              macOS에서 실행이 막히면 터미널에서 xattr -dr com.apple.quarantine <이 폴더> 를 한 번 실행하세요.
              Linux는 libx11-6, libice6, libsm6, libfontconfig1이 필요합니다.
+             창 한글은 앱 내장 글꼴로 나오지만 아이콘·배너 한글 제목은 시스템 한글 글꼴이
+             필요하며, 없으면 □로 나옵니다. fonts-noto-cjk 같은 패키지를 설치하세요.
 롬은 포함되어 있지 않습니다. 만든 CIA를 다른 사람에게 배포하지 마세요. 비상업적 용도로만 쓸 수 있습니다.
 
 [English]
@@ -33,6 +35,9 @@ Linux, macOS: with no arguments the window opens (Linux: ./neo3ds-converter, mac
               ./neo3ds-converter --launcher builds the launcher CIA.
               If macOS blocks it, run xattr -dr com.apple.quarantine <this folder> once in Terminal.
               Linux needs libx11-6, libice6, libsm6, libfontconfig1.
+              Window text uses the bundled Korean font, but icon/banner titles with
+              Hangul need a system Korean font; without one they show as boxes.
+              Install a package such as fonts-noto-cjk.
 No ROMs are included. Do not share the CIAs you build. Non-commercial use only.
 
 Licenses: LICENSE.txt (GPL-2.0) and THIRD_PARTY_NOTICES.md
