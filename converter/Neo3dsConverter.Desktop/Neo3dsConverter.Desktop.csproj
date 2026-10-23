@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>neo3ds-converter</AssemblyName>
+    <UseAppHost>true</UseAppHost>
+    <ToolRuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</ToolRuntimeIdentifier>
+    <ToolRuntimeIdentifier Condition="'$(ToolRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</ToolRuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <ProjectReference Include="../Neo3dsConverter.Core/Neo3dsConverter.Core.csproj" />
+    <None Include="../assets/neo3ds.rsf" Link="tools/neo3ds.rsf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../engine/engine.elf" Link="tools/engine.elf" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ToolRuntimeIdentifier)' == 'win-x64'">
+    <None Include="../../tools/makerom/makerom.exe" Link="tools/win-x64/makerom.exe" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../tools/bannertool/windows-x86_64/bannertool.exe" Link="tools/win-x64/bannertool.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ToolRuntimeIdentifier)' == 'linux-x64' Or '$(ToolRuntimeIdentifier)' == 'osx-arm64'">
+    <None Include="../../tools/$(ToolRuntimeIdentifier)/makerom" Link="tools/$(ToolRuntimeIdentifier)/makerom" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../tools/$(ToolRuntimeIdentifier)/bannertool" Link="tools/$(ToolRuntimeIdentifier)/bannertool" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
