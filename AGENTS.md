@@ -1,6 +1,6 @@
 # neo3ds — 에이전트 지침
 
-NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 빌드·테스트는 Windows 전용.
+NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 릴리스 패키징은 OS별 러너에서 수행하고, 일상 개발·검증은 macOS/Linux/Windows에서 가능.
 다인원 + AI 협업 전제: 공유 기록은 GitHub 이슈, 로컬 기록은 `docs/PROGRESS.md`.
 
 절차 정본: `docs/build.md` (빌드·테스트·릴리스 — 해당 작업 시 먼저 읽기).
