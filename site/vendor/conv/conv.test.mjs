@@ -500,7 +500,8 @@ await t('batch/pool-size-memory-first', async () => {
   eq(poolSize({ ready: 2, cores: 8 }), 2, 'never more than games');
   eq(poolSize({ ready: 9, cores: 2 }), 1, 'one spare core -> 1');
   eq(poolSize({ ready: 9, cores: 8, memory: 4 }), 1, '4GB device -> 1');
-  eq(poolSize({ ready: 9, cores: 8, mobile: true }), 1, 'mobile -> 1');
+  eq(poolSize({ ready: 9, cores: 8, mobile: true }), 1, 'mobile without memory -> 1');
+  eq(poolSize({ ready: 9, cores: 8, mobile: true, memory: 8 }), 4, 'mobile that reports 8GB keeps its cores');
   eq(poolSize({}), 1, 'unknown device -> 1');
 });
 
