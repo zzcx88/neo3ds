@@ -125,7 +125,7 @@ Drop several zips at once to convert them one after the other. The **[한국어]
 Drop several zips at once to convert them one after the other with automatic titles and art.
 
 - **macOS**: files downloaded with a browser may be blocked from running. After unzipping, run `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64` once in Terminal. The app is unsigned, so press **Open** if a warning appears on first launch.
-- **Linux**: needs `libx11-6`, `libice6`, `libsm6`, `libfontconfig1` (Ubuntu names). Window text uses the bundled Korean font, but icon/banner titles with Hangul are drawn with the system Korean font. Without one the title shows as □ boxes, so install a Korean font package such as `fonts-noto-cjk`. Wayland native is not supported; it runs on X11/XWayland.
+- **Linux**: needs `libx11-6`, `libice6`, `libsm6`, `libfontconfig1` (Ubuntu names). **Verified on Xubuntu 26.10 desktop (X11).** Window text uses the bundled Korean font, but icon/banner titles with Hangul are drawn with the system Korean font. Without one the title shows as □ boxes, so install a Korean font package such as `fonts-noto-cjk`. Wayland native is not supported; it runs on X11/XWayland.
 - **Not supported**: Intel Macs, linux-arm64.
 
 #### Command line (Windows, Linux, macOS)
