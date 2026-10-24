@@ -120,6 +120,17 @@ export function markFailed(batch, i, message) {
   return batch;
 }
 
+/* ── #122 worker pool size ────────────────────────────────────────────────
+   One worker per game in flight; each holds a whole romset in memory, so the
+   cap is memory first and cores second. Pure so Node tests pin the rule. */
+export const MAX_WORKERS = 4;
+export function poolSize({ ready = 1, cores = 2, memory = null, mobile = false } = {}) {
+  const n = (v, fallback) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.trunc(Number(v)) : fallback);
+  const games = Math.max(1, n(ready, 1));
+  if (mobile || (memory != null && Number(memory) <= 4)) return 1;
+  return Math.max(1, Math.min(MAX_WORKERS, Math.max(1, n(cores, 2) - 1), games));
+}
+
 // Counts for the list header and the final success/fail summary.
 export function summary(batch = []) {
   const s = {

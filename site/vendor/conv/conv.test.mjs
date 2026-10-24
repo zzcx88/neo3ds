@@ -461,15 +461,47 @@ await t('progress/stage-fraction-windows', async () => {
   if (stageFraction('load', undefined) !== 0 || stageFraction('bogus', 0.5) !== 0) throw new Error('missing stage');
 });
 
-await t('progress/overall-batch-capped-until-done', async () => {
-  const { overallFraction } = await import('./progress.js');
+await t('progress/batch-fraction-serial-and-capped', async () => {
+  const { batchFraction } = await import('./progress.js');
   const near = (got, want, tag) => { if (Math.abs(got - want) > 1e-9) throw new Error(`${tag}: ${got} != ${want}`); };
-  near(overallFraction({ ready: 3, index: 0, step: 'load', frac: 0.05 }), 0.05 / 3, 'first game');
-  near(overallFraction({ ready: 3, index: 1, step: 'romfs', frac: 0.65 }), 1.65 / 3, 'second game');
-  near(overallFraction({ ready: 3, index: 2, step: 'cia', frac: 0.85 }), 2.85 / 3, 'third game');
-  if (overallFraction({ ready: 3, index: 2, step: 'cia', frac: 1 }) !== 0.99) throw new Error('not capped at 99%');
-  near(overallFraction({ ready: 2, index: 9, step: 'load', frac: 0 }), 0.5, 'index clamp');
-  near(overallFraction({ ready: 0 }), 0, 'empty ready');
+  // serial (one game in flight) matches the old per-index timeline
+  near(batchFraction({ ready: 3, done: 0, running: [{ step: 'load', frac: 0.05 }] }), 0.05 / 3, 'first game');
+  near(batchFraction({ ready: 3, done: 1, running: [{ step: 'romfs', frac: 0.65 }] }), 1.65 / 3, 'second game');
+  near(batchFraction({ ready: 3, done: 2, running: [{ step: 'cia', frac: 0.85 }] }), 2.85 / 3, 'third game');
+  if (batchFraction({ ready: 3, done: 2, running: [{ step: 'cia', frac: 1 }] }) !== 0.99) throw new Error('not capped at 99%');
+  near(batchFraction({ ready: 0 }), 0, 'empty ready');
+  near(batchFraction({ ready: 2, done: 9, running: [{ step: 'cia', frac: 1 }] }), 0.99, 'done clamp');
+});
+
+await t('progress/batch-fraction-parallel-is-monotonic', async () => {
+  const { batchFraction } = await import('./progress.js');
+  const ready = 4;
+  let done = 0, last = -1;
+  // four games in flight, finishing one at a time while a fresh one starts
+  const stages = [['load', 0.05], ['romfs', 0.3], ['romfs', 0.65], ['art', 0.8], ['cia', 0.9]];
+  const running = [[0, 'load', 0.05], [1, 'load', 0.05], [2, 'load', 0.05], [3, 'load', 0.05]];
+  for (let step = 0; step < stages.length; step++) {
+    for (const r of running) { r[1] = stages[step][0]; r[2] = stages[step][1]; }
+    const f = batchFraction({ ready, done, running: running.map(([, s2, x]) => ({ step: s2, frac: x })) });
+    if (f < last) throw new Error(`went backwards at step ${step}: ${f} < ${last}`);
+    last = f;
+  }
+  if (last > 0.99) throw new Error('overshot 99%');
+  // each finished game frees a slot: done+1 while the replacement starts at 0
+  const before = batchFraction({ ready, done: 3, running: [{ step: 'cia', frac: 1 }] });
+  const after = batchFraction({ ready, done: 4, running: [] });
+  if (after < before) throw new Error(`finish went backwards: ${after} < ${before}`);
+});
+
+await t('batch/pool-size-memory-first', async () => {
+  const { poolSize } = await import('./batch.js');
+  const eq = (got, want, tag) => { if (got !== want) throw new Error(`${tag}: ${got} != ${want}`); };
+  eq(poolSize({ ready: 9, cores: 8 }), 4, 'capped at 4');
+  eq(poolSize({ ready: 2, cores: 8 }), 2, 'never more than games');
+  eq(poolSize({ ready: 9, cores: 2 }), 1, 'one spare core -> 1');
+  eq(poolSize({ ready: 9, cores: 8, memory: 4 }), 1, '4GB device -> 1');
+  eq(poolSize({ ready: 9, cores: 8, mobile: true }), 1, 'mobile -> 1');
+  eq(poolSize({}), 1, 'unknown device -> 1');
 });
 
 await t('progress/percent-text', async () => {
