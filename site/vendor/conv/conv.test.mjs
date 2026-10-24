@@ -42,6 +42,76 @@ await t('zipset/split-crc', async () => {
   if (p1.length !== 1048576) throw new Error('p1 len ' + p1.length);
 }, true);
 
+// #121: the index comes from the central directory, so judging a romset must
+// not inflate chips. A File-shaped source counts the bytes actually read.
+const fileSourceOf = (name, bytes) => {
+  const f = {
+    name, size: bytes.length, bytesRead: 0,
+    slice(off, end) {
+      f.bytesRead += end - off;
+      return { arrayBuffer: async () => bytes.slice(off, end).buffer };
+    },
+  };
+  return f;
+};
+// Deterministic, poorly compressible bytes so the zip really is ~1MB.
+const noise = (n, seed = 1) => {
+  const out = new Uint8Array(n);
+  let x = seed;
+  for (let i = 0; i < n; i++) { x = (x * 1103515245 + 12345) >>> 0; out[i] = x >>> 24; }
+  return out;
+};
+
+await t('zipset/index-needs-no-chip-bytes', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { RomSet } = await import('./zipset.js');
+  const { crc32Bytes } = await import('./job.js');
+  const chip = noise(1 << 20);
+  const zip = zipSync({ 'big.bin': chip });
+  const f = fileSourceOf('big.zip', zip);
+  const rom = await RomSet.open([f]);
+  if (!rom.has('big.bin', crc32Bytes(chip))) throw new Error('chip not indexed by CRC');
+  if (f.bytesRead > 100_000) throw new Error(`read ${f.bytesRead} bytes for a ${zip.length} byte zip`);
+});
+
+await t('zipset/lazy-read-returns-entry', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { RomSet } = await import('./zipset.js');
+  const { crc32Bytes } = await import('./job.js');
+  const chip = noise(4096, 7);
+  const zip = zipSync({ 'rom.bin': chip }, { level: 0 }); // stored entry
+  const rom = await RomSet.open([fileSourceOf('stored.zip', zip)]);
+  const got = await rom.read('rom.bin', crc32Bytes(chip), 'testset');
+  if (Buffer.compare(Buffer.from(got), Buffer.from(chip)) !== 0) throw new Error('stored entry bytes differ');
+  const deflated = zipSync({ 'rom.bin': chip });
+  const rom2 = await RomSet.open([fileSourceOf('deflated.zip', deflated)]);
+  const got2 = await rom2.read('rom.bin', crc32Bytes(chip), 'testset');
+  if (Buffer.compare(Buffer.from(got2), Buffer.from(chip)) !== 0) throw new Error('deflated entry bytes differ');
+});
+
+await t('zipset/crc-mismatch-keeps-reason', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { RomSet } = await import('./zipset.js');
+  const { crc32Bytes } = await import('./job.js');
+  const chip = noise(1024, 3);
+  const rom = await RomSet.open([fileSourceOf('v1.zip', zipSync({ 'rom.bin': chip }))]);
+  const actual = crc32Bytes(chip);
+  const expected = (actual ^ 0xdead) >>> 0;
+  let msg = '';
+  try { await rom.read('rom.bin', expected, 'kof98h'); } catch (e) { msg = e.message; }
+  const want = `rom.bin has CRC ${actual.toString(16)}, expected ${expected.toString(16)}: not the kof98h romset version.`;
+  if (msg !== want) throw new Error(`got ${JSON.stringify(msg)}`);
+});
+
+await t('zipset/truncated-zip-throws', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { RomSet } = await import('./zipset.js');
+  const zip = zipSync({ 'rom.bin': noise(512, 9) });
+  let msg = '';
+  try { await RomSet.open([fileSourceOf('broken.zip', zip.subarray(0, zip.length - 30))]); } catch (e) { msg = e.message; }
+  if (!/zip archive|central directory/.test(msg)) throw new Error('expected a zip error, got ' + JSON.stringify(msg));
+});
+
 // BuildRegions: kof98h sprites 64MB via 16b interleave
 await t('rompack/regions', async () => {
   const { GameDb } = await import('./gamedb.js');

@@ -47,9 +47,9 @@ export async function pickGame(db, RomSetCls, files, name, { set = null, lang = 
   for (const g of cands) {
     const why = db.unsupported(g, lang);
     if (why != null) { problem ??= `${db.title(exact)}: ${why}`; continue; }
-    const zips = new RomSetCls(await Promise.all(zipsFor(g, files, name).map(async (f) => ({
-      name: f.name, data: new Uint8Array(await f.arrayBuffer()),
-    }))));
+    // Index-only open (#121): the browser reads the zip tail + central directory,
+    // so judging a romset no longer inflates its chips.
+    const zips = await RomSetCls.open(zipsFor(g, files, name));
     const missing = zips.missing(g);
     if (missing.length === 0) return { game: g, problem: null, romset: zips };
     if (g === exact || problem == null)
