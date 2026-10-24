@@ -6,7 +6,12 @@ import { BiosSet } from './zipset.js';
 
 export const SPRITE_BLOCK_SIZE = 4096;
 export const SPRITE_CODEC_ZSTD = 2;
-export const ZSTD_LEVEL = 19;
+// #120: one worker means one core, and a 4 KB block caps zstd's window at the
+// block, so level 19 buys ~1.5% size for ~4x the time (kof98h 64 MB: 9.5s ->
+// 2.4s). The desktop converter keeps 19 (RomPack.cs) because it compresses on
+// all cores. The level is invisible to the engine: c.idx stores codec + block
+// size, not the compressor's effort.
+export const ZSTD_LEVEL = 12;
 
 export function place(buf, flag, data, st, offset, size) {
   size = Math.min(size, data.length - st.pos);
