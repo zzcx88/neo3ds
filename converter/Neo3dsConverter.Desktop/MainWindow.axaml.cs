@@ -34,16 +34,21 @@ public partial class MainWindow : Window
         DragDrop.SetAllowDrop(DropZone, true);
         DropZone.AddHandler(DragDrop.DropEvent, OnDrop);
         Log(Lang.L("MAME 네오지오 롬셋 zip을 끌어다 놓거나 [롬 zip 열기]를 누르세요.", "Drop MAME Neo Geo romset zips here or press [Open]."));
+        Log(Lang.L("MAME 롬셋 zip만 지원합니다. MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.",
+                   "Only MAME romset zips are supported. A romset whose names or chip CRCs differ from MAME's does not convert."));
+        Log(Lang.L("여러 개를 한꺼번에 놓거나 고르면 차례로 변환합니다.", "Drop or pick several to convert them one after the other."));
+        Log(Lang.L("neogeo.zip(바이오스)은 롬과 같은 폴더에 있어야 합니다.", "neogeo.zip (BIOS) must be in the same folder as the game zip."));
     }
 
     void ApplyLang()
     {
         // Rebuilding ItemsSource clears the selection, so keep what the user picked.
         int system = SystemBox.SelectedIndex, region = RegionBox.SelectedIndex;
+        Title = Lang.L("neo3ds 변환기 - 네오지오 롬 → 3DS CIA", "neo3ds converter - Neo Geo ROM → 3DS CIA");
         LangButton.Content = Lang.Korean ? "English" : "한국어";
         OpenButton.Content = Lang.L("롬 zip 열기 (여러 개 가능)", "Open ROM zips (one or more)");
         DropHint.Text = Lang.L("여기에 zip을 끌어다 놓기 (여러 개 가능)", "Drop zip files here (one or more)");
-        StatusText.Text = Lang.L("롬을 선택하세요", "Pick a ROM");
+        LabelRom.Text = Lang.L("롬 파일", "ROM file");
         LabelTitle.Text = Lang.L("게임 이름", "Title");
         LabelIcon.Text = Lang.L("아이콘", "Icon");
         LabelBanner.Text = Lang.L("배너", "Banner");
@@ -57,7 +62,6 @@ public partial class MainWindow : Window
         IconBox.PlaceholderText = BannerBox.PlaceholderText = Lang.L("자동 생성", "Generated");
         IconPickButton.Content = BannerPickButton.Content = Lang.L("선택", "Pick");
         OutDirButton.Content = Lang.L("변경", "Change");
-        SetBuildLabels();
         LauncherButton.Content = Lang.L("런처 CIA 만들기 (한 번만 설치)", "Build the launcher CIA (install once)");
         SystemBox.ItemsSource = new[]
         {
@@ -73,6 +77,7 @@ public partial class MainWindow : Window
             Lang.L("미국", "USA"),
         };
         RegionBox.SelectedIndex = Math.Clamp(region, 0, 2);
+        RefreshState();
     }
 
     /// <summary>Build buttons say how many games are queued when a batch is loaded.</summary>
@@ -90,6 +95,62 @@ public partial class MainWindow : Window
             PackButton.Content = Lang.L("런처용 파일 만들기", "Launcher file");
         }
     }
+
+    static readonly Avalonia.Media.IBrush Ok = Avalonia.Media.Brushes.ForestGreen;
+    static readonly Avalonia.Media.IBrush Bad = Avalonia.Media.Brushes.Firebrick;
+
+    /// <summary>Romset/BIOS/path lines recomputed from the loaded state, including on a language switch (#114).</summary>
+    internal void RefreshState()
+    {
+        if (batch.Count > 0)
+        {
+            int ok = batch.Count(Buildable), noBios = batch.Count(j => j.BiosZip == null);
+            RomPathBox.Text = Lang.L($"{batch.Count}개 선택", $"{batch.Count} zips");
+            RomsetLabel.Text = ok == batch.Count
+                ? Lang.L($"✔ 모두 변환 가능 ({ok}개)", $"✔ all {ok} can be converted")
+                : Lang.L($"변환 가능 {ok}개 / 불가 {batch.Count - ok}개 (아래 로그 참고)", $"{ok} can be converted, {batch.Count - ok} can't (see the log)");
+            RomsetLabel.Foreground = ok == batch.Count ? Ok : Bad;
+            BiosLabel.Text = noBios == 0
+                ? Lang.L("✔ neogeo.zip 발견", "✔ neogeo.zip found")
+                : Lang.L($"✘ neogeo.zip 없는 폴더의 롬 {noBios}개", $"✘ {noBios} zips have no neogeo.zip next to them");
+            BiosLabel.Foreground = noBios == 0 ? Ok : Bad;
+            StatusText.Text = RomsetLabel.Text;
+            SetBuildLabels();
+            return;
+        }
+        if (job == null)
+        {
+            RomPathBox.Text = "";
+            RomsetLabel.Text = "";
+            BiosLabel.Text = "";
+            StatusText.Text = Lang.L("롬을 선택하세요", "Pick a ROM");
+            SetBuildLabels();
+            return;
+        }
+        RomPathBox.Text = job.RomZip;
+        RomsetLabel.Text = job.Game != null ? $"✔ {job.Game.Name} - {job.Game.Desc}" : "✘ " + job.Problem;
+        RomsetLabel.Foreground = job.Game != null ? Ok : Bad;
+        BiosLabel.Text = job.BiosZip != null
+            ? Lang.L("✔ neogeo.zip 발견", "✔ neogeo.zip found")
+            : Lang.L("✘ neogeo.zip 없음 (롬과 같은 폴더에 넣어주세요)", "✘ no neogeo.zip (put it next to the game zip)");
+        BiosLabel.Foreground = job.BiosZip != null ? Ok : Bad;
+        StatusText.Text = job.Game != null
+            ? $"{job.RomName} — {job.Title} (Title ID {job.TitleId})"
+            : $"{job.RomName}: {job.Problem}";
+        SetBuildLabels();
+    }
+
+    /// <summary>#116: batch progress shown in the window title.</summary>
+    internal static string ProgressTitle(int index, int count, string rom, string baseTitle)
+        => $"[{index}/{count}] {rom} - {baseTitle}";
+
+    /// <summary>#115: what to do with the file we just built.</summary>
+    internal static string DoneMessage(bool pack, string file) => (pack
+        ? Lang.L("런처용 파일을 만들었습니다. SD카드의 /neo3ds/games/ 폴더에 복사하세요 (런처 CIA가 설치돼 있어야 합니다).",
+                 "The launcher file is ready. Copy it to /neo3ds/games/ on the SD card (the launcher CIA must be installed).")
+        : Lang.L("CIA를 만들었습니다. FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA",
+                 "The CIA is ready. Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"))
+        + $"\n\n{file}";
 
     bool? SelectedMvs => SystemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
     Region SelectedRegion => RegionBox.SelectedIndex switch { 1 => Region.Japan, 2 => Region.Usa, _ => Region.Europe };
@@ -167,7 +228,7 @@ public partial class MainWindow : Window
         IconPreview.Source = BannerPreview.Source = null;
     }
 
-    void LoadRom(string path)
+    internal void LoadRom(string path)
     {
         if (IsBios(path))
         {
@@ -188,10 +249,8 @@ public partial class MainWindow : Window
             return;
         }
         TitleBox.Text = job.Title;
-        StatusText.Text = job.Game != null
-            ? $"{job.RomName} — {job.Title} (Title ID {job.TitleId})"
-            : $"{job.RomName}: {job.Problem}";
         SetBuildEnabled(Buildable(job));
+        RefreshState();
         Log(Lang.L("선택: ", "Selected: ") + $"{Path.GetFileName(path)}  (Title ID {job.TitleId})");
         if (!Buildable(job)) Log(Lang.L("변환 불가: ", "Can't convert: ") + (job.Problem ?? Lang.L("neogeo.zip 없음", "no neogeo.zip")));
         RefreshPreview();
@@ -212,11 +271,8 @@ public partial class MainWindow : Window
         }
         int ok = batch.Count(Buildable);
         SetSingleFields(false);
-        StatusText.Text = ok == batch.Count
-            ? Lang.L($"✔ 모두 변환 가능 ({ok}개)", $"✔ all {ok} can be converted")
-            : Lang.L($"변환 가능 {ok}개 / 불가 {batch.Count - ok}개 (로그 참고)", $"{ok} can be converted, {batch.Count - ok} can't (see the log)");
-        SetBuildLabels();
         SetBuildEnabled(ok > 0);
+        RefreshState();
         Log(Lang.L($"{batch.Count}개 선택: 변환 가능 {ok}개", $"{batch.Count} zips picked, {ok} can be converted"));
     }
 
@@ -245,6 +301,7 @@ public partial class MainWindow : Window
 
     void SetBusy(bool busy)
     {
+        Cursor = busy ? new Cursor(StandardCursorType.Wait) : null;
         OpenButton.IsEnabled = OutDirButton.IsEnabled = LauncherButton.IsEnabled = !busy;
         if (!busy) SetBuildEnabled(batch.Count > 0 ? batch.Any(Buildable) : job != null && Buildable(job));
         else SetBuildEnabled(false);
@@ -267,7 +324,7 @@ public partial class MainWindow : Window
         {
             string file = await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
             Log(Lang.L($"완료 ({sw.ElapsedMilliseconds} ms): {file}", $"Done ({sw.ElapsedMilliseconds} ms): {file}"));
-            await ShowDialog(Lang.L("완료", "Done"), file);
+            await ShowDialog(Lang.L("완료", "Done"), DoneMessage(pack, file));
         }
         catch (Exception ex)
         {
@@ -284,6 +341,7 @@ public partial class MainWindow : Window
     {
         var jobs = batch.Where(Buildable).ToList();
         string outDir = OutDir();
+        string baseTitle = Title ?? "";
         var done = new List<string>();
         var failed = new List<string>();
         SetBusy(true);
@@ -295,6 +353,7 @@ public partial class MainWindow : Window
                 j.StartMvs = SelectedMvs;
                 j.Region = SelectedRegion;
                 j.OutputDir = outDir;
+                Title = ProgressTitle(i + 1, jobs.Count, j.RomName, baseTitle);
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 try
@@ -312,12 +371,14 @@ public partial class MainWindow : Window
             Log(Lang.L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
             string msg = (pack
                 ? Lang.L($"런처용 파일 {done.Count}개: SD카드 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files: copy to /neo3ds/games/ on the SD card.")
-                : Lang.L($"CIA {done.Count}개:", $"{done.Count} CIAs:")) + $"\n\n{outDir}";
+                : Lang.L($"CIA {done.Count}개. FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA", $"{done.Count} CIAs. Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"))
+                + $"\n\n{outDir}";
             if (failed.Count > 0) msg += "\n\n" + Lang.L("실패:", "Failed:") + "\n" + string.Join("\n", failed);
             await ShowDialog(Lang.L("완료", "Done"), msg);
         }
         finally
         {
+            Title = baseTitle;
             SetBusy(false);
         }
     }

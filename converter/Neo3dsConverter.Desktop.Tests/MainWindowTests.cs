@@ -153,6 +153,72 @@ public class MainWindowTests
         }
     }
 
+    /// <summary>#117: the window title follows the language.</summary>
+    [AvaloniaFact]
+    public void WindowTitle_FollowsLanguage()
+    {
+        bool saved = Lang.Korean;
+        try
+        {
+            Lang.Set(true, remember: false);
+            var ko = new MainWindow();
+            ko.Show();
+            Assert.Contains("변환기", ko.Title);
+            ko.Close();
+
+            Lang.Set(false, remember: false);
+            var en = new MainWindow();
+            en.Show();
+            Assert.Contains("converter", en.Title);
+            en.Close();
+        }
+        finally { Lang.Set(saved, remember: false); }
+    }
+
+    /// <summary>#114: romset/BIOS/path lines show the real state, with colours.</summary>
+    [AvaloniaFact]
+    public void RomState_ShowsUnsupportedZipWithPathAndBios()
+    {
+        bool saved = Lang.Korean;
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-state-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            Lang.Set(true, remember: false);
+            string zip = Path.Combine(tmp, "kof98.zip");
+            using (var z = System.IO.Compression.ZipFile.Open(zip, System.IO.Compression.ZipArchiveMode.Create))
+                z.CreateEntry("readme.txt");
+
+            var window = new MainWindow();
+            window.Show();
+            window.LoadRom(zip);
+
+            Assert.Equal(zip, window.FindControl<TextBox>("RomPathBox")!.Text);
+            Assert.StartsWith("✘", window.FindControl<TextBlock>("RomsetLabel")!.Text);
+            Assert.NotNull(window.FindControl<TextBlock>("RomsetLabel")!.Foreground);
+            Assert.Contains("neogeo.zip", window.FindControl<TextBlock>("BiosLabel")!.Text);
+            window.Close();
+        }
+        finally
+        {
+            Lang.Set(saved, remember: false);
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#115: completion text tells the user what to do next.</summary>
+    [Fact]
+    public void DoneMessage_IncludesInstallGuidance()
+    {
+        Assert.Contains("FBI", MainWindow.DoneMessage(pack: false, "/tmp/game.cia"));
+        Assert.Contains("/neo3ds/games/", MainWindow.DoneMessage(pack: true, "/tmp/game.neo3ds"));
+    }
+
+    /// <summary>#116: batch progress title format.</summary>
+    [Fact]
+    public void ProgressTitle_ShowsIndexAndRoms()
+        => Assert.Equal("[2/5] kof98 - base", MainWindow.ProgressTitle(2, 5, "kof98", "base"));
+
     static void PumpUntil(Window window, Func<bool> done, int timeoutMs)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();

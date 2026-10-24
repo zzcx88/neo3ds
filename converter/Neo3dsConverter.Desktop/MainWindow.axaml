@@ -15,6 +15,10 @@
         <TextBlock x:Name="DropHint" Text="여기에 zip을 끌어다 놓기 (여러 개 가능)" HorizontalAlignment="Center"/>
       </Border>
       <TextBlock x:Name="StatusText" Text="롬을 선택하세요" TextWrapping="Wrap"/>
+      <TextBlock x:Name="LabelRom" Text="롬 파일"/>
+      <TextBox x:Name="RomPathBox" IsReadOnly="True"/>
+      <TextBlock x:Name="RomsetLabel" TextWrapping="Wrap"/>
+      <TextBlock x:Name="BiosLabel" TextWrapping="Wrap"/>
       <TextBlock x:Name="LabelTitle" Text="게임 이름"/>
       <TextBox x:Name="TitleBox" PlaceholderText="제목"/>
       <TextBlock x:Name="LabelIcon" Text="아이콘"/>
