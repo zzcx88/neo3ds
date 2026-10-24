@@ -7,13 +7,13 @@
 // #81: determinate recognition/overall bars, progress focus, one ZIP for all.
 import {
   createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary,
-  setArt, artLabel, artPayload, STATUS,
+  setArt, artLabel, artPayload, poolSize, STATUS,
 } from './vendor/conv/batch.js';
 import {
   iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
 } from './vendor/conv/art.js';
 import { zipResults } from './vendor/conv/bundle.js';
-import { stageFraction, overallFraction, percentText } from './vendor/conv/progress.js';
+import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
@@ -28,7 +28,7 @@ const log = (s) => { logEl.textContent += s + '\n'; logEl.scrollTop = logEl.scro
 let files = [];
 let rejectedFiles = 0; // non-zip drops ignored by ingest (#79): say so instead of nothing
 let folderDropped = false; // folder drops arrive with no File entries; explain instead of silence
-let worker = null, jobId = 0, running = false;
+let workers = [], queue = [], jobId = 0, running = false, batchT0 = 0;
 let preflightCancel = null, preflightSeq = 0, preflighting = false;
 let batch = null, batchSource = null, batchFiles = null;
 let batchStarted = false, batchError = '', readyIndexes = [];
@@ -927,9 +927,9 @@ function markRunningRowsFailed(message) {
 }
 
 /* ── #81 overall progress bar + progress focus ────────────────────────── */
-// single: stage progress of this game. batch: completed games + the current
-// game's stage progress. Batch stays ≤99% until batch-done, and a cancelled /
-// errored run keeps the value it had (never claims 100%).
+// single: stage progress of this game. batch: finished games plus every game
+// in flight (#122: the page may run several workers at once). A batch stays
+// ≤99% until finishBatchRun(), and a cancelled/errored run keeps its value.
 function renderOverall() {
   if (!overallView) return;
   const f = Math.max(0, Math.min(1, Number(overallView.fraction) || 0));
@@ -939,8 +939,8 @@ function renderOverall() {
   else if (overallView.end === 'error') label = t(`중단됨 · ${pct}`, `Stopped · ${pct}`);
   else if (overallView.kind === 'batch') {
     const total = Math.max(1, overallView.ready);
-    const cur = Math.min(total, Math.max(1, (overallView.index ?? 0) + 1));
-    label = t(`게임 ${cur}/${total} · ${pct}`, `Game ${cur}/${total} · ${pct}`);
+    const finished = Math.min(total, Math.max(0, overallView.done));
+    label = t(`완료 ${finished}/${total} · ${pct}`, `Done ${finished}/${total} · ${pct}`);
   } else {
     label = overallView.end === 'done' ? t(`완료 ${pct}`, `Done ${pct}`) : t(`변환 중 ${pct}`, `Converting ${pct}`);
   }
@@ -961,19 +961,25 @@ function resetOverall() {
 
 function startOverall(isBatch, ready) {
   overallView = {
-    fraction: 0, kind: isBatch ? 'batch' : 'single', index: 0, ready: Math.max(1, ready), end: null,
+    fraction: 0, kind: isBatch ? 'batch' : 'single', ready: Math.max(1, ready),
+    done: 0, running: new Map(), end: null,
   };
   overallBox.classList.remove('hidden');
   renderOverall();
 }
 
-function updateOverallProgress(m) {
+function overallFractionNow() {
+  return batchFraction({
+    ready: overallView.ready, done: overallView.done, running: [...overallView.running.values()],
+  });
+}
+
+// `row` is the batch row this message belongs to (single runs pass -1).
+function updateOverallProgress(m, row = -1) {
   if (!overallView) return;
   if (overallView.kind === 'batch') {
-    if (typeof m.batch === 'number') overallView.index = m.batch;
-    overallView.fraction = overallFraction({
-      ready: overallView.ready, index: overallView.index, step: m.step, frac: m.frac,
-    });
+    if (row >= 0) overallView.running.set(row, { step: m.step, frac: m.frac });
+    overallView.fraction = overallFractionNow();
   } else {
     overallView.fraction = stageFraction(m.step, m.frac);
   }
@@ -983,10 +989,9 @@ function updateOverallProgress(m) {
 // One batch row ended (done or failed): count that game as complete.
 function finishOverallRow(index) {
   if (!overallView || overallView.kind !== 'batch') return;
-  if (typeof index === 'number') overallView.index = index;
-  overallView.fraction = overallFraction({
-    ready: overallView.ready, index: overallView.index, step: 'cia', frac: 1,
-  });
+  if (typeof index === 'number' && index >= 0) overallView.running.delete(index);
+  overallView.done = Math.min(overallView.ready, overallView.done + 1);
+  overallView.fraction = overallFractionNow();
   renderOverall();
 }
 
@@ -994,7 +999,8 @@ function completeOverall() {
   if (!overallView) return;
   overallView.fraction = 1;
   if (overallView.kind === 'batch') {
-    overallView.index = overallView.ready - 1;
+    overallView.done = overallView.ready;
+    overallView.running.clear();
     overallView.end = null;
   } else {
     overallView.end = 'done';
@@ -1049,89 +1055,184 @@ runBtn.addEventListener('click', () => {
   startOverall(isBatch, isBatch ? readyIndexes.length : 1);
   refreshArtLock(); // editing is only possible before the run starts
 
-  worker = new Worker('vendor/conv/worker.js', { type: 'module' });
-  const id = ++jobId;
-  worker.onerror = (e) => {
+  workers = [];
+  const base = {
+    files, region: $('gateRegion').value, system: $('gateSystem').value, mode, lang: uiLang(),
+    art: artEligible() ? artEditor.getFiles() : null,
+  };
+  if (isBatch) startBatchRun(base);
+  else startSingleRun(base);
+});
+
+/* ── #122 worker pool ────────────────────────────────────────────────────
+   One game per worker, the page owns the queue. A worker that finishes a game
+   takes the next one instead of sitting idle, and the pool size comes from
+   batch.js (memory first: each worker holds a whole romset, ~150MB peak). */
+function spawnWorker(base) {
+  const w = new Worker('vendor/conv/worker.js', { type: 'module' });
+  w.base = base;
+  w.job = null;
+  w.onerror = (e) => workerFailed(w, e.message || 'load failed');
+  w.onmessage = (e) => onWorkerMessage(w, e.data);
+  workers.push(w);
+  return w;
+}
+
+function isMobileBrowser() {
+  const ua = navigator.userAgent || '';
+  if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+  return navigator.maxTouchPoints > 1 && window.matchMedia?.('(pointer: coarse)')?.matches === true;
+}
+
+function startSingleRun(base) {
+  const w = spawnWorker(base);
+  w.single = true;
+  w.job = { id: ++jobId, row: -1 };
+  w.postMessage({ ...base, id: w.job.id, batch: null });
+}
+
+function startBatchRun(base) {
+  queue = readyIndexes.slice();
+  batchT0 = performance.now();
+  const size = poolSize({
+    ready: readyIndexes.length,
+    cores: navigator.hardwareConcurrency ?? 2,
+    memory: navigator.deviceMemory ?? null,
+    mobile: isMobileBrowser(),
+  });
+  if (size > 1) log(t(`워커 ${size}개 병렬 변환`, `Converting with ${size} workers`));
+  for (let i = 0; i < size; i++) spawnWorker(base);
+  for (const w of workers) if (!pushJob(w)) break;
+}
+
+// Hand the next ready game to an idle worker; false when the queue is empty.
+function pushJob(w) {
+  const row = queue.shift();
+  if (row == null) { w.job = null; return false; }
+  w.job = { id: ++jobId, row };
+  markRunning(batch, row);
+  rowProgress(batch, row, 'load', '');
+  updateRow(row);
+  w.postMessage({
+    ...w.base, id: w.job.id,
+    batch: [{ name: batch[row].name, art: artPayload(batch[row]) }],
+  });
+  return true;
+}
+
+function jobFinished(w, job) {
+  w.job = null;
+  if (!running) return; // cancelled: finish() already terminated the pool
+  if (pushJob(w)) return;
+  if (workers.every((x) => x.job == null)) finishBatchRun();
+}
+
+function finishBatchRun() {
+  const s = summary(batch);
+  const secs = ((performance.now() - batchT0) / 1000).toFixed(1);
+  completeOverall();
+  finish();
+  for (const step of ['load', 'romfs', 'art', 'cia']) setStep(step, 'done');
+  renderBatch();
+  log(t(`배치 ${s.ready}종 완료: 성공 ${s.done} · 실패 ${s.failed} (${secs}초)`,
+    `Batch finished: ${s.ready} games — ${s.done} done · ${s.failed} failed (${secs}s)`));
+}
+
+// A crashed worker loses its game (failed row) and is replaced while work is
+// left, so one bad game cannot strand the rest of the queue.
+function workerFailed(w, message) {
+  const job = w.job;
+  workers = workers.filter((x) => x !== w);
+  try { w.terminate(); } catch { /* already gone */ }
+  if (!running) return;
+  if (w.single || job == null) {
     markRunningRowsFailed(t('워커 오류', 'Worker error'));
     endOverall('error');
     finish();
-    log(t(`실패: 워커 오류 (${e.message || 'load failed'})`, `Failed: worker error (${e.message || 'load failed'})`));
-  };
-  worker.onmessage = (e) => {
-    const m = e.data;
-    if (m.id !== id) return;
-    if (m.type === 'progress') {
-      const order = ['load', 'romfs', 'art', 'cia'];
-      const idx = order.indexOf(m.step);
-      order.forEach((s, i) => {
-        if (i < idx) setStep(s, 'done');
-        else if (i === idx) setStep(s, 'now', m.detail);
-      });
-      if (m.step === 'load' && !vals.loadLogged) { vals.loadLogged = true; log(t('[1/4] 롬셋 확인', '[1/4] Checking romset')); }
-      if (m.step === 'romfs' && !vals.romfsLogged) { vals.romfsLogged = true; log(t('[2/4] 그래픽 압축', '[2/4] Compressing graphics')); }
-      if (m.step === 'art' && !vals.artLogged) { vals.artLogged = true; log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
-      if (m.step === 'cia' && !vals.ciaLogged) { vals.ciaLogged = true; log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
-      updateOverallProgress(m);
-      if (isBatch && typeof m.batch === 'number') {
-        const rowIndex = readyIndexes[m.batch];
-        if (rowIndex != null) {
-          markRunning(batch, rowIndex);
-          rowProgress(batch, rowIndex, m.step, m.detail);
-          updateRow(rowIndex);
-        }
-      }
-    } else if (m.type === 'done') {
-      completeOverall();
-      finish();
-      for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
-      showDownload(m.cia, downloadName(m.stats));
-      showStats(m.stats);
-      log(t(`[완료] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}초)`,
-        `[Done] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}s)`));
-      if (m.stats.tiles) log(t(`  타일 ${m.stats.tiles.toLocaleString()}개, 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
-        `  ${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`));
-    } else if (m.type === 'batch-one') {
-      if (!isBatch) return;
-      const rowIndex = readyIndexes[m.batch];
-      if (rowIndex == null) return;
-      // One game done: keep a per-row link (auto-clicking N files gets blocked).
-      const name = downloadName({ ...m.stats, mode });
-      markDone(batch, rowIndex, { url: makeUrl(m.bin), name, mb: m.stats.ciaMB });
-      updateRow(rowIndex);
-      finishOverallRow(typeof m.batch === 'number' ? m.batch : rowIndex);
-      paintBatchHeader();
-      log(t(`[완료] ${name} (${m.stats.ciaMB} MB)`, `[Done] ${name} (${m.stats.ciaMB} MB)`));
-    } else if (m.type === 'batch-error') {
-      if (!isBatch) return;
-      const rowIndex = readyIndexes[m.index];
-      if (rowIndex == null) return;
-      markFailed(batch, rowIndex, m.message);
-      updateRow(rowIndex);
-      finishOverallRow(typeof m.index === 'number' ? m.index : rowIndex);
-      paintBatchHeader();
-      log(t(`[실패] ${m.name}: ${m.message}`, `[Failed] ${m.name}: ${m.message}`));
-    } else if (m.type === 'batch-done') {
-      if (!isBatch) return;
-      completeOverall();
-      finish();
-      for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
-      renderBatch();
-      log(t(`배치 ${m.count}종 완료: 성공 ${m.ok} · 실패 ${m.failed} (${m.secs}초)`,
-        `Batch finished: ${m.count} games — ${m.ok} done · ${m.failed} failed (${m.secs}s)`));
-    } else if (m.type === 'error') {
-      markRunningRowsFailed(m.message);
-      endOverall('error');
-      finish();
-      log(t(`실패: ${m.message}`, `Failed: ${m.message}`));
-    }
-  };
-  worker.postMessage({
-    id, files, region: $('gateRegion').value, system: $('gateSystem').value, mode, lang: uiLang(),
-    art: artEligible() ? artEditor.getFiles() : null,
-    // Automatic/blocked rows send art:null, i.e. exactly the old worker path.
-    batch: isBatch ? readyIndexes.map((i) => ({ name: batch[i].name, art: artPayload(batch[i]) })) : null,
+    log(t(`실패: 워커 오류 (${message})`, `Failed: worker error (${message})`));
+    return;
+  }
+  const row = job.row;
+  markFailed(batch, row, message);
+  updateRow(row);
+  finishOverallRow(row);
+  paintBatchHeader();
+  log(t(`[실패] ${batch[row]?.name}: ${message}`, `[Failed] ${batch[row]?.name}: ${message}`));
+  if (queue.length) pushJob(spawnWorker(w.base));
+  else if (workers.every((x) => x.job == null)) finishBatchRun();
+}
+
+const PIPE_ORDER = ['load', 'romfs', 'art', 'cia'];
+
+// The 4-step pipe. With several games in flight the detail is prefixed with
+// the game name so the numbers cannot be mistaken for one game's.
+function pipeStep(m, row) {
+  const idx = PIPE_ORDER.indexOf(m.step);
+  if (idx < 0) return;
+  const many = overallView?.kind === 'batch' && overallView.running.size > 1;
+  const name = row >= 0 ? batch?.[row]?.name : null;
+  const detail = many && name ? `${name}: ${m.detail}` : m.detail;
+  PIPE_ORDER.forEach((s, i) => {
+    if (i < idx) setStep(s, 'done');
+    else if (i === idx) setStep(s, 'now', detail);
   });
-});
+  if (m.step === 'load' && !vals.loadLogged) { vals.loadLogged = true; log(t('[1/4] 롬셋 확인', '[1/4] Checking romset')); }
+  if (m.step === 'romfs' && !vals.romfsLogged) { vals.romfsLogged = true; log(t('[2/4] 그래픽 압축', '[2/4] Compressing graphics')); }
+  if (m.step === 'art' && !vals.artLogged) { vals.artLogged = true; log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
+  if (m.step === 'cia' && !vals.ciaLogged) { vals.ciaLogged = true; log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
+}
+
+function onWorkerMessage(w, m) {
+  const job = w.job;
+  if (!job || m.id !== job.id) return;
+  if (w.single) return onSingleMessage(m);
+  const row = job.row;
+  if (m.type === 'progress') {
+    pipeStep(m, row);
+    updateOverallProgress(m, row);
+    rowProgress(batch, row, m.step, m.detail);
+    updateRow(row);
+  } else if (m.type === 'batch-one') {
+    const name = downloadName({ ...m.stats, mode: currentMode() });
+    markDone(batch, row, { url: makeUrl(m.bin), name, mb: m.stats.ciaMB });
+    updateRow(row);
+    finishOverallRow(row);
+    paintBatchHeader();
+    log(t(`[완료] ${name} (${m.stats.ciaMB} MB)`, `[Done] ${name} (${m.stats.ciaMB} MB)`));
+    jobFinished(w, job);
+  } else if (m.type === 'batch-error' || m.type === 'error') {
+    const message = m.message;
+    markFailed(batch, row, message);
+    updateRow(row);
+    finishOverallRow(row);
+    paintBatchHeader();
+    log(t(`[실패] ${batch[row]?.name}: ${message}`, `[Failed] ${batch[row]?.name}: ${message}`));
+    jobFinished(w, job);
+  }
+  // batch-done carries no per-row news: jobFinished already ran for the game.
+}
+
+function onSingleMessage(m) {
+  if (m.type === 'progress') {
+    pipeStep(m, -1);
+    updateOverallProgress(m);
+  } else if (m.type === 'done') {
+    completeOverall();
+    finish();
+    for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
+    showDownload(m.cia, downloadName(m.stats));
+    showStats(m.stats);
+    log(t(`[완료] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}초)`,
+      `[Done] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}s)`));
+    if (m.stats.tiles) log(t(`  타일 ${m.stats.tiles.toLocaleString()}개, 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
+      `  ${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`));
+  } else if (m.type === 'error') {
+    markRunningRowsFailed(m.message);
+    endOverall('error');
+    finish();
+    log(t(`실패: ${m.message}`, `Failed: ${m.message}`));
+  }
+}
 
 function downloadName(stats) {
   const mode = stats.mode ?? currentMode();
@@ -1163,7 +1264,9 @@ function showStats(stats) {
 function finish() {
   running = false;
   cancelBtn.classList.add('hidden');
-  if (worker) { worker.terminate(); worker = null; }
+  for (const w of workers) { try { w.terminate(); } catch { /* already gone */ } }
+  workers = [];
+  queue = [];
   // A run that finished after its inputs changed must not leave its 100% bar
   // behind for the new file/mode selection (#81 review).
   if (runInputs && (files !== runInputs.files || currentMode() !== runInputs.mode)) resetOverall();
