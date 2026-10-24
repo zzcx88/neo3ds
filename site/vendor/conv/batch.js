@@ -125,10 +125,13 @@ export function markFailed(batch, i, message) {
    cap is memory first and cores second. Pure so Node tests pin the rule. */
 export const MAX_WORKERS = 4;
 export function poolSize({ ready = 1, cores = 2, memory = null, mobile = false } = {}) {
-  const n = (v, fallback) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.trunc(Number(v)) : fallback);
-  const games = Math.max(1, n(ready, 1));
-  if (mobile || (memory != null && Number(memory) <= 4)) return 1;
-  return Math.max(1, Math.min(MAX_WORKERS, Math.max(1, n(cores, 2) - 1), games));
+  const numOr = (v, fallback) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.trunc(Number(v)) : fallback);
+  const games = Math.max(1, numOr(ready, 1));
+  if (memory != null && Number(memory) <= 4) return 1;
+  // A mobile browser that reports no memory is the case this gate is for; one
+  // that reports 8GB is as capable as a laptop, so it keeps its cores.
+  if (mobile && memory == null) return 1;
+  return Math.max(1, Math.min(MAX_WORKERS, Math.max(1, numOr(cores, 2) - 1), games));
 }
 
 // Counts for the list header and the final success/fail summary.

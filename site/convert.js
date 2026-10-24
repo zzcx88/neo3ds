@@ -1127,6 +1127,15 @@ function jobFinished(w, job) {
   if (workers.every((x) => x.job == null)) finishBatchRun();
 }
 
+// Every way a row can fail ends the same way: mark, redraw, count, log.
+function failRow(row, message) {
+  markFailed(batch, row, message);
+  updateRow(row);
+  finishOverallRow(row);
+  paintBatchHeader();
+  log(t(`[실패] ${batch[row]?.name}: ${message}`, `[Failed] ${batch[row]?.name}: ${message}`));
+}
+
 function finishBatchRun() {
   const s = summary(batch);
   const secs = ((performance.now() - batchT0) / 1000).toFixed(1);
@@ -1152,12 +1161,7 @@ function workerFailed(w, message) {
     log(t(`실패: 워커 오류 (${message})`, `Failed: worker error (${message})`));
     return;
   }
-  const row = job.row;
-  markFailed(batch, row, message);
-  updateRow(row);
-  finishOverallRow(row);
-  paintBatchHeader();
-  log(t(`[실패] ${batch[row]?.name}: ${message}`, `[Failed] ${batch[row]?.name}: ${message}`));
+  failRow(job.row, message);
   if (queue.length) pushJob(spawnWorker(w.base));
   else if (workers.every((x) => x.job == null)) finishBatchRun();
 }
@@ -1201,12 +1205,7 @@ function onWorkerMessage(w, m) {
     log(t(`[완료] ${name} (${m.stats.ciaMB} MB)`, `[Done] ${name} (${m.stats.ciaMB} MB)`));
     jobFinished(w, job);
   } else if (m.type === 'batch-error' || m.type === 'error') {
-    const message = m.message;
-    markFailed(batch, row, message);
-    updateRow(row);
-    finishOverallRow(row);
-    paintBatchHeader();
-    log(t(`[실패] ${batch[row]?.name}: ${message}`, `[Failed] ${batch[row]?.name}: ${message}`));
+    failRow(row, m.message);
     jobFinished(w, job);
   }
   // batch-done carries no per-row news: jobFinished already ran for the game.
