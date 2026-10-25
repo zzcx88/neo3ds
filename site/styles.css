@@ -202,6 +202,10 @@ a.dl-row:hover{background:var(--panel-2);color:var(--gold)}
   font:400 11px/1.75 var(--pixel-sm);color:#C9C9D2;min-height:290px;max-height:340px;overflow:auto;white-space:pre-wrap}
 .log b{color:var(--gold);font-weight:400}
 .log i{color:var(--dim);font-style:normal}
+.log-line.done{color:var(--gold)}
+.log-line.fail{color:var(--a)}
+.log-line.meta{color:var(--gold)}
+.log-line.info{color:var(--dim)}
 
 /* ── #75 아이콘·배너 미리보기 / 직접 지정 ─────────────────────────────── */
 .art{margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);min-width:0}

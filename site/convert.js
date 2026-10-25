@@ -23,12 +23,61 @@ const t = (ko, en) => (isEn() ? en : ko);
 // Worker reasons are fixed at preflight/run time, like log lines: send the
 // language the page is in so a KO page gets KO reasons (#79).
 const uiLang = () => (isEn() ? 'en' : 'ko');
-const log = (s) => { logEl.textContent += s + '\n'; logEl.scrollTop = logEl.scrollHeight; };
+
+/* ── Log (#152): one line per event, tagged so parallel workers stay readable.
+   Format: `  1.2s #2 kof98.zip   [2/4] Compressing graphics` ─────────────── */
+function stamp() {
+  const s = runT0 ? (performance.now() - runT0) / 1000 : 0;
+  return s.toFixed(1).padStart(5) + 's';
+}
+
+// Append a prepared line node and keep the log pinned to the bottom.
+function appendLog(node) {
+  logEl.append(node);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function logEvent(tag, text, kind = '') {
+  const line = document.createElement('span');
+  line.className = 'log-line' + (kind ? ' ' + kind : '');
+  const time = document.createElement('i');
+  time.textContent = stamp() + ' ';
+  line.append(time, document.createTextNode((tag ? tag.padEnd(18) : '') + text + '\n'));
+  appendLog(line);
+}
+
+function gameTag(row) {
+  const name = row >= 0 ? (batch?.[row]?.name ?? '') : (gameZips()[0]?.name ?? '');
+  return (row >= 0 ? `#${row + 1} ` : '   ') + name;
+}
+
+function rowSecs(row) {
+  const t0 = rowT0.get(row);
+  return t0 ? ((performance.now() - t0) / 1000).toFixed(1) : '';
+}
+
+function logStage(row, step) {
+  const i = PIPE_STEPS.indexOf(step);
+  if (i < 0) return;
+  logEvent(gameTag(row), `[${i + 1}/4] ${stepLabel(step)}`, 'step');
+}
+
+function logGameDone(row, name, mb, secs) {
+  logEvent(gameTag(row), `✓ ${name} ${mb} MB · ${secs}s`, 'done');
+}
+
+function logGameFail(row, message, secs) {
+  logEvent(gameTag(row), `✗ ${message}${secs ? ` · ${secs}s` : ''}`, 'fail');
+}
 
 let files = [];
 let rejectedFiles = 0; // non-zip drops ignored by ingest (#79): say so instead of nothing
 let folderDropped = false; // folder drops arrive with no File entries; explain instead of silence
 let workers = [], queue = [], jobId = 0, running = false, batchT0 = 0;
+let runT0 = 0; // #152: log timestamps are relative to the run start
+let singleStep = null; // #152: one-game stage changes for the log
+const rowT0 = new Map(); // #152: batch row (-1 = single) -> start time
+const rowMeta = new Map(); // #152: batch row -> { romset: true } once logged
 let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
 let checkRows = null, checkFiles = null, checkError = '', checkProgress = null;
 let singleRow = null; // #143: the one game's check row when there is no batch list
@@ -772,9 +821,9 @@ async function downloadBatchZip() {
     document.body.append(a);
     a.click();
     a.remove();
-    log(t(`[ZIP] ${rows.length}개 결과를 ${name}로 묶었습니다`, `[ZIP] Bundled ${rows.length} results into ${name}`));
+    logEvent('', t(`[ZIP] ${rows.length}개 결과를 ${name}로 묶었습니다`, `[ZIP] Bundled ${rows.length} results into ${name}`), 'meta');
   } catch (err) {
-    if (seq === bundleSeq) log(t(`[ZIP 실패] ${err?.message ?? err}`, `[ZIP failed] ${err?.message ?? err}`));
+    if (seq === bundleSeq) logEvent('', t(`[ZIP 실패] ${err?.message ?? err}`, `[ZIP failed] ${err?.message ?? err}`), 'fail');
   } finally {
     if (seq === bundleSeq) {
       bundleBusy = false;
@@ -914,7 +963,6 @@ drop.addEventListener('drop', (e) => {
 
 /* ── 4-step pipe: stage highlight only (#147) ─────────────────────────── */
 const PIPE_STEPS = ['load', 'romfs', 'art', 'cia'];
-const loggedSteps = new Set(); // one log line per stage for the whole run
 
 function setStep(name, cls) {
   const li = pipe.querySelector(`[data-step="${name}"]`);
@@ -925,7 +973,6 @@ function setStep(name, cls) {
 
 function resetPipe() {
   for (const s of PIPE_STEPS) setStep(s, null);
-  loggedSteps.clear();
 }
 
 function markRunningRowsFailed(message) {
@@ -1051,6 +1098,10 @@ runBtn.addEventListener('click', () => {
   resetResults(); // #74/#143: a new run drops every previous result and download URL
   logEl.textContent = '';
   resetPipe();
+  runT0 = performance.now();
+  singleStep = null;
+  rowT0.clear();
+  rowMeta.clear();
 
   if (isBatch) {
     // Fresh statuses for this run, but keep every row's chosen picture (#76).
@@ -1061,7 +1112,6 @@ runBtn.addEventListener('click', () => {
     batchStarted = true;
     markRunning(batch, readyIndexes[0]);
     renderBatch();
-    log(t(`배치 ${readyIndexes.length}종 시작`, `Batch start: ${readyIndexes.length} games`));
   }
   startOverall(isBatch, isBatch ? readyIndexes.length : 1);
   refreshArtLock(); // editing is only possible before the run starts
@@ -1099,6 +1149,13 @@ function startSingleRun(base) {
   const w = spawnWorker(base);
   w.single = true;
   w.job = { id: ++jobId, row: -1 };
+  rowT0.set(-1, performance.now());
+  rowMeta.set(-1, { romset: false });
+  singleStep = 'load';
+  logEvent('', currentMode() === 'launcher'
+    ? t('▶ 런처 CIA · 워커 1', '▶ launcher CIA · 1 worker')
+    : t('▶ 1개 게임 · 워커 1', '▶ 1 game · 1 worker'), 'meta');
+  logStage(-1, 'load');
   w.postMessage({ ...base, id: w.job.id, batch: null });
 }
 
@@ -1111,7 +1168,8 @@ function startBatchRun(base) {
     memory: navigator.deviceMemory ?? null,
     mobile: isMobileBrowser(),
   });
-  if (size > 1) log(t(`워커 ${size}개 병렬 변환`, `Converting with ${size} workers`));
+  logEvent('', t(`▶ ${readyIndexes.length}개 게임 · 워커 ${size}`,
+    `▶ ${readyIndexes.length} games · ${size} worker${size === 1 ? '' : 's'}`), 'meta');
   for (let i = 0; i < size; i++) spawnWorker(base);
   for (const w of workers) if (!pushJob(w)) break;
 }
@@ -1121,9 +1179,12 @@ function pushJob(w) {
   const row = queue.shift();
   if (row == null) { w.job = null; return false; }
   w.job = { id: ++jobId, row };
+  rowT0.set(row, performance.now());
+  rowMeta.set(row, { romset: false });
   markRunning(batch, row);
   rowProgress(batch, row, 'load', '');
   updateRow(row);
+  logStage(row, 'load');
   w.postMessage({
     ...w.base, id: w.job.id,
     batch: [{ name: batch[row].name, art: artPayload(batch[row]) }],
@@ -1140,11 +1201,12 @@ function jobFinished(w, job) {
 
 // Every way a row can fail ends the same way: mark, redraw, count, log.
 function failRow(row, message) {
+  const secs = rowSecs(row);
   markFailed(batch, row, message);
   updateRow(row);
   finishOverallRow(row);
   paintBatchHeader();
-  log(t(`[실패] ${batch[row]?.name}: ${message}`, `[Failed] ${batch[row]?.name}: ${message}`));
+  logGameFail(row, message, secs);
 }
 
 function finishBatchRun() {
@@ -1154,8 +1216,8 @@ function finishBatchRun() {
   finish();
   for (const step of PIPE_STEPS) setStep(step, 'done');
   renderBatch();
-  log(t(`배치 ${s.ready}종 완료: 성공 ${s.done} · 실패 ${s.failed} (${secs}초)`,
-    `Batch finished: ${s.ready} games — ${s.done} done · ${s.failed} failed (${secs}s)`));
+  logEvent('', t(`■ 성공 ${s.done} · 실패 ${s.failed} · ${secs}초`,
+    `■ ${s.done} done · ${s.failed} failed · ${secs}s`), 'meta');
 }
 
 // A crashed worker loses its game (failed row) and is replaced while work is
@@ -1170,7 +1232,7 @@ function workerFailed(w, message) {
     endOverall('error');
     finish();
     failAlert(message);
-    log(t(`실패: 워커 오류 (${message})`, `Failed: worker error (${message})`));
+    logGameFail(-1, t(`워커 오류 (${message})`, `worker error (${message})`), rowSecs(-1));
     return;
   }
   failRow(job.row, message);
@@ -1184,10 +1246,6 @@ function pipeStep(m) {
   const idx = PIPE_STEPS.indexOf(m.step);
   if (idx < 0) return;
   PIPE_STEPS.forEach((s, i) => setStep(s, i < idx ? 'done' : i === idx ? 'now' : null));
-  if (m.step === 'load' && !loggedSteps.has('load')) { loggedSteps.add('load'); log(t('[1/4] 롬셋 확인', '[1/4] Checking romset')); }
-  if (m.step === 'romfs' && !loggedSteps.has('romfs')) { loggedSteps.add('romfs'); log(t('[2/4] 그래픽 압축', '[2/4] Compressing graphics')); }
-  if (m.step === 'art' && !loggedSteps.has('art')) { loggedSteps.add('art'); log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
-  if (m.step === 'cia' && !loggedSteps.has('cia')) { loggedSteps.add('cia'); log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
 }
 
 function onWorkerMessage(w, m) {
@@ -1198,6 +1256,11 @@ function onWorkerMessage(w, m) {
   if (m.type === 'progress') {
     pipeStep(m);
     updateOverallProgress(m, row);
+    if (/^romset /i.test(m.detail ?? '') && rowMeta.get(row)?.romset === false) {
+      rowMeta.get(row).romset = true;
+      logEvent(gameTag(row), m.detail, 'info');
+    }
+    if (batch?.[row] && batch[row].step !== m.step) logStage(row, m.step);
     rowProgress(batch, row, m.step, m.detail);
     updateRow(row);
   } else if (m.type === 'batch-one') {
@@ -1206,7 +1269,7 @@ function onWorkerMessage(w, m) {
     updateRow(row);
     finishOverallRow(row);
     paintBatchHeader();
-    log(t(`[완료] ${name} (${m.stats.ciaMB} MB)`, `[Done] ${name} (${m.stats.ciaMB} MB)`));
+    logGameDone(row, name, m.stats.ciaMB, rowSecs(row));
     jobFinished(w, job);
   } else if (m.type === 'batch-error' || m.type === 'error') {
     failRow(row, m.message);
@@ -1218,6 +1281,11 @@ function onWorkerMessage(w, m) {
 function onSingleMessage(m) {
   if (m.type === 'progress') {
     pipeStep(m);
+    if (/^romset /i.test(m.detail ?? '') && rowMeta.get(-1)?.romset === false) {
+      rowMeta.get(-1).romset = true;
+      logEvent(gameTag(-1), m.detail, 'info');
+    }
+    if (m.step !== singleStep) { singleStep = m.step; logStage(-1, m.step); }
     updateOverallProgress(m);
   } else if (m.type === 'done') {
     completeOverall();
@@ -1225,16 +1293,16 @@ function onSingleMessage(m) {
     for (const s of PIPE_STEPS) setStep(s, 'done');
     showDownload(m.cia, downloadName(m.stats));
     showStats(m.stats);
-    log(t(`[완료] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}초)`,
-      `[Done] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}s)`));
-    if (m.stats.tiles) log(t(`  타일 ${m.stats.tiles.toLocaleString()}개, 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
-      `  ${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`));
+    logGameDone(-1, downloadName(m.stats), m.stats.ciaMB, m.stats.secs);
+    if (m.stats.tiles) logEvent('   ', t(
+      `타일 ${m.stats.tiles.toLocaleString()}개 · 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
+      `${m.stats.tiles.toLocaleString()} tiles · graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
   } else if (m.type === 'error') {
     markRunningRowsFailed(m.message);
     endOverall('error');
     finish();
     failAlert(m.message);
-    log(t(`실패: ${m.message}`, `Failed: ${m.message}`));
+    logGameFail(-1, m.message, rowSecs(-1));
   }
 }
 
@@ -1326,5 +1394,5 @@ cancelBtn.addEventListener('click', () => {
   }
   endOverall('cancel');
   finish();
-  log(t('취소됨', 'Cancelled'));
+  logEvent('', t('취소됨', 'Cancelled'), 'meta');
 });
