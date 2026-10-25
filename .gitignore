@@ -21,6 +21,7 @@ site/vendor/neogeo_games.json
 site/vendor/conv/version.js
 site/vendor/conv/node_modules/
 docs/PROGRESS.md
+__pycache__/
 .DS_Store
 .idea/
 .vs/

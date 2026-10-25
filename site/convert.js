@@ -518,7 +518,7 @@ function paintPreflightProgress() {
 // the request (the final preflight/error payload still stops it).
 function runPreflight(fileList, { onRows, onError, onProgress } = {}) {
   const id = ++preflightSeq;
-  const w = new Worker('vendor/conv/worker.js', { type: 'module' });
+  const w = new Worker(new URL('./vendor/conv/worker.js', import.meta.url), { type: 'module' });
   let done = false;
   const stop = () => {
     if (done) return false;
@@ -859,7 +859,7 @@ function refreshRun() {
   const names = files.map((f) => f.name).join(', ');
   $('gateFile').textContent = files.length === 0
     ? t('zip을 올리세요', 'Drop zips')
-    : `${files.length}개: ${names}`;
+    : t(`${files.length}개: ${names}`, `${files.length} file${files.length === 1 ? '' : 's'}: ${names}`);
   const notes = [];
   if (folderDropped) {
     notes.push(t('폴더는 지원하지 않습니다. 폴더 안의 게임 zip을 올려 주세요.',
@@ -903,17 +903,6 @@ drop.addEventListener('drop', (e) => {
   const folder = items.some((it) => it.webkitGetAsEntry?.()?.isDirectory);
   ingest(e.dataTransfer.files, { folder });
 });
-
-// app.js owns the language switch; its click listener runs first, so re-render
-// the dynamic list/summary in the new language. Preflight reasons are data
-// fixed when the list was built (like log lines), so they keep their language.
-document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => {
-  if (wantsBatch()) renderBatch();
-  renderOverall();
-  refreshRun();
-  artEditor.refresh();
-  renderArtMsg();
-}));
 
 /* ── 4-step pipe (unchanged) ───────────────────────────────────────────── */
 const vals = {};
@@ -1091,7 +1080,7 @@ runBtn.addEventListener('click', () => {
    takes the next one instead of sitting idle, and the pool size comes from
    batch.js (memory first: each worker holds a whole romset, ~150MB peak). */
 function spawnWorker(base) {
-  const w = new Worker('vendor/conv/worker.js', { type: 'module' });
+  const w = new Worker(new URL('./vendor/conv/worker.js', import.meta.url), { type: 'module' });
   w.base = base;
   w.job = null;
   w.onerror = (e) => workerFailed(w, e.message || 'load failed');

@@ -12,7 +12,10 @@ on:
       - 'scripts/build_wasm.sh'
       - 'scripts/wasm-shim/**'
       - 'scripts/gen_site_games.py'
+      - 'scripts/gen_site_seo.py'
+      - 'scripts/gen_site_i18n.mjs'
       - '.github/workflows/pages.yml'
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -29,7 +32,20 @@ env:
   EMSDK_VERSION: 4.0.10
 
 jobs:
+  # Pull requests run the gates only: no devkitARM/WASM build needed for them.
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # Own group: a PR run must never cancel an in-flight deploy of main.
+    concurrency:
+      group: site-gates-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/site_gate.sh
+
   build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,39 +64,8 @@ jobs:
       - name: Build WASM tools + stage static assets
         run: bash scripts/build_wasm.sh
 
-      - name: Verify site gates (JS + tags + i18n)
-        run: |
-          for f in site/app.js site/convert.js site/vendor/conv/*.js site/vendor/conv/*.mjs site/vendor/*.mjs site/vendor/bench/*; do
-            node --check "$f"
-          done
-          python3 - << 'EOF'
-          import html.parser
-          class P(html.parser.HTMLParser):
-              def __init__(self):
-                  super().__init__(); self.stack=[]; self.errs=[]
-                  self.void={'meta','link','input','br','img','hr'}
-              def handle_starttag(self, tag, attrs):
-                  if tag not in self.void: self.stack.append((tag, self.getpos()))
-              def handle_endtag(self, tag):
-                  if tag in self.void: return
-                  if self.stack and self.stack[-1][0]==tag: self.stack.pop()
-                  else: self.errs.append(f'{tag}@{self.getpos()}')
-          for page in ('site/index.html', 'site/convert.html'):
-              p=P(); p.feed(open(page).read())
-              assert not p.errs and not p.stack, f'{page}: {p.errs} {p.stack}'
-          print('tags OK')
-          EOF
-          node -e "
-          const fs = require('node:fs');
-          const app = fs.readFileSync('site/app.js', 'utf8');
-          for (const page of ['site/index.html', 'site/convert.html']) {
-            const html = fs.readFileSync(page, 'utf8');
-            const keys = [...html.matchAll(/data-i18n=\"([^\"]+)\"/g)].map(m => m[1]);
-            const missing = keys.filter(k => !app.includes(\`'\${k}'\`));
-            if (missing.length) { console.error(page, 'missing EN:', missing); process.exit(1); }
-          }
-          console.log('i18n OK');
-          "
+      - name: Verify site gates (scripts/site_gate.sh)
+        run: bash scripts/site_gate.sh
 
       - name: Run converter module tests
         run: |

@@ -3,11 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>neo3ds — 브라우저에서 변환하기</title>
-<meta name="description" data-i18n-attr="content:gate.meta" content="게임 zip을 올리면 브라우저 안에서 변환합니다. 파일은 외부로 전송되지 않습니다.">
+<title>네오지오 3DS 변환기 — 롬 zip을 CIA로 | neo3ds</title>
+<meta name="description" content="게임 zip을 올리면 브라우저 안에서 바로 변환합니다. 설치도 계정도 필요 없고, 파일은 외부로 전송되지 않습니다. 롬셋 282종 중 242종 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23B01420'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='3' fill='none' stroke='%23F8C428' stroke-width='2'/%3E%3Cg fill='%23F8C428'%3E%3Crect x='8' y='7' width='4' height='18'/%3E%3Crect x='20' y='7' width='4' height='18'/%3E%3Crect x='12' y='10' width='4' height='4'/%3E%3Crect x='16' y='15' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="canonical" href="https://zzcx88.github.io/neo3ds/convert.html">
+<link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/convert.html">
+<link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/en/convert.html">
+<link rel="alternate" hreflang="x-default" href="https://zzcx88.github.io/neo3ds/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="neo3ds">
+<meta property="og:title" content="네오지오 3DS 변환기 — 롬 zip을 CIA로 | neo3ds">
+<meta property="og:description" content="zip을 올리면 브라우저 안에서 CIA로 변환합니다. 설치 없음, 파일은 외부로 나가지 않습니다.">
+<meta property="og:url" content="https://zzcx88.github.io/neo3ds/convert.html">
+<meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="neo3ds — 브라우저에서 롬을 CIA로 변환">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="네오지오 3DS 변환기 | neo3ds">
+<meta name="twitter:description" content="zip을 올리면 브라우저 안에서 CIA로 변환. 설치 없음.">
+<meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "neo3ds 웹 변환기",
+  "url": "https://zzcx88.github.io/neo3ds/convert.html",
+  "applicationCategory": "UtilitiesApplication",
+  "browserRequirements": "WebAssembly를 지원하는 모던 브라우저",
+  "isAccessibleForFree": true,
+  "inLanguage": ["ko", "en"],
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+  "featureList": ["롬셋 zip → CIA 변환", "파일이 브라우저 밖으로 나가지 않음", "여러 게임 배치 변환", "아이콘·배너 직접 지정"]
+}
+</script>
+<link rel="icon" href="media/favicon.svg">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
@@ -92,15 +125,15 @@
     <a href="index.html#games" data-i18n="nav.games">게임 호환성</a>
   </nav>
   <div class="bar-end">
-    <div class="lang" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
-      <button type="button" data-lang="ko" aria-pressed="true">KO</button>
-      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    <div class="lang" role="group" aria-label="언어">
+      <a href="convert.html" aria-current="true">KO</a>
+      <a href="en/convert.html">EN</a>
     </div>
     <a class="btn btn-primary" href="convert.html" data-i18n="cta.download">변환하기</a>
   </div>
 </header>
 <main id="main">
-<noscript><p style="padding:12px 24px">이 페이지는 JavaScript가 필요합니다.</p></noscript>
+<noscript><p style="padding:12px 24px" data-i18n="gate.noscript">이 페이지는 JavaScript가 필요합니다.</p></noscript>
 
 <!-- ── HERO ────────────────────────────────────────────────────────────── -->
 <section class="hero" id="top">
