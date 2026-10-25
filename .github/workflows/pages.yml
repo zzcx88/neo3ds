@@ -12,6 +12,8 @@ on:
       - 'scripts/build_wasm.sh'
       - 'scripts/wasm-shim/**'
       - 'scripts/gen_site_games.py'
+      - 'scripts/gen_site_seo.py'
+      - 'scripts/gen_site_i18n.mjs'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -48,9 +50,9 @@ jobs:
       - name: Build WASM tools + stage static assets
         run: bash scripts/build_wasm.sh
 
-      - name: Verify site gates (JS + tags + i18n)
+      - name: Verify site gates (JS + tags + i18n + generated pages)
         run: |
-          for f in site/app.js site/convert.js site/vendor/conv/*.js site/vendor/conv/*.mjs site/vendor/*.mjs site/vendor/bench/*; do
+          for f in site/app.js site/convert.js site/vendor/conv/*.js site/vendor/conv/*.mjs site/vendor/*.mjs site/vendor/bench/* scripts/gen_site_i18n.mjs; do
             node --check "$f"
           done
           python3 - << 'EOF'
@@ -65,22 +67,38 @@ jobs:
                   if tag in self.void: return
                   if self.stack and self.stack[-1][0]==tag: self.stack.pop()
                   else: self.errs.append(f'{tag}@{self.getpos()}')
-          for page in ('site/index.html', 'site/convert.html'):
+          pages = ['site/index.html', 'site/convert.html', 'site/compat.html',
+                   'site/en/index.html', 'site/en/convert.html', 'site/en/compat.html']
+          for page in pages:
               p=P(); p.feed(open(page).read())
               assert not p.errs and not p.stack, f'{page}: {p.errs} {p.stack}'
-          print('tags OK')
+          print('tags OK:', len(pages), 'pages')
           EOF
           node -e "
           const fs = require('node:fs');
-          const app = fs.readFileSync('site/app.js', 'utf8');
+          const src = fs.readFileSync('site/app.js', 'utf8');
+          const en = new Function('return (' + src.match(/const EN = (\{[\s\S]*?\n\});/)[1] + ');')();
           for (const page of ['site/index.html', 'site/convert.html']) {
             const html = fs.readFileSync(page, 'utf8');
             const keys = [...html.matchAll(/data-i18n=\"([^\"]+)\"/g)].map(m => m[1]);
-            const missing = keys.filter(k => !app.includes(\`'\${k}'\`));
+            for (const m of html.matchAll(/data-i18n-attr=\"([^\"]+)\"/g))
+              for (const pair of m[1].split(',')) keys.push(pair.split(':')[1]);
+            const missing = keys.filter(k => !(k in en));
             if (missing.length) { console.error(page, 'missing EN:', missing); process.exit(1); }
+          }
+          for (const page of ['site/en/index.html', 'site/en/convert.html']) {
+            const html = fs.readFileSync(page, 'utf8');
+            if (html.includes('data-i18n')) { console.error(page, 'still has i18n bindings'); process.exit(1); }
+            if (/[\uac00-\ud7a3]/.test(html)) { console.error(page, 'still has Korean text'); process.exit(1); }
           }
           console.log('i18n OK');
           "
+          # Generated pages must match their sources (#130): a stale commit fails here.
+          python3 scripts/gen_site_games.py > /dev/null
+          node scripts/gen_site_i18n.mjs --check
+          python3 scripts/gen_site_seo.py --check
+          git diff --exit-code -- site/games.js site/compat.html site/en/compat.html site/sitemap.xml || {
+            echo 'generated site files are out of date (site/games.js, site/compat.html, site/en/compat.html, site/sitemap.xml)'; exit 1; }
 
       - name: Run converter module tests
         run: |
