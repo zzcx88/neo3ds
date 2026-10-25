@@ -1,7 +1,7 @@
-// Static English pages for the site (#130 P4).
+// Static English pages for the site (#141): the default pages, served from the root.
 //
-// The Korean pages are the source. This script renders site/en/index.html and
-// site/en/convert.html from them by applying the EN strings that already live in
+// The Korean pages under site/ko/ are the source. This script renders site/index.html
+// and site/convert.html from them by applying the EN strings that already live in
 // site/app.js, so there is exactly one translation table for the whole site.
 //
 // usage: node scripts/gen_site_i18n.mjs [--check]
@@ -16,8 +16,8 @@ const SITE = 'https://zzcx88.github.io/neo3ds/';
 // Head metadata per page. The KO side is hand-written in the HTML; this is the EN side.
 const PAGES = {
   'index.html': {
-    file: 'en/index.html',
-    url: 'en/',
+    file: 'index.html',
+    url: '',
     title: 'Neo Geo emulator & converter for 3DS | neo3ds',
     description: 'Turn Neo Geo (MAME) romsets into installable 3DS CIAs. Runs at 60 fps on an Old 3DS, one HOME menu icon per game. 242 of 282 romsets convert.',
     ogTitle: 'Neo Geo emulator & converter for 3DS | neo3ds',
@@ -28,7 +28,7 @@ const PAGES = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: 'neo3ds',
-      url: SITE + 'en/',
+      url: SITE,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Nintendo 3DS',
       isAccessibleForFree: true,
@@ -38,8 +38,8 @@ const PAGES = {
     },
   },
   'convert.html': {
-    file: 'en/convert.html',
-    url: 'en/convert.html',
+    file: 'convert.html',
+    url: 'convert.html',
     title: 'Neo Geo ROM to CIA converter — in your browser | neo3ds',
     description: 'Drop a game zip and it becomes a CIA inside your browser. Nothing is uploaded, nothing to install, no account. 242 of 282 romsets supported.',
     ogTitle: 'Neo Geo 3DS converter | neo3ds',
@@ -50,7 +50,7 @@ const PAGES = {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
       name: 'neo3ds web converter',
-      url: SITE + 'en/convert.html',
+      url: SITE + 'convert.html',
       applicationCategory: 'UtilitiesApplication',
       browserRequirements: 'A modern browser with WebAssembly',
       isAccessibleForFree: true,
@@ -113,9 +113,9 @@ const LANG_BLOCK = {
 /** Rewrite `page` from Korean into English. */
 function render(src, key, en) {
   const page = PAGES[key];
-  // Every EN page sits one level down in site/en/, so the sibling KO page is one `../` away.
+  // The EN page is the root one; its Korean sibling lives one level down in site/ko/.
   const selfHref = key === 'index.html' ? './' : './' + key;
-  const koHref = key === 'index.html' ? '../' : '../' + key;
+  const koHref = 'ko/' + (key === 'index.html' ? '' : key);
   let out = '';
   let i = 0;
   let skip = null;   // { key, depth } while inside a data-i18n element
@@ -178,6 +178,7 @@ function render(src, key, en) {
       const prop = attr(tag.attrs, 'property');
       const map = {
         description: page.description,
+        'og:image': SITE + 'media/og.png',
         'og:title': page.ogTitle,
         'og:description': page.ogDescription,
         'og:url': SITE + page.url,
@@ -185,7 +186,11 @@ function render(src, key, en) {
         'og:locale:alternate': 'ko_KR',
         'og:image:alt': page.ogImageAlt,
       };
-      const twitterMap = { 'twitter:title': page.ogTitle, 'twitter:description': page.twitterDescription };
+      const twitterMap = {
+        'twitter:title': page.ogTitle,
+        'twitter:description': page.twitterDescription,
+        'twitter:image': SITE + 'media/og.png',
+      };
       if (name in map) setAttr(tag.attrs, 'content', map[name]);
       if (prop in map) setAttr(tag.attrs, 'content', map[prop]);
       if (name in twitterMap) setAttr(tag.attrs, 'content', twitterMap[name]);
@@ -196,7 +201,8 @@ function render(src, key, en) {
     if (tag.name === 'link') {
       if (attr(tag.attrs, 'rel') === 'canonical') setAttr(tag.attrs, 'href', SITE + page.url);
       const href = attr(tag.attrs, 'href');
-      if (href && ASSET_PREFIXES.some((p) => href.startsWith(p))) setAttr(tag.attrs, 'href', '../' + href);
+      const bare = href && href.startsWith('../') ? href.slice(3) : href;
+      if (bare && ASSET_PREFIXES.some((p) => bare.startsWith(p))) setAttr(tag.attrs, 'href', bare);
       out += emitTag(tag.name, tag.attrs, tag.selfClosing);
       continue;
     }
@@ -220,7 +226,8 @@ function render(src, key, en) {
     // ── raw-text elements: rewrite the tag, copy the body untouched ──
     if (RAW_TEXT.has(tag.name)) {
       const src2 = attr(tag.attrs, 'src');
-      if (src2 && ASSET_PREFIXES.some((p) => src2.startsWith(p))) setAttr(tag.attrs, 'src', '../' + src2);
+      const bareSrc = src2 && src2.startsWith('../') ? src2.slice(3) : src2;
+      if (bareSrc && ASSET_PREFIXES.some((p) => bareSrc.startsWith(p))) setAttr(tag.attrs, 'src', bareSrc);
       out += emitTag(tag.name, tag.attrs, tag.selfClosing);
       const end = src.indexOf(`</${tag.name}>`, i);
       out += src.slice(i, end + tag.name.length + 3);
@@ -244,7 +251,8 @@ function render(src, key, en) {
     tag.attrs.push(...cleaned);
 
     const src2 = attr(tag.attrs, 'src');
-    if (src2 && ASSET_PREFIXES.some((p) => src2.startsWith(p))) setAttr(tag.attrs, 'src', '../' + src2);
+    const bareSrc = src2 && src2.startsWith('../') ? src2.slice(3) : src2;
+    if (bareSrc && ASSET_PREFIXES.some((p) => bareSrc.startsWith(p))) setAttr(tag.attrs, 'src', bareSrc);
 
     push(emitTag(tag.name, tag.attrs, tag.selfClosing));
 
@@ -267,7 +275,7 @@ function main() {
   const drift = [];
   for (const key of Object.keys(PAGES)) {
     const page = PAGES[key];
-    const src = read(path.join('site', key));
+    const src = read(path.join('site/ko', key));
     const out = render(src, key, en);
     const target = path.join('site', page.file);
     if (check) {

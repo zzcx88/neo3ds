@@ -105,26 +105,36 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 배포물 (`site/`, 전부 정적):
 
-- `index.html` — 소개 (KO). `en/index.html` — 같은 페이지의 영어판 (생성물)
-- `convert.html` — 웹 변환기 (per-game CIA · 런처 CIA · `.neo3ds` 팩 · 배치). `en/convert.html` — 영어판 (생성물)
-- `compat.html` — 호환 롬셋 282종 표 (JS 없이 크롤 가능). `en/compat.html` — 영어판 (생성물)
-- `sitemap.xml`, `media/og.png`, `media/favicon.svg` — 색인·공유 카드 (#130)
+**영어가 기본**(루트), 한국어는 `/ko/` (#141). 저작 원본은 한국어 `site/ko/*.html` + 게임 DB이고,
+루트 3페이지는 생성물이다.
+
+- `index.html` — 소개 (EN, 생성물). `ko/index.html` — 한국어 원본
+- `convert.html` — 웹 변환기 (EN, 생성물) · per-game CIA · 런처 CIA · `.neo3ds` 팩 · 배치. `ko/convert.html` — 한국어 원본
+- `compat.html` — 호환 롬셋 282종 표 (EN, 생성물, JS 없이 크롤 가능). `ko/compat.html` — 한국어판
+- `sitemap.xml`, `media/og.png`(EN 카드), `media/og-ko.png`(KO 카드), `media/favicon.svg` — 색인·공유 (#130)
 - `vendor/` — WASM 3종 + `engine.elf` + `neogeo_games.json` (CI가 빌드·스테이징, git 제외)
 
-생성물은 손으로 고치지 않는다. 소스는 KO 페이지 + 게임 DB이며, 편집 후 아래를 실행하고 산출물을 같이 커밋한다:
+생성물은 손으로 고치지 않는다. 한국어 원본을 고치고 아래를 실행해 산출물을 같이 커밋한다:
 
 ```bash
-python3 scripts/gen_site_games.py    # site/games.js + compat.html + en/compat.html
-node scripts/gen_site_i18n.mjs       # site/en/{index,convert}.html (EN 문자열 출처: site/app.js 의 EN 표)
+python3 scripts/gen_site_games.py    # site/games.js + compat.html (EN) + ko/compat.html
+node scripts/gen_site_i18n.mjs       # site/{index,convert}.html (EN 문자열 출처: site/app.js 의 EN 표)
 python3 scripts/gen_site_seo.py      # site/sitemap.xml
 ```
 
-`og.png`는 `scripts/og/og.html`을 1200×630으로 렌더해 만든다 (저장소 루트에서 `python3 -m http.server` 후
-`--window-size=1200,630 --screenshot=site/media/og.png`).
+공유 카드는 `scripts/og/og.html`을 1200×630으로 렌더해 만든다 (저장소 루트에서 `python3 -m http.server` 후):
+
+```bash
+chrome --headless=new --window-size=1200,630 --screenshot=site/media/og.png \
+  "http://127.0.0.1:8099/scripts/og/og.html?lang=en"
+chrome --headless=new --window-size=1200,630 --screenshot=site/media/og-ko.png \
+  "http://127.0.0.1:8099/scripts/og/og.html?lang=ko"
+```
 
 CI는 같은 생성기를 돌려 산출물이 커밋본과 같은지 확인한다 (`--check` / `git diff --exit-code`).
-`site/` 검증 게이트: JS `node --check` · 6개 페이지 태그 균형 · KO `data-i18n` 키가 모두 `app.js` EN 표에 존재 ·
-EN 페이지에 `data-i18n`/한글 잔재 0 · `sitemap.xml`·canonical·og·hreflang 일치.
+`site/` 검증 게이트(`bash scripts/site_gate.sh`, PR에서도 실행): JS `node --check` · 6개 페이지 태그 균형 ·
+KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 3페이지에 `data-i18n`/한글 잔재 0 ·
+`sitemap.xml`·canonical·hreflang·og:image(로케일별) 일치.
 
 수동 실행: Actions → Pages → Run workflow.
 로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.

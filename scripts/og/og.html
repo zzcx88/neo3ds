@@ -1,11 +1,15 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>neo3ds og:image source</title>
-<!-- Source for site/media/og.png (#130 P2). Regenerate:
-     python3 -m http.server 8099   (repo root)
-     then screenshot scripts/og/og.html at exactly 1200x630 into site/media/og.png -->
+<!-- Source for site/media/og.png (English, the default) and site/media/og-ko.png (#141).
+     Regenerate from the repo root:
+       python3 -m http.server 8099
+       chrome --headless=new --window-size=1200,630 --screenshot=site/media/og.png \
+         "http://127.0.0.1:8099/scripts/og/og.html?lang=en"
+       chrome --headless=new --window-size=1200,630 --screenshot=site/media/og-ko.png \
+         "http://127.0.0.1:8099/scripts/og/og.html?lang=ko" -->
 <link rel="stylesheet" href="../../site/styles.css">
 <style>
   html,body{margin:0;padding:0;width:1200px;height:630px;overflow:hidden;background:var(--ink)}
@@ -33,16 +37,32 @@
 <div class="og">
   <span class="plate">neo3ds</span>
   <div>
-    <p class="kicker">MAME 롬셋 → 3DS 설치 파일(CIA)</p>
-    <h1>네오지오 게임을<br><em>3DS 홈 메뉴</em>에.</h1>
-    <p class="sub">구형 3DS에서 60fps로 도는 네오지오 에뮬레이터.<br>브라우저 변환기는 설치도 계정도 필요 없습니다.</p>
-    <p class="meta">롬셋 282종 인식 · 242종 변환 · 15종 실기 확인</p>
+    <p class="kicker" id="kicker">MAME romsets → 3DS install files (CIA)</p>
+    <h1 id="title">Neo Geo games,<br><em>on the 3DS HOME menu.</em></h1>
+    <p class="sub" id="sub">A Neo Geo emulator at 60 fps on an Old 3DS.<br>The browser converter needs no install and no account.</p>
+    <p class="meta" id="meta">282 romsets recognised · 242 convert · 15 verified on hardware</p>
   </div>
   <figure class="shot">
     <img src="../../site/media/hero_kof98.jpg" alt="">
-    <figcaption>KOF '98 — 실기 풀 스피드</figcaption>
+    <figcaption id="cap">KOF '98 — full speed on hardware</figcaption>
   </figure>
   <span class="url">zzcx88.github.io/neo3ds</span>
 </div>
+<script>
+  const KO = {
+    kicker: 'MAME 롬셋 → 3DS 설치 파일(CIA)',
+    title: '네오지오 게임을<br><em>3DS 홈 메뉴</em>에.',
+    sub: '구형 3DS에서 60fps로 도는 네오지오 에뮬레이터.<br>브라우저 변환기는 설치도 계정도 필요 없습니다.',
+    meta: '롬셋 282종 인식 · 242종 변환 · 15종 실기 확인',
+    cap: "KOF '98 — 실기 풀 스피드",
+  };
+  if (new URLSearchParams(location.search).get('lang') === 'ko') {
+    document.documentElement.lang = 'ko';
+    for (const [id, text] of Object.entries(KO)) {
+      const el = document.getElementById(id);
+      el.innerHTML = text;
+    }
+  }
+</script>
 </body>
 </html>

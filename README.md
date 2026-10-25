@@ -7,7 +7,7 @@
 새 버전이 나와도 런처만 다시 설치하면 되고, 게임 파일은 그대로 씁니다. New 3DS 계열에서는 더 여유롭게 돌아갑니다.
 게임마다 HOME 메뉴 아이콘을 따로 두고 싶으면 게임별 설치 파일(CIA)로 만들 수도 있습니다.
 
-[소개 페이지](https://zzcx88.github.io/neo3ds/) · [English](README.en.md) · [웹 변환기](https://zzcx88.github.io/neo3ds/convert.html) · [오프라인 변환기 받기](https://github.com/zzcx88/neo3ds/releases/latest)
+[소개 페이지](https://zzcx88.github.io/neo3ds/ko/) · [English](README.en.md) · [웹 변환기](https://zzcx88.github.io/neo3ds/ko/convert.html) · [오프라인 변환기 받기](https://github.com/zzcx88/neo3ds/releases/latest)
 
 | 런처 게임 목록 (구형 3DS 실기) | 메탈슬러그 3 (구형 3DS 실기) |
 |---|---|
@@ -49,7 +49,7 @@
 기본은 설치할 것이 없는 **웹 변환기**입니다. PC에 받아 두고 인터넷 없이 쓰고 싶으면 [오프라인 변환기](#선택-오프라인-변환기)도 있습니다. 두 변환기의 결과물은 같습니다.
 
 ### 1. 웹 변환기 열기
-[웹 변환기](https://zzcx88.github.io/neo3ds/convert.html)를 엽니다. 설치할 것이 없습니다.
+[웹 변환기](https://zzcx88.github.io/neo3ds/ko/convert.html)를 엽니다. 설치할 것이 없습니다.
 
 ### 2. CIA 만들기
 

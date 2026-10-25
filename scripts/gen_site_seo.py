@@ -1,9 +1,10 @@
-"""Writes site/sitemap.xml and checks the SEO head of every page (#130 P1/P2/P5).
+"""Writes site/sitemap.xml and checks the SEO head of every page (#130 P1/P2/P5, flipped by #141).
 
 usage:
   python3 scripts/gen_site_seo.py           # (re)write site/sitemap.xml
   python3 scripts/gen_site_seo.py --check   # verify sitemap + page heads, non-zero on drift
 
+English is the default locale and lives at the root; Korean sits under /ko/.
 One page table, one base URL: every canonical, hreflang and og:url in the site is
 checked against it, so a page cannot silently point somewhere else.
 """
@@ -15,20 +16,25 @@ import xml.etree.ElementTree as ET
 
 SITE = 'https://zzcx88.github.io/neo3ds/'
 SITEMAP = 'site/sitemap.xml'
-OG_IMAGE = 'site/media/og.png'
 OG_SIZE = (1200, 630)
 
-# (file, url path, locale, sibling page in the other locale)
+# (file, url path, locale)
 PAGES = [
-    ('site/index.html', '', 'ko', 'site/en/index.html'),
-    ('site/convert.html', 'convert.html', 'ko', 'site/en/convert.html'),
-    ('site/compat.html', 'compat.html', 'ko', 'site/en/compat.html'),
-    ('site/en/index.html', 'en/', 'en', 'site/index.html'),
-    ('site/en/convert.html', 'en/convert.html', 'en', 'site/convert.html'),
-    ('site/en/compat.html', 'en/compat.html', 'en', 'site/compat.html'),
+    ('site/index.html', '', 'en'),
+    ('site/convert.html', 'convert.html', 'en'),
+    ('site/compat.html', 'compat.html', 'en'),
+    ('site/ko/index.html', 'ko/', 'ko'),
+    ('site/ko/convert.html', 'ko/convert.html', 'ko'),
+    ('site/ko/compat.html', 'ko/compat.html', 'ko'),
 ]
-DEFAULT_PAGE = 'site/index.html'   # x-default target
 
+# Per-locale share card, and the path of each slug in each locale.
+OG_IMAGE = {'en': 'site/media/og.png', 'ko': 'site/media/og-ko.png'}
+SLUGS = {
+    'index.html': {'en': '', 'ko': 'ko/'},
+    'convert.html': {'en': 'convert.html', 'ko': 'ko/convert.html'},
+    'compat.html': {'en': 'compat.html', 'ko': 'ko/compat.html'},
+}
 OG_LOCALE = {'ko': 'ko_KR', 'en': 'en_US'}
 
 
@@ -68,32 +74,38 @@ def sitemap_xml():
     root = ET.Element('urlset', xmlns='http://www.sitemaps.org/schemas/sitemap/0.9')
     # No lastmod/changefreq/priority: Google ignores them when unreliable, and a
     # generated date would make this file drift on every run.
-    for _, path, _, _ in PAGES:
+    for _, path, _ in PAGES:
         ET.SubElement(root, 'url').append(ET.Element('loc'))
         root[-1][0].text = SITE + path
     ET.indent(root, space='  ')
     return ET.tostring(root, encoding='unicode') + '\n'
 
 
+def other(locale):
+    return 'en' if locale == 'ko' else 'ko'
+
+
 def check_page(f, path, locale):
     html = open(f, encoding='utf-8').read()
     errs = []
     url = SITE + path
+    slug = path.split('/')[-1] or 'index.html'
 
     canon = [h for (rel, _, h) in links(html) if rel == 'canonical']
     if canon != [url]:
         errs.append('canonical %r != %r' % (canon, url))
 
     alt = {(hl, h) for (rel, hl, h) in links(html) if rel == 'alternate'}
-    want = {('ko', SITE + path_of('ko', path)),
-            ('en', SITE + path_of('en', path)),
-            ('x-default', SITE + '')}
+    want = {('ko', SITE + SLUGS[slug]['ko']),
+            ('en', SITE + SLUGS[slug]['en']),
+            ('x-default', SITE)}
     if alt != want:
         errs.append('hreflang %r != %r' % (sorted(alt), sorted(want)))
 
+    image = SITE + OG_IMAGE[locale].split('site/', 1)[1]
     m = metas(html)
     for key, want_value in (('og:url', url),
-                            ('og:image', SITE + OG_IMAGE.split('site/', 1)[1]),
+                            ('og:image', image),
                             ('og:locale', OG_LOCALE[locale]),
                             ('og:locale:alternate', OG_LOCALE[other(locale)]),
                             ('og:image:width', str(OG_SIZE[0])),
@@ -101,7 +113,7 @@ def check_page(f, path, locale):
                             ('og:type', 'website'),
                             ('og:site_name', 'neo3ds'),
                             ('twitter:card', 'summary_large_image'),
-                            ('twitter:image', SITE + OG_IMAGE.split('site/', 1)[1])):
+                            ('twitter:image', image)):
         if m.get(key) != want_value:
             errs.append('%s %r != %r' % (key, m.get(key), want_value))
 
@@ -113,24 +125,9 @@ def check_page(f, path, locale):
         errs.append('missing <title>')
     if 'application/ld+json' not in html:
         errs.append('missing JSON-LD')
+    if not re.search(r'<html lang="%s">' % locale, html):
+        errs.append('html lang is not %r' % locale)
     return errs
-
-
-def other(locale):
-    return 'en' if locale == 'ko' else 'ko'
-
-
-def path_of(locale, path):
-    """URL path of the same page in the other locale."""
-    for f, p, loc, _ in PAGES:
-        if loc == locale and f.endswith(page_slug(path)):
-            return p
-    raise SystemExit('no %s page for %s' % (locale, path))
-
-
-def page_slug(path):
-    slug = path.split('/')[-1]
-    return slug or 'index.html'
 
 
 def main():
@@ -147,16 +144,17 @@ def main():
         if got != want:
             errs.append('%s differs from the page table' % SITEMAP)
 
-    for f, path, locale, _ in PAGES:
+    for f, path, locale in PAGES:
         if not os.path.exists(f):
             errs.append('%s: missing' % f)
             continue
         errs += ['%s: %s' % (f, e) for e in check_page(f, path, locale)]
 
-    if not os.path.exists(OG_IMAGE):
-        errs.append('%s: missing' % OG_IMAGE)
-    elif png_size(OG_IMAGE) != OG_SIZE:
-        errs.append('%s: %dx%d != %dx%d' % ((OG_IMAGE,) + png_size(OG_IMAGE) + OG_SIZE))
+    for locale, image in OG_IMAGE.items():
+        if not os.path.exists(image):
+            errs.append('%s: missing' % image)
+        elif png_size(image) != OG_SIZE:
+            errs.append('%s: %dx%d != %dx%d' % ((image,) + png_size(image) + OG_SIZE))
 
     if errs:
         print('\n'.join(errs), file=sys.stderr)
