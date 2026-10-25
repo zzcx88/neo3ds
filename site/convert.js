@@ -803,6 +803,7 @@ function updateRow(index) {
   if (!batch) return;
   const host = rowEls.get(index);
   if (host) paintRow(host, batch[index]);
+  paintRowsScroll();
 }
 
 function renderBatch() {
@@ -810,6 +811,7 @@ function renderBatch() {
   if (!wantsBatch()) {
     rowEls.clear();
     batchRowsEl.replaceChildren();
+    paintRowsScroll();
     paintBatchAll();
     return;
   }
@@ -818,7 +820,27 @@ function renderBatch() {
   const frag = document.createDocumentFragment();
   (batch ?? []).forEach((row, i) => frag.appendChild(makeRow(row, i)));
   batchRowsEl.replaceChildren(frag);
+  paintRowsScroll();
   paintBatchHeader();
+}
+
+/* #138: 5줄까지만 보이고 넘으면 목록 안에서 스크롤한다. 줄 높이가
+   글꼴·이유 문구에 따라 달라지므로 실제 렌더된 높이로 상한을 잡는다. */
+const ROWS_VISIBLE = 5;
+function paintRowsScroll() {
+  const rows = batchRowsEl.children;
+  const first = rows[0];
+  if (rows.length <= ROWS_VISIBLE || !first) {
+    batchRowsEl.style.maxHeight = '';
+    batchRowsEl.classList.remove('scroll');
+    batchRowsEl.removeAttribute('tabindex');
+    return;
+  }
+  const gap = parseFloat(getComputedStyle(batchRowsEl).rowGap) || 0;
+  const h = first.getBoundingClientRect().height;
+  batchRowsEl.style.maxHeight = `${Math.round(h * ROWS_VISIBLE + gap * (ROWS_VISIBLE - 1))}px`;
+  batchRowsEl.classList.add('scroll');
+  batchRowsEl.tabIndex = 0;
 }
 
 /* ── File intake / run button state ────────────────────────────────────── */
