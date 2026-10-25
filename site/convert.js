@@ -29,16 +29,17 @@ let files = [];
 let rejectedFiles = 0; // non-zip drops ignored by ingest (#79): say so instead of nothing
 let folderDropped = false; // folder drops arrive with no File entries; explain instead of silence
 let workers = [], queue = [], jobId = 0, running = false, batchT0 = 0;
-let preflightCancel = null, preflightSeq = 0, preflighting = false;
-let batch = null, batchSource = null, batchFiles = null;
-let batchStarted = false, batchError = '', readyIndexes = [];
-let artEditor = null, artCancel = null;
+let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
+let checkRows = null, checkFiles = null, checkError = '', checkProgress = null;
+let singleRow = null; // #143: the one game's check row when there is no batch list
+let batch = null, batchSource = null;
+let batchStarted = false, readyIndexes = [];
+let artEditor = null;
 let runInputs = null; // #81: {files, mode} the current run started with
 let artBusy = false; // a picture is being decoded/validated before it can be applied
-let artLoading = false, artLoadingFiles = null, artTitle = null, artTitleFiles = null, artProblem = null;
+let artTitle = null, artProblem = null;
 let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
-let preflightProgress = null; // #81 {done,total} while the batch preflight runs
 let overallView = null; // #81 {fraction, kind, index, ready, end} shown in #progress
 let bundleBusy = false, bundleUrl = null, bundleSeq = 0; // #81 "download all" ZIP
 
@@ -99,6 +100,7 @@ function clearSingleLink() {
   if (dl.dataset.url) { revokeUrl(dl.dataset.url); delete dl.dataset.url; }
   dl.removeAttribute('href');
   dl.classList.add('hidden');
+  paintResult();
 }
 
 function revokeAllUrls() {
@@ -318,70 +320,21 @@ function batchArtEligible() {
   return currentMode() === 'cia' && wantsBatch();
 }
 
-function stopArtTitle() {
-  if (artCancel) { artCancel(); artCancel = null; }
-  artLoading = false;
-  artLoadingFiles = null;
-}
-
 function artProblemText() {
   if (!artProblem) return '';
   if (artProblem.kind === 'unknown') return t('게임을 인식하지 못해 아이콘·배너 미리보기를 만들 수 없습니다.',
     'Game not recognized, so the icon and banner preview cannot be built.');
+  if (artProblem.kind === 'blocked') return t(`변환할 수 없습니다: ${artProblem.detail}`,
+    `Cannot convert: ${artProblem.detail}`);
   if (artProblem.kind === 'preview') return t('아이콘·배너 미리보기를 만들지 못했습니다.',
     'Could not build the icon and banner preview.');
+  if (artProblem.kind === 'raw') return artProblem.detail ?? '';
   return t(`아이콘·배너 확인 실패: ${artProblem.detail}`, `Icon and banner check failed: ${artProblem.detail}`);
 }
 
-function renderArtMsg() {
-  const text = artLoading
-    ? t('게임 이름을 확인하는 중…', 'Checking the game title…')
-    : artProblemText();
+function renderArtMsg(text = artProblemText()) {
   artMsgEl.textContent = text;
   artMsgEl.classList.toggle('hidden', !text);
-}
-
-function startArtTitle() {
-  stopArtTitle();
-  artLoading = true;
-  artLoadingFiles = files;
-  artTitle = null; artTitleFiles = null; artProblem = null;
-  artTitleEl.textContent = '';
-  artEditor.configure({ title: '', art: null, locked: running, onChange: null });
-  renderArtMsg();
-  refreshArtLock();
-  const myFiles = files;
-  artCancel = runPreflight(myFiles, {
-    onProgress(done, total) {
-      if (!artLoading) return;
-      artMsgEl.textContent = t(`게임 이름 확인 중… (${done}/${total})`, `Checking the game title… (${done}/${total})`);
-      artMsgEl.classList.remove('hidden');
-    },
-    onRows(rows) {
-      artLoading = false;
-      artLoadingFiles = null;
-      artTitle = rows?.[0]?.title ?? null;
-      artProblem = artTitle ? null : { kind: 'unknown' };
-      artTitleFiles = myFiles;
-      artTitleEl.textContent = artTitle ?? '';
-      artEditor.configure({ title: artTitle ?? '', art: null, locked: running, onChange: null });
-      renderArtMsg();
-      refreshArtLock();
-    },
-    onError(message, kind) {
-      artLoading = false;
-      artLoadingFiles = null;
-      artProblem = kind === 'worker'
-        ? { kind: 'preview', detail: message }
-        : { kind: 'error', detail: message };
-      artTitleFiles = myFiles;
-      artTitle = null;
-      artTitleEl.textContent = '';
-      artEditor.configure({ title: '', art: null, locked: running, onChange: null });
-      renderArtMsg();
-      refreshArtLock();
-    },
-  });
 }
 
 /* ── #76 per-game art panel (one row at a time) ─────────────────────────── */
@@ -430,8 +383,6 @@ function showRowArt(index) {
   artPanel.classList.remove('hidden');
   artBack.classList.remove('hidden');
   artTitleEl.textContent = row.title ?? '';
-  artLoading = false;
-  artLoadingFiles = null;
   artProblem = null;
   renderArtMsg();
   artEditor.configure({
@@ -461,12 +412,22 @@ function closeRowArt({ focus = false } = {}) {
   selectedIndex = -1;
   paintSelection();
   hideArtPanel();
-  artLoading = false;
-  artLoadingFiles = null;
   artProblem = null;
   artEditor.configure({ title: '', art: null, locked: true, onChange: null });
   renderArtMsg();
   if (focus && prev >= 0) rowEls.get(prev)?.li.focus({ preventScroll: true });
+}
+
+// #143: the single-game panel reads the shared romset check, so the form,
+// the list and the art preview cannot disagree about the same zip.
+function singleArtState() {
+  const row = singleRow;
+  artTitle = row?.title ?? null;
+  if (checking) artProblem = null;
+  else if (checkError) artProblem = { kind: 'raw', detail: checkError };
+  else if (!row || !row.title) artProblem = { kind: 'unknown' };
+  else if (!row.ok) artProblem = { kind: 'blocked', detail: row.problem ?? '' };
+  else artProblem = null;
 }
 
 // Single CIA: the panel shows the one game directly. Multi-game CIA: it shows
@@ -475,10 +436,18 @@ function syncArt() {
   if (artEligible()) {
     artPanel.classList.remove('hidden');
     artBack.classList.add('hidden');
+    singleArtState();
+    artTitleEl.textContent = artTitle ?? '';
+    artEditor.configure({ title: artTitle ?? '', art: null, locked: running, onChange: null });
+    if (checking) {
+      const p = checkProgress;
+      renderArtMsg(p && p.total
+        ? t(`게임 이름 확인 중… (${p.done}/${p.total})`, `Checking the game title… (${p.done}/${p.total})`)
+        : t('게임 이름을 확인하는 중…', 'Checking the game title…'));
+    } else {
+      renderArtMsg();
+    }
     refreshArtLock();
-    if (artLoading && artLoadingFiles === files) { renderArtMsg(); return; }
-    if (artTitleFiles === files) { renderArtMsg(); return; }
-    startArtTitle();
     return;
   }
   if (batchArtEligible() && selectedIndex >= 0 && batch?.[selectedIndex]?.ok) {
@@ -486,9 +455,8 @@ function syncArt() {
     return;
   }
   if (selectedIndex >= 0) { selectedIndex = -1; paintSelection(); }
-  stopArtTitle();
   hideArtPanel();
-  artTitle = null; artTitleFiles = null; artProblem = null;
+  artTitle = null; artProblem = null;
   artEditor.configure({ title: '', art: null, locked: true, onChange: null });
   renderArtMsg();
 }
@@ -498,9 +466,9 @@ artBack.addEventListener('click', () => { if (!artBusy) closeRowArt({ focus: tru
 
 /* ── #81 recognition bar (done/total game zips) ────────────────────────── */
 function paintPreflightProgress() {
-  const total = Math.max(0, preflightProgress?.total ?? 0);
-  const done = Math.max(0, Math.min(preflightProgress?.done ?? 0, total));
-  const show = preflighting && total > 0;
+  const total = Math.max(0, checkProgress?.total ?? 0);
+  const done = Math.max(0, Math.min(checkProgress?.done ?? 0, total));
+  const show = checking && total > 0;
   recogBox.classList.toggle('hidden', !show);
   const pct = show && total ? Math.round((done / total) * 100) : 0;
   recogFill.style.width = `${pct}%`;
@@ -546,67 +514,82 @@ function runPreflight(fileList, { onRows, onError, onProgress } = {}) {
   return stop;
 }
 
-function stopPreflight() {
-  if (preflightCancel) { preflightCancel(); preflightCancel = null; }
-  preflighting = false;
-  preflightProgress = null;
+function stopCheck() {
+  if (checkCancel) { checkCancel(); checkCancel = null; }
+  checking = false;
+  checkProgress = null;
 }
 
-function dropBatchModel() {
+function resetCheckModel() {
   cancelBundle();
   if (batch) for (const row of batch) if (row.result?.url) revokeUrl(row.result.url);
-  batch = null; batchSource = null; batchFiles = null;
-  batchStarted = false; batchError = ''; readyIndexes = [];
+  batch = null; batchSource = null; singleRow = null;
+  batchStarted = false; readyIndexes = [];
   selectedIndex = -1;
+  checkRows = null; checkFiles = null; checkError = ''; checkShape = false;
 }
 
-function startPreflight() {
-  stopPreflight();
-  dropBatchModel();
-  preflighting = true;
-  preflightProgress = { done: 0, total: gameZips().length };
+// #143: every mode that converts a game gets the same romset check, including
+// a single game or a one-game pack. The batch list is only one place it shows.
+function needsCheck() {
+  return currentMode() !== 'launcher' && gameZips().length > 0;
+}
+
+function startCheck() {
+  stopCheck();
+  resetCheckModel();
+  checking = true;
+  checkFiles = files;
+  checkProgress = { done: 0, total: gameZips().length };
   renderBatch();
+  syncArt();
   refreshRun();
-  preflightCancel = runPreflight(files, {
+  checkCancel = runPreflight(files, {
     onProgress(done, total) {
-      preflightProgress = { done, total };
+      checkProgress = { done, total };
       paintBatchHeader();
+      if (artEligible()) syncArt();
     },
     onRows(rows) {
-      preflighting = false;
-      preflightProgress = null;
+      checking = false;
+      checkProgress = null;
+      checkRows = rows;
+      checkShape = wantsBatch();
       batchSource = rows;
-      batch = createBatch(rows);
-      batchFiles = files;
+      batch = checkShape ? createBatch(rows) : null;
+      singleRow = checkShape ? null : (rows[0] ?? null);
       renderBatch();
+      syncArt();
       refreshRun();
     },
     onError(message, kind) {
-      preflighting = false;
-      preflightProgress = null;
-      batchError = kind === 'worker'
-        ? t(`목록을 읽지 못했습니다 (${message})`, `Could not read the game list (${message})`)
+      checking = false;
+      checkProgress = null;
+      checkError = kind === 'worker'
+        ? t(`롬셋을 확인하지 못했습니다 (${message})`, `Could not check the romset (${message})`)
         : kind === 'error'
-          ? t(`목록 확인 실패: ${message}`, `Preflight failed: ${message}`)
+          ? t(`롬셋 확인 실패: ${message}`, `Romset check failed: ${message}`)
           : t(`알 수 없는 응답: ${message}`, `Unexpected response: ${message}`);
       renderBatch();
+      syncArt();
       refreshRun();
     },
   });
 }
 
 // Called when the dropped files or the output mode change (never mid-run).
-function syncBatch() {
+function syncCheck() {
   if (running) return;
-  if (!wantsBatch()) { stopPreflight(); dropBatchModel(); renderBatch(); return; }
-  if (batch && batchFiles === files && !preflighting && !batchError) { renderBatch(); return; }
-  startPreflight();
+  if (!needsCheck()) { stopCheck(); resetCheckModel(); renderBatch(); return; }
+  if (checking && checkFiles === files) { renderBatch(); return; }
+  if (checkRows && checkFiles === files && !checkError && checkShape === wantsBatch()) { renderBatch(); return; }
+  startCheck();
 }
 
-// One entry point for every files/mode/finish change: the list and the art
-// panel must agree on whether they are visible and which row is selected.
+// One entry point for every files/mode/finish change: the list, the art panel
+// and the run button must agree on whether they are visible and usable.
 function syncOutput() {
-  syncBatch();
+  syncCheck();
   syncArt();
 }
 
@@ -727,18 +710,20 @@ function paintBatchHeader() {
       'Check before converting. Select a game row to change that game\'s icon and banner. Games that cannot be converted show why and are skipped.')
     : t('변환하기 전에 확인하세요. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
       'Check before converting. Games that cannot be converted show why and are skipped.');
-  batchCount.textContent = preflighting
+  batchCount.textContent = checking
     ? t('확인 중…', 'Checking…')
     : batch
       ? t(`${s.ready}/${s.total} 변환 가능`, `${s.ready}/${s.total} convertible`)
-      : batchError ? t('확인 실패', 'Check failed') : '';
-  batchMsg.textContent = preflighting
+      : checkError ? t('확인 실패', 'Check failed') : '';
+  batchMsg.textContent = checking
     ? t('롬셋과 바이오스를 확인하는 중…', 'Checking romsets and BIOS…')
-    : batchError;
-  batchMsg.classList.toggle('hidden', !(preflighting || batchError));
+    : checkError;
+  batchMsg.classList.toggle('hidden', !(checking || checkError));
   const showSummary = !!batch && batchStarted;
   batchSummary.classList.toggle('hidden', !showSummary);
   if (showSummary) batchSummary.textContent = summaryText(s);
+  const resultLine = $('gateResultLine');
+  if (resultLine && showSummary) resultLine.textContent = summaryText(s);
   paintPreflightProgress();
   paintBatchAll();
 }
@@ -749,10 +734,11 @@ function paintBatchAll() {
   const show = wantsBatch() && n > 0;
   dlAllBtn.classList.toggle('hidden', !show);
   dlAllBtn.disabled = show && bundleBusy;
-  if (!show) { dlAllBtn.textContent = ''; return; }
+  if (!show) { dlAllBtn.textContent = ''; paintResult(); return; }
   dlAllBtn.textContent = bundleBusy
     ? t('ZIP 만드는 중…', 'Building ZIP…')
     : t(`전체 다운로드 (${n})`, `Download all (${n})`);
+  paintResult();
 }
 
 async function downloadBatchZip() {
@@ -849,13 +835,12 @@ function ingest(list, { folder = false } = {}) {
   files = dropped.filter((f) => f.name.toLowerCase().endsWith('.zip'));
   rejectedFiles = dropped.length - files.length;
   folderDropped = folder;
-  if (!running) { resetOverall(); syncOutput(); }
+  if (!running) { resetOverall(); resetResults(); syncOutput(); }
   refreshRun();
 }
 
 function refreshRun() {
   const mode = currentMode();
-  const hasBios = files.some((f) => f.name.toLowerCase() === 'neogeo.zip');
   const names = files.map((f) => f.name).join(', ');
   $('gateFile').textContent = files.length === 0
     ? t('zip을 올리세요', 'Drop zips')
@@ -869,22 +854,45 @@ function refreshRun() {
     notes.push(t(`zip 파일만 지원합니다 (${rejectedFiles}개 제외)`,
       `Only .zip files are supported (${rejectedFiles} ignored)`));
   }
-  if (files.length > 0 && !hasBios && mode !== 'launcher') notes.push(t('neogeo.zip이 없습니다', 'neogeo.zip missing'));
   $('gateMeta').textContent = notes.join(' · ');
 
+  // #143: a disabled Convert always says why, and the same check that builds
+  // the list decides it. Launcher CIA needs no game zip.
   let disabled = running || artBusy;
-  // Launcher CIA needs no game zip; every other mode needs at least one (a lone
-  // neogeo.zip used to reach the worker and fail with an English error, #79).
-  if (mode !== 'launcher' && gameZips().length === 0) disabled = true;
-  if (mode !== 'launcher' && gameZips().length > 1) {
-    if (preflighting || batchError || !batch || batchFiles !== files) disabled = true;
-    else if (summary(batch).ready === 0) disabled = true;
+  let hint = '';
+  if (mode !== 'launcher') {
+    if (gameZips().length === 0) {
+      disabled = true;
+      hint = t('게임 zip을 올리세요', 'Drop a game zip');
+    } else if (checking) {
+      disabled = true;
+      hint = t('롬셋과 바이오스를 확인하는 중…', 'Checking romsets and BIOS…');
+    } else if (checkError) {
+      disabled = true;
+      hint = checkError;
+    } else if (!checkRows || checkFiles !== files) {
+      disabled = true;
+    } else if (wantsBatch()) {
+      if (summary(batch ?? []).ready === 0) {
+        disabled = true;
+        hint = t('변환 가능한 게임이 없습니다. 목록의 이유를 확인하세요.',
+          'No convertible game. Check the reason in the list.');
+      }
+    } else if (!singleRow?.ok) {
+      disabled = true;
+      hint = t(`변환할 수 없음 — ${singleRow?.problem ?? ''}`, `Not convertible — ${singleRow?.problem ?? ''}`);
+    }
   }
+  if (running) hint = '';
+  else if (artBusy) hint = t('이미지 확인 중…', 'Checking the picture…');
+  const hintEl = $('gateRunHint');
+  hintEl.textContent = hint;
+  hintEl.classList.toggle('hidden', !hint);
   runBtn.disabled = disabled;
 }
 
 document.querySelectorAll('input[name="gateMode"]').forEach((r) => r.addEventListener('change', () => {
-  if (!running) { resetOverall(); syncOutput(); }
+  if (!running) { resetOverall(); resetResults(); syncOutput(); }
   refreshRun();
 }));
 { // Deep-link: convert.html?mode=pack|launcher preselects the output (?mode=cia = default).
@@ -1040,15 +1048,16 @@ runBtn.addEventListener('click', () => {
   const mode = currentMode();
   if (running || artBusy || (files.length === 0 && mode !== 'launcher')) return;
   const isBatch = wantsBatch();
-  if (isBatch && (!batch || batchFiles !== files || batchError || summary(batch).ready === 0)) return;
+  if (mode !== 'launcher' && (!checkRows || checkFiles !== files || checkError)) return;
+  if (isBatch && (!batch || summary(batch).ready === 0)) return;
+  if (!isBatch && mode !== 'launcher' && !singleRow?.ok) return;
 
   focusProgress(); // #81: show the progress section without hunting for it
   running = true;
   runInputs = { files, mode };
   runBtn.disabled = true;
   cancelBtn.classList.remove('hidden');
-  revokeAllUrls(); // #74: a new run drops every previous per-game download URL
-  $('gateStats').classList.add('hidden');
+  resetResults(); // #74/#143: a new run drops every previous result and download URL
   logEl.textContent = '';
   resetPipe();
 
@@ -1169,6 +1178,7 @@ function workerFailed(w, message) {
     markRunningRowsFailed(t('워커 오류', 'Worker error'));
     endOverall('error');
     finish();
+    failAlert(message);
     log(t(`실패: 워커 오류 (${message})`, `Failed: worker error (${message})`));
     return;
   }
@@ -1240,6 +1250,7 @@ function onSingleMessage(m) {
     markRunningRowsFailed(m.message);
     endOverall('error');
     finish();
+    failAlert(m.message);
     log(t(`실패: ${m.message}`, `Failed: ${m.message}`));
   }
 }
@@ -1251,6 +1262,42 @@ function downloadName(stats) {
   return `${stats.rom}-web.cia`;
 }
 
+// #143: one result block in #progress answers "what do I do now?" without
+// sending the reader back up to the form.
+function resultNote() {
+  if (wantsBatch()) return t('각 CIA를 FBI로 설치하세요.', 'Install each CIA with FBI.');
+  const mode = currentMode();
+  if (mode === 'pack') return t('.neo3ds 파일을 SD의 /neo3ds/games/에 복사하세요.',
+    'Copy the .neo3ds file to /neo3ds/games/ on the SD card.');
+  if (mode === 'launcher') return t('런처 CIA를 FBI로 한 번 설치하세요.', 'Install the launcher CIA with FBI once.');
+  return t('CIA를 FBI로 설치하세요.', 'Install the CIA with FBI.');
+}
+
+function paintResult() {
+  const show = !$('gateDl').classList.contains('hidden')
+    || !$('gateBatchAll').classList.contains('hidden');
+  $('gateResult').classList.toggle('hidden', !show);
+  $('gateResultNote').textContent = show ? resultNote() : '';
+}
+
+function showAlert(text) {
+  const el = $('gateAlert');
+  el.textContent = text;
+  el.classList.toggle('hidden', !text);
+}
+
+function failAlert(message) {
+  showAlert(t(`변환에 실패했습니다: ${message} 로그를 확인한 뒤 변환하기를 다시 누르세요.`,
+    `Conversion failed: ${message} Check the log, then press Convert to try again.`));
+}
+
+function resetResults() {
+  revokeAllUrls();
+  showAlert('');
+  $('gateResultLine').textContent = '';
+  $('gateResult').classList.add('hidden');
+}
+
 function showDownload(bin, name) {
   const dl = $('gateDl');
   clearSingleLink();
@@ -1259,16 +1306,17 @@ function showDownload(bin, name) {
   dl.href = url;
   dl.download = name;
   dl.classList.remove('hidden');
+  paintResult();
 }
 
 function showStats(stats) {
-  const st = $('gateStats');
+  const st = $('gateResultLine');
   const kind = (stats.mode ?? currentMode()) === 'pack' ? '.neo3ds' : 'CIA';
   st.textContent = t(
     `${kind} ${stats.ciaMB}MB · 메모리 ${stats.memMB ?? '?'}MB · 3DS 약 ${stats.totalMB}MB · ${stats.secs}초`,
     `${kind} ${stats.ciaMB}MB · memory ${stats.memMB ?? '?'}MB · 3DS ~${stats.totalMB}MB · ${stats.secs}s`,
   );
-  st.classList.remove('hidden');
+  paintResult();
 }
 
 function finish() {

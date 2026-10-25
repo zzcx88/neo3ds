@@ -123,6 +123,16 @@
 .overall{margin:0 0 24px;max-width:640px}
 #progress{scroll-margin-top:72px}
 #gateProgH2:focus{outline:2px solid var(--gold);outline-offset:6px}
+/* #143: result block, run reason, failure alert */
+.result{margin:0 0 22px;padding:16px 18px;border:1px solid var(--gold);border-radius:6px;background:var(--panel-2);max-width:640px}
+.result h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0 0 6px}
+.result-line{margin:0 0 12px;font-size:14px;line-height:1.6;color:var(--paper);overflow-wrap:anywhere}
+.result-line:empty{display:none}
+.result-actions{display:flex;flex-wrap:wrap;gap:10px}
+.result .tiny{margin:10px 0 0}
+.gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px}
+.run-hint{margin:8px 0 0;color:var(--gold)}
+@media(max-width:760px){.gate-side{order:-1}}
 </style>
 </head>
 <body>
@@ -190,7 +200,7 @@
       <span class="tiny mode-group">For the launcher — many games in one app</span>
       <div class="chips mode-pick" role="group" aria-label="For the launcher">
         <label class="chip"><input type="radio" name="gateMode" value="pack"> <span>Launcher file</span><span class="mode-out">.neo3ds → /neo3ds/games/</span></label>
-        <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span>For the launcher — many games in one app</span><span class="mode-out">.cia → install once</span></label>
+        <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span>Launcher CIA</span><span class="mode-out">.cia → install once</span></label>
       </div>
       <p class="tiny">To update, just install the new launcher CIA. Your existing .neo3ds files run on the new version as they are.</p>
       <div class="batch hidden" id="gateBatchList" role="region" aria-labelledby="gateBatchH">
@@ -244,12 +254,10 @@
         <p class="tiny art-msg hidden" id="gateArtMsg" role="status"></p>
       </div>
       <div class="cta-row">
-        <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled>Convert</button>
+        <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled aria-describedby="gateRunHint">Convert</button>
         <button type="button" class="btn btn-lg hidden" id="gateCancel">Cancel</button>
-        <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
-        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia">Download</a>
       </div>
-      <p class="tiny hidden" id="gateStats"></p>
+      <p class="tiny run-hint hidden" id="gateRunHint" aria-live="polite"></p>
     </div>
   </div>
 </section>
@@ -258,7 +266,17 @@
 <section class="sec" id="progress">
   <div class="wrap">
     <h2 id="gateProgH2" tabindex="-1">Progress</h2>
-    <p class="lede narrow">Each step reports here. Download above when done.</p>
+    <p class="lede narrow">Each step reports here. Download right here when it is done.</p>
+    <p class="gate-alert hidden" id="gateAlert" role="alert"></p>
+    <div class="result hidden" id="gateResult" role="region" aria-labelledby="gateResultH">
+      <h3 id="gateResultH">Result</h3>
+      <p class="result-line" id="gateResultLine"></p>
+      <div class="result-actions">
+        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia">Download</a>
+        <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
+      </div>
+      <p class="tiny" id="gateResultNote"></p>
+    </div>
     <div class="overall hidden" id="gateOverall">
       <span class="overall-text" id="gateOverallText">Ready to convert</span>
       <div class="pbar" id="gateOverallBar" role="progressbar" aria-labelledby="gateOverallText" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="">
