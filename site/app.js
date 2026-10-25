@@ -132,7 +132,7 @@ const EN = {
   'gate.p2t': 'Compressing graphics', 'gate.p2d': 'Pack sprites into 4KB zstd blocks.',
   'gate.p3t': 'Icon·banner', 'gate.p4t': 'Packing the output',
   'gate.p3d': 'Bundle the output with WASM tooling.',
-  'gate.logLabel': 'Converter log', 'gate.logNote': 'Log lines match the desktop converter. Outputs are usually tens of MB.',
+  'gate.logLabel': 'Converter log', 'gate.logNote': 'Each log line shows the elapsed time, game and stage. Outputs are usually tens of MB.',
   'gate.issue': 'Web converter issue', 'gate.home': 'Intro page',
   'gate.offWin': 'Offline converter (Windows)', 'gate.offLin': 'Offline converter (Linux)', 'gate.offMac': 'Offline converter (macOS)',
   'gate.mCia': 'Game CIA', 'gate.mPack': 'Launcher file', 'gate.mLaunch': 'Launcher CIA',
