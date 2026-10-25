@@ -3,14 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>neo3ds — 네오지오 게임을 3DS 홈 메뉴에</title>
-<meta name="description" data-i18n-attr="content:meta.desc" content="네오지오(MAME) 롬셋을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나.">
+<title>네오지오 3DS 에뮬레이터·변환기 | neo3ds</title>
+<meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
-<meta property="og:title" content="neo3ds — 네오지오 게임을 3DS 홈 메뉴에">
-<meta property="og:description" data-i18n-attr="content:meta.ogdesc" content="PC에서 롬 zip을 넣으면 게임마다 CIA 하나. 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터.">
+<link rel="canonical" href="https://zzcx88.github.io/neo3ds/">
+<link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/">
+<link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/en/">
+<link rel="alternate" hreflang="x-default" href="https://zzcx88.github.io/neo3ds/">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23B01420'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='3' fill='none' stroke='%23F8C428' stroke-width='2'/%3E%3Cg fill='%23F8C428'%3E%3Crect x='8' y='7' width='4' height='18'/%3E%3Crect x='20' y='7' width='4' height='18'/%3E%3Crect x='12' y='10' width='4' height='4'/%3E%3Crect x='16' y='15' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
+<meta property="og:site_name" content="neo3ds">
+<meta property="og:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
+<meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
+<meta property="og:url" content="https://zzcx88.github.io/neo3ds/">
+<meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="neo3ds — 네오지오 게임을 3DS 홈 메뉴에">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
+<meta name="twitter:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 구형 3DS에서 60fps.">
+<meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "neo3ds",
+  "url": "https://zzcx88.github.io/neo3ds/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Nintendo 3DS",
+  "isAccessibleForFree": true,
+  "inLanguage": ["ko", "en"],
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+  "description": "네오지오(MAME) 롬셋을 3DS 설치 파일(CIA)로 변환하고 구형 3DS에서 구동하는 에뮬레이터 엔진."
+}
+</script>
+<link rel="icon" href="media/favicon.svg">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
@@ -30,16 +60,16 @@
     <a href="#games" data-i18n="nav.games">게임 호환성</a>
   </nav>
   <div class="bar-end">
-    <div class="lang" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
-      <button type="button" data-lang="ko" aria-pressed="true">KO</button>
-      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    <div class="lang" role="group" aria-label="언어">
+      <a href="./" aria-current="true">KO</a>
+      <a href="en/">EN</a>
     </div>
     <a class="btn btn-primary" href="convert.html" data-i18n="cta.download">변환하기</a>
   </div>
 </header>
 
 <main id="main">
-<noscript><p style="padding:12px 24px">이 페이지는 JavaScript가 필요합니다. 게임 목록·변환 데모가 동작하지 않습니다.</p></noscript>
+<noscript><p style="padding:12px 24px" data-i18n="a11y.noscript">이 페이지는 JavaScript가 필요합니다. 게임 목록·변환 데모가 동작하지 않습니다.</p></noscript>
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
 <section class="hero" id="top">
@@ -102,7 +132,7 @@
           </div>
         </div>
       </div>
-      <figcaption class="sr-only">3DS 본체 목업에 게임 화면 합성</figcaption>
+      <figcaption class="sr-only" data-i18n="hero.mock">3DS 본체 목업에 게임 화면 합성</figcaption>
     </figure>
   </div>
 </section>
@@ -287,6 +317,7 @@
   <div class="wrap">
     <h2 data-i18n="games.h2">게임 호환성</h2>
     <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 15종은 구형 3DS 실기에서 확인했습니다(소닉윙즈 3는 플레이 가능).</p>
+    <p class="tiny" style="margin:8px 0 18px"><a href="compat.html" data-i18n="games.all">282종 전체 목록 — 게임별 지원 상태 보기</a></p>
 
     <div class="explorer">
       <div class="ex-tools">
@@ -398,6 +429,7 @@
   <div class="wrap foot-grid">
     <span class="brand-plate">neo3ds</span>
     <nav>
+      <a href="compat.html" data-i18n="foot.compat">게임 목록</a>
       <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
       <a href="https://github.com/zzcx88/neo3ds/releases" data-i18n="foot.rel">릴리스</a>
       <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md" data-i18n="foot.readme">README</a>

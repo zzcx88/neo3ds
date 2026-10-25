@@ -55,8 +55,9 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .brand-plate{display:inline-block;font-family:var(--pixel);font-weight:700;font-size:14px;color:var(--gold);
   background:var(--marquee);border:1px solid var(--gold);border-radius:3px;padding:3px 8px 2px;letter-spacing:.5px}
 .lang{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
-.lang button{font:400 11px/1 var(--pixel-sm);background:transparent;color:var(--dim);border:0;padding:7px 9px;cursor:pointer}
-.lang button[aria-pressed="true"]{background:var(--marquee);color:#fff}
+.lang a{font:400 11px/1 var(--pixel-sm);background:transparent;color:var(--dim);border:0;padding:7px 9px;text-decoration:none}
+.lang a:hover{color:var(--gold)}
+.lang a[aria-current="true"]{background:var(--marquee);color:#fff}
 
 /* ── 버튼 ────────────────────────────────────────────────────────────── */
 .btn{display:inline-block;font:400 13px/1 var(--pixel-sm);padding:11px 15px;border-radius:3px;
@@ -370,3 +371,19 @@ a.dl-row:hover{background:var(--panel-2);color:var(--gold)}
   .screen-stack .hero-ph{animation:none}
   .screen-stack .hero-ph:first-child{opacity:1}
 }
+
+/* ── 호환성 전체 목록 (compat.html, #130 P3) ─────────────────────────── */
+.compat-wrap{max-width:1120px;margin:0 auto;padding:28px 24px 64px}
+.compat h1{font-size:clamp(20px,3vw,28px)}
+.compat .lede{margin:12px 0 20px}
+.compat table{width:100%;border-collapse:collapse;font-size:13px}
+.compat caption{text-align:left;color:var(--dim);font-size:12px;padding:0 0 10px}
+.compat th,.compat td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.compat th{font:400 10px/1.4 var(--pixel-sm);color:var(--gold);white-space:nowrap}
+.compat td.set{font-family:var(--pixel-sm);font-size:11px;color:var(--dim);white-space:nowrap}
+.compat td.num{text-align:right;white-space:nowrap;color:var(--dim)}
+.compat td.status{white-space:nowrap;color:var(--dim)}
+.compat tr[data-status="1"] td.status{color:var(--gold)}
+.compat tr[data-status="2"] td.status{color:var(--a)}
+.compat td.note{color:var(--dim);font-size:12px}
+.compat .compat-back{margin:20px 0 0}

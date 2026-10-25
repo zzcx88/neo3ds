@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>neo3ds og:image source</title>
+<!-- Source for site/media/og.png (#130 P2). Regenerate:
+     python3 -m http.server 8099   (repo root)
+     then screenshot scripts/og/og.html at exactly 1200x630 into site/media/og.png -->
+<link rel="stylesheet" href="../../site/styles.css">
+<style>
+  html,body{margin:0;padding:0;width:1200px;height:630px;overflow:hidden;background:var(--ink)}
+  .og{width:1200px;height:630px;padding:64px;display:grid;grid-template-columns:1fr 420px;
+      gap:40px;align-items:center;box-sizing:border-box;position:relative;
+      background:
+        radial-gradient(900px 380px at 82% 18%, rgba(176,20,32,.38), transparent 70%),
+        linear-gradient(180deg,#1b1b22,#101014)}
+  .og::after{content:"";position:absolute;inset:18px;border:1px solid rgba(248,196,40,.28);border-radius:6px}
+  .kicker{font:400 12px/1 var(--pixel-sm);color:var(--gold);letter-spacing:.08em;margin:0 0 22px}
+  h1{font:700 46px/1.24 var(--pixel);color:var(--paper);margin:0 0 22px}
+  h1 em{font-style:normal;color:var(--gold)}
+  .sub{font:400 20px/1.6 var(--text);color:var(--paper);opacity:.9;margin:0 0 10px}
+  .meta{font:400 15px/1.6 var(--text);color:var(--dim);margin:0}
+  .shot{margin:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;
+        box-shadow:0 26px 60px rgba(0,0,0,.55);background:#000}
+  .shot img{width:420px;height:252px;object-fit:cover;display:block}
+  .shot figcaption{font:400 13px/1.5 var(--pixel-sm);color:var(--gold);padding:10px 12px;border-top:1px solid var(--line)}
+  .url{position:absolute;right:64px;bottom:42px;font:400 15px/1 var(--pixel-sm);color:var(--dim)}
+  .plate{position:absolute;left:64px;top:40px;font:700 18px/1 var(--pixel);color:var(--gold);
+         background:var(--marquee);border:1px solid var(--gold);border-radius:3px;padding:7px 12px 6px}
+</style>
+</head>
+<body>
+<div class="og">
+  <span class="plate">neo3ds</span>
+  <div>
+    <p class="kicker">MAME 롬셋 → 3DS 설치 파일(CIA)</p>
+    <h1>네오지오 게임을<br><em>3DS 홈 메뉴</em>에.</h1>
+    <p class="sub">구형 3DS에서 60fps로 도는 네오지오 에뮬레이터.<br>브라우저 변환기는 설치도 계정도 필요 없습니다.</p>
+    <p class="meta">롬셋 282종 인식 · 242종 변환 · 15종 실기 확인</p>
+  </div>
+  <figure class="shot">
+    <img src="../../site/media/hero_kof98.jpg" alt="">
+    <figcaption>KOF '98 — 실기 풀 스피드</figcaption>
+  </figure>
+  <span class="url">zzcx88.github.io/neo3ds</span>
+</div>
+</body>
+</html>
