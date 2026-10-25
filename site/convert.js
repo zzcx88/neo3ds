@@ -810,9 +810,9 @@ function renderBatch() {
   paintBatchHeader();
 }
 
-/* #138: 5줄까지만 보이고 넘으면 목록 안에서 스크롤한다. 줄 높이가
+/* #138/#150: 3줄까지만 보이고 넘으면 목록 안에서 스크롤한다. 줄 높이가
    글꼴·이유 문구에 따라 달라지므로 실제 렌더된 높이로 상한을 잡는다. */
-const ROWS_VISIBLE = 5;
+const ROWS_VISIBLE = 3;
 function paintRowsScroll() {
   const rows = batchRowsEl.children;
   const first = rows[0];
