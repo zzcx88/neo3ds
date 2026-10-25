@@ -182,13 +182,14 @@ const LANG = document.documentElement.lang === 'en' ? 'en' : 'ko';
 /** 지금 언어에 맞는 문구 (en이 없으면 넘긴 한국어를 그대로 씀) */
 const t = (ko, en) => (LANG === 'en' ? en : ko);
 
-/* 반대 언어판 힌트 (#130). 브라우저가 이 페이지의 언어를 하나도 선호하지 않으면
+/* 반대 언어판 힌트 (#130, #141). 브라우저의 첫 선호 언어가 이 페이지 언어와 다르면
    화면 아래에 한 줄로 알린다. 리다이렉트는 하지 않는다: 구글봇은 en-US로 렌더하므로
-   / 를 /en/ 으로 넘기면 한국어 페이지가 색인에서 밀린다 (hreflang이 그 역할을 대신한다). */
+   / 를 /ko/ 로 넘기면 영문 페이지가 색인에서 밀린다 (hreflang이 그 역할을 대신한다). */
 function offerOtherLocale() {
-  const langs = (navigator.languages && navigator.languages.length
-    ? navigator.languages : [navigator.language || '']).map((l) => l.toLowerCase());
-  if (langs.some((l) => l.startsWith(LANG))) return;
+  /* 첫 번째 선호 언어만 본다: 한국어 사용자가 영문 페이지에 오면 ko 가 목록에 섞여 있어도
+     (ko, ko-KR, en-KR 처럼) 힌트를 띄워야 한다. */
+  const primary = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
+  if (primary.startsWith(LANG)) return;
   const key = 'neo3ds-locale-hint-' + LANG;
   try { if (localStorage.getItem(key)) return; } catch (e) { /* private mode */ }
 
@@ -200,7 +201,7 @@ function offerOtherLocale() {
   box.setAttribute('role', 'region');
   box.setAttribute('aria-label', ko ? 'English version' : '한국어판');
   box.innerHTML = `<p>${ko ? 'This page is in Korean.' : 'This page is in English.'}
-    <a href="${ko ? 'en/' : '../'}${page}">${ko ? 'Read it in English' : '한국어로 보기'}</a></p>
+    <a href="${ko ? '../' : 'ko/'}${page}">${ko ? 'Read it in English' : '한국어로 보기'}</a></p>
     <button type="button" aria-label="${ko ? 'Dismiss' : '닫기'}">×</button>`;
   box.querySelector('button').addEventListener('click', () => {
     try { localStorage.setItem(key, '1'); } catch (e) { /* private mode */ }

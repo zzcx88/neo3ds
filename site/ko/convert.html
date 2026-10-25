@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>네오지오 3DS 변환기 — 롬 zip을 CIA로 | neo3ds</title>
+<meta name="description" content="게임 zip을 올리면 브라우저 안에서 바로 변환합니다. 설치도 계정도 필요 없고, 파일은 외부로 전송되지 않습니다. 롬셋 282종 중 242종 지원.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#16161C">
+<link rel="canonical" href="https://zzcx88.github.io/neo3ds/ko/convert.html">
+<link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/ko/convert.html">
+<link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/convert.html">
+<link rel="alternate" hreflang="x-default" href="https://zzcx88.github.io/neo3ds/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="neo3ds">
+<meta property="og:title" content="네오지오 3DS 변환기 — 롬 zip을 CIA로 | neo3ds">
+<meta property="og:description" content="zip을 올리면 브라우저 안에서 CIA로 변환합니다. 설치 없음, 파일은 외부로 나가지 않습니다.">
+<meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/convert.html">
+<meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="neo3ds — 브라우저에서 롬을 CIA로 변환">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="네오지오 3DS 변환기 | neo3ds">
+<meta name="twitter:description" content="zip을 올리면 브라우저 안에서 CIA로 변환. 설치 없음.">
+<meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "neo3ds 웹 변환기",
+  "url": "https://zzcx88.github.io/neo3ds/ko/convert.html",
+  "applicationCategory": "UtilitiesApplication",
+  "browserRequirements": "WebAssembly를 지원하는 모던 브라우저",
+  "isAccessibleForFree": true,
+  "inLanguage": ["ko", "en"],
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+  "featureList": ["롬셋 zip → CIA 변환", "파일이 브라우저 밖으로 나가지 않음", "여러 게임 배치 변환", "아이콘·배너 직접 지정"]
+}
+</script>
+<link rel="icon" href="../media/favicon.svg">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<link rel="stylesheet" href="../styles.css">
+<style>
+.gate-hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:36px;align-items:start}
+@media(max-width:960px){.gate-hero-grid{grid-template-columns:1fr}}
+.drop{display:block;border:2px dashed var(--line-2,#4a4a55);border-radius:6px;padding:28px 20px;text-align:center;
+  background:var(--panel-2);cursor:pointer;transition:border-color .15s;position:relative;overflow:hidden}
+.drop:hover,.drop.over{border-color:var(--gold)}
+.drop b{display:block;font-family:var(--pixel-sm);font-size:13px;color:var(--gold);margin-bottom:8px}
+.drop .tiny{display:block}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;top:0;left:0}
+.drop-meta{display:block;font:400 11px/1.6 var(--pixel-sm);color:var(--dim);margin-top:10px;word-break:break-all}
+.gate-side{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px}
+.gate-side .conv-file{display:block;margin-bottom:14px}
+#gateDl,#gateBatchAll{background:var(--gold);border-color:var(--gold);color:#16161C;font-weight:700}
+#gateDl:hover,#gateBatchAll:hover:not(:disabled){background:var(--gold);border-color:#fff;color:#16161C}
+#gateBatchAll:disabled{opacity:.55;cursor:default}
+#gateCancel{background:var(--panel-2);border-color:var(--pressed);color:var(--paper)}
+#gateCancel:hover:not(:disabled){background:var(--pressed);border-color:var(--pressed);color:#fff}
+#gateCancel:disabled{opacity:.55;cursor:default}
+/* #74: preflight game list + per-row batch status (existing tokens only) */
+.batch{margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);min-width:0}
+.batch-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.batch-head h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0}
+.batch-count{font:400 10px/1.4 var(--pixel-sm);color:var(--dim)}
+.batch-hint{margin:6px 0 8px}
+.batch-msg{margin:0 0 8px;color:var(--gold);overflow-wrap:anywhere}
+.batch-rows{border-top:1px solid var(--line)}
+.batch-rows.scroll{overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
+.batch-rows.scroll:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.batch-row{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 4px;border-bottom:1px solid var(--line)}
+.batch-row[data-status="running"]{background:var(--panel);box-shadow:inset 3px 0 0 var(--gold)}
+.batch-row[data-edit="true"]{cursor:pointer}
+.batch-row[data-edit="true"]:hover{background:var(--panel)}
+.batch-row[data-edit="true"]:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.batch-row[data-selected="true"]{background:var(--panel)}
+.batch-row[data-selected="true"] .batch-title{color:var(--gold)}
+.batch-row-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+.batch-zip{font:400 10px/1.5 var(--pixel-sm);color:var(--dim);min-width:0;overflow-wrap:anywhere}
+.batch-state{font:400 9px/1.4 var(--pixel-sm);color:var(--gold);text-align:right;white-space:nowrap}
+.batch-row[data-status="blocked"] .batch-state{color:var(--dim)}
+.batch-row[data-status="failed"] .batch-state{color:var(--a)}
+.batch-row-title{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
+.batch-title{font-size:13.5px;line-height:1.4;color:var(--paper);overflow-wrap:anywhere}
+.batch-row[data-status="blocked"] .batch-title{color:var(--dim)}
+.batch-art{font:400 9px/1.4 var(--pixel-sm);color:var(--gold);border:1px solid var(--gold);border-radius:2px;padding:1px 4px;white-space:nowrap}
+.batch-detail{font-size:12px;line-height:1.5;color:var(--dim);overflow-wrap:anywhere}
+.batch-dl{max-width:100%;margin-top:4px;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.batch-summary{margin:8px 0 0;color:var(--gold)}
+.mode-label{display:block;margin:0 0 6px}
+.mode-group{display:block;margin:10px 0 6px;color:var(--gold);font-size:10px}
+.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 4px}
+.mode-pick.one{grid-template-columns:1fr}
+.mode-pick .chip input{position:absolute;opacity:0;pointer-events:none}
+.mode-pick .chip:has(input:checked){background:var(--marquee);border-color:var(--marquee);color:#fff}
+.mode-out{display:block;font-size:9px;color:var(--dim);margin-top:5px}
+.mode-pick .chip:has(input:checked) .mode-out{color:#fff}
+.art-back{margin-left:auto}
+.art-lock{margin:0 0 8px;color:var(--gold)}
+/* #81: determinate recognition / overall bars (existing tokens only) */
+.pbar{height:8px;border:1px solid var(--line);border-radius:2px;background:var(--panel-2);overflow:hidden}
+.pbar-fill{display:block;width:0;height:100%;background:var(--gold);transition:width .2s linear}
+.recog{margin:0 0 10px}
+.recog-text,.overall-text{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px;overflow-wrap:anywhere}
+.overall{margin:0 0 24px;max-width:640px}
+#progress{scroll-margin-top:72px}
+#gateProgH2:focus{outline:2px solid var(--gold);outline-offset:6px}
+</style>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="a11y.skip">본문으로 건너뛰기</a>
+<header class="bar">
+  <a class="brand" href="index.html" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
+  <nav class="bar-nav" aria-label="섹션" data-i18n-attr="aria-label:a11y.sections">
+    <a href="index.html#steps" data-i18n="nav.steps">설치 3단계</a>
+    <a href="index.html#panel" data-i18n="nav.panel">터치 조작</a>
+    <a href="index.html#launcher" data-i18n="nav.launcher">런처</a>
+    <a href="index.html#speed" data-i18n="nav.speed">성능</a>
+    <a href="index.html#games" data-i18n="nav.games">게임 호환성</a>
+  </nav>
+  <div class="bar-end">
+    <div class="lang" role="group" aria-label="언어">
+      <a href="convert.html" aria-current="true">KO</a>
+      <a href="../convert.html">EN</a>
+    </div>
+    <a class="btn btn-primary" href="convert.html" data-i18n="cta.download">변환하기</a>
+  </div>
+</header>
+<main id="main">
+<noscript><p style="padding:12px 24px" data-i18n="gate.noscript">이 페이지는 JavaScript가 필요합니다.</p></noscript>
+
+<!-- ── HERO ────────────────────────────────────────────────────────────── -->
+<section class="hero" id="top">
+  <div class="wrap gate-hero-grid">
+    <div class="hero-copy">
+      <p class="kicker" data-i18n="gate.kicker">웹 변환기 · 서버 없음 · 파일은 이 탭 안에만</p>
+      <h1 data-i18n="gate.h1">브라우저에서<br>변환하기.</h1>
+      <p class="lede" data-i18n="gate.lede">게임 zip + neogeo.zip을 올리면 이 탭 안에서 변환합니다. 롬도 결과물도 외부로 나가지 않습니다.</p>
+      <p class="tiny" data-i18n="gate.req">합본 롬은 게임·부모 zip을 함께 올리세요 (예: kof98h.zip + kof98.zip + neogeo.zip)</p>
+      <p class="tiny" data-i18n="gate.only">MAME 네오지오 롬셋 zip만 지원합니다. MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.</p>
+    </div>
+
+    <div class="gate-side">
+      <span class="conv-file" id="gateFile" data-i18n="gate.nofile">zip을 올리세요</span>
+      <label class="drop" id="gateDrop">
+        <input type="file" id="gateZips" accept=".zip" multiple>
+        <b data-i18n="gate.dropT">롬 zip 올리기</b>
+        <span class="tiny" data-i18n="gate.dropD">클릭하거나 여기로 드래그 (게임 zip + neogeo.zip)</span>
+        <span class="drop-meta" id="gateMeta"></span>
+      </label>
+      <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0">
+        <label class="tiny"><span data-i18n="gate.region">지역</span>
+          <select id="gateRegion">
+            <option value="Europe" data-i18n="gate.eu">유럽·아시아</option>
+            <option value="Japan" data-i18n="gate.jp">일본</option>
+            <option value="Usa" data-i18n="gate.us">미국</option>
+          </select>
+        </label>
+        <label class="tiny"><span data-i18n="gate.system">시스템</span>
+          <select id="gateSystem">
+            <option value="auto" data-i18n="gate.auto">자동</option>
+            <option value="aes">AES</option>
+            <option value="mvs">MVS</option>
+          </select>
+        </label>
+      </div>
+      <span class="tiny mode-label" data-i18n="gate.mLabel">출력 선택</span>
+      <span class="tiny mode-group" data-i18n="gate.mGame">게임별 — HOME 메뉴에 바로 뜸</span>
+      <div class="chips mode-pick one" role="group" aria-label="게임별" data-i18n-attr="aria-label:gate.mGameGroup">
+        <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span data-i18n="gate.mCia">게임 CIA</span><span class="mode-out" data-i18n="gate.mCiaOut">.cia → FBI로 설치</span></label>
+      </div>
+      <span class="tiny mode-group" data-i18n="gate.mLaunch">런처용 — 앱 하나로 여러 게임</span>
+      <div class="chips mode-pick" role="group" aria-label="런처용" data-i18n-attr="aria-label:gate.mLaunchGroup">
+        <label class="chip"><input type="radio" name="gateMode" value="pack"> <span data-i18n="gate.mPack">런처용 파일</span><span class="mode-out" data-i18n="gate.mPackOut">.neo3ds → /neo3ds/games/</span></label>
+        <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span data-i18n="gate.mLaunch">런처 CIA</span><span class="mode-out" data-i18n="gate.mLaunchOut">.cia → 1회만 설치</span></label>
+      </div>
+      <p class="tiny" data-i18n="gate.mUpd">업데이트는 런처 CIA만 새로 설치하면 됩니다. 기존 .neo3ds 파일은 그대로 새 버전으로 실행됩니다.</p>
+      <div class="batch hidden" id="gateBatchList" role="region" aria-labelledby="gateBatchH">
+        <div class="batch-head">
+          <h3 id="gateBatchH" data-i18n="gate.listH">인식된 게임</h3>
+          <span class="batch-count" id="gateBatchCount"></span>
+        </div>
+        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘·배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.</p>
+        <p class="tiny batch-msg hidden" id="gateBatchMsg" role="status"></p>
+        <div class="recog hidden" id="gateBatchProg">
+          <span class="recog-text" id="gateBatchProgText" data-i18n="gate.recog">인식 중…</span>
+          <div class="pbar" id="gateBatchProgBar" role="progressbar" aria-labelledby="gateBatchProgText" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="">
+            <span class="pbar-fill" id="gateBatchProgFill"></span>
+          </div>
+        </div>
+        <ol class="batch-rows" id="gateBatchRows"></ol>
+        <p class="tiny batch-summary hidden" id="gateBatchSummary" aria-live="polite"></p>
+      </div>
+      <div class="art hidden" id="gateArt" role="region" aria-labelledby="gateArtH">
+        <div class="art-head">
+          <h3 id="gateArtH" data-i18n="gate.artH">아이콘·배너</h3>
+          <span class="art-title" id="gateArtTitle"></span>
+          <button type="button" class="btn btn-ghost btn-sm art-back hidden" id="gateArtBack" data-i18n="gate.artBack">목록으로</button>
+        </div>
+        <p class="tiny art-hint" data-i18n="gate.artHint">변환하기 전에 HOME 메뉴에 나올 모습을 확인하세요. 직접 고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다.</p>
+        <p class="tiny art-lock hidden" id="gateArtLock" role="status" data-i18n="gate.artLock">변환 중에는 아이콘·배너를 바꿀 수 없습니다.</p>
+        <div class="art-row" data-art="icon">
+          <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>
+          <div class="art-info">
+            <span class="art-label" data-i18n="gate.artIcon">아이콘 48×48</span>
+            <div class="art-actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-art-pick data-i18n="gate.artPick">파일 선택</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-art-clear data-i18n="gate.artClear">자동 생성</button>
+              <input type="file" class="sr-only" accept="image/*" tabindex="-1" aria-hidden="true" data-art-file>
+            </div>
+            <span class="art-note" data-art-note aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="art-row" data-art="banner">
+          <div class="art-shot art-shot-banner"><img class="art-img" alt=""></div>
+          <div class="art-info">
+            <span class="art-label" data-i18n="gate.artBanner">배너 256×128</span>
+            <div class="art-actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-art-pick data-i18n="gate.artPick">파일 선택</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-art-clear data-i18n="gate.artClear">자동 생성</button>
+              <input type="file" class="sr-only" accept="image/*" tabindex="-1" aria-hidden="true" data-art-file>
+            </div>
+            <span class="art-note" data-art-note aria-live="polite"></span>
+          </div>
+        </div>
+        <p class="tiny art-msg hidden" id="gateArtMsg" role="status"></p>
+      </div>
+      <div class="cta-row">
+        <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">변환하기</button>
+        <button type="button" class="btn btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
+        <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
+        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">다운로드</a>
+      </div>
+      <p class="tiny hidden" id="gateStats"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ── 진행 ─────────────────────────────────────────────────────────────── -->
+<section class="sec" id="progress">
+  <div class="wrap">
+    <h2 id="gateProgH2" tabindex="-1" data-i18n="gate.progH2">진행</h2>
+    <p class="lede narrow" data-i18n="gate.progLede">변환 단계마다 결과가 표시됩니다. 완료되면 위에서 다운로드하세요.</p>
+    <div class="overall hidden" id="gateOverall">
+      <span class="overall-text" id="gateOverallText" data-i18n="gate.overallReady">변환 준비</span>
+      <div class="pbar" id="gateOverallBar" role="progressbar" aria-labelledby="gateOverallText" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="">
+        <span class="pbar-fill" id="gateOverallFill"></span>
+      </div>
+    </div>
+    <div class="conv-grid">
+      <ol class="pipe" id="gatePipe">
+        <li data-step="load"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">롬셋 확인</h3><p data-i18n="gate.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다.</p></div><span class="pipe-val" data-pipe="1"></span></li>
+        <li data-step="romfs"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">그래픽 압축</h3><p data-i18n="gate.p2d">스프라이트를 4KB 블록으로 zstd 압축합니다.</p></div><span class="pipe-val" data-pipe="2"></span></li>
+        <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름 또는 직접 지정한 그림으로 아이콘(48×48)과 배너(256×128)를 만듭니다.</p></div><span class="pipe-val" data-pipe="3"></span></li>
+        <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">WASM 도구로 결과물을 묶습니다.</p></div><span class="pipe-val" data-pipe="4"></span></li>
+      </ol>
+      <div class="conv-side">
+        <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>
+        <p class="tiny" data-i18n="gate.logNote">로그 형식은 데스크톱 변환기와 같습니다. 결과물은 보통 수십 MB입니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <span class="brand-plate">neo3ds</span>
+    <nav>
+      <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="gate.offWin">오프라인 변환기 (Windows)</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip" data-i18n="gate.offLin">오프라인 변환기 (Linux)</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip" data-i18n="gate.offMac">오프라인 변환기 (macOS)</a>
+      <a href="https://github.com/zzcx88/neo3ds/issues/31" data-i18n="gate.issue">웹 변환기 이슈</a>
+      <a href="index.html" data-i18n="gate.home">소개 페이지</a>
+    </nav>
+    <p class="tiny" data-i18n="foot.note">게임 화면과 상표의 권리는 각 권리자에게 있습니다.</p>
+  </div>
+</footer>
+
+<script src="../app.js"></script>
+<script type="module" src="../convert.js"></script>
+</body>
+</html>

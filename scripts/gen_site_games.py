@@ -150,10 +150,11 @@ STATUS = {
 }
 COMPAT = {
     'ko': {
-        'file': 'site/compat.html',
-        'url': 'compat.html',
-        'css': 'styles.css',
-        'css_icon': 'media/favicon.svg',
+        'file': 'site/ko/compat.html',
+        'url': 'ko/compat.html',
+        'css': '../styles.css',
+        'css_icon': '../media/favicon.svg',
+        'og_image': 'media/og-ko.png',
         'title': '네오지오 3DS 호환 게임 282종 목록 | neo3ds',
         'og_title': '네오지오 3DS 호환 게임 목록 | neo3ds',
         'desc': 'neo3ds가 인식하는 네오지오(MAME) 롬셋 282종과 게임별 변환 지원 상태를 한 표로 정리했습니다. 242종 변환 지원, 15종은 구형 3DS 실기에서 확인.',
@@ -171,10 +172,11 @@ COMPAT = {
         'cta': '변환하기',
     },
     'en': {
-        'file': 'site/en/compat.html',
-        'url': 'en/compat.html',
-        'css': '../styles.css',
-        'css_icon': '../media/favicon.svg',
+        'file': 'site/compat.html',
+        'url': 'compat.html',
+        'css': 'styles.css',
+        'css_icon': 'media/favicon.svg',
+        'og_image': 'media/og.png',
         'title': 'Neo Geo games on 3DS — 282 romsets, 242 supported | neo3ds',
         'og_title': 'Neo Geo games on 3DS — full romset list | neo3ds',
         'desc': 'Every Neo Geo (MAME) romset neo3ds recognises — 282 of them — with its conversion status. 242 convert, 15 verified on real Old 3DS hardware.',
@@ -196,12 +198,12 @@ COMPAT = {
 
 def write_compat(rows, counts):
     """The crawlable half of the compatibility table (#130 P3): no JS, one row per romset."""
-    home = {'ko': 'index.html', 'en': '../index.html'}
+    home = {'ko': 'index.html', 'en': 'index.html'}
     convert = {'ko': 'convert.html', 'en': 'convert.html'}
     for locale, c in COMPAT.items():
-        # The KO page sits at the root, the EN page one level down: same string, different base.
-        ko_href = '../compat.html' if locale == 'en' else 'compat.html'
-        en_href = './compat.html' if locale == 'en' else 'en/compat.html'
+        # The EN page is the root one; Korean sits one level down in site/ko/.
+        ko_href = 'compat.html' if locale == 'ko' else 'ko/compat.html'
+        en_href = '../compat.html' if locale == 'ko' else 'compat.html'
         body = []
         for set_name, title, year, maker, rom_mb, _scheme, status, note_ko, note_en, _sprite in rows:
             note = (note_ko if locale == 'ko' else note_en) or '—'
@@ -217,10 +219,10 @@ def write_compat(rows, counts):
         page = COMPAT_PAGE.format(
             lang='ko' if locale == 'ko' else 'en',
             site=SITE, url=SITE + c['url'],
-            ko_url=SITE + 'compat.html', en_url=SITE + 'en/compat.html',
+            ko_url=SITE + 'ko/compat.html', en_url=SITE + 'compat.html',
             og_locale='ko_KR' if locale == 'ko' else 'en_US',
             og_locale_alt='en_US' if locale == 'ko' else 'ko_KR',
-            css=c['css'], css_icon=c['css_icon'],
+            css=c['css'], css_icon=c['css_icon'], og_image=c['og_image'],
             title=html.escape(c['title']), og_title=html.escape(c['og_title']),
             desc=html.escape(c['desc']),
             h1=html.escape(c['h1']), lede=html.escape(c['lede']),
@@ -263,7 +265,7 @@ COMPAT_PAGE = '''<!doctype html>
 <meta property="og:title" content="{og_title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="{url}">
-<meta property="og:image" content="{site}media/og.png">
+<meta property="og:image" content="{site}{og_image}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="neo3ds">
@@ -272,7 +274,7 @@ COMPAT_PAGE = '''<!doctype html>
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{og_title}">
 <meta name="twitter:description" content="{desc}">
-<meta name="twitter:image" content="{site}media/og.png">
+<meta name="twitter:image" content="{site}{og_image}">
 <script type="application/ld+json">
 {{
   "@context": "https://schema.org",
