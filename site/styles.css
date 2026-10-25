@@ -189,13 +189,12 @@ a.dl-row:hover{background:var(--panel-2);color:var(--gold)}
 .chip:hover{border-color:var(--gold);color:var(--paper)}
 .chip[aria-pressed="true"]{background:var(--marquee);border-color:var(--marquee);color:#fff}
 .conv-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:34px;align-items:start}
-.pipe li{display:grid;grid-template-columns:26px 1fr auto;gap:14px;padding:14px 0;border-top:1px solid var(--line);align-items:start}
+.pipe li{display:grid;grid-template-columns:26px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--line);align-items:start}
 .pipe li:last-child{border-bottom:1px solid var(--line)}
 .pipe-no{font:400 12px/1.4 var(--pixel-sm);color:var(--dim)}
 .pipe h3{font-size:16px;font-family:var(--text);font-weight:600;margin-bottom:4px}
 .pipe p{font-size:14.5px;color:#B9B9C4;margin:0}
-.pipe-val{font:400 11px/1.5 var(--pixel-sm);color:var(--dim);text-align:right;max-width:170px}
-.pipe li.done .pipe-no,.pipe li.done .pipe-val{color:var(--gold)}
+.pipe li.done .pipe-no{color:var(--gold)}
 .pipe li.now{background:var(--panel-2)}
 .pipe li.now .pipe-no{color:#fff}
 .conv-file{font:400 12px/1 var(--pixel-sm);color:var(--gold)}

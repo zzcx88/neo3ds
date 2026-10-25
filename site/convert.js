@@ -41,7 +41,6 @@ let artTitle = null, artProblem = null;
 let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
 let overallView = null; // #81 {fraction, kind, index, ready, end} shown in #progress
-let pipeRow = null; // #145: game whose step values the pipe is showing
 let bundleBusy = false, bundleUrl = null, bundleSeq = 0; // #81 "download all" ZIP
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
@@ -913,25 +912,20 @@ drop.addEventListener('drop', (e) => {
   ingest(e.dataTransfer.files, { folder });
 });
 
-/* ── 4-step pipe (unchanged) ───────────────────────────────────────────── */
-const vals = {};
-function setStep(name, cls, val = null) {
+/* ── 4-step pipe: stage highlight only (#147) ─────────────────────────── */
+const PIPE_STEPS = ['load', 'romfs', 'art', 'cia'];
+const loggedSteps = new Set(); // one log line per stage for the whole run
+
+function setStep(name, cls) {
   const li = pipe.querySelector(`[data-step="${name}"]`);
   if (!li) return;
-  if (cls === 'reset') li.classList.remove('now', 'done');
-  else if (cls) { li.classList.remove('now', 'done'); li.classList.add(cls); }
-  if (val !== null) {
-    const v = li.querySelector('[data-pipe]');
-    if (v) v.textContent = val;
-  }
-  vals[name] = val ?? vals[name];
+  li.classList.remove('now', 'done');
+  if (cls) li.classList.add(cls);
 }
 
 function resetPipe() {
-  clearPipeValues();
-  delete vals.romfsLogged; delete vals.artLogged; delete vals.ciaLogged;
-  delete vals.loadLogged;
-  pipeRow = null;
+  for (const s of PIPE_STEPS) setStep(s, null);
+  loggedSteps.clear();
 }
 
 function markRunningRowsFailed(message) {
@@ -1158,7 +1152,7 @@ function finishBatchRun() {
   const secs = ((performance.now() - batchT0) / 1000).toFixed(1);
   completeOverall();
   finish();
-  for (const step of ['load', 'romfs', 'art', 'cia']) setStep(step, 'done');
+  for (const step of PIPE_STEPS) setStep(step, 'done');
   renderBatch();
   log(t(`배치 ${s.ready}종 완료: 성공 ${s.done} · 실패 ${s.failed} (${secs}초)`,
     `Batch finished: ${s.ready} games — ${s.done} done · ${s.failed} failed (${secs}s)`));
@@ -1184,37 +1178,16 @@ function workerFailed(w, message) {
   else if (workers.every((x) => x.job == null)) finishBatchRun();
 }
 
-const PIPE_ORDER = ['load', 'romfs', 'art', 'cia'];
-
-// Per-step values only; the log flags belong to the whole run.
-function clearPipeValues() {
-  for (const s of PIPE_ORDER) {
-    setStep(s, 'reset');
-    const v = pipe.querySelector(`[data-step="${s}"] [data-pipe]`);
-    if (v) v.textContent = '';
-    delete vals[s];
-  }
-}
-
-// The 4-step pipe. With several games in flight the detail is prefixed with
-// the game name so the numbers cannot be mistaken for one game's.
-function pipeStep(m, row) {
-  const idx = PIPE_ORDER.indexOf(m.step);
+// The newest stage message marks the pipe. With parallel workers this is the
+// latest stage across games; per-game truth lives in the batch list.
+function pipeStep(m) {
+  const idx = PIPE_STEPS.indexOf(m.step);
   if (idx < 0) return;
-  // A new game starts: the previous game's step values must not sit next to
-  // this game's first step (#145).
-  if (row !== pipeRow) { pipeRow = row; clearPipeValues(); }
-  const many = overallView?.kind === 'batch' && overallView.running.size > 1;
-  const name = row >= 0 ? batch?.[row]?.name : null;
-  const detail = many && name ? `${name}: ${m.detail}` : m.detail;
-  PIPE_ORDER.forEach((s, i) => {
-    if (i < idx) setStep(s, 'done');
-    else if (i === idx) setStep(s, 'now', detail);
-  });
-  if (m.step === 'load' && !vals.loadLogged) { vals.loadLogged = true; log(t('[1/4] 롬셋 확인', '[1/4] Checking romset')); }
-  if (m.step === 'romfs' && !vals.romfsLogged) { vals.romfsLogged = true; log(t('[2/4] 그래픽 압축', '[2/4] Compressing graphics')); }
-  if (m.step === 'art' && !vals.artLogged) { vals.artLogged = true; log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
-  if (m.step === 'cia' && !vals.ciaLogged) { vals.ciaLogged = true; log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
+  PIPE_STEPS.forEach((s, i) => setStep(s, i < idx ? 'done' : i === idx ? 'now' : null));
+  if (m.step === 'load' && !loggedSteps.has('load')) { loggedSteps.add('load'); log(t('[1/4] 롬셋 확인', '[1/4] Checking romset')); }
+  if (m.step === 'romfs' && !loggedSteps.has('romfs')) { loggedSteps.add('romfs'); log(t('[2/4] 그래픽 압축', '[2/4] Compressing graphics')); }
+  if (m.step === 'art' && !loggedSteps.has('art')) { loggedSteps.add('art'); log(t('[3/4] 아이콘·배너 생성', '[3/4] Making icon and banner')); }
+  if (m.step === 'cia' && !loggedSteps.has('cia')) { loggedSteps.add('cia'); log(t(`[4/4] 결과물 묶기 (${m.detail})`, `[4/4] Packing output (${m.detail})`)); }
 }
 
 function onWorkerMessage(w, m) {
@@ -1223,7 +1196,7 @@ function onWorkerMessage(w, m) {
   if (w.single) return onSingleMessage(m);
   const row = job.row;
   if (m.type === 'progress') {
-    pipeStep(m, row);
+    pipeStep(m);
     updateOverallProgress(m, row);
     rowProgress(batch, row, m.step, m.detail);
     updateRow(row);
@@ -1244,12 +1217,12 @@ function onWorkerMessage(w, m) {
 
 function onSingleMessage(m) {
   if (m.type === 'progress') {
-    pipeStep(m, -1);
+    pipeStep(m);
     updateOverallProgress(m);
   } else if (m.type === 'done') {
     completeOverall();
     finish();
-    for (const s of ['load', 'romfs', 'art', 'cia']) setStep(s, 'done');
+    for (const s of PIPE_STEPS) setStep(s, 'done');
     showDownload(m.cia, downloadName(m.stats));
     showStats(m.stats);
     log(t(`[완료] ${downloadName(m.stats)} (${m.stats.ciaMB} MB, ${m.stats.secs}초)`,
