@@ -1,346 +1,344 @@
 # neo3ds - NeoGeo emulator for Nintendo 3DS
 
-*NeoGeo (Neo Geo) emulator for the Nintendo 3DS: converts MAME romsets into CIAs that run at full speed on the Old 3DS.*
+**A NeoGeo (Neo Geo) emulator that runs Neo Geo games at full speed, even on the original (Old) 3DS.**
+Install the **launcher app** once, convert your MAME Neo Geo romset zips into game files (`.neo3ds`) with the web converter, put them on the SD card and pick a game from the list.
+When a new version comes out, reinstall just the launcher and keep your game files. New 3DS models run it with room to spare.
+If you'd rather have a HOME menu icon per game, you can also build a separate install file (CIA) for each game.
 
-**구형 3DS에서도 풀 스피드로 돌아가는 네오지오 에뮬레이터**입니다.
-**런처 앱**을 한 번 설치하고, 웹 변환기로 MAME 네오지오 롬셋(zip)을 변환한 게임 파일(`.neo3ds`)을 SD 카드에 넣으면 게임 목록에서 골라 바로 실행합니다.
-새 버전이 나와도 런처만 다시 설치하면 되고, 게임 파일은 그대로 씁니다. New 3DS 계열에서는 더 여유롭게 돌아갑니다.
-게임마다 HOME 메뉴 아이콘을 따로 두고 싶으면 게임별 설치 파일(CIA)로 만들 수도 있습니다.
+[Project page](https://zzcx88.github.io/neo3ds/) · [한국어](README.ko.md) · [Web converter](https://zzcx88.github.io/neo3ds/convert.html) · [Get the offline converter](https://github.com/zzcx88/neo3ds/releases/latest)
 
-[소개 페이지](https://zzcx88.github.io/neo3ds/ko/) · [English](README.en.md) · [웹 변환기](https://zzcx88.github.io/neo3ds/ko/convert.html) · [오프라인 변환기 받기](https://github.com/zzcx88/neo3ds/releases/latest)
-
-| 런처 게임 목록 (구형 3DS 실기) | 메탈슬러그 3 (구형 3DS 실기) |
+| Launcher game list (Old 3DS hardware) | Metal Slug 3 (Old 3DS hardware) |
 |---|---|
-| <img src="docs/images/hw_launcher.jpg" width="400" alt="구형 3DS에서 실행한 런처 게임 목록"> | <img src="docs/images/hw_mslug3.jpg" width="400" alt="구형 3DS에서 실행한 메탈슬러그 3"> |
+| <img src="docs/images/hw_launcher.jpg" width="400" alt="Launcher game list on an Old 3DS"> | <img src="docs/images/hw_mslug3.jpg" width="400" alt="Metal Slug 3 on an Old 3DS"> |
 
-## 특징
+## Features
 
-- **구형 3DS(268MHz)에서 60fps**: KOF98·KOF99·KOF2000·KOF2002·메탈슬러그·메탈슬러그 X·메탈슬러그 3·SVC Chaos·사무라이 쇼다운 5 스페셜을 실기에서 확인했습니다.
-- **런처 (1.1.0)**: 런처 앱 하나를 설치하고 SD 카드에 넣은 게임 파일 목록에서 골라 실행합니다. 업데이트는 런처만 다시 설치하면 됩니다.
-- **게임별 CIA도 가능**: 게임 하나를 CIA 하나로 만들면 HOME 메뉴에 게임마다 아이콘이 생기고, 런처를 거치지 않습니다.
-- **퀵세이브 (1.1.0)**: 게임마다 슬롯 3개. 아래 화면 버튼이나 SELECT + L/R로 저장하고 불러옵니다.
-- **서비스 메뉴와 백업 RAM (1.1.0)**: 아케이드(MVS) 바이오스의 설정 메뉴를 열 수 있고, 기판에 저장되는 설정·하이스코어가 SD 카드에 남습니다.
-- **지역 선택 (1.1.0)**: 유럽·아시아 / 일본 / 미국. 일본으로 만들면 메탈슬러그의 피 표현 같은 일본판 내용이 나옵니다.
-- **여러 게임 한 번에 변환 (1.1.0)**: zip 여러 개를 넣으면 변환 전에 인식된 게임 목록을 보여 주고, 한 게임이 실패해도 나머지는 계속 변환합니다.
-- **풀스크린 (1.2.0)**: 키 설정의 **Screen**에서 위 화면을 가득 채우도록 늘릴 수 있습니다. 게임별로 저장됩니다.
-- **아래 화면 끄기 (1.2.0)**: 아래 화면 오른쪽 위의 **⏻**로 백라이트를 끕니다. 아래 화면을 터치하면 다시 켜집니다.
-- **더 빠른 그리기 (1.2.0)**: 화면을 띠 단위로 캐시 안에서 그리고 두 코어가 나눠 그려서, 풀스크린과 무거운 장면(메탈슬러그 3 등)의 프레임 드랍이 줄었습니다.
-- **Linux·macOS 오프라인 변환기 (1.2.0)**: Windows에 더해 Linux x64와 macOS(Apple Silicon)용 명령줄 변환기를 받을 수 있습니다.
-- **빠른 실행과 종료**: 3DS 기본 메모리 모드(64MB)로 돌아가서, 켜고 끌 때 시스템 재로딩이 없습니다.
-- **MAME 롬셋 그대로 사용**: MAME 롬셋 282종을 인식하고, 그중 242종을 변환할 수 있습니다. 암호화된 후기 게임(KOF99, 가로우, 메탈슬러그 3~5, KOF2000~2003, SVC Chaos 등)은 변환할 때 해독합니다.
-- **아래 화면 GUI**: 키 설정, 연사, 시스템(AES/MVS), 진단, 재시작, 서비스 메뉴, 퀵세이브, 화면 끄기를 터치 버튼으로 다룹니다. 지금 키 배치는 네오지오 버튼 색으로 보여 줍니다.
-- **키 설정**: 버튼마다 네오지오 버튼이나 동시 누르기(A+B 등)를 지정하고, 게임별로 저장합니다.
-- **연사(매크로)**: R + 버튼으로 켜고 끕니다. 초당 20회입니다.
-- **재시작**: SELECT + START를 1초 누르면 게임을 처음부터 다시 시작합니다.
-- **아이콘·배너 직접 지정**: 기본은 게임 이름으로 자동 생성하고, 웹 변환기(게임 하나 또는 여러 게임을 CIA로 만들 때)와 오프라인 변환기에서 원하는 그림으로 바꿀 수 있습니다. 여러 게임은 목록의 줄을 눌러 게임마다 따로 지정합니다.
-- **한국어 / 영어** 변환기 화면을 지원합니다.
+- **60 fps on an Old 3DS (268 MHz)**: verified on hardware with KOF98, KOF99, KOF2000, KOF2002, Metal Slug, Metal Slug X, Metal Slug 3, SVC Chaos and Samurai Shodown V Special.
+- **Launcher (1.1.0)**: install one launcher app and pick games from the game files on the SD card. Updating only takes a new launcher.
+- **Or one CIA per game**, each with its own HOME menu icon and no launcher in between.
+- **Quick save (1.1.0)**: three slots per game, from the bottom screen or SELECT + L/R.
+- **Service menu and backup RAM (1.1.0)**: open the arcade (MVS) BIOS settings menu; settings and high scores the board saves are kept on the SD card.
+- **Region (1.1.0)**: Europe/Asia, Japan or USA. Japan gives the Japanese versions' content, such as the blood in Metal Slug.
+- **Batch conversion (1.1.0)**: drop several zips and see the recognized games before converting; one failing game does not stop the rest.
+- **Full screen (1.2.0)**: **Screen** in the key config stretches the picture to fill the top screen, saved per game.
+- **Bottom screen off (1.2.0)**: **⏻** at the bottom screen's top right turns its backlight off; touch the bottom screen to turn it back on.
+- **Faster drawing (1.2.0)**: the picture is drawn in bands inside the cache, shared by both cores, so full screen and busy scenes (Metal Slug 3...) drop fewer frames.
+- **Linux and macOS offline converter (1.2.0)**: besides Windows, command-line converters for Linux x64 and macOS (Apple Silicon).
+- **Fast start and exit**: runs in the 3DS's default 64 MB memory mode, so there is no system reload when a game starts or quits.
+- **Plain MAME romsets**: knows all 282 MAME Neo Geo romsets and converts 242 of them. Encrypted later games (KOF99, Garou, Metal Slug 3-5, KOF2000-2003, SVC Chaos...) are decrypted during conversion.
+- **Bottom screen GUI**: touch buttons for key config, turbo, system (AES/MVS), diagnostics, restart, the service menu, quick save and screen off, with the current key layout in the Neo Geo button colours.
+- **Key config**: map each button to a Neo Geo button or a combination (A+B...), saved per game.
+- **Turbo (rapid fire)**: R + a face button toggles it; 20 presses a second.
+- **Restart**: hold SELECT + START for a second to restart the game.
+- **Generated icon and banner** from the game title — or replace them with your own pictures when building a single-game or multi-game CIA in the web converter, or in the offline converter (automatic by default). In a multi-game run, select a row in the list to set that game's picture.
+- Converter in **English and Korean**.
 
-## 준비물
+## What you need
 
 | | |
 |---|---|
-| 3DS | 구형 3DS / 2DS / New 3DS / New 2DS XL. [Luma3DS](https://github.com/LumaTeam/Luma3DS) 커스텀 펌웨어와 [FBI](https://github.com/lifehackerhansol/FBI) 같은 CIA 설치 도구가 필요합니다. |
-| PC | 웹 브라우저 (Chrome·Edge·Firefox·Safari). 롬은 브라우저 안에서만 처리되고 외부로 전송되지 않습니다. [오프라인 변환기](#선택-오프라인-변환기)를 받으면 Windows 10/11 64비트 · Linux x64 · macOS(Apple Silicon)에서 인터넷 없이 변환할 수 있습니다. |
-| 롬 | 직접 가진 게임의 **MAME 롬셋 zip**과 **neogeo.zip(바이오스)**. **MAME 롬셋 zip만 지원**하며, MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다. 이 저장소에는 롬이 들어 있지 않습니다. |
-| 사운드 | 3DS SD 카드에 `/3ds/dspfirm.cdc`가 있어야 소리가 납니다(DSP1 등으로 한 번 만들어 두면 됩니다). |
+| 3DS | Old 3DS / 2DS / New 3DS / New 2DS XL with [Luma3DS](https://github.com/LumaTeam/Luma3DS) custom firmware and a CIA installer such as [FBI](https://github.com/lifehackerhansol/FBI). |
+| PC | A web browser (Chrome, Edge, Firefox, Safari). Roms stay inside the browser and are never uploaded. With the [offline converter](#optional-the-offline-converter) you can also convert without internet on Windows 10/11 64-bit, Linux x64 or macOS (Apple Silicon). |
+| ROMs | **MAME romset zips** of games you own, plus **neogeo.zip (BIOS)**. Only MAME romset zips are supported; a romset whose names or chip CRCs differ from MAME's does not convert. No ROMs are included here. |
+| Sound | `/3ds/dspfirm.cdc` on the SD card (dump it once with DSP1). |
 
-## 사용법
+## How to use
 
-기본은 설치할 것이 없는 **웹 변환기**입니다. PC에 받아 두고 인터넷 없이 쓰고 싶으면 [오프라인 변환기](#선택-오프라인-변환기)도 있습니다. 두 변환기의 결과물은 같습니다.
+The main way is the **web converter**, with nothing to install. If you'd rather keep a converter on your PC and use it offline, there is also the [offline converter](#optional-the-offline-converter). Both produce the same files.
 
-### 1. 웹 변환기 열기
-[웹 변환기](https://zzcx88.github.io/neo3ds/ko/convert.html)를 엽니다. 설치할 것이 없습니다.
+### 1. Open the web converter
+Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html). Nothing to install.
 
-### 2. CIA 만들기
+### 2. Build a CIA
 
-1. 게임 롬 zip과 `neogeo.zip`을 함께 끌어다 놓습니다. zip 파일 이름은 MAME 이름 그대로 두세요(`kof99.zip`, `mslug3.zip` 등). 합본 롬은 게임·부모 zip을 함께 올리세요. MAME 롬셋이 아닌 zip은 변환되지 않습니다.
-2. 게임 zip을 **두 개 이상** 올리면 변환하기 전에 인식된 게임 목록이 먼저 나옵니다. 줄마다 zip 이름, 게임 이름, 변환 가능 여부와 이유(알 수 없는 롬셋·칩 누락·`neogeo.zip` 누락·지원하지 않는 카트리지)가 표시되고, 변환 가능한 게임만 변환합니다. 게임 하나만 올리면 목록 없이 바로 변환합니다. 목록의 줄을 클릭하면 그 게임의 아이콘·배너를 지정할 수 있고, 지정하지 않은 게임은 자동 생성됩니다.
-3. 필요하면 **시스템**, **지역**을 바꿉니다.
-   - **시스템**: 처음 켤 때 쓸 바이오스입니다(자동 = 가정용 AES, 아케이드 기판용으로 개조된 게임만 MVS). 3DS에서도 바꿀 수 있습니다.
-   - **지역**: 게임이 보는 기기 지역입니다. 기본은 유럽·아시아이고, **일본**을 고르면 메탈슬러그의 피 표현처럼 일본판에만 있는 내용과 일본어가 나옵니다(게임마다 다름). neogeo.zip에 그 지역 바이오스가 없으면 다른 지역 바이오스를 쓰고 로그에 알려 줍니다.
-4. CIA로 만들 때는 변환 전에 **아이콘·배너** 미리보기가 나옵니다. 게임이 여러 개면 목록의 줄을 눌러 그 게임의 아이콘·배너를 엽니다(한 번에 한 게임). 그대로 두면 게임 이름으로 자동 생성되고, **[파일 선택]** 으로 원하는 그림을 넣거나 **[자동 생성]** 으로 되돌릴 수 있습니다. 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다. 지정한 그림은 그 게임 CIA에만 쓰입니다.
-5. **[CIA 만들기]** 를 누릅니다. 게임 하나에 수십 초~1~2분쯤 걸립니다(그래픽 압축).
-6. 끝나면 **[CIA 받기]** 로 저장합니다. 아래에 CIA 크기·브라우저 메모리·3DS 메모리 추정치가 표시됩니다.
+1. Drop the game zip together with `neogeo.zip`. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...). For merged sets, drop the game + parent zips together. Zips that are not MAME romsets do not convert.
+2. With **two or more** game zips, the list of recognized games appears before converting. Each row shows the zip name, the game title, whether it can be converted and the reason (unknown romset, missing chips, missing `neogeo.zip`, unsupported cart); only convertible games are converted. A single game converts right away without the list. Select a row to set that game's icon and banner; games you do not edit keep the generated art.
+3. Change the **System** or **Region** if you like.
+   - **System** is the BIOS the game starts on (Automatic = home AES, MVS only for games modified for arcade boards); it can be switched on the 3DS too.
+   - **Region** is the console region the game sees. The default is Europe/Asia; **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug, and Japanese text (varies by game). If neogeo.zip has no BIOS for that region, another region's BIOS is used and the log says so.
+4. When building a CIA, an **Icon and banner** preview appears before converting. With several games, select a game row to open that game's icon and banner (one game at a time). Leave it alone to use the generated art, choose **[Choose file]** to use your own picture, or **[Automatic]** to go back. Pictures are centre-cropped to 48×48 / 256×128 and apply only to that game's CIA.
+5. Press **[Build CIA]**. A game takes tens of seconds to a minute or two (graphics compression).
+6. When done, save it with **[Get the CIA]**. The CIA size, browser memory and estimated 3DS memory are shown below.
 
-변환 중에는 **진행** 섹션에 전체 진행률이 표시되고(게임이 여러 개면 완료한 게임 수 + 현재 게임의 단계 진행), **[변환하기]** 를 누르면 그 섹션으로 자동 이동합니다. 롬 zip을 확인하는 동안에는 목록 위에 zip 수 기준 인식 진행 바(인식 중 2/4)가 표시됩니다.
+While converting, the **Progress** section shows an overall bar (for several games: completed games + the current game's stage), and pressing **[Build CIA]** scrolls to that section automatically. While the rom zips are being recognized, a zip-count bar (Checking 2/4) appears above the list.
 
-게임마다 진행 상태가 표시되고, 한 게임이 실패해도 나머지는 계속 변환합니다. 아이콘·배너는 변환을 시작하기 전에만 바꿀 수 있습니다. 끝나면 성공·실패 수와 함께 게임마다 받기 링크가 남고, 여러 게임을 CIA나 런처용 파일로 만들었으면 **[전체 다운로드 (N)]** 로 완료된 결과를 ZIP 하나에 받을 수 있습니다. 새로 변환을 시작하면 이전 받기 링크는 정리됩니다.
+Each game shows its status; one failing game does not stop the others. The icon and banner can only be changed before the run starts. When it finishes, a success/fail count and a download link per game stay on the page; after converting several games to CIA or launcher files, **[Download all (N)]** saves every completed result as one ZIP. Starting a new run clears the previous links.
 
-오른쪽 위 **KO/EN** 버튼으로 언어를 바꿀 수 있습니다.
+The **KO/EN** buttons at the top right switch the language.
 
-자동으로 만들어지는 아이콘(약어 + 시리즈 번호)과 배너(게임 이름)의 예입니다. 글자가 잘리지 않게 크기를 맞춥니다. 원하는 그림이 있으면 변환 전에 게임마다 아이콘·배너를 바꿀 수 있습니다.
+Examples of the generated icons (abbreviation + series number) and banners (game title), sized so no text is cut off. You can replace either before converting:
 
-<img src="docs/images/art_examples.png" width="760" alt="자동 생성된 아이콘과 배너 예시">
+<img src="docs/images/art_examples.png" width="760" alt="Generated icon and banner examples">
 
-### 3. 3DS에 설치
-만든 `.cia`를 SD 카드에 복사하고, 3DS에서 FBI → SD → 파일 선택 → **Install CIA**. HOME 메뉴에 게임 아이콘이 생깁니다.
+### 3. Install on the 3DS
+Copy the `.cia` to the SD card, then in FBI: SD → pick the file → **Install CIA**. The game appears on the HOME menu.
 
-### 런처로 쓰기 (게임 목록 앱)
+### Use the launcher (game list app)
 
-<img src="docs/images/launcher.png" width="400" alt="런처 게임 목록">
+<img src="docs/images/launcher.png" width="400" alt="Launcher game list">
 
-게임마다 CIA를 설치하지 않고, 앱 하나에서 게임을 골라 실행하는 방법입니다. HOME 메뉴 아이콘이 하나만 생깁니다.
+Instead of installing a CIA per game, pick games from one app. Only one HOME menu icon is added.
 
-1. 웹 변환기의 **[런처 CIA]** 모드로 만든 `neo3ds-launcher.cia`를 FBI로 **한 번만** 설치합니다. Windows 오프라인 변환기 zip에도 들어 있습니다.
-2. 변환기에서 **[런처용 파일]** 모드로 롬 zip을 넣고 변환하면 `.neo3ds` 파일이 나옵니다. 설정(시스템, 지역)은 CIA와 같습니다.
-3. `.neo3ds` 파일을 SD 카드의 `/neo3ds/games/` 폴더에 복사합니다.
-4. 런처를 켜면 게임 목록이 나옵니다. 십자키 위/아래(L/R은 한 페이지씩)로 고르거나 터치로 고르고, **A**나 **두 번 터치**로 실행합니다.
-5. 게임 중에 아래 화면 **[Game list]** 를 두 번 누르면 목록으로 돌아갑니다.
+1. Install `neo3ds-launcher.cia`, built in **[Launcher CIA]** mode of the web converter, with FBI, **once**. The Windows offline converter zip includes it too.
+2. Convert a game zip in **[Launcher file]** mode to get a `.neo3ds` file. The settings (system, region) work as for a CIA.
+3. Copy the `.neo3ds` files to `/neo3ds/games/` on the SD card.
+4. Start the launcher: pick a game with Up/Down (L/R for a page) or by touch, and start it with **A** or **a double tap**.
+5. In a game, tap **[Game list]** on the bottom screen twice to go back to the list.
 
-같은 게임이라면 CIA로 설치한 것과 런처로 실행한 것이 키 설정, 백업 RAM, 퀵세이브를 함께 씁니다.
+The same game shares its key config, backup RAM and quick saves whether it runs as a CIA or from the launcher.
 
-**업데이트는 런처만 바꾸면 됩니다.** 엔진은 런처 안에 있어서, 새 버전이 나오면 런처 CIA만 새로 설치하면 이미 만든 `.neo3ds` 파일을 다시 변환하지 않고 새 버전으로 바로 즐길 수 있습니다. 게임별 CIA는 CIA마다 엔진이 들어 있어 다시 변환해야 합니다. 키 설정과 백업 RAM은 그대로 이어지고, 퀵세이브는 버전이 바뀌면 불러올 수 없습니다.
+**Updating only takes the launcher.** The engine lives in the launcher, so when a new version comes out, installing the new launcher CIA is enough: the `.neo3ds` files you already made run on the new version without converting them again. Per-game CIAs carry their own engine and have to be converted again. Key configs and backup RAM carry over; quick saves from another version can't be loaded.
 
-### 선택: 오프라인 변환기
+### Optional: the offline converter
 
-웹 변환기 대신 PC에 받아 두고 쓰는 변환기입니다. 인터넷 없이 쓸 수 있고, 파일로 보관해 둘 수 있습니다. 변환 결과는 웹 변환기와 같고, 게임 이름은 오프라인 변환기에서만 바꿀 수 있습니다. 아이콘·배너는 웹 변환기에서도 직접 지정할 수 있습니다(기본은 자동).
+A converter you download and keep on your PC instead of using the browser. It works without internet and you can keep a copy. It builds the same files as the web converter; the title can only be changed in the offline converter, while the icon and banner can also be replaced in the web converter (automatic by default).
 
-| PC | 받기 | 쓰는 방법 |
+| PC | Download | How |
 |---|---|---|
-| Windows 10/11 64비트 | [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) | 창 + 명령줄 |
-| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (1.2.0부터, 창은 다음 릴리스부터) | 창 + 명령줄 |
-| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (1.2.0부터, 창은 다음 릴리스부터) | 창 + 명령줄 |
+| Windows 10/11 64-bit | [neo3ds-converter.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip) | Window + command line |
+| Linux x64 | [neo3ds-converter-linux-x64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip) (from 1.2.0, window from the next release) | Window + command line |
+| macOS (Apple Silicon) | [neo3ds-converter-osx-arm64.zip](https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip) (from 1.2.0, window from the next release) | Window + command line |
 
-.NET 런타임을 따로 설치하지 않아도 됩니다. 압축을 푼 폴더는 통째로 두고, 실행 파일만 따로 꺼내지 마세요(`tools` 폴더가 함께 있어야 합니다).
+No .NET runtime to install. Keep the unpacked folder together; the program does not run without its `tools` folder.
 
-#### Windows: 창으로 쓰기
+#### Windows: the converter window
 
-<img src="docs/images/converter2_ko.png" width="520" alt="오프라인 변환기 화면">
+<img src="docs/images/converter2_en.png" width="520" alt="Offline converter window">
 
-1. zip을 받아 압축을 풉니다. `neo3ds-converter` 폴더에 `Neo3dsConverter.exe`, `tools` 폴더, `README.txt`, 런처 앱 `neo3ds-launcher.cia`가 들어 있습니다. 처음 실행할 때 Windows가 "알 수 없는 게시자" 경고를 띄우면 **[추가 정보] → [실행]** 을 누르세요.
-2. 게임 롬 zip과 `neogeo.zip`을 **같은 폴더**에 둡니다. zip 파일 이름은 MAME 이름 그대로 두세요. MAME 롬셋이 아닌 zip은 변환되지 않습니다.
-3. `Neo3dsConverter.exe`를 실행하고, 롬 zip을 창에 끌어다 놓거나 **[찾아보기...]** 를 누릅니다.
-4. **롬셋** 줄에 인식된 게임이 초록색으로 나오면 변환할 수 있습니다. 필요하면 **게임 이름**, **시스템**, **지역**, **아이콘**, **배너**를 바꿉니다. 아래 미리보기가 실제 HOME 메뉴 모양입니다.
-5. **[CIA 만들기]** 를 누릅니다. 런처용 파일은 **[런처용 파일 만들기]**, 런처 앱은 **[런처 CIA 만들기]** 로 만듭니다.
+1. Download and unzip. The `neo3ds-converter` folder holds `Neo3dsConverter.exe`, the `tools` folder, `README.txt` and the launcher app `neo3ds-launcher.cia`. If Windows shows an "unknown publisher" warning on first run, click **[More info] → [Run anyway]**.
+2. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names. Zips that are not MAME romsets do not convert.
+3. Run `Neo3dsConverter.exe` and drop the game zip on the window, or press **[Browse...]**.
+4. If the **Romset** line turns green, the game can be converted. Change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like; the preview shows the HOME menu art as it will be built.
+5. Press **[Build CIA]**. **[Launcher file]** builds a `.neo3ds` file for the launcher, and **[Build the launcher CIA]** the launcher app.
 
-zip을 여러 개 한꺼번에 넣으면 차례로 변환합니다. 창 오른쪽 아래 **[English]** 버튼으로 언어를 바꿀 수 있습니다.
+Drop several zips at once to convert them one after the other. The **[한국어]** button at the bottom right switches the window to Korean.
 
-#### Linux·macOS: 창으로 쓰기 (다음 릴리스부터)
+#### Linux and macOS: the converter window (from the next release)
 
-1. zip을 받아 압축을 풉니다. Linux는 `neo3ds-converter`를 실행하고, macOS는 `neo3ds-converter.app`을 엽니다. 인자 없이 실행하면 창이 뜨고, 인자를 주면 명령줄로 동작합니다.
-2. 게임 롬 zip과 `neogeo.zip`을 **같은 폴더**에 둡니다. zip 파일 이름은 MAME 이름 그대로 두세요.
-3. 롬 zip을 창에 끌어다 놓거나 **[롬 zip 열기]** 를 누릅니다(여러 개 가능).
-4. 인식된 게임이 나오면 필요에 따라 **게임 이름**, **시스템**, **지역**, **아이콘**, **배너**를 바꿉니다. 아래 미리보기가 실제 HOME 메뉴 모양입니다.
-5. **[CIA 만들기]** 를 누릅니다. 런처용 파일은 **[런처용 파일 만들기]**, 런처 앱은 **[런처 CIA 만들기]** 로 만듭니다. 결과는 `~/Downloads`(없으면 `~/Documents`)에 저장됩니다.
-6. 창 왼쪽 위 **[English]/[한국어]** 버튼으로 언어를 바꿀 수 있습니다(즉시 바뀝니다).
+1. Download and unzip. On Linux run `neo3ds-converter`; on macOS open `neo3ds-converter.app`. With no arguments the window opens; with arguments it runs as a command line.
+2. Put the game zip and `neogeo.zip` in the **same folder**. Keep the MAME file names.
+3. Drop ROM zips on the window or press **[Open ROM zips]** (one or more).
+4. Once the game is recognized, change the **Title**, **System**, **Region**, **Icon** or **Banner** if you like; the preview shows the HOME menu art as it will be built.
+5. Press **[Build CIA]**. **[Launcher file]** builds a `.neo3ds` file, **[Build the launcher CIA]** the launcher app. Files go to `~/Downloads` (`~/Documents` when there is no Downloads folder).
+6. The **[한국어]/[English]** button at the top left switches the language (it applies immediately).
 
-zip을 여러 개 한꺼번에 넣으면 차례로 변환하고 게임마다 자동 이름·자동 아트로 만듭니다.
+Drop several zips at once to convert them one after the other with automatic titles and art.
 
-- **macOS**: 브라우저로 받은 파일은 실행이 막힐 수 있습니다. 압축을 푼 뒤 터미널에서 `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64`를 한 번 실행하세요. 서명하지 않은 앱이라 처음 열 때 경고가 나오면 **열기**를 누르세요.
-- **Linux**: `libx11-6`, `libice6`, `libsm6`, `libfontconfig1`이 필요합니다(Ubuntu 기준). **Xubuntu 26.10 데스크톱(X11)에서 동작을 확인했습니다.** 창 화면의 한글은 앱에 든 글꼴로 나오지만, 아이콘·배너의 한글 제목은 시스템 한글 글꼴로 그립니다. 시스템에 한글 글꼴이 없으면 제목이 □로 나오니 `fonts-noto-cjk` 같은 한글 글꼴 패키지를 설치하세요. Wayland 네이티브는 지원하지 않고 X11/XWayland로 실행됩니다.
-- **미지원**: Intel Mac, linux-arm64.
+- **macOS**: files downloaded with a browser may be blocked from running. After unzipping, run `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64` once in Terminal. The app is unsigned, so press **Open** if a warning appears on first launch.
+- **Linux**: needs `libx11-6`, `libice6`, `libsm6`, `libfontconfig1` (Ubuntu names). **Verified on Xubuntu 26.10 desktop (X11).** Window text uses the bundled Korean font, but icon/banner titles with Hangul are drawn with the system Korean font. Without one the title shows as □ boxes, so install a Korean font package such as `fonts-noto-cjk`. Wayland native is not supported; it runs on X11/XWayland.
+- **Not supported**: Intel Macs, linux-arm64.
 
-#### 명령줄로 쓰기 (Windows · Linux · macOS)
+#### Command line (Windows, Linux, macOS)
 
-Windows는 `Neo3dsConverter.exe`, Linux·macOS는 `./neo3ds-converter`로 같은 옵션을 씁니다.
+The same options work with `Neo3dsConverter.exe` on Windows and `./neo3ds-converter` on Linux and macOS.
 
 ```
-neo3ds-converter <게임.zip> [게임2.zip ...] [저장 폴더] [--title "이름"] [--icon 그림.png] [--banner 그림.png] [--set 롬셋] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
-neo3ds-converter --launcher [저장 폴더]
+neo3ds-converter <game.zip> [game2.zip ...] [out-dir] [--title "Name"] [--icon pic.png] [--banner pic.png] [--set romset] [--system aes|mvs] [--region eu|jp|us] [--pack] [--lang ko|en]
+neo3ds-converter --launcher [out-dir]
 neo3ds-converter --help
 ```
-- zip을 여러 개 주면 차례로 변환합니다(`--title`, `--icon`, `--banner`, `--set`은 zip이 하나일 때만).
-- `--set`: 합본 zip 안의 다른 판을 직접 고릅니다(예: `kof98.zip --set kof98h`).
-- `--system`: 처음 켤 때 쓸 바이오스(가정용 `aes` / 아케이드 `mvs`)를 정합니다. 생략하면 자동입니다.
-- `--region`: 지역(유럽·아시아 `eu` / 일본 `jp` / 미국 `us`). 생략하면 `eu`입니다.
-- `--pack`: CIA 대신 런처용 `.neo3ds` 파일을 만듭니다. `--launcher`는 런처 CIA(`neo3ds-launcher.cia`)를 만듭니다.
-- `--icon` / `--banner`: 아이콘(48×48)과 배너(256×128)로 쓸 그림입니다. 크기가 달라도 비율에 맞춰 잘라서 맞춥니다.
-- `--lang`: 화면 언어(`ko` / `en`)를 바꿉니다. 기억해 두었다가 창을 열 때도 씁니다. (macOS 첫 실행·Linux 의존성은 위 창 쓰기 참고)
+- Several zips are converted one after the other (`--title`, `--icon`, `--banner` and `--set` need a single zip).
+- `--set` picks another version inside a merged zip (e.g. `kof98.zip --set kof98h`).
+- `--system` picks the BIOS the game starts on (home `aes` / arcade `mvs`); automatic when left out.
+- `--region`: Europe/Asia `eu`, Japan `jp` or USA `us`; `eu` when left out.
+- `--pack` builds a `.neo3ds` file for the launcher instead of a CIA. `--launcher` builds the launcher CIA (`neo3ds-launcher.cia`).
+- `--icon` / `--banner`: pictures for the icon (48×48) and banner (256×128); other sizes are scaled and cropped to fit.
+- `--lang`: switches the language (`ko` / `en`); remembered for the window too. (For first-run on macOS and Linux dependencies, see above.)
 
-## 조작법
+## Controls
 
-<img src="docs/images/main_kof99.png" width="400" alt="게임 실행 화면과 아래 화면의 버튼">
+<img src="docs/images/main_kof99.png" width="400" alt="Game on the top screen, buttons on the bottom screen">
 
-기본 배치입니다. 버튼은 [키 설정](#키-설정)에서 게임마다 바꿀 수 있고, 아래 화면에 지금 배치가 표시됩니다.
+These are the defaults. Buttons can be changed per game in [Key config](#key-config), and the bottom screen shows the current layout.
 
-| 3DS | 네오지오 |
+| 3DS | Neo Geo |
 |---|---|
-| 십자키 | 레버 |
+| D-pad | Joystick |
 | B / A / Y / X | A / B / C / D |
-| SELECT | 코인 |
-| START | 스타트 |
-| R + B/A/Y/X | 연사 켜기/끄기 (아래 참고) |
-| SELECT + L / SELECT + R | 퀵세이브 저장 / 불러오기 (아래 참고) |
-| SELECT + START 1초 | 게임 재시작 |
+| SELECT | Coin |
+| START | Start |
+| R + B/A/Y/X | Turbo on/off (see below) |
+| SELECT + L / SELECT + R | Quick save / quick load (see below) |
+| Hold SELECT + START for 1 s | Restart the game |
 
-### 아래 화면
+### Bottom screen
 
-| 버튼 | 하는 일 |
+| Button | What it does |
 |---|---|
-| **Key config** | 키 설정 화면을 엽니다 (아래 참고) |
-| **Turbo** | 누를 때마다 연사 버튼이 off → A → B → X → Y 순으로 바뀌고 바로 저장됩니다 |
-| **System** | 가정용(AES)과 아케이드(MVS) 바이오스를 바꿉니다. 실수 방지로 두 번 눌러야 하고, 그 바이오스로 게임이 다시 시작합니다 |
-| **Diagnostics** | 진단 화면을 엽니다. 아무 데나 터치하면 돌아옵니다 |
-| **Restart** | 길게 누르면(노란 막대가 다 차면) 게임을 다시 시작합니다 |
-| **Service** | MVS 바이오스의 서비스 메뉴를 엽니다 (아래 참고). AES에서는 `Service: MVS only`로 표시됩니다 (런처에서는 `(MVS only)`) |
-| **Slot / Save / Load** | 퀵세이브 슬롯 고르기 / 저장 / 불러오기(두 번) (아래 참고) |
-| **Game list** | 런처로 실행했을 때만 나옵니다. 두 번 누르면 게임 목록으로 돌아갑니다. 이때 재시작 버튼은 `Hold: reset`으로 줄어듭니다 |
-| **⏻** (LCD off) | 맨 위 오른쪽의 작은 정사각형 버튼입니다. 아래 화면 백라이트를 끕니다(배터리 절약). 아래 화면을 아무 데나 터치하면 다시 켜지고, 그 터치는 버튼으로 처리되지 않습니다. 저장되지 않고 HOME 메뉴로 나가거나 슬립에 들어가면 켜집니다 |
+| **Key config** | Opens the key config screen (see below) |
+| **Turbo** | Each tap moves turbo off → A → B → X → Y, saved at once |
+| **System** | Switches between the home (AES) and arcade (MVS) BIOS. Tap twice (to avoid accidents); the game restarts on it |
+| **Diagnostics** | Opens the diagnostics; touch anywhere to go back |
+| **Restart** | Hold it until the yellow bar fills to restart the game |
+| **Service** | Opens the MVS BIOS service menu (see below). Shows `Service: MVS only` on AES (`(MVS only)` in the launcher) |
+| **Slot / Save / Load** | Pick a quick save slot / save / load (tap twice) (see below) |
+| **Game list** | Only when started from the launcher: tap twice to go back to the game list. Restart then reads `Hold: reset` |
+| **⏻** (LCD off) | The small square button at the top right. Turns the bottom screen's backlight off (saves battery); touch the bottom screen anywhere to turn it back on, and that touch presses nothing. Not saved; it comes back on when you go to the HOME menu or to sleep |
 
-그 아래에 지금 키 배치가 `3DS 버튼 > 네오지오 버튼`으로 나옵니다. 네오지오 쪽은 실제 기판 버튼 색(A 빨강, B 노랑, C 초록, D 파랑)이고, START/SELECT는 기본값이면 생략합니다. 맨 위에는 게임 이름과 FPS가 나옵니다.
+Below them is the current key layout as `3DS button > Neo Geo button`, in the colours of the arcade panel (A red, B yellow, C green, D blue); START and SELECT are left out while they are Start and Coin. The game title and fps are at the top.
 
-**재시작**: 전원을 껐다 켠 것처럼 처음부터 다시 시작합니다(기판의 세이브 데이터는 유지). SELECT와 START를 함께 1초 눌러도 되고, 두 버튼을 함께 누르는 동안에는 코인·스타트가 게임에 들어가지 않습니다.
+**Restart**: starts the game over as if the console were switched off and on (the cartridge's save data is kept). Holding SELECT and START together for a second does the same; while both are held, they don't reach the game as coin and start.
 
-## 키 설정
+## Key config
 
-<img src="docs/images/keyconfig3_kof99.png" width="400" alt="키 설정 화면 (L = A+B, R = C+D)">
+<img src="docs/images/keyconfig3_kof99.png" width="400" alt="Key config screen (L = A+B, R = C+D)">
 
-아래 화면의 **Key config**를 누르면 게임이 멈추고 설정 화면이 열립니다.
+Tap **Key config** on the bottom screen; the game pauses and the config screen opens.
 
-- A / B / X / Y / L / R / ZL / ZR / START / SELECT 각각에 **네오지오 A~D, 동시 누르기(A+B, C+D, B+C, A+B+C, B+C+D, A+B+C+D), 스타트, 코인**을 지정할 수 있습니다. 예를 들어 KOF에서 L = A+B(회피), R = C+D(날리기).
-- 줄 오른쪽의 `<` `>`를 누르거나, 십자키 위/아래로 줄을 고르고 좌/우(또는 A)로 바꿉니다. **연사 버튼**도 여기서 정할 수 있습니다.
-- **B** 또는 `Save (B)`로 저장하고 게임으로 돌아갑니다. `Default`는 기본 배치로 되돌립니다.
-- **System**: 가정용(AES)과 아케이드(MVS) 바이오스를 바꿉니다(아래 화면의 System 버튼과 같음). 저장하면 그 바이오스로 게임이 다시 시작합니다. MVS에서는 SELECT로 코인을 넣어야 시작하고, 켤 때 바이오스의 초록색 점검 화면이 잠깐 보입니다. neogeo.zip에 한쪽 바이오스만 있으면 `only`로 표시되고 바꿀 수 없습니다.
-- **Screen**: 위 화면 표시 방식입니다. `Original (1:1)`은 304×224 그대로 가운데에(좌우·위아래 검은 여백), `Full (stretched)`는 위 화면 400×240을 가득 채우도록 늘립니다. 가로가 약 1.3배, 세로가 약 1.07배로 늘어나서 동그란 것이 옆으로 조금 넓어 보이고, 정수배가 아니라 일부 도트가 두 배 폭으로 보입니다.
-- 설정은 **게임마다** SD 카드의 `/3ds/neo3ds/keys/`에 저장되어, 껐다 켜도 유지됩니다.
+- Each of A / B / X / Y / L / R / ZL / ZR / START / SELECT can press **Neo Geo A-D, a combination (A+B, C+D, B+C, A+B+C, B+C+D, A+B+C+D), Start or Coin**. For example in KOF: L = A+B (dodge), R = C+D (blowback).
+- Tap the `<` `>` at the end of a line, or pick a line with Up/Down and change it with Left/Right (or A). The **turbo button** can be set here too.
+- **B** or `Save (B)` saves and returns to the game. `Default` restores the default layout.
+- **System** switches between the home (AES) and arcade (MVS) BIOS (like the System button on the bottom screen); saving restarts the game on it. On MVS, press SELECT to insert a coin before starting, and the BIOS's green test screen shows briefly at boot. If neogeo.zip had only one BIOS, it says `only` and can't be changed.
+- **Screen**: how the top screen shows the game. `Original (1:1)` keeps the 304×224 picture as is in the middle (black borders around it); `Full (stretched)` stretches it to fill the whole 400×240 top screen. That is about 1.3× wider and 1.07× taller, so round things look a little wide, and since it is not a whole multiple some pixels show twice as wide.
+- Settings are saved **per game** on the SD card in `/3ds/neo3ds/keys/` and kept across launches.
 
-## 연사(매크로)
+## Turbo (rapid fire)
 
-<img src="docs/images/turbo2_kof99.png" width="400" alt="연사가 켜진 화면 (Turbo: A)">
+<img src="docs/images/turbo2_kof99.png" width="400" alt="Turbo enabled (Turbo: A)">
 
-- 아래 화면의 **Turbo** 버튼으로 바꾸거나(저장됨), **R을 누른 채 A/B/X/Y 중 하나**를 누르면 그 버튼이 연사 버튼이 됩니다.
-- R을 누른 채 **같은 버튼을 다시** 누르면 꺼지고, **다른 버튼**을 누르면 그 버튼으로 바뀝니다. 연사 버튼은 한 번에 하나입니다.
-- 연사 버튼을 **누르고 있는 동안** 초당 20회로 눌렀다 뗐다 합니다. 한 번씩 톡톡 누르면 평소처럼 한 발씩 나갑니다.
-- 아래 화면에 지금 상태가 `Turbo: A` / `Turbo: off`로 표시됩니다.
-- R을 누르고 있는 동안에는 A/B/X/Y가 게임에 전달되지 않아, 설정하다가 캐릭터가 움직이지 않습니다.
-- R + 버튼으로 바꾼 연사는 그 판에만 적용됩니다. 계속 쓰려면 키 설정에서 정하세요. R에 다른 기능을 지정하면 연사는 키 설정에서만 바꿀 수 있습니다.
+- Use the **Turbo** button on the bottom screen (saved), or **hold R and press A, B, X or Y** to make that button the turbo button.
+- Hold R and press **the same button again** to turn turbo off, or **another button** to move turbo there. Only one button has turbo at a time.
+- **While you hold** the turbo button it is pressed and released 20 times a second. Single taps still fire once.
+- The bottom screen shows the state: `Turbo: A` or `Turbo: off`.
+- While R is held, A/B/X/Y don't reach the game, so setting turbo never makes your character act.
+- Turbo set with R + button lasts for this session; set it in Key config to keep it. If R is mapped to something, turbo can only be changed in Key config.
 
-## 퀵세이브
+## Quick save
 
-게임마다 슬롯 3개에 지금 상태를 그대로 저장하고 불러옵니다.
+Three slots per game hold the exact state of the game.
 
-- **Slot**: 누를 때마다 슬롯 1 → 2 → 3으로 바뀌고, 아래 상태 줄에 그 슬롯의 저장 시각이 나옵니다(`Slot 2: 10-18 14:05 AES`, 비었으면 `empty`).
-- **Save**: 고른 슬롯에 저장합니다. **Load**: 실수 방지로 두 번 눌러야 불러옵니다.
-- 버튼 대신 **SELECT + L**(저장), **SELECT + R**(불러오기)도 됩니다. 이때 SELECT·L·R은 게임에 들어가지 않습니다.
-- 다른 바이오스(AES/MVS)에서 저장한 슬롯을 불러오면 그 바이오스로 바꾼 뒤 불러옵니다.
-- 슬롯은 껐다 켜도 남습니다. 다만 **neo3ds 버전이 바뀌면 이전 버전의 슬롯은 불러올 수 없습니다**(`from another version`). 백업 RAM(아래)은 버전과 관계없이 유지됩니다.
+- **Slot** moves through slots 1 → 2 → 3, and the status line shows when that slot was saved (`Slot 2: 10-18 14:05 AES`, or `empty`).
+- **Save** saves to the slot. **Load** needs two taps, to avoid accidents.
+- **SELECT + L** (save) and **SELECT + R** (load) do the same; those buttons don't reach the game then.
+- A slot saved on the other BIOS (AES/MVS) switches to that BIOS before it loads.
+- Slots survive restarts, but **slots from another neo3ds version can't be loaded** (`from another version`). Backup RAM (below) is kept across versions.
 
-## 서비스 메뉴와 백업 RAM
+## Service menu and backup RAM
 
-- 아케이드(MVS) 바이오스로 실행 중일 때 아래 화면 **Service**를 누르면 기판의 테스트 스위치를 누른 것과 같아서, 바이오스의 서비스 메뉴(난이도·크레딧 같은 게임 설정, 하드웨어 테스트 등)가 열립니다.
-- MVS 기판의 **백업 RAM**(게임 설정, 하이스코어, 랭킹 이니셜 등)을 SD 카드에 저장합니다. 바뀌었을 때만 쓰고, HOME 메뉴로 나가거나 닫거나 절전할 때도 바로 저장합니다.
+- On the arcade (MVS) BIOS, **Service** on the bottom screen acts as the board's test switch and opens the BIOS service menu (game settings such as difficulty and credits, hardware tests and more).
+- The MVS board's **backup RAM** (game settings, high scores, ranking initials...) is saved to the SD card: only when it changes, and straight away when you go to the HOME menu, close the game or the console sleeps.
 
-## 저장 위치
+## Where things are saved
 
-| 파일 | SD 카드 경로 |
+| File | SD card path |
 |---|---|
-| 키 설정 | `/3ds/neo3ds/keys/<타이틀 ID>.bin` |
-| 백업 RAM | `/3ds/neo3ds/saves/<타이틀 ID>.sram` |
-| 퀵세이브 | `/3ds/neo3ds/states/<타이틀 ID>.1` ~ `.3` |
-| 런처용 게임 파일 | `/neo3ds/games/*.neo3ds` |
+| Key config | `/3ds/neo3ds/keys/<title ID>.bin` |
+| Backup RAM | `/3ds/neo3ds/saves/<title ID>.sram` |
+| Quick saves | `/3ds/neo3ds/states/<title ID>.1` to `.3` |
+| Launcher game files | `/neo3ds/games/*.neo3ds` |
 
-타이틀 ID는 롬셋 이름(zip 이름)으로 정해지므로, 같은 zip으로 다시 만들거나 런처로 실행해도 같은 파일을 씁니다.
+The title ID comes from the romset (zip) name, so rebuilding from the same zip or starting the game from the launcher uses the same files.
 
-## 진단 화면
+## Diagnostics
 
-<img src="docs/images/diag2_kof99.png" width="400" alt="진단 화면">
+<img src="docs/images/diag2_kof99.png" width="400" alt="Diagnostics screen">
 
-아래 화면의 **Diagnostics**를 누르면 1초마다 FPS, 메인 코어 시간(68000·Z80·타이머), 코어 1 시간(사운드·그리기), 메모리 사용량을 보여 줍니다. 아무 데나 터치하면 버튼 화면으로 돌아갑니다.
+Tap **Diagnostics** on the bottom screen for a once-a-second report: fps, main-core time (68000, Z80, timers), second-core time (sound, drawing) and memory use. Touch anywhere to go back to the buttons.
 
-## 게임 호환성
+## Compatibility
 
-<img src="docs/images/mslug3_play.png" width="480" alt="메탈슬러그 3 플레이 화면">
+<img src="docs/images/mslug3_play.png" width="480" alt="Metal Slug 3 in game">
 
-### 실기(구형 3DS)에서 확인한 게임
+### Verified on an Old 3DS
 
-| 게임 | 롬셋 | 결과 |
+| Game | Romset | Result |
 |---|---|---|
-| The King of Fighters '98 | `kof98` (가정용 `kof98h`로 변환) | 풀 스피드, 대전 중 프레임 드랍 없음 |
-| The King of Fighters '99 | `kof99` (SMA + CMC42 해독) | 풀 스피드 |
-| Metal Slug | `mslug` | 풀 스피드 (1.1.0에서 배경음악이 처지던 문제 수정) |
-| Metal Slug 2 | `mslug2` | 플레이 가능. 원래 기판에서 느려지는 장면은 똑같이 느려짐 |
-| Metal Slug X | `mslugx` (보호 칩 검사 패치) | 풀 스피드. 원래 기판에서 느려지는 장면은 똑같이 느려짐 |
-| Metal Slug 3 | `mslug3` (SMA + CMC42 해독) | 풀 스피드. 원래 기판에서 느려지는 장면은 똑같이 느려짐 |
-| The King of Fighters 2000 | `kof2000` (SMA + CMC50 해독) | 풀 스피드 |
-| The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 해독) | 풀 스피드 |
-| SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 해독) | 풀 스피드 |
-| SNK vs. Capcom: SVC Chaos Plus | `svcplus` (해적판. 파이트케이드에서 많이 쓰는 판) | 풀 스피드. MVS 바이오스로 시작 |
-| Samurai Shodown V Special | `samsh5sp` (KOF2002형 + PCM2 + CMC50 해독) | 풀 스피드 (1.0.5부터. 줌 아웃 장면 최적화) |
-| Aero Fighters 3 | `sonicwi3` | 플레이 가능 (1.1.0에서 음악이 몇 초 뒤 멈추던 문제 수정) |
-| The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 해독) | 60fps (유저 제보) |
-| Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 해독) | 60fps (유저 제보) |
-| Garou: Mark of the Wolves | `garou` (SMA + CMC42 해독) | 60fps (유저 제보) |
+| The King of Fighters '98 | `kof98` (converted as the home version `kof98h`) | Full speed, no drops in fights |
+| The King of Fighters '99 | `kof99` (SMA + CMC42 decrypted) | Full speed |
+| Metal Slug | `mslug` | Full speed (music that dragged fixed in 1.1.0) |
+| Metal Slug 2 | `mslug2` | Playable; slows down where the original board does |
+| Metal Slug X | `mslugx` (protection checks patched) | Full speed; slows down where the original board does |
+| Metal Slug 3 | `mslug3` (SMA + CMC42 decrypted) | Full speed; slows down where the original board does |
+| The King of Fighters 2000 | `kof2000` (SMA + CMC50 decrypted) | Full speed |
+| The King of Fighters 2002 | `kof2002` (PCM2 + CMC50 decrypted) | Full speed |
+| SNK vs. Capcom: SVC Chaos | `svc` (PVC + PCM2 + CMC50 decrypted) | Full speed |
+| SNK vs. Capcom: SVC Chaos Plus | `svcplus` (bootleg; the set Fightcade players use) | Full speed; starts on the MVS BIOS |
+| Samurai Shodown V Special | `samsh5sp` (KOF2002 type + PCM2 + CMC50 decrypted) | Full speed (from 1.0.5, zoomed-out scenes optimized) |
+| Aero Fighters 3 | `sonicwi3` | Playable (music that stopped after a few seconds fixed in 1.1.0) |
+| The King of Fighters 2003 | `kof2003` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
+| Metal Slug 5 | `mslug5` (PVC + PCM2 + CMC50 decrypted) | 60 fps (user report) |
+| Garou: Mark of the Wolves | `garou` (SMA + CMC42 decrypted) | 60 fps (user report) |
 
-메탈슬러그 2·X·3은 원래 아케이드 기판에서도 적과 폭발이 많은 장면에서 느려지는(처리 지연) 게임입니다. neo3ds에서도 그 구간에서는 똑같이 프레임이 떨어지며, PC 에뮬레이터에서도 같은 곳에서 느려집니다.
+Metal Slug 2, X and 3 slow down on the original arcade board too, in scenes with lots of enemies and explosions. neo3ds drops frames in the same places, as PC emulators do.
 
-### 변환은 되지만 실기에서 확인하지 못한 게임
-- **암호화 없는 게임 대부분** (1990~1999년 게임): KOF94~97, 아랑전설 시리즈(2편 제외), 사무라이 쇼다운 1~4, 월드 히어로즈, 라스트 블레이드 1·2, 블레이징 스타, 퍼즐 보블 등. 위 확인 게임과 같은 방식으로 변환됩니다.
-- **해독은 구현했지만 롬이 없어 돌려 보지 못한 방식**
-  - CMC42: 전국전승 3, 줏파파, 스트라이커즈 1945 플러스, 프리히스토릭 아일 2, 나이트메어 인 더 다크, 간류, 뱅 비드
+### Converts, but not tried on hardware
+- **Most unencrypted games** (1990-1999): KOF94-97, Fatal Fury series (except 2), Samurai Shodown 1-4, World Heroes, The Last Blade 1/2, Blazing Star, Puzzle Bobble and more. They convert the same way as the verified games.
+- **Decryption implemented, never run (no ROMs to test)**
+  - CMC42: Sengoku 3, Zupapa!, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead
   - CMC50: KOF2001
-  - PCM2: 메탈슬러그 4 / 4 플러스, 레이지 오브 드래곤즈, 포치와 냐
-  - KOF2002 계열(KOF2002, 사무라이 쇼다운 5 스페셜은 실기 확인): 2002 플러스, 사무라이 쇼다운 5, 매트리멜리
+  - PCM2: Metal Slug 4 / 4 Plus, Rage of the Dragons, Pochi and Nyaa
+  - KOF2002 type (KOF2002 and Samurai Shodown V Special verified): 2002 Plus, Samurai Shodown V, Matrimelee
 
-메모리 사용량은 롬 크기가 거의 같은 KOF99·메탈슬러그 3과 비슷할 것으로 예상합니다(58MB 중 약 53MB). 변환기는 메모리가 빠듯하면 경고를 띄웁니다.
+Their memory use should be close to KOF99 and Metal Slug 3, whose ROMs are the same size (about 53 MB of 58 MB). The converter warns when memory gets tight.
 
-### 변환할 수 없는 게임
+### Can't be converted
 
-| 이유 | 롬셋 |
+| Reason | Romsets |
 |---|---|
-| 보호 칩 미지원 | 아랑전설 2 (`fatfury2`), 슈퍼 사이드킥스 (`ssideki`) |
-| MVS판 보호 칩 | KOF98 MVS판 (`kof98`, `kof98a`, `kof98k`, `kof98ka`). 합본 `kof98.zip`이면 가정용판 `kof98h`로 자동 변환됩니다 |
-| 전용 컨트롤러 | 더 이리테이팅 메이즈 (`irrmaze`, 트랙볼) |
-| 도박 기판 | V-Liner (`vliner` 계열), 자키 그랑프리 (`jockeygp` 계열) |
-| 해적판(부트렉) | `kof10th`, `kf2k2mp`, `kof2002b`, `cthd2003`, `ms5plus`, `svcboot`, `svcplusa`, `kf2k3bl`, `mslug3b6`, `kog`, `sbp` 등 27종 (해적판 중 `svcplus`만 지원) |
+| Protection chip not supported | Fatal Fury 2 (`fatfury2`), Super Sidekicks (`ssideki`) |
+| MVS protection chip | KOF98 MVS sets (`kof98`, `kof98a`, `kof98k`, `kof98ka`). A merged `kof98.zip` converts as the home version `kof98h` automatically |
+| Special controller | The Irritating Maze (`irrmaze`, trackball) |
+| Gambling boards | V-Liner (`vliner` sets), Jockey Grand Prix (`jockeygp` sets) |
+| Bootlegs | 27 sets (only `svcplus` is supported) such as `kof10th`, `kf2k2mp`, `kof2002b`, `cthd2003`, `ms5plus`, `svcboot`, `svcplusa`, `kf2k3bl`, `mslug3b6`, `kog`, `sbp` |
 
-이 밖에 마작 게임은 마작 패널 입력이 없어서 제대로 즐기기 어렵고, 4인용(`kizuna4p`)은 2인까지만 됩니다.
+Mahjong games lack mahjong panel input, and the 4-player `kizuna4p` plays with two players.
 
-## 배터리 사용 시간
+## Battery life
 
-구형 3DS에 CameronSino 1300mAh 서드파티 배터리를 끼우고 메탈슬러그 3을 돌려 잰 값입니다. 한 번 잰 결과라 대략적인 참고용입니다.
+Measured on an Old 3DS with a CameronSino 1300 mAh third-party battery, running Metal Slug 3. This is a single run, so treat it as a rough guide.
 
-| 조건 | 1시간 소모량 | 완충 기준 | |
+| Settings | Used per hour | From a full charge | |
 |---|---|---|---|
-| 밝기 3(중간), 무선 끔, 절전 모드 끔, 음량 중간 | 19.5% (95% → 75.5%) | 약 5시간 | 실측 + 추정 |
-| 밝기 최대, 무선 켬 | – | 약 3~4시간 | 추정 |
+| Brightness 3 (middle), Wi-Fi off, power saving off, medium volume | 19.5% (95% → 75.5%) | about 5 hours | measured + estimate |
+| Max brightness, Wi-Fi on | – | about 3–4 hours | estimate |
 
-- 1시간 소모량은 실측값이고, 완충 기준 시간은 이 소모량으로 단순 계산한 값입니다. 배터리 표시는 바닥 근처에서 천천히 줄어들어서 실제로는 조금 더 갈 수 있습니다.
-- 같은 배터리로 배터리 벤치(밝기 최대, 3D 켬, 무선 켬)를 돌렸을 때는 95%에서 5%까지 2시간이 걸렸습니다. neo3ds를 돌릴 때 배터리 표시가 줄어드는 속도는 이 벤치의 절반에 조금 못 미칩니다.
-- 밝기 최대·무선 켬은 측정하지 않았고, 그 차이만큼의 전력을 더해 어림한 값입니다.
-- GPU를 쓰지 않고, 남는 시간에는 두 코어 모두 쉬며, 게임 중에는 백업 RAM이 바뀌었을 때와 퀵세이브할 때만 SD 카드에 씁니다. (측정은 1.0.x에서 했습니다.) 3D 슬라이더를 올려도 2D로만 출력합니다.
-- 게임, 배터리 상태와 용량에 따라 달라질 수 있습니다.
+- The hourly use is measured; the full-charge figure is simply that scaled up. The gauge drops slowly near empty, so it may last a little longer.
+- With the same battery, a battery benchmark (max brightness, 3D on, Wi-Fi on) went from 95% to 5% in 2 hours. With neo3ds the gauge drops at a little under half that rate.
+- Max brightness with Wi-Fi on was not measured; it adds the power of the brighter backlight and Wi-Fi to the measured figure.
+- No GPU work, both cores sleep while they have nothing to do, and during play the SD card is written only when the backup RAM changes or you quick save. (Measured with 1.0.x.) The picture stays 2D even with the 3D slider up.
+- Results vary with the game and with the battery's age and capacity.
 
-## 64MB 모드와 최적화
+## 64 MB mode and the optimizations
 
-구형 3DS의 CPU는 268MHz ARM11 두 개뿐이고, 앱이 쓸 수 있는 메모리는 기본 모드에서 64MB입니다.
-80MB 모드를 쓰면 메모리는 넉넉해지지만, 게임을 켜고 끌 때마다 시스템을 다시 불러와서 무척 느려집니다.
-그래서 **기본 64MB 모드 안에 64MB짜리 그래픽 롬을 넣는 것**을 목표로 했습니다.
+An Old 3DS has two 268 MHz ARM11 cores, and apps get 64 MB in the default memory mode.
+The 80 MB mode has more room but makes the system reload every time a game starts or exits, which is slow.
+So the goal was to **fit 64 MB graphics ROMs into the default 64 MB mode**.
 
-### 메모리
-- **그래픽 압축**: 스프라이트 롬(최대 64MB)을 4KB 블록 단위 zstd(레벨 19)로 압축합니다. 원본의 약 30%가 됩니다(KOF99 64MB → 19.6MB).
-- **8MB 블록 캐시**: 화면에 필요한 블록만 풀어서 캐시에 둡니다. 사용 여부 표로 완전히 투명한 타일은 아예 읽지 않습니다.
-- **힙 배치**: 일반 힙 58MB, 그래픽용 linear 메모리 2MB로 나눴습니다. KOF99 기준 51.5MB를 씁니다.
-- **변환 시 해독**: 암호화된 롬은 PC에서 미리 풀어 둡니다. 3DS에서는 해독에 메모리도 시간도 쓰지 않습니다.
+### Memory
+- **Compressed graphics**: the sprite ROM (up to 64 MB) is zstd-compressed (level 19) in 4 KB blocks, to about 30% (KOF99: 64 MB → 19.6 MB).
+- **8 MB block cache**: only the blocks on screen are unpacked. Fully transparent tiles are skipped using a usage table, so they are never read.
+- **Heap layout**: 58 MB heap and 2 MB linear memory for the screen. KOF99 uses 51.5 MB.
+- **Decrypted ahead of time**: encrypted ROMs are decrypted on the PC, costing the 3DS neither memory nor time.
 
-### 속도
-- **두 코어 분담**: 메인 코어는 68000·Z80·타이머만 돌리고, 사운드 합성과 화면 그리기는 두 번째 코어가 맡습니다.
-- **사운드 칩 분리**: YM2610을 둘로 나눴습니다. 메인 코어 쪽은 타이머·인터럽트·상태만 처리하고, 두 번째 코어 쪽은 기록된 레지스터 쓰기를 재생하며 소리를 만듭니다.
-- **스프라이트 렌더러**: 확대·축소가 없는 스프라이트는 타일 단위로 그리고, 불투명한 8픽셀은 ARM 어셈블리로 한 번에 씁니다. 가로로 축소된 줄은 줌 단계(16)×좌우 반전(2)마다 컴파일 때 펼쳐 둔 전용 코드로 그려서, 줌 아웃이 많은 게임(사무라이 쇼다운)도 빠르게 그립니다. 3DS 화면 방향(세로로 회전된 프레임버퍼)과 같은 형태로 그립니다.
-- **화면 출력**: GPU 대신 CPU가 그립니다. 화면을 14줄짜리 띠 16개로 나눠 캐시에 들어가는 작은 버퍼에 그린 뒤 프레임버퍼에 한 번만 쓰고(풀스크린 확대도 이때), 코어 0이 먼저 끝나면 남은 띠를 나눠 그립니다. 3중 버퍼로 찢어짐 없이 내보냅니다. 캐시 정리는 시스템 서비스 대신 SVC를 직접 불러서, 두 번째 코어가 시스템 서비스를 기다리느라 멈추지 않습니다. 아래 화면 GUI도 CPU가 그리되, 버튼을 누르는 등 바뀔 때만 다시 그려서 게임 중에는 비용이 거의 없습니다.
-- **표시 영역**: 네오지오 실제 표시 폭인 304×224만 그립니다.
-- **프레임 페이싱**: 조금 늦은 프레임이 한 프레임을 통째로 잃지 않도록, 이미 지난 vblank는 기다리지 않습니다.
-- **사운드 드라이버 대기 건너뛰기**: 메탈슬러그 2·X·3의 Z80이 인터럽트를 기다리며 도는 루프를 결과가 똑같게 건너뜁니다.
-- **바이오스**: neogeo.zip에 가정용(AES) 바이오스가 있으면 그것을, 없으면 업소용(MVS) 바이오스를 씁니다. 고른 지역의 바이오스를 먼저 찾습니다.
+### Speed
+- **Two cores**: the main core runs only the 68000, Z80 and timers; the second core synthesizes sound and draws the screen.
+- **Split sound chip**: the YM2610 runs as two copies. The main-core copy handles timers, interrupts and status; the second-core copy replays the logged register writes to make the sound.
+- **Sprite renderer**: unzoomed sprites are drawn tile by tile, and opaque 8-pixel runs are written by ARM assembly in one go, in the 3DS's rotated framebuffer layout. Horizontally shrunk rows use straight-line code unrolled at compile time for each of the 16 zoom steps and both flips, so games that zoom out a lot (Samurai Shodown) stay fast.
+- **Output**: the CPU draws (no GPU round trip). The screen is cut into 16 bands of 14 lines, each drawn in a small buffer that fits the cache and written to the framebuffer once (the full-screen stretch happens there too), and core 0 takes some of the bands when it finishes its frame first. Triple buffering keeps it from tearing. Cache flushes use an SVC directly instead of a system service, so the second core never stalls waiting on one. The bottom screen GUI is drawn by the CPU too, but only when something changes, so it costs next to nothing while you play.
+- **Visible area only**: draws the Neo Geo's real 304×224 picture.
+- **Frame pacing**: a vblank that has already passed is not waited for, so a frame that runs a little long doesn't lose a whole frame.
+- **Sound driver idle skip**: the loop Metal Slug 2, X and 3's Z80 spends waiting for its interrupt is skipped, with exactly the same result.
+- **BIOS**: uses the home (AES) BIOS from neogeo.zip when present, otherwise an arcade (MVS) BIOS, looking for the chosen region's BIOS first.
 
-New 3DS에서는 804MHz와 L2 캐시가 켜지도록 설정해 두어서 훨씬 여유롭습니다(실기 미확인).
+New 3DS models are set to 804 MHz with the L2 cache on, for plenty of headroom (not tested on hardware).
 
-측정값, 시행착오, 버그를 찾은 방법까지 담은 자세한 설명은 [기술 문서](docs/TECHNICAL.ko.md)에 있습니다.
+The [technical write-up](docs/TECHNICAL.md) goes into more detail: measurements, what was tried and dropped, and how bugs were found.
 
-## 직접 빌드하기
+## Building from source
 
-- 엔진: [devkitPro](https://devkitpro.org/)(devkitARM, libctru). `bash scripts/build_engine.sh` → `engine/engine.elf`
-- 웹 변환기: emsdk. `bash scripts/build_wasm.sh` → `site/vendor/` (WASM 3종 + 정적 자산) 후 `site/`를 정적 서버로
-- C# 변환기(Windows exe·기준선): .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
-- 게임 DB 갱신: MAME `src/mame/snk/neogeo.cpp`를 받아 `py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json`
+- Engine: [devkitPro](https://devkitpro.org/) (devkitARM, libctru). `bash scripts/build_engine.sh` → `engine/engine.elf`
+- Converter (web): emsdk. `bash scripts/build_wasm.sh` → `site/vendor/` (3 WASM builds + static assets), then serve `site/` statically
+- Converter (C#, Windows exe + baseline): .NET 10 SDK. `dotnet build -c Release converter/Neo3dsConverter`
+- Game DB: fetch MAME's `src/mame/snk/neogeo.cpp` and run `py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json`.
 
-## 법적 고지
+## Legal
 
-- 이 저장소와 배포 파일에는 **롬, 바이오스, 게임 데이터가 들어 있지 않습니다.** 변환에는 본인이 가진 게임의 롬이 필요합니다.
-- 변환해서 만든 CIA에는 롬 데이터가 들어 있으므로 **다른 사람에게 배포하지 마세요.**
-- neo3ds는 **비상업적 용도로만** 쓸 수 있습니다. 포함된 CPU 코어(Cyclone 68000, DrZ80)가 비상업적 사용만 허락하기 때문입니다.
-- 소스 코드는 GPL-2.0입니다([LICENSE](LICENSE)). 포함된 외부 코드와 라이선스는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
-- NEOGEO, SNK는 SNK CORPORATION의 상표이고, Nintendo 3DS는 Nintendo의 상표입니다. neo3ds는 개인 팬 프로젝트이며 이들과 관계가 없습니다. 스크린샷과 영상 속 게임 화면의 저작권은 각 권리자에게 있습니다.
+- This repository and its releases contain **no ROMs, BIOS or game data**. You need ROMs of games you own.
+- The CIAs you build contain ROM data: **do not share them.**
+- neo3ds is for **non-commercial use only**, because its CPU cores (Cyclone 68000, DrZ80) are licensed for non-commercial use only.
+- The source code is GPL-2.0 ([LICENSE](LICENSE)). Third-party code and licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- NEOGEO and SNK are trademarks of SNK CORPORATION; Nintendo 3DS is a trademark of Nintendo. neo3ds is an independent fan project, not affiliated with either. Game footage and screenshots belong to their respective owners.
 
-## 고마운 분들
+## Thanks
 
-gngeo(Peponas Mathieu), Cyclone 68000(Dave, notaz), DrZ80(Reesy), MAME 개발팀(롬셋 정보와 카트 해독 연구), Zstandard, devkitPro / libctru, makerom, bannertool, Azahar(개발 중 테스트).
+gngeo (Peponas Mathieu), Cyclone 68000 (Dave, notaz), DrZ80 (Reesy), the MAME team (romset data and cart decryption research), Zstandard, devkitPro / libctru, makerom, bannertool, and Azahar (testing during development).

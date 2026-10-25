@@ -37,7 +37,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 릴리스 패키징�
 
 ## 코드 ↔ 문서 동기화
 
-- 한·영 쌍은 같은 커밋에 함께 갱신: `README.md`↔`README.en.md`, `docs/TECHNICAL.ko.md`↔`docs/TECHNICAL.md`, `site/` i18n 키 누락 0
+- 한·영 쌍은 같은 커밋에 함께 갱신: `README.md`↔`README.ko.md`, `docs/TECHNICAL.ko.md`↔`docs/TECHNICAL.md`, `site/` i18n 키 누락 0
 - 게임 DB 변경 시 `scripts/gen_site_games.py`로 `site/games.js` 재생성 — 수동 편집 금지
 - VERIFIED 수 변경 시 README 호환성 표 + `site/` 문구를 같은 커밋에 함께 갱신
 - 호환성 표는 실기 확인 결과만, 미확인은 "추정" 표기
