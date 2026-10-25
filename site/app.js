@@ -182,6 +182,34 @@ const LANG = document.documentElement.lang === 'en' ? 'en' : 'ko';
 /** 지금 언어에 맞는 문구 (en이 없으면 넘긴 한국어를 그대로 씀) */
 const t = (ko, en) => (LANG === 'en' ? en : ko);
 
+/* 반대 언어판 힌트 (#130). 브라우저가 이 페이지의 언어를 하나도 선호하지 않으면
+   화면 아래에 한 줄로 알린다. 리다이렉트는 하지 않는다: 구글봇은 en-US로 렌더하므로
+   / 를 /en/ 으로 넘기면 한국어 페이지가 색인에서 밀린다 (hreflang이 그 역할을 대신한다). */
+function offerOtherLocale() {
+  const langs = (navigator.languages && navigator.languages.length
+    ? navigator.languages : [navigator.language || '']).map((l) => l.toLowerCase());
+  if (langs.some((l) => l.startsWith(LANG))) return;
+  const key = 'neo3ds-locale-hint-' + LANG;
+  try { if (localStorage.getItem(key)) return; } catch (e) { /* private mode */ }
+
+  const file = location.pathname.split('/').pop() || '';
+  const page = file === 'index.html' ? '' : file;
+  const ko = LANG === 'ko';
+  const box = document.createElement('div');
+  box.className = 'lang-note';
+  box.setAttribute('role', 'region');
+  box.setAttribute('aria-label', ko ? 'English version' : '한국어판');
+  box.innerHTML = `<p>${ko ? 'This page is in Korean.' : 'This page is in English.'}
+    <a href="${ko ? 'en/' : '../'}${page}">${ko ? 'Read it in English' : '한국어로 보기'}</a></p>
+    <button type="button" aria-label="${ko ? 'Dismiss' : '닫기'}">×</button>`;
+  box.querySelector('button').addEventListener('click', () => {
+    try { localStorage.setItem(key, '1'); } catch (e) { /* private mode */ }
+    box.remove();
+  });
+  document.body.appendChild(box);
+}
+offerOtherLocale();
+
 
 /* 게임 DB (예산·호환성 섹션이 씀) + 해독 체인 표시 (호환성 상세) */
 const DB = window.NEO3DS_DB || { counts: { total: 0, ok: 0, no: 0, verified: 0 }, games: [] };
