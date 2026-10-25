@@ -732,11 +732,17 @@ typedef struct {
 	short sprite, first, last, y, x;
 	Uint8 zoom_x, zoom_y, size;
 } SpriteRun;
-static SpriteRun runs[2 * MAX_SPRITES];
+#define MAX_RUNS 4096 /* two a sprite, more with raster effects */
+static SpriteRun runs[MAX_RUNS];
 static int nruns;
 
-static void add_run(int sprite, int first, int last, int y, int x, int zoom_x, int zoom_y, int size) {
-	SpriteRun *r = &runs[nruns++];
+/* Adds the run's part within lines a..b-1 */
+static void add_run(int sprite, int first, int last, int y, int x, int zoom_x, int zoom_y, int size, int a, int b) {
+	SpriteRun *r;
+	if (first < a) first = a;
+	if (last > b) last = b;
+	if (first >= last || nruns == MAX_RUNS) return;
+	r = &runs[nruns++];
 	r->sprite = sprite;
 	r->first = first;
 	r->last = last;
@@ -747,17 +753,53 @@ static void add_run(int sprite, int first, int last, int y, int x, int zoom_x, i
 	r->size = size;
 }
 
-static void prepare_sprites(void) {
-	const Uint16 *vram = (const Uint16 *) snap_vram;
+/* Raster effects. Games move sprites in IRQ2 handlers while the picture is drawn: Neo Turf
+ * Masters shifts the water and the hills a little every two lines. As MAME, which draws the lines
+ * above at every IRQ2, a write shows from the line of the last IRQ2 before it. The emulator logs
+ * the SCB2-SCB4 writes (sprite zoom, y, x) after the first IRQ2 in a frame; the snapshot keeps the
+ * frame's end, and prepare_sprites draws the sprite chains the log touches segment by segment. */
+#define RASTER_WRITES 2048
+typedef struct {
+	Uint16 line, addr, old, val;
+} RasterWrite;
+static RasterWrite raster_log[RASTER_WRITES], snap_raster[RASTER_WRITES];
+static int nraster, snap_nraster; /* RASTER_WRITES + 1: too many, the frame is drawn without */
+int raster_from;
+
+void video_raster_reset(void) {
+	raster_from = 0;
+	nraster = 0;
+}
+
+/* An IRQ2 before line (counted from VBlank, 0..264, as neo_run_frame's current_line) */
+void video_raster_irq(int line) {
+	int at = (line + 240) % 264; /* the frame starts at MAME's line 240 */
+	if (at >= LAST_LINE || at < FIRST_LINE) at = FIRST_LINE; /* before the visible lines */
+	if (at > raster_from) raster_from = at;
+}
+
+void video_raster_write(Uint32 addr, Uint16 old, Uint16 val) {
+	RasterWrite *w;
+	if (nraster >= RASTER_WRITES) {
+		nraster = RASTER_WRITES + 1;
+		return;
+	}
+	w = &raster_log[nraster++];
+	w->line = raster_from;
+	w->addr = addr;
+	w->old = old;
+	w->val = val;
+}
+
+/* Adds the runs of sprites begin..end-1 (begin starting a chain) within lines a..b-1, from the
+ * SCB2-SCB4 words scb (scb[0] is video RAM word 0x8000); with skip, not those it marks. */
+static void walk_sprites(const Uint16 *scb, int begin, int end, int a, int b, const Uint8 *skip) {
 	int x = 0, y = 0, zoom_x = 0, zoom_y = 0, size = 0;
 	int sprite;
 
-	if (!zoom_width[0]) init_zoom_cols();
-
-	nruns = 0;
-	for (sprite = 0; sprite < MAX_SPRITES; sprite++) {
-		int y_control = vram[0x8200 + sprite];
-		int zoom_control = vram[0x8000 + sprite];
+	for (sprite = begin; sprite < end; sprite++) {
+		int y_control = scb[0x200 + sprite];
+		int zoom_control = scb[sprite];
 		int height, off, n, start;
 
 		if (y_control & 0x40) { /* sticky: chain to the right of the previous sprite */
@@ -765,12 +807,12 @@ static void prepare_sprites(void) {
 			zoom_x = (zoom_control >> 8) & 0x0f;
 		} else {
 			y = 0x200 - (y_control >> 7);
-			x = vram[0x8400 + sprite] >> 7;
+			x = scb[0x400 + sprite] >> 7;
 			zoom_y = zoom_control & 0xff;
 			zoom_x = (zoom_control >> 8) & 0x0f;
 			size = y_control & 0x3f;
 		}
-		if (size == 0) continue;
+		if (size == 0 || (skip && skip[sprite])) continue;
 		if (x >= 320 && x < 0x1f0) continue; /* fully off screen to the right */
 
 		/* The sprite covers lines y .. y+height-1 of the 512-line space (all of it for size >= 0x20).
@@ -781,15 +823,96 @@ static void prepare_sprites(void) {
 		if (off < height) {
 			n = height - off;
 			if (n > LAST_LINE - FIRST_LINE) n = LAST_LINE - FIRST_LINE;
-			add_run(sprite, FIRST_LINE, FIRST_LINE + n, y, x, zoom_x, zoom_y, size);
+			add_run(sprite, FIRST_LINE, FIRST_LINE + n, y, x, zoom_x, zoom_y, size, a, b);
 		}
 		start = y & 0x1ff;
 		if (start >= FIRST_LINE + n && start < LAST_LINE) {
-			int end = start + height;
-			if (end > LAST_LINE) end = LAST_LINE;
-			add_run(sprite, start, end, y, x, zoom_x, zoom_y, size);
+			int stop = start + height;
+			if (stop > LAST_LINE) stop = LAST_LINE;
+			add_run(sprite, start, stop, y, x, zoom_x, zoom_y, size, a, b);
 		}
 	}
+}
+
+/* Puts the runs back in sprite order (the drawing order) after the raster segments */
+static void sort_runs(void) {
+	static SpriteRun sorted[MAX_RUNS];
+	static unsigned short at[MAX_SPRITES + 1];
+	int i;
+	memset(at, 0, sizeof at);
+	for (i = 0; i < nruns; i++) at[runs[i].sprite + 1]++;
+	for (i = 1; i <= MAX_SPRITES; i++) at[i] += at[i - 1];
+	for (i = 0; i < nruns; i++) sorted[at[runs[i].sprite]++] = runs[i];
+	memcpy(runs, sorted, nruns * sizeof *runs);
+}
+
+/* With raster writes in the snapshot: the sprite chains they touch, each split at the lines where
+ * its own SCB2-SCB4 words change, the others drawn once. False when the frame has none (or too
+ * many to log). */
+static int prepare_raster(const Uint16 *scb) {
+	static Uint16 seg[0x600];
+	static Uint8 touched[MAX_SPRITES], sticky[MAX_SPRITES];
+	static short span[MAX_SPRITES][2];
+	int nspan = 0, i, k, s, a, first = 0, any = 0;
+
+	if (snap_nraster == 0 || snap_nraster > RASTER_WRITES) return 0;
+	memset(touched, 0, sizeof touched);
+	for (s = 0; s < MAX_SPRITES; s++) sticky[s] = (scb[0x200 + s] & 0x40) != 0;
+	for (i = 0; i < snap_nraster; i++) {
+		const RasterWrite *w = &snap_raster[i];
+		s = w->addr & 0x1ff;
+		if (s >= MAX_SPRITES) continue;
+		touched[s] = 1;
+		if ((w->addr & 0x0600) == 0x0200 && (w->old & 0x40)) sticky[s] = 1;
+	}
+	/* Spans: from a sprite never sticky in the frame up to the next one, so a span holds whole
+	 * chains at every line. A span is touched when one of its sprites is. */
+	for (s = 0; s <= MAX_SPRITES; s++) {
+		if (s == MAX_SPRITES || !sticky[s]) {
+			if (any) {
+				for (i = first; i < s; i++) touched[i] = 1;
+				span[nspan][0] = first;
+				span[nspan++][1] = s;
+			}
+			first = s;
+			any = 0;
+		}
+		if (s < MAX_SPRITES && touched[s]) any = 1;
+	}
+	walk_sprites(scb, 0, MAX_SPRITES, FIRST_LINE, LAST_LINE, touched);
+
+	/* the words at the first visible line: the frame's end with the writes undone; each span then
+	 * redoes only its own writes, so the others' words in seg do not matter to it */
+	memcpy(seg, scb, sizeof seg);
+	for (i = snap_nraster - 1; i >= 0; i--) seg[snap_raster[i].addr - 0x8000] = snap_raster[i].old;
+	for (k = 0; k < nspan; k++) {
+		const int f = span[k][0], e = span[k][1];
+		for (a = FIRST_LINE, i = 0;; i++) {
+			const RasterWrite *w;
+			while (i < snap_nraster && ((snap_raster[i].addr & 0x1ff) < f || (snap_raster[i].addr & 0x1ff) >= e)) i++;
+			if (i == snap_nraster || snap_raster[i].line >= LAST_LINE) {
+				walk_sprites(seg, f, e, a, LAST_LINE, NULL);
+				break;
+			}
+			w = &snap_raster[i];
+			if (w->line > a) {
+				walk_sprites(seg, f, e, a, w->line, NULL);
+				a = w->line;
+			}
+			seg[w->addr - 0x8000] = w->val;
+		}
+	}
+	sort_runs();
+	return 1;
+}
+
+static void prepare_sprites(void) {
+	const Uint16 *scb = (const Uint16 *) snap_vram + 0x8000;
+
+	if (!zoom_width[0]) init_zoom_cols();
+
+	nruns = 0;
+	if (!prepare_raster(scb)) walk_sprites(scb, 0, MAX_SPRITES, FIRST_LINE, LAST_LINE, NULL);
 }
 
 /* Copies the frame state the renderer reads, at the end of an emulated frame, so the frame can be
@@ -799,6 +922,8 @@ void video_snapshot(void) {
 	memcpy(snap_pal, current_pc_pal, sizeof snap_pal);
 	snap_frame_counter = neogeo_frame_counter;
 	snap_irq2control = memory.vid.irq2control;
+	snap_nraster = nraster;
+	if (nraster <= RASTER_WRITES) memcpy(snap_raster, raster_log, nraster * sizeof *raster_log);
 	snap_fix = current_fix;
 	snap_fix_usage = fix_usage;
 }

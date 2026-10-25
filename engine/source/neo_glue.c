@@ -102,9 +102,12 @@ void neo_set_input(Uint8 p1, Uint8 p2, Uint8 start, Uint8 coin) {
 
 // One emulated frame: both CPUs advance a scanline at a time so 68k sound
 // commands and Z80 replies interleave as on hardware, then VBlank renders and
-// raises IRQ1 (gngeo's non-raster mode; mid-frame raster effects are not drawn).
+// raises IRQ1. The frame starts at VBlank (MAME's line 240); IRQ2 is counted a line
+// at a time, and sprite moves after an IRQ2 are drawn from its line (video.c).
 void neo_run_frame(bool render) {
 	u64 t0 = svcGetSystemTick();
+	video_raster_reset();
+	if (memory.vid.irq2control & 0x40) irq2_load(287); /* as MAME: VBlank reloads at pixel 287 of the line */
 	if (audio_behind()) { /* sound only: the 68k waits, the music keeps its tempo */
 		for (current_line = 0; current_line < LINES_PER_FRAME; current_line++) {
 			cpu_z80_run(Z80_CYCLES_PER_FRAME / LINES_PER_FRAME);
@@ -123,6 +126,7 @@ void neo_run_frame(bool render) {
 			cpu_z80_run(Z80_CYCLES_PER_FRAME / LINES_PER_FRAME);
 			b = svcGetSystemTick(); prof_split[1] += b - a; a = b;
 			my_timer();
+			irq2_line();
 			b = svcGetSystemTick(); prof_split[2] += b - a; a = b;
 		}
 		prof_split_frames++;
@@ -131,6 +135,7 @@ void neo_run_frame(bool render) {
 		cpu_68k_run_slice(M68K_CYCLES_PER_FRAME / LINES_PER_FRAME);
 		cpu_z80_run(Z80_CYCLES_PER_FRAME / LINES_PER_FRAME);
 		my_timer();
+		irq2_line();
 	}
 
 	pd4990a_addretrace();
