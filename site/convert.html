@@ -25,8 +25,9 @@
 .drop-meta{display:block;font:400 11px/1.6 var(--pixel-sm);color:var(--dim);margin-top:10px;word-break:break-all}
 .gate-side{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px}
 .gate-side .conv-file{display:block;margin-bottom:14px}
-#gateDl{background:var(--gold);border-color:var(--gold);color:#16161C;font-weight:700}
-#gateDl:hover{background:var(--gold);border-color:#fff;color:#16161C}
+#gateDl,#gateBatchAll{background:var(--gold);border-color:var(--gold);color:#16161C;font-weight:700}
+#gateDl:hover,#gateBatchAll:hover:not(:disabled){background:var(--gold);border-color:#fff;color:#16161C}
+#gateBatchAll:disabled{opacity:.55;cursor:default}
 /* #74: preflight game list + per-row batch status (existing tokens only) */
 .batch{margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);min-width:0}
 .batch-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -70,9 +71,6 @@
 .recog{margin:0 0 10px}
 .recog-text,.overall-text{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px;overflow-wrap:anywhere}
 .overall{margin:0 0 24px;max-width:640px}
-.batch-actions{margin:8px 0 0}
-.batch-all{max-width:100%;white-space:normal;text-align:left}
-#gateBatchAll:disabled{opacity:.65}
 #progress{scroll-margin-top:72px}
 #gateProgH2:focus{outline:2px solid var(--gold);outline-offset:6px}
 </style>
@@ -159,9 +157,6 @@
           </div>
         </div>
         <ol class="batch-rows" id="gateBatchRows"></ol>
-        <div class="batch-actions">
-          <button type="button" class="btn btn-ghost btn-sm batch-all hidden" id="gateBatchAll"></button>
-        </div>
         <p class="tiny batch-summary hidden" id="gateBatchSummary" aria-live="polite"></p>
       </div>
       <div class="art hidden" id="gateArt" role="region" aria-labelledby="gateArtH">
@@ -202,6 +197,7 @@
         <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">변환하기</button>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
         <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">다운로드</a>
+        <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
       </div>
       <p class="tiny hidden" id="gateStats"></p>
     </div>
