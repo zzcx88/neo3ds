@@ -28,6 +28,9 @@
 #gateDl,#gateBatchAll{background:var(--gold);border-color:var(--gold);color:#16161C;font-weight:700}
 #gateDl:hover,#gateBatchAll:hover:not(:disabled){background:var(--gold);border-color:#fff;color:#16161C}
 #gateBatchAll:disabled{opacity:.55;cursor:default}
+#gateCancel{background:var(--panel-2);border-color:var(--pressed);color:var(--paper)}
+#gateCancel:hover:not(:disabled){background:var(--pressed);border-color:var(--pressed);color:#fff}
+#gateCancel:disabled{opacity:.55;cursor:default}
 /* #74: preflight game list + per-row batch status (existing tokens only) */
 .batch{margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);min-width:0}
 .batch-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -36,6 +39,8 @@
 .batch-hint{margin:6px 0 8px}
 .batch-msg{margin:0 0 8px;color:var(--gold);overflow-wrap:anywhere}
 .batch-rows{border-top:1px solid var(--line)}
+.batch-rows.scroll{overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
+.batch-rows.scroll:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .batch-row{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 4px;border-bottom:1px solid var(--line)}
 .batch-row[data-status="running"]{background:var(--panel);box-shadow:inset 3px 0 0 var(--gold)}
 .batch-row[data-edit="true"]{cursor:pointer}
@@ -195,9 +200,9 @@
       </div>
       <div class="cta-row">
         <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled data-i18n="gate.run">변환하기</button>
-        <button type="button" class="btn btn-ghost btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
-        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">다운로드</a>
+        <button type="button" class="btn btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
+        <a class="btn btn-ghost btn-lg hidden" id="gateDl" download="web.cia" data-i18n="gate.dl">다운로드</a>
       </div>
       <p class="tiny hidden" id="gateStats"></p>
     </div>
