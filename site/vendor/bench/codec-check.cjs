@@ -1,4 +1,4 @@
-// Phase 0: decode every native c.pak block, re-encode at 19, decode again, compare.
+// Phase 0: decode every native c.pak block, re-encode, decode again, compare.
 // Usage: npm i zstd-codec && KEEP=<NEO3DS_KEEP dir> node codec-check.cjs
 const { ZstdCodec } = require('zstd-codec');
 const fs = require('node:fs');
@@ -9,22 +9,24 @@ ZstdCodec.run(zstd => {
   const idx = fs.readFileSync(keep + '/romfs/game/c.idx');
   const pak = fs.readFileSync(keep + '/romfs/game/c.pak');
   const blocks = idx.readUInt32LE(16);
+  const bs = idx.readUInt32LE(12);
+  const level = Number(process.env.LEVEL || 12);
   // 1. decode all native blocks
   const t0 = Date.now();
   let ok = 0, packed = 0;
   for (let i = 0; i < blocks; i++) {
     const a = idx.readUInt32LE(20 + i * 4), b = idx.readUInt32LE(20 + (i + 1) * 4);
     const dec = s.decompress(new Uint8Array(pak.subarray(a, b)));
-    if (dec.length !== 4096) { console.log('BAD len at', i); process.exit(1); }
+    if (dec.length !== bs) { console.log('BAD len at', i); process.exit(1); }
     ok++;
   }
   const tDec = Date.now();
-  // 2. re-encode all at 19, decode again, compare
+  // 2. re-encode all at level, decode again, compare
   let ok2 = 0;
   for (let i = 0; i < blocks; i++) {
     const a = idx.readUInt32LE(20 + i * 4), b = idx.readUInt32LE(20 + (i + 1) * 4);
     const dec = s.decompress(new Uint8Array(pak.subarray(a, b)));
-    const re = s.compress(dec, 19);
+    const re = s.compress(dec, level);
     packed += re.length;
     const dec2 = s.decompress(new Uint8Array(re));
     if (Buffer.compare(Buffer.from(dec), Buffer.from(dec2)) === 0) ok2++;

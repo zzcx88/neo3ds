@@ -305,7 +305,7 @@ The 80 MB mode has more room but makes the system reload every time a game start
 So the goal was to **fit 64 MB graphics ROMs into the default 64 MB mode**.
 
 ### Memory
-- **Compressed graphics**: the sprite ROM (up to 64 MB) is zstd-compressed (level 19) in 4 KB blocks, to about 30% (KOF99: 64 MB → 19.6 MB).
+- **Compressed graphics**: the sprite ROM (up to 64 MB) is zstd-compressed (level 12) in 16 KB blocks, to about 30% (KOF '98: 64 MB → 20.3 MB).
 - **8 MB block cache**: only the blocks on screen are unpacked. Fully transparent tiles are skipped using a usage table, so they are never read.
 - **Heap layout**: 58 MB heap and 2 MB linear memory for the screen. KOF99 uses 51.5 MB.
 - **Decrypted ahead of time**: encrypted ROMs are decrypted on the PC, costing the 3DS neither memory nor time.

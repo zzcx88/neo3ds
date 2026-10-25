@@ -6,7 +6,7 @@ import { join } from 'node:path';
 // Phase 1: same checks run against WEB output, then byte-compare uncompressed files.
 // Checks (per #31 comment: relaxed criteria):
 //   1. uncompressed files present + non-empty (p/s/m1/v/bios/sfix/lo/title/version)
-//   2. every c.pak block decodes to exactly 4096 bytes (zstd-codec)
+//   2. every c.pak block decodes to exactly block_size bytes, as stored in c.idx
 //   3. c.idx structure: magic/version/tiles/blocks, monotonic offsets, usage table size
 // Usage: node romfs-check.mjs <keepDir>
 const keep = process.argv[2];
@@ -34,15 +34,17 @@ const u32 = (o) => idx.readUInt32LE(o);
 check('idx/magic', idx.subarray(0, 4).toString() === 'NEOC');
 check('idx/version', u32(4) === 2, `codec=${u32(4)}`);
 const tiles = u32(8), bs = u32(12), blocks = u32(16);
-check('idx/geometry', bs === 4096 && tiles * 128 === blocks * bs, `tiles=${tiles} blocks=${blocks}`);
+check('idx/geometry', bs > 0 && bs % 128 === 0 && tiles * 128 === blocks * bs, `tiles=${tiles} block_size=${bs} blocks=${blocks}`);
 let mono = true;
 for (let i = 0; i < blocks; i++) if (u32(20 + i * 4) > u32(20 + (i + 1) * 4)) { mono = false; break; }
 check('idx/offsets-monotonic', mono, `${blocks + 1} entries`);
 const usageWords = Math.ceil(tiles / 16);
 check('idx/size', idx.length === 20 + (blocks + 1) * 4 + usageWords * 4, `${idx.length} bytes`);
 
-// 2. c.pak blocks decode to 4096 (zstd-codec, same lib the web build will use)
-const { ZstdCodec } = await import('zstd-codec').catch(() => ({}));
+// 2. c.pak blocks decode to exactly block_size bytes (zstd-codec, the lib the conv/ tests install)
+const { createRequire } = await import('node:module');
+const requireConv = createRequire(new URL('./conv/package.json', import.meta.url));
+const { ZstdCodec } = await import(requireConv.resolve('zstd-codec')).catch(() => ({}));
 if (!ZstdCodec) {
   check('pak/decode-all', false, 'zstd-codec not installed (npm i zstd-codec)');
 } else {
@@ -54,7 +56,7 @@ if (!ZstdCodec) {
     let bad = -1;
     for (let i = 0; i < blocks; i++) {
       const dec = s.decompress(new Uint8Array(pak.subarray(u32(20 + i * 4), u32(20 + (i + 1) * 4))));
-      if (dec.length !== 4096) { bad = i; break; }
+      if (dec.length !== bs) { bad = i; break; }
     }
     check('pak/decode-all', bad === -1, bad === -1 ? `${blocks} blocks in ${Date.now() - t0}ms` : `block ${bad}`);
     resolve();
