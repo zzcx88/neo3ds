@@ -41,6 +41,7 @@ let artTitle = null, artProblem = null;
 let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
 let overallView = null; // #81 {fraction, kind, index, ready, end} shown in #progress
+let pipeRow = null; // #145: game whose step values the pipe is showing
 let bundleBusy = false, bundleUrl = null, bundleSeq = 0; // #81 "download all" ZIP
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
@@ -927,14 +928,10 @@ function setStep(name, cls, val = null) {
 }
 
 function resetPipe() {
-  for (const s of ['load', 'romfs', 'art', 'cia']) {
-    setStep(s, 'reset');
-    const v = pipe.querySelector(`[data-step="${s}"] [data-pipe]`);
-    if (v) v.textContent = '';
-    delete vals[s];
-  }
+  clearPipeValues();
   delete vals.romfsLogged; delete vals.artLogged; delete vals.ciaLogged;
   delete vals.loadLogged;
+  pipeRow = null;
 }
 
 function markRunningRowsFailed(message) {
@@ -1189,11 +1186,24 @@ function workerFailed(w, message) {
 
 const PIPE_ORDER = ['load', 'romfs', 'art', 'cia'];
 
+// Per-step values only; the log flags belong to the whole run.
+function clearPipeValues() {
+  for (const s of PIPE_ORDER) {
+    setStep(s, 'reset');
+    const v = pipe.querySelector(`[data-step="${s}"] [data-pipe]`);
+    if (v) v.textContent = '';
+    delete vals[s];
+  }
+}
+
 // The 4-step pipe. With several games in flight the detail is prefixed with
 // the game name so the numbers cannot be mistaken for one game's.
 function pipeStep(m, row) {
   const idx = PIPE_ORDER.indexOf(m.step);
   if (idx < 0) return;
+  // A new game starts: the previous game's step values must not sit next to
+  // this game's first step (#145).
+  if (row !== pipeRow) { pipeRow = row; clearPipeValues(); }
   const many = overallView?.kind === 'batch' && overallView.running.size > 1;
   const name = row >= 0 ? batch?.[row]?.name : null;
   const detail = many && name ? `${name}: ${m.detail}` : m.detail;
@@ -1259,7 +1269,7 @@ function downloadName(stats) {
   const mode = stats.mode ?? currentMode();
   if (stats.rom === 'launcher') return 'neo3ds-launcher.cia';
   if (mode === 'pack') return `${stats.rom}.neo3ds`;
-  return `${stats.rom}-web.cia`;
+  return `${stats.rom}.cia`;
 }
 
 // #143: one result block in #progress answers "what do I do now?" without
