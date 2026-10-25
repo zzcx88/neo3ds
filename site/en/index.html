@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neo Geo emulator & converter for 3DS | neo3ds</title>
+<meta name="description" content="Turn Neo Geo (MAME) romsets into installable 3DS CIAs. Runs at 60 fps on an Old 3DS, one HOME menu icon per game. 242 of 282 romsets convert.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#16161C">
+<link rel="canonical" href="https://zzcx88.github.io/neo3ds/en/">
+<link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/">
+<link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/en/">
+<link rel="alternate" hreflang="x-default" href="https://zzcx88.github.io/neo3ds/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="neo3ds">
+<meta property="og:title" content="Neo Geo emulator & converter for 3DS | neo3ds">
+<meta property="og:description" content="MAME romsets → installable 3DS CIAs. A Neo Geo emulator at 60 fps on an Old 3DS, plus a browser converter with nothing to install.">
+<meta property="og:url" content="https://zzcx88.github.io/neo3ds/en/">
+<meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="neo3ds — Neo Geo games on your 3DS HOME menu">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Neo Geo emulator & converter for 3DS | neo3ds">
+<meta name="twitter:description" content="MAME romsets → 3DS CIAs. 60 fps on an Old 3DS.">
+<meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "neo3ds",
+  "url": "https://zzcx88.github.io/neo3ds/en/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Nintendo 3DS",
+  "isAccessibleForFree": true,
+  "inLanguage": [
+    "ko",
+    "en"
+  ],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "KRW"
+  },
+  "description": "A Neo Geo (MAME) romset to 3DS CIA converter and emulator engine that runs on an Old 3DS."
+}
+</script>
+<link rel="icon" href="../media/favicon.svg">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar">
+  <a class="brand" href="#top" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
+  <nav class="bar-nav" aria-label="Sections">
+    <a href="#steps">Set-up in three steps</a>
+    <a href="#panel">Touch controls</a>
+    <a href="#launcher">Launcher</a>
+    <a href="#speed">Speed</a>
+    <a href="#games">Game compatibility</a>
+  </nav>
+  <div class="bar-end">
+    <div class="lang" role="group" aria-label="Language">
+      <a href="../">KO</a>
+      <a href="./" aria-current="true">EN</a>
+    </div>
+    <a class="btn btn-primary" href="convert.html">Convert now</a>
+  </div>
+</header>
+
+<main id="main">
+<noscript><p style="padding:12px 24px">This page needs JavaScript. The game list and the converter demo will not run.</p></noscript>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker">romset zip on the PC → a 3DS install file (CIA) · converter + emulator engine</p>
+      <h1>Neo Geo games,<br>on the 3DS HOME menu.</h1>
+      <p class="lede">Drop the romset zip of a game you own on the converter and each game becomes one install file (CIA) — or pack several games for the one launcher app. Install it on the 3DS and the game shows up on the HOME menu with its own icon, at 60 fps even on an Old 3DS.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary btn-lg" href="convert.html">Convert now</a>
+        <details class="dl-drop">
+          <summary class="btn btn-ghost btn-lg">Get the offline converter</summary>
+          <div class="dl-panel">
+            <a class="dl-row" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip">Get it for Windows</a>
+            <a class="dl-row" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip">Get it for Linux x64</a>
+            <a class="dl-row" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip">Get it for macOS (Apple Silicon)</a>
+          </div>
+        </details>
+        <a class="btn btn-ghost btn-lg" href="https://github.com/zzcx88/neo3ds">Source code</a>
+      </div>
+      <p class="tiny">Runs in the browser · nothing to install · GPL-2.0</p>
+      <p class="tiny">Keep the extracted offline-converter folder together.</p>
+    </div>
+
+    
+    <figure class="device-col">
+      <div class="device" aria-hidden="true">
+        <div class="shell shell-top">
+          <div class="cam"></div>
+          <span class="speaker"></span>
+          <div class="screen-outer screen-stack">
+            <img class="screen-top hero-ph" src="../media/hero_kof98.jpg" width="400" height="240" alt="" fetchpriority="high" decoding="async">
+            <img class="screen-top hero-ph" src="../media/hero_mslug3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
+            <img class="screen-top hero-ph" src="../media/hero_sonicwi3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
+            <img class="screen-top hero-ph" src="../media/hero_samsho5.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
+            <img class="screen-top hero-ph" src="../media/hero_maxres.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
+        <div class="hinge"><span></span><span></span></div>
+        <div class="shell shell-bottom">
+          <span class="shell-btn sh-l">L</span>
+          <span class="shell-btn sh-r">R</span>
+          <div class="pad-wrap">
+            <div class="circle-pad"><span></span></div>
+            <div class="dpad"></div>
+          </div>
+          <div class="touch-outer">
+            <img class="screen-bottom" src="../media/ui-bottom.png" width="320" height="240" alt="">
+          </div>
+          <div class="face">
+            <span class="shell-btn face-a">A</span>
+            <span class="shell-btn face-b">B</span>
+            <span class="shell-btn face-x">X</span>
+            <span class="shell-btn face-y">Y</span>
+          </div>
+          <div class="strip">
+            <span class="shell-btn small">SELECT</span>
+            <span class="shell-btn small">HOME</span>
+            <span class="shell-btn small">START</span>
+          </div>
+        </div>
+      </div>
+      <figcaption class="sr-only">Game footage composited into a 3DS console mockup</figcaption>
+    </figure>
+  </div>
+</section>
+
+
+<section class="sec" id="steps">
+  <div class="wrap">
+    <h2>Set-up in three steps</h2>
+    <p class="lede narrow">Building an install file takes a minute or two on the PC. After that you only need the 3DS.</p>
+
+    <ol class="steps">
+      <li>
+        <span class="step-no">1</span>
+        <h3>Get the romset ready</h3>
+        <p>Keep your game's MAME romset and the BIOS together, names unchanged.</p>
+      </li>
+      <li>
+        <span class="step-no">2</span>
+        <h3>Build the CIA (or launcher files)</h3>
+        <p>One game takes a minute or two, mostly compressing graphics. Drop several zips to convert them one after another, or build launcher files (.neo3ds) instead.</p>
+      </li>
+      <li>
+        <span class="step-no">3</span>
+        <h3>Install on the 3DS (or copy to the launcher)</h3>
+        <p>A CIA shows up on the HOME menu. Launcher files go on the SD card at /neo3ds/games/ and start from the launcher app.</p>
+      </li>
+    </ol>
+
+    <div class="prep">
+      <h3>What you need</h3>
+      <ul class="check">
+        <li><b>A 3DS</b> <span>Old 3DS / 2DS / New 3DS / New 2DS XL, with custom firmware (Luma3DS) and an installer (FBI)</span></li>
+        <li><b>A web browser</b> <span>Chrome, Edge, Firefox, Safari · roms stay inside the browser</span></li>
+        <li><b>Romsets you own</b> <span>MAME romset zip + neogeo.zip (not included here)</span></li>
+        <li><b>The sound file</b> <span><code>/3ds/dspfirm.cdc</code> on the SD card</span></li>
+      </ul>
+      <p class="tiny">Only MAME romset zips convert. A romset whose names or chip CRCs differ from MAME's will not convert.</p>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec" id="panel">
+  <div class="wrap">
+    <h2>Touch controls</h2>
+    <p class="lede narrow">Everything works while the game keeps running, and settings are saved per game. Choose one CIA per game or the single launcher app.</p>
+
+    <ul class="panel-list">
+      <li>
+        <span class="pb-name">Key config</span>
+        <span class="pb-desc">Map each button to a Neo Geo button or a two-button press.</span>
+      </li>
+      <li>
+        <span class="pb-name">Turbo</span>
+        <span class="pb-desc">Holds one button down 20 times a second. R + A/B/X/Y switches it.</span>
+      </li>
+      <li>
+        <span class="pb-name">System: AES / MVS</span>
+        <span class="pb-desc">Switches home ↔ arcade BIOS. Two taps, so it cannot happen by accident.</span>
+      </li>
+      <li>
+        <span class="pb-name">Diagnostics</span>
+        <span class="pb-desc">FPS, per-core time and memory, once a second.</span>
+      </li>
+      <li>
+        <span class="pb-name">Restart</span>
+        <span class="pb-desc">Hold to restart from the beginning; SELECT+START for a second does the same.</span>
+      </li>
+      <li>
+        <span class="pb-name">Service</span>
+        <span class="pb-desc">Opens the arcade (MVS) settings menu. Backup RAM (settings, high scores) is kept on the SD card.</span>
+      </li>
+      <li>
+        <span class="pb-name">Slot / Save / Load</span>
+        <span class="pb-desc">Save and load from three slots. SELECT+L saves, SELECT+R loads.</span>
+      </li>
+    </ul>
+
+    <div class="map">
+      <h3>Default mapping</h3>
+      <dl class="map-list">
+        <div><dt>D-pad</dt><dd>lever</dd></div>
+        <div><dt>B · A · Y · X</dt><dd>Neo Geo A · B · C · D</dd></div>
+        <div><dt>SELECT · START</dt><dd>coin · start</dd></div>
+        <div><dt>R + B/A/Y/X</dt><dd>turbo on/off</dd></div>
+        <div><dt>SELECT + L / SELECT + R</dt><dd>quick save / load</dd></div>
+      </dl>
+      <p class="tiny">In KOF, L = A+B (evade) and R = C+D (blowback) is a good start.</p>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec sec-launch" id="launcher">
+  <div class="wrap">
+    <p class="kicker">Recommended · the way to go for several games</p>
+    <h2>Launcher: every game in one app</h2>
+    <p class="lede narrow">Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.</p>
+    <div class="map">
+      <figure class="fig" style="margin-top:0">
+        <img src="../media/launcher.png" width="320" alt="Launcher game list" loading="lazy" decoding="async">
+        <p class="fig-note">Pick with the D-pad or touch, start with A (or a double tap). L/R turn a page.</p>
+      </figure>
+      <div>
+        <ul class="panel-list">
+          <li><span class="pb-name">Install once</span><span class="pb-desc">Install the launcher CIA with FBI just once. Adding a game later is copying its .neo3ds file to /neo3ds/games/.</span></li>
+          <li><span class="pb-name">Shared saves</span><span class="pb-desc">The same game shares key config, backup RAM and quick saves between its CIA and launcher copies.</span></li>
+          <li><span class="pb-name">Back in a tap</span><span class="pb-desc">In a game, tap Game list on the bottom screen twice to return to the list.</span></li>
+        </ul>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="convert.html?mode=launcher">Build the launcher CIA</a>
+          <a class="btn btn-ghost btn-lg" href="convert.html?mode=pack">Build launcher files</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec" id="speed">
+  <div class="wrap">
+    <h2>Speed</h2>
+    <p class="lede narrow">No GPU: the CPU draws the frame itself, and the work is split across both cores.</p>
+
+    <figure class="fig">
+      <figcaption>
+        <span>One frame is 16.7ms — read from the on-device diagnostics screen (KOF '99, 59.8fps)</span>
+      </figcaption>
+      <div class="budget" id="budget"></div>
+      <div class="budget-legend" id="budgetLegend"></div>
+      <p class="fig-note" id="budgetNote">Press an item for details.</p>
+    </figure>
+
+    <div class="mem-grid">
+      <div class="mem-card">
+        <h3>Memory layout</h3>
+        <p>Sprite ROMs stay compressed; only the blocks in use are unpacked.</p>
+        <div class="membar" id="membar"></div>
+        <ul class="legend" id="memLegend"></ul>
+        <dl class="kv">
+          <div><dt>Compression</dt><dd>4KB blocks · zstd 19 · KOF '99 64.0 → 19.6MB</dd></div>
+          <div><dt>Cache</dt><dd>8MB (2,048 blocks of 4KB)</dd></div>
+          <div><dt>In RAM</dt><dd>51.8MB used · 2.0MB free</dd></div>
+          <div><dt>Output</dt><dd>304×224 only · three screens in rotation (triple buffered) · nothing reloads</dd></div>
+        </dl>
+      </div>
+
+      <div class="mem-card">
+        <h3>Memory mode choice</h3>
+        <p>80MB gives more memory, but the system is reloaded every time a game starts or quits.</p>
+        <div class="modes" role="group" aria-label="Memory mode">
+          <button type="button" aria-pressed="true" data-mode="64">64MB <span>(neo3ds)</span></button>
+          <button type="button" aria-pressed="false" data-mode="80">80MB <span>(not used)</span></button>
+        </div>
+        <div class="mode-body" id="modeBody"></div>
+      </div>
+    </div>
+
+    <div class="notes-grid">
+      <div>
+        <h3>Speed optimisations</h3>
+        <ul class="facts">
+          <li>Drawing and sound move to the second core while the main core emulates the next frame.</li>
+          <li>Unzoomed sprites are drawn tile by tile, and opaque runs of 8 pixels go out as ARM assembly (raw CPU instructions).</li>
+          <li>Games that zoom out a lot use code pre-built for every zoom step (16) and flip (2).</li>
+          <li>Cache cleaning calls the system call directly (an SVC), so the second core never waits on a service.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Sound</h3>
+        <ul class="facts">
+          <li>The YM2610 is split in two; the second core replays the logged register writes and makes the audio.</li>
+          <li>The 3DS DSP is unused and sound is never dropped. Without <code>/3ds/dspfirm.cdc</code> the game runs silently.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec" id="games">
+  <div class="wrap">
+    <h2>Game compatibility</h2>
+    <p class="lede narrow">The converter knows 282 romsets and builds 242 of them. 15 of those were played on an Old 3DS (Aero Fighters 3 is playable).</p>
+    <p class="tiny" style="margin:8px 0 18px"><a href="compat.html">All 282 romsets — status per game</a></p>
+
+    <div class="explorer">
+      <div class="ex-tools">
+        <label class="search">
+          <span class="sr-only">Search games</span>
+          <input type="search" id="exSearch" placeholder="Title or romset name (e.g. kof99, slug)">
+        </label>
+        <div class="filters" id="exFilters" role="group" aria-label="Filters">
+          <button type="button" data-filter="all" aria-pressed="true"><span>All</span> <b id="cAll">—</b></button>
+          <button type="button" data-filter="verified" aria-pressed="false"><span>On hardware</span> <b id="cVerified">—</b></button>
+          <button type="button" data-filter="ok" aria-pressed="false"><span>Buildable</span> <b id="cOk">—</b></button>
+          <button type="button" data-filter="no" aria-pressed="false"><span>Not supported</span> <b id="cNo">—</b></button>
+        </div>
+        <label class="sort">
+          <span>Sort</span>
+          <select id="exSort">
+            <option value="default">Hardware first</option>
+            <option value="name">Title</option>
+            <option value="year">Year</option>
+            <option value="size">ROM size</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="ex-body">
+        <div class="ex-list-wrap">
+          <div class="ex-list" id="exList" role="list"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="exMore">Show more</button>
+          <p class="tiny" id="exCount" aria-live="polite"></p>
+        </div>
+        <aside class="ex-detail" id="exDetail" aria-live="polite"></aside>
+      </div>
+    </div>
+
+    <div class="caveat">
+      <h3>Notes</h3>
+      <ul>
+        <li>Some decryption is implemented but never played, because we lack the ROMs.</li>
+        <li>Games we could not check — CMC42: Sengoku 3, Zupapa, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead · CMC50: KOF2001 · PCM2: Metal Slug 4, Rage of the Dragons, Pochi and Nyaa</li>
+        <li>KOF '98 does not convert: the MVS version has a protection chip. When the home set (kof98h) is in the zip it is picked automatically.</li>
+        <li>When a romset is tight for memory, the converter warns you first.</li>
+        <li>Metal Slug 2, X and 3 slow down in scenes with many enemies and explosions on the original arcade board too. neo3ds drops frames in exactly those scenes, as PC emulators do.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <h2>Questions</h2>
+    <div class="faq">
+      <details open>
+        <summary>Where do I get the ROMs?</summary>
+        <p>Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so never share it.</p>
+      </details>
+      <details>
+        <summary>Is it really 60 fps on an Old 3DS?</summary>
+        <p>KOF '98, '99, 2000, 2002, Metal Slug 1, X and 3, SVC Chaos and Samurai Shodown V Special ran at full speed on hardware. Metal Slug 2, X and 3 slow down exactly where the original board did; Aero Fighters 3 is playable.</p>
+      </details>
+      <details>
+        <summary>No sound.</summary>
+        <p>The SD card needs <code>/3ds/dspfirm.cdc</code>; a tool like DSP1 creates it once.</p>
+      </details>
+      <details>
+        <summary>Where are key configs stored?</summary>
+        <p>Per game, on the SD card: key config <code>/3ds/neo3ds/keys/</code>, backup RAM <code>/3ds/neo3ds/saves/</code>, quick saves <code>/3ds/neo3ds/states/</code>, launcher files <code>/neo3ds/games/</code>.</p>
+      </details>
+      <details>
+        <summary>What about a New 3DS?</summary>
+        <p>The CIA asks for 804MHz and the L2 cache, which leaves more headroom (not confirmed on hardware yet).</p>
+      </details>
+      <details>
+        <summary>Can I use it commercially?</summary>
+        <p>No: the included CPU cores (Cyclone 68000, DrZ80) allow non-commercial use only.</p>
+      </details>
+      <details>
+        <summary>Can I build it myself?</summary>
+        <p>The engine needs devkitPro: <code>bash scripts/build_engine.sh</code>; the converter needs the .NET 10 SDK. See docs/build.md.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec sec-legal" id="legal">
+  <div class="wrap legal-grid">
+    <div>
+      <h2>Legal</h2>
+      <p>No ROMs, BIOS or game data are included here. Convert only games you own, and never distribute a CIA you build.</p>
+      <p>neo3ds is a personal fan project, unaffiliated with SNK or Nintendo. NEOGEO is a trademark of SNK CORPORATION; Nintendo 3DS of Nintendo.</p>
+    </div>
+    <div>
+      <h3>Credits</h3>
+      <ul class="credits tiny">
+        <li>gngeo · Cyclone 68000 · DrZ80</li>
+        <li>the MAME team (romset data and cartridge decryption research)</li>
+        <li>Zstandard · devkitPro / libctru</li>
+        <li>makerom · bannertool · Azahar</li>
+      </ul>
+      <p class="tiny">Source is GPL-2.0; bundled third-party code is listed in THIRD_PARTY_NOTICES.md.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <span class="brand-plate">neo3ds</span>
+    <nav>
+      <a href="compat.html">Game list</a>
+      <a href="https://github.com/zzcx88/neo3ds">Repository</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases">Releases</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md">README</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/build.md">Build procedure</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/LICENSE">Licence</a>
+    </nav>
+    <p class="tiny">Game screens and trademarks belong to their owners.</p>
+  </div>
+</footer>
+
+<script src="../games.js"></script>
+<script src="../app.js"></script>
+</body>
+</html>

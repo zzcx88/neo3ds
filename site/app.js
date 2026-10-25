@@ -11,12 +11,14 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
    1. 언어 (한국어가 기본, 브라우저 로케일로 자동 선택)
    ════════════════════════════════════════════════════════════════════ */
 const EN = {
-  'a11y.skip': 'Skip to content', 'a11y.sections': 'Sections', 'meta.desc': 'Converter + emulator engine turning Neo Geo (MAME) romsets into 3DS install files (CIA). 60fps on an Old 3DS, one HOME Menu icon per game.', 'meta.ogdesc': 'Drop a rom zip on the PC, get one CIA per game. Neo Geo emulator running at 60fps on the 3DS.',
+  'a11y.skip': 'Skip to content', 'a11y.sections': 'Sections',
+  'a11y.noscript': 'This page needs JavaScript. The game list and the converter demo will not run.',
   'nav.steps': 'Set-up in three steps', 'nav.panel': 'Touch controls', 'nav.launcher': 'Launcher',
   'nav.speed': 'Speed', 'nav.games': 'Game compatibility',
-  'cta.download': 'Convert now', 'cta.source': 'Source code', 'lang.label': 'Language',
+  'cta.download': 'Convert now', 'cta.source': 'Source code',
   'hero.kicker': 'romset zip on the PC → a 3DS install file (CIA) · converter + emulator engine',
   'hero.h1': 'Neo Geo games,<br>on the 3DS HOME menu.',
+  'hero.mock': 'Game footage composited into a 3DS console mockup',
   'hero.lede': 'Drop the romset zip of a game you own on the converter and each game becomes one install file (CIA) — or pack several games for the one launcher app. Install it on the 3DS and the game shows up on the HOME menu with its own icon, at 60 fps even on an Old 3DS.',
   'hero.req': 'Runs in the browser · nothing to install · GPL-2.0',
   'hero.dlNote': 'Keep the extracted offline-converter folder together.',
@@ -83,6 +85,7 @@ const EN = {
   'speed.s2': 'The 3DS DSP is unused and sound is never dropped. Without <code>/3ds/dspfirm.cdc</code> the game runs silently.',
   'games.h2': 'Game compatibility',
   'games.lede': 'The converter knows 282 romsets and builds 242 of them. 15 of those were played on an Old 3DS (Aero Fighters 3 is playable).',
+  'games.all': 'All 282 romsets — status per game',
   'games.searchLabel': 'Search games', 'games.searchPh': 'Title or romset name (e.g. kof99, slug)',
   'games.fAll': 'All', 'games.fVerified': 'On hardware', 'games.fOk': 'Buildable', 'games.fNo': 'Not supported', 'games.filters': 'Filters',
   'games.sort': 'Sort', 'games.sortDefault': 'Hardware first', 'games.sortName': 'Title',
@@ -108,11 +111,12 @@ const EN = {
   'legal.credH': 'Credits',
   'legal.cred2': 'the MAME team (romset data and cartridge decryption research)',
   'legal.lic': 'Source is GPL-2.0; bundled third-party code is listed in THIRD_PARTY_NOTICES.md.',
-  'foot.repo': 'Repository', 'foot.rel': 'Releases', 'foot.readme': 'README',
+  'foot.compat': 'Game list', 'foot.repo': 'Repository', 'foot.rel': 'Releases', 'foot.readme': 'README',
   'foot.build': 'Build procedure', 'foot.lic': 'Licence',
   'foot.note': 'Game screens and trademarks belong to their owners.',
   /* convert.html — web converter */
   'gate.meta': 'Drop game zips and convert in the browser. Files never leave this tab.',
+  'gate.noscript': 'This page needs JavaScript.',
   'gate.kicker': 'Web converter · no server · files stay in this tab',
   'gate.h1': 'Convert<br>in the browser.',
   'gate.lede': 'Drop the game zip + neogeo.zip and this tab converts them. Neither the rom nor the result ever leaves it.',
@@ -170,49 +174,13 @@ const EN = {
   'tiles': 'tiles',
 };
 
-const snapshots = [];
-function snapshotKo() {
-  $$('[data-i18n]').forEach((el) => snapshots.push(['el', el, el.innerHTML]));
-  $$('[data-i18n-attr]').forEach((el) => {
-    el.dataset.i18nAttr.split(',').forEach((pair) => {
-      const [attr, key] = pair.split(':');
-      snapshots.push(['attr', el, key, attr, el.getAttribute(attr)]);
-    });
-  });
-  snapshots.push(['title', document.querySelector('title'), document.title]);
-}
-
-let LANG = 'ko';
-function setLang(lang) {
-  LANG = lang;
-  for (const s of snapshots) {
-    if (s[0] === 'el') {
-      const key = s[1].dataset.i18n;
-      if (lang === 'en' && !(key in EN)) console.warn('[i18n] missing EN key:', key);
-      s[1].innerHTML = lang === 'en' ? (EN[key] ?? s[2]) : s[2];
-    } else if (s[0] === 'attr') {
-      if (lang === 'en' && !(s[2] in EN)) console.warn('[i18n] missing EN key:', s[2]);
-      s[1].setAttribute(s[3], lang === 'en' ? (EN[s[2]] ?? s[4]) : s[4]);
-    } else {
-      s[1].textContent = lang === 'en' ? 'neo3ds — Neo Geo games on your 3DS HOME menu' : s[2];
-    }
-  }
-  $$('.lang button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
-  document.documentElement.lang = lang;
-  try { localStorage.setItem('neo3ds-lang', lang); } catch (e) { /* private mode */ }
-}
+/* 언어는 URL이 정합니다: / 는 한국어, /en/ 은 영어 (#130 P4).
+   런타임에 문구를 바꾸지 않으므로 스냅숏·localStorage·클릭 핸들러가 필요 없습니다.
+   EN 표는 지금도 JS가 그리는 문구(예산·메모리·호환성 목록)가 씁니다. */
+const LANG = document.documentElement.lang === 'en' ? 'en' : 'ko';
 
 /** 지금 언어에 맞는 문구 (en이 없으면 넘긴 한국어를 그대로 씀) */
 const t = (ko, en) => (LANG === 'en' ? en : ko);
-
-snapshotKo();
-try {
-  const saved = localStorage.getItem('neo3ds-lang');
-  setLang(saved || ((navigator.language || 'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en'));
-} catch (e) {
-  setLang((navigator.language || 'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en');
-}
-$$('.lang button').forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lang); refreshDynamic(); }));
 
 
 /* 게임 DB (예산·호환성 섹션이 씀) + 해독 체인 표시 (호환성 상세) */
@@ -388,16 +356,6 @@ if (ON_INDEX) {
   $('#cVerified').textContent = DB.counts.verified;
   $('#cOk').textContent = DB.counts.ok;
   $('#cNo').textContent = DB.counts.no;
-  if (DB.games.length) { renderList(); renderDetail(); }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   6. 언어를 바꾸면 JS가 그린 부분을 다시 그림
-   ════════════════════════════════════════════════════════════════════ */
-function refreshDynamic() {
-  if (!ON_INDEX) return;
-  buildBudget(); buildMemory();
-  setMode($$('.modes button').find((b) => b.getAttribute('aria-pressed') === 'true').dataset.mode);
   if (DB.games.length) { renderList(); renderDetail(); }
 }
 })();
