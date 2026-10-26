@@ -99,7 +99,7 @@ neo3ds-converter --help
 
 ### Launcher
 
-<img src="docs/images/launcher.png" width="400" alt="Launcher game list">
+<img src="docs/images/launcher.png" width="400" alt="Launcher game list with the All and Fav tabs">
 
 - Pick a game with Up/Down (L/R for a page) or by touch; start it with **A** or a **double tap**.
 - **Favorites**: **SELECT** or a tap on the `*` at the left of a game adds or removes it. Left/Right or a tap on the tabs switches between **All** and **Fav**.

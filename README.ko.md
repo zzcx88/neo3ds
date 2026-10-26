@@ -99,7 +99,7 @@ neo3ds-converter --help
 
 ### 런처
 
-<img src="docs/images/launcher.png" width="400" alt="런처 게임 목록">
+<img src="docs/images/launcher.png" width="400" alt="All·Fav 탭이 있는 런처 게임 목록">
 
 - 십자키 위/아래(L/R은 한 페이지씩)나 터치로 고르고, **A**나 **두 번 터치**로 실행합니다.
 - **즐겨찾기**: **SELECT**를 누르거나 게임 왼쪽 `*`를 터치하면 넣고 뺍니다. 십자키 왼쪽/오른쪽이나 탭 터치로 **All**과 **Fav**를 바꿉니다.
