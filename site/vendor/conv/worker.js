@@ -118,7 +118,7 @@ async function buildLauncher(post, t0) {
     'NEO3DS-LAUNCHER', 0xBFF00);
   post({
     type: 'done', cia, stats: {
-      rom: 'launcher', title: 'neo3ds', titleId: '000400000BFF0000', tiles: 0,
+      rom: 'launcher', title: 'neo3ds', titleId: '000400000BFF0000', set: null, tiles: 0,
       spriteRawMB: 0, spritePackedMB: 0, totalMB: 0, ciaMB: +(cia.length / 1048576).toFixed(1),
       memMB: memMB(), secs: ((performance.now() - t0) / 1000).toFixed(1),
     },
@@ -193,7 +193,7 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
     post({ type: 'progress', step: 'cia', frac: 0.9, detail: `${zipName}.neo3ds` });
     const bin = buildPack(gameFiles, zipName);
     gameFiles.clear();
-    return { zipName, bin, stats: packStats(zipName, title, tid, stats, bin) };
+    return { zipName, bin, stats: packStats(zipName, title, tid, game.name, stats, bin) };
   }
 
   const romfs = new Map();
@@ -221,12 +221,14 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
 
   const cia = await runMakerom(await initMakerom(), bt, romfs, productCode(zipName), uid);
   romfs.clear();
-  return { zipName, bin: cia, stats: packStats(zipName, title, tid, stats, cia) };
+  return { zipName, bin: cia, stats: packStats(zipName, title, tid, game.name, stats, cia) };
 }
 
-function packStats(zipName, title, tid, stats, bin) {
+// #125: `rom` is the user's zip base name (download only); `set` is the public
+// catalog's romset name, the only game identifier the page may send.
+function packStats(zipName, title, tid, set, stats, bin) {
   return {
-    rom: zipName, title, titleId: tid, tiles: stats.tiles,
+    rom: zipName, title, titleId: tid, set, tiles: stats.tiles,
     spriteRawMB: +(stats.raw / 1048576).toFixed(1),
     spritePackedMB: +(stats.packed / 1048576).toFixed(1),
     totalMB: +(stats.total / 1048576).toFixed(1),

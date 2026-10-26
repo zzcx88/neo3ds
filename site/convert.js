@@ -14,6 +14,7 @@ import {
 } from './vendor/conv/art.js';
 import { zipResults } from './vendor/conv/bundle.js';
 import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
+import { startEvent, doneEvent, failEvent, send as sendEvent } from './vendor/conv/analytics.js';
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
@@ -23,6 +24,24 @@ const t = (ko, en) => (isEn() ? en : ko);
 // Worker reasons are fixed at preflight/run time, like log lines: send the
 // language the page is in so a KO page gets KO reasons (#79).
 const uiLang = () => (isEn() ? 'en' : 'ko');
+
+/* ── #125 usage events: three events, all optional. A blocked Umami script or
+   a throwing track() must leave the conversion untouched. ─────────────── */
+function track(ev) {
+  sendEvent(window.umami, ev);
+}
+
+function trackStart(mode, isBatch) {
+  track(startEvent(mode, isBatch));
+}
+
+function trackDone(set) {
+  track(doneEvent(set));
+}
+
+function trackFail(set, stage) {
+  track(failEvent(set, stage));
+}
 
 /* ── Log (#152): one line per event, tagged so parallel workers stay readable.
    Format: `  1.2s #2 kof98.zip   [2/4] Compressing graphics` ─────────────── */
@@ -76,6 +95,7 @@ let folderDropped = false; // folder drops arrive with no File entries; explain 
 let workers = [], queue = [], jobId = 0, running = false, batchT0 = 0;
 let runT0 = 0; // #152: log timestamps are relative to the run start
 let singleStep = null; // #152: one-game stage changes for the log
+let singleStage = null; // #125: last progress message stage for convert_fail
 const rowT0 = new Map(); // #152: batch row (-1 = single) -> start time
 const rowMeta = new Map(); // #152: batch row -> { romset: true } once logged
 let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
@@ -978,7 +998,10 @@ function resetPipe() {
 function markRunningRowsFailed(message) {
   if (!batch) return;
   for (let i = 0; i < batch.length; i++) {
-    if (batch[i].status === STATUS.RUNNING) markFailed(batch, i, message);
+    if (batch[i].status === STATUS.RUNNING) {
+      markFailed(batch, i, message);
+      trackFail(batchSource?.[i]?.set, 'worker');
+    }
   }
   renderBatch();
 }
@@ -1093,6 +1116,7 @@ runBtn.addEventListener('click', () => {
   focusProgress(); // #81: show the progress section without hunting for it
   running = true;
   runInputs = { files, mode };
+  trackStart(mode, isBatch);
   runBtn.disabled = true;
   cancelBtn.classList.remove('hidden');
   resetResults(); // #74/#143: a new run drops every previous result and download URL
@@ -1100,6 +1124,7 @@ runBtn.addEventListener('click', () => {
   resetPipe();
   runT0 = performance.now();
   singleStep = null;
+  singleStage = null;
   rowT0.clear();
   rowMeta.clear();
 
@@ -1200,9 +1225,13 @@ function jobFinished(w, job) {
 }
 
 // Every way a row can fail ends the same way: mark, redraw, count, log.
-function failRow(row, message) {
+// `stage` overrides the row's last progress step for a worker crash (#125).
+function failRow(row, message, stage = null) {
   const secs = rowSecs(row);
+  // markFailed clears row.step, so read the analytics stage first.
+  const failedAt = stage ?? batch?.[row]?.step ?? null;
   markFailed(batch, row, message);
+  trackFail(batchSource?.[row]?.set, failedAt);
   updateRow(row);
   finishOverallRow(row);
   paintBatchHeader();
@@ -1229,13 +1258,14 @@ function workerFailed(w, message) {
   if (!running) return;
   if (w.single || job == null) {
     markRunningRowsFailed(t('워커 오류', 'Worker error'));
+    if (w.single) trackFail(singleRow?.set, 'worker');
     endOverall('error');
     finish();
     failAlert(message);
     logGameFail(-1, t(`워커 오류 (${message})`, `worker error (${message})`), rowSecs(-1));
     return;
   }
-  failRow(job.row, message);
+  failRow(job.row, message, 'worker');
   if (queue.length) pushJob(spawnWorker(w.base));
   else if (workers.every((x) => x.job == null)) finishBatchRun();
 }
@@ -1266,6 +1296,7 @@ function onWorkerMessage(w, m) {
   } else if (m.type === 'batch-one') {
     const name = downloadName({ ...m.stats, mode: currentMode() });
     markDone(batch, row, { url: makeUrl(m.bin), name, mb: m.stats.ciaMB });
+    trackDone(m.stats.set);
     updateRow(row);
     finishOverallRow(row);
     paintBatchHeader();
@@ -1281,6 +1312,7 @@ function onWorkerMessage(w, m) {
 function onSingleMessage(m) {
   if (m.type === 'progress') {
     pipeStep(m);
+    singleStage = m.step ?? null;
     if (/^romset /i.test(m.detail ?? '') && rowMeta.get(-1)?.romset === false) {
       rowMeta.get(-1).romset = true;
       logEvent(gameTag(-1), m.detail, 'info');
@@ -1290,6 +1322,7 @@ function onSingleMessage(m) {
   } else if (m.type === 'done') {
     completeOverall();
     finish();
+    trackDone(m.stats.set);
     for (const s of PIPE_STEPS) setStep(s, 'done');
     showDownload(m.cia, downloadName(m.stats));
     showStats(m.stats);
@@ -1299,6 +1332,7 @@ function onSingleMessage(m) {
       `${m.stats.tiles.toLocaleString()} tiles · graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
   } else if (m.type === 'error') {
     markRunningRowsFailed(m.message);
+    trackFail(singleRow?.set, singleStage);
     endOverall('error');
     finish();
     failAlert(m.message);

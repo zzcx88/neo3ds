@@ -25,8 +25,8 @@ class P(html.parser.HTMLParser):
         if self.stack and self.stack[-1][0] == tag: self.stack.pop()
         else: self.errs.append(f'{tag}@{self.getpos()}')
 
-pages = ['site/index.html', 'site/convert.html', 'site/compat.html',
-         'site/ko/index.html', 'site/ko/convert.html', 'site/ko/compat.html']
+pages = ['site/index.html', 'site/convert.html', 'site/compat.html', 'site/privacy.html',
+         'site/ko/index.html', 'site/ko/convert.html', 'site/ko/compat.html', 'site/ko/privacy.html']
 for page in pages:
     p = P(); p.feed(open(page, encoding='utf-8').read())
     assert not p.errs and not p.stack, f'{page}: {p.errs} {p.stack}'
@@ -38,7 +38,7 @@ const fs = require('node:fs');
 const src = fs.readFileSync('site/app.js', 'utf8');
 const en = new Function('return (' + src.match(/const EN = (\{[\s\S]*?\n\});/)[1] + ');')();
 
-for (const page of ['site/ko/index.html', 'site/ko/convert.html']) {
+for (const page of ['site/ko/index.html', 'site/ko/convert.html', 'site/ko/privacy.html']) {
   const html = fs.readFileSync(page, 'utf8');
   const keys = [...html.matchAll(/data-i18n=\"([^\"]+)\"/g)].map((m) => m[1]);
   for (const m of html.matchAll(/data-i18n-attr=\"([^\"]+)\"/g))
@@ -47,20 +47,30 @@ for (const page of ['site/ko/index.html', 'site/ko/convert.html']) {
   if (missing.length) { console.error(page, 'missing EN:', missing); process.exit(1); }
 }
 
-for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html']) {
+for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html', 'site/privacy.html']) {
   const html = fs.readFileSync(page, 'utf8');
   if (html.includes('data-i18n')) { console.error(page, 'still has i18n bindings'); process.exit(1); }
   if (/[\uac00-\ud7a3]/.test(html)) { console.error(page, 'still has Korean text'); process.exit(1); }
 }
-console.log('i18n OK');
+const UMAMI_ID = 'data-website-id=\"cf5cd373-6021-4643-a392-c3823e8f3cdd\"';
+const UMAMI_DOMAINS = 'data-domains=\"zzcx88.github.io\"';
+for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html',
+  'site/ko/index.html', 'site/ko/convert.html', 'site/ko/compat.html']) {
+  const html = fs.readFileSync(page, 'utf8');
+  if (!html.includes(UMAMI_ID) || !html.includes(UMAMI_DOMAINS)) {
+    console.error(page, 'missing Umami tracker (#125)');
+    process.exit(1);
+  }
+}
+console.log('i18n + analytics OK');
 "
 
 # Generated pages must match their sources: a stale commit fails here instead of on main.
 python3 scripts/gen_site_games.py > /dev/null
 node scripts/gen_site_i18n.mjs --check
 python3 scripts/gen_site_seo.py --check
-git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml || {
-  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml' >&2
+git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html || {
+  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html' >&2
   exit 1
 }
 echo "SITE GATES OK"

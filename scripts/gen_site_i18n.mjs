@@ -59,6 +59,24 @@ const PAGES = {
       featureList: ['romset zip to CIA', 'runs entirely in the browser tab', 'batch conversion', 'custom icon and banner'],
     },
   },
+  'privacy.html': {
+    file: 'privacy.html',
+    url: 'privacy.html',
+    title: 'Privacy — web usage stats | neo3ds',
+    description: 'The web converter measures page views and three conversion events with Umami. No cookies, no rom files, no zip file names.',
+    ogTitle: 'Privacy — web usage stats | neo3ds',
+    ogDescription: 'What the web converter measures. No cookies, no rom files, no zip file names.',
+    twitterDescription: 'What the web converter measures. No cookies, no ROM files.',
+    ogImageAlt: 'neo3ds',
+    jsonld: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: 'Privacy — web usage stats | neo3ds',
+      url: SITE + 'privacy.html',
+      inLanguage: ['en', 'ko'],
+      isPartOf: { '@type': 'WebSite', name: 'neo3ds', url: SITE },
+    },
+  },
 };
 
 // Root-relative asset references that must gain one `../` on a page inside site/en/.
@@ -210,7 +228,7 @@ function render(src, key, en) {
     // ── language switch: KO page links out, EN page is the current one ──
     if (attr(tag.attrs, 'class') === 'lang') {
       const end = src.indexOf('</div>', i);
-      out += LANG_BLOCK.en.replace('{ko}', koHref).replace('{self}', './');
+      out += LANG_BLOCK.en.replace('{ko}', koHref).replace('{self}', selfHref);
       i = end + '</div>'.length;
       continue;
     }
