@@ -44,11 +44,13 @@ the accuracy baseline and for the offline converter release (Windows GUI, Linux 
 
 ## Memory: 64 MB of sprites in 58 MB of heap
 
-- **Block compression.** The sprite ROM is cut into 4 KB blocks and each block is compressed with
-  zstd at level 19. KOF98's 64 MB: LZ4 HC 32.3 MB, zstd 22.1 MB (16 KB blocks would give 19.9 MB, a
-  dictionary did not help). KOF99 64 MB → 19.6 MB.
-- **8 MB block cache.** Blocks are unpacked into a pool of slots when a tile in them is drawn
-  (round-robin replacement). On hardware the miss count is a handful per second even in busy scenes.
+- **Block compression.** The sprite ROM is cut into 16 KB blocks and each block is compressed with
+  zstd at level 12. A zstd window never spans blocks, so a small block caps it whatever the level:
+  KOF98's 64 MB: LZ4 HC 32.3 MB, 4 KB blocks at level 19 22.2 MB, 16 KB blocks at level 12 20.3 MB
+  (a dictionary did not help).
+- **8 MB block cache.** 512 blocks of 16 KB. Blocks are unpacked into a pool of slots when a tile in
+  them is drawn (round-robin replacement). The block size comes from the c.idx header, so CIAs made
+  with 4 KB blocks still work. On hardware the miss count is a handful per second even in busy scenes.
 - **Transparency table.** The converter stores two bits per tile; fully transparent tiles are skipped
   without touching their block.
 - **Result.** KOF99 and Metal Slug 3 use about 53.5 MB of the 58 MB.

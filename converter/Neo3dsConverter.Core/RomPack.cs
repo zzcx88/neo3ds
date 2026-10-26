@@ -12,9 +12,11 @@ namespace Neo3dsConverter;
 /// </summary>
 public static class RomPack
 {
-    public const int SpriteBlockSize = 4096; // 32 tiles of 128 bytes
+    public const int SpriteBlockSize = 16384; // 128 tiles of 128 bytes; #123
     const uint SpriteCodecZstd = 2; // c.idx version = codec (1 was LZ4); see engine loader.c
-    const int ZstdLevel = 19;       // slow to compress, same decompression speed; KOF98 64MB -> ~22MB
+    // #123: zstd's window never spans blocks, so the block size caps it; 16 KB packs better and
+    // faster than 4 KB did. The size travels in c.idx, so CIAs made with 4 KB blocks still load.
+    const int ZstdLevel = 12;
 
     public sealed record Stats(int Tiles, long SpriteRaw, long SpritePacked, long TotalBytes);
 

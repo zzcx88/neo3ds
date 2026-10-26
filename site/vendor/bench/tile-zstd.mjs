@@ -8,6 +8,8 @@ const { ZstdCodec } = require('zstd-codec');
 
 // Phase 0 bench: tile convert + zstd-19 on kof98h sprites (64MB).
 // Mirrors RomPack.Place("16b") + ConvertTile + WriteSprites (block 4KB).
+// Pinned to the 4 KB/level-19 config that #123 replaced: the numbers here are the baseline,
+// not what the converter ships now (16 KB/level 12, see RomPack.cs).
 // Usage: npm i adm-zip zstd-codec && node tile-zstd.mjs [romset] (roms/*.zip needed, git-excluded)
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const SET = process.argv[2] || 'kof98h';
