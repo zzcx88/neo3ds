@@ -23,9 +23,9 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
+# No workflow-level concurrency: pull_request runs share this workflow with
+# main deploys, so a workflow-level group lets a PR gate run cancel an
+# in-flight main deploy (#155). Deploy-path jobs share one group instead.
 
 env:
   DEVKITARM_IMAGE: devkitpro/devkitarm:20260610
@@ -36,7 +36,7 @@ jobs:
   verify:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # Own group: a PR run must never cancel an in-flight deploy of main.
+    # Own group: PR gate runs never enter the deploy group.
     concurrency:
       group: site-gates-${{ github.ref }}
       cancel-in-progress: true
@@ -47,6 +47,11 @@ jobs:
   build:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    # Deploy path shares one group: a newer main/dispatch run cancels a stale
+    # build or deploy, and PR runs can never cancel it (#155).
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
@@ -81,6 +86,9 @@ jobs:
 
   deploy:
     needs: build
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     environment:
       name: github-pages
