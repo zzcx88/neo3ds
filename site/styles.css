@@ -1,6 +1,14 @@
 /* neo3ds 소개 페이지 — 색은 실제 엔진/변환기에서 가져왔습니다.
    engine/source/ui.h 의 UI_* 팔레트와 네오지오 버튼 4색, 아이콘/배너의 마룬+골드 라벨. */
 
+/* Galmuri 셀프호스트 (#136): 외부 CDN 없이 site/fonts/에서 로드.
+   Galmuri9·Galmuri11(400/700) 3종만 사용 — OFL 1.1, 출처: https://github.com/quiple/galmuri */
+@font-face{font-family:'Galmuri11';font-style:normal;font-weight:400;font-display:swap;
+  src:local('Galmuri11 Regular'),url('fonts/Galmuri11.woff2') format('woff2')}
+@font-face{font-family:'Galmuri11';font-style:normal;font-weight:700;font-display:swap;
+  src:local('Galmuri11 Bold'),url('fonts/Galmuri11-Bold.woff2') format('woff2')}
+@font-face{font-family:'Galmuri9';font-style:normal;font-weight:400;font-display:swap;
+  src:local('Galmuri9 Regular'),url('fonts/Galmuri9.woff2') format('woff2')}
 :root{
   --ink:#16161C;         /* UI_BG */
   --ink-2:#101014;
@@ -15,7 +23,7 @@
   --line:#2E2E38;
   --pixel:'Galmuri11','Galmuri9',monospace;
   --pixel-sm:'Galmuri9','Galmuri11',monospace;
-  --text:'IBM Plex Sans KR',system-ui,-apple-system,'Malgun Gothic',sans-serif;
+  --text:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;
   --wrap:1120px;
   --prose:62ch;
 }
