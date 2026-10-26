@@ -114,12 +114,43 @@ __inline__ void write_neo_control(Uint16 data) {
     return;
 }
 
+/* neo3ds: only sets the value; the IRQ2 counter loads from it in irq2_load() */
 __inline__ void write_irq2pos(Uint32 data) {
     memory.vid.irq2pos = data;
-    if (memory.vid.irq2control & 0x20) {
-        int line = (memory.vid.irq2pos + 0x3b) / 0x180; /* turfmast goes as low as 0x145 */
-        memory.vid.irq2start = line + current_line;
+}
+
+/* neo3ds: IRQ2, the LSPC's timer interrupt, which games use for raster effects (Neo Turf Masters'
+ * water). A counter of pixel clocks (384 a line) starts from irq2pos + 1 on a write to irq2pos's
+ * low half (control bit 0x20), at VBlank (0x40) or when it runs out (0x80); running out raises
+ * IRQ2 when bit 0x10 is set. It is counted a scanline at a time: irq2start holds the pixels left,
+ * irq2taken whether it counts (both in the save state). offset: pixels from the start of the
+ * current line to the load. */
+#define LINE_PIXELS 384
+
+void irq2_load(Uint32 offset) {
+    const Uint32 n = memory.vid.irq2pos + 1;
+    memory.vid.irq2taken = n != 0;
+    memory.vid.irq2start = n + offset;
+}
+
+/* At the end of scanline current_line of neo_run_frame() */
+void irq2_line(void) {
+    Uint32 over, n;
+    if (!memory.vid.irq2taken) return;
+    if (memory.vid.irq2start > LINE_PIXELS) {
+        memory.vid.irq2start -= LINE_PIXELS;
+        return;
     }
+    over = LINE_PIXELS - memory.vid.irq2start; /* pixels of this line after it ran out */
+    if (memory.vid.irq2control & 0x10) {
+        cpu_68k_raise_irq(2);
+        video_raster_irq(current_line + 1);
+    }
+    n = memory.vid.irq2pos + 1;
+    if ((memory.vid.irq2control & 0x80) && n != 0)
+        memory.vid.irq2start = n > over ? n - over : n; /* at most one IRQ2 a line */
+    else
+        memory.vid.irq2taken = 0;
 }
 
 #ifndef ENABLE_940T
@@ -610,6 +641,9 @@ void mem68k_store_video_word(Uint32 addr, Uint16 data) {
         break;
     case 0x2:
         //core_log("Store %04x to video %08x @pc=%08x\n",data,vptr<<1,cpu_68k_getpc());
+        /* neo3ds: sprite positions changed after an IRQ2 in the visible lines (raster effects) */
+        if (raster_from && memory.vid.vptr - 0x8000u < 0x600u)
+            video_raster_write(memory.vid.vptr, READ_WORD(&memory.vid.ram[memory.vid.vptr << 1]), data);
         WRITE_WORD(&memory.vid.ram[memory.vid.vptr << 1], data);
         memory.vid.vptr = (memory.vid.vptr & 0x8000) + ((memory.vid.vptr
                                                          + memory.vid.modulo) & 0x7fff);
@@ -631,6 +665,7 @@ void mem68k_store_video_word(Uint32 addr, Uint16 data) {
         break;
     case 0xa:
         write_irq2pos((memory.vid.irq2pos & 0xffff0000) | (Uint32) data);
+        if (memory.vid.irq2control & 0x20) irq2_load(0); /* as MAME: the low half loads the counter */
         break;
     case 0xc:
         /* games write 7 or 4 at 0x3c000c at every frame */

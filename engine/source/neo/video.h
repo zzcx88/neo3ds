@@ -80,6 +80,11 @@ void debug_draw_tile(unsigned int tileno,int sx,int sy,int zx,int zy,
 void draw_screen_scanline(int start_line, int end_line, int refresh);
 void draw_screen(void);
 void video_snapshot(void);
+/* Raster effects (video.c): sprite moves after an IRQ2, drawn from the line they show on */
+extern int raster_from; /* that line for writes now; 0 until an IRQ2 this frame */
+void video_raster_reset(void);
+void video_raster_irq(int line);
+void video_raster_write(Uint32 addr, Uint16 old, Uint16 val);
 /* Tile-based renderer: 16 bands of 14 of the 224 visible lines, drawn in a band buffer of 320
  * columns of VIDEO_BAND_STRIDE pixels (see video.c). */
 #define VIDEO_BANDS 16

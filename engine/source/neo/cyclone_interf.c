@@ -508,6 +508,11 @@ void cpu_68k_interrupt(int a) {
 	MyCyclone.irq=a;
 }
 
+/* neo3ds: Cyclone holds one pending level, cleared when the interrupt is taken */
+void cpu_68k_raise_irq(int level) {
+	if (MyCyclone.irq < level) MyCyclone.irq = level;
+}
+
 void cpu_68k_bankswitch(Uint32 address) {
 	//core_log("Bankswitch %08x\n",address);
 	bankaddress = address;

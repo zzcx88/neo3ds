@@ -152,6 +152,9 @@ void cpu_68k_reset(void);
 int cpu_68k_run(Uint32 nb_cycle);
 void cpu_68k_run_slice(int nb_cycle);
 void cpu_68k_interrupt(int a);
+void cpu_68k_raise_irq(int level); /* neo3ds: keeps a higher level still pending */
+void irq2_load(Uint32 offset);     /* neo3ds: the IRQ2 counter (memory.c) */
+void irq2_line(void);
 void cpu_68k_bankswitch(Uint32 address);
 void cpu_68k_disassemble(int pc, int nb_instr);
 void cpu_68k_dumpreg(void);
