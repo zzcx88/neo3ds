@@ -56,7 +56,7 @@ const EN = {
   'launch.kicker': 'Recommended · the way to go for several games',
   'launch.h2': 'Launcher: every game in one app',
   'launch.lede': 'Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.',
-  'launch.imgAlt': 'Launcher game list',
+  'launch.imgAlt': 'Launcher game list with the All and Fav tabs',
   'launch.cap': 'Pick with the D-pad or touch, start with A (or a double tap). L/R turn a page.',
   'launch.p1n': 'Install once', 'launch.p1': 'Install the launcher CIA with FBI just once. Adding a game later is copying its .neo3ds file to /neo3ds/games/.',
   'launch.p2n': 'Shared saves', 'launch.p2': 'The same game shares key config, backup RAM and quick saves between its CIA and launcher copies.',
