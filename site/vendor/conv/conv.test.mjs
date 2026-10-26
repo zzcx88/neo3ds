@@ -243,10 +243,14 @@ await t('preflight/ready-blocked-reasons', async () => {
   const by = Object.fromEntries(rows.map((r) => [r.name, r]));
   if (rows.length !== 3) throw new Error('rows ' + rows.length);
   if (!by['nam1975.zip'].ok) throw new Error('nam1975 blocked: ' + by['nam1975.zip'].problem);
+  // #125: rows carry the canonical romset name, never the dropped zip's name.
+  if (by['nam1975.zip'].set !== 'nam1975') throw new Error('nam1975 set: ' + by['nam1975.zip'].set);
   if (by['kof98h.zip'].ok || !/missing/i.test(by['kof98h.zip'].problem))
     throw new Error('kof98h should miss its parent chips: ' + JSON.stringify(by['kof98h.zip']));
+  if (by['kof98h.zip'].set !== 'kof98h') throw new Error('kof98h set: ' + by['kof98h.zip'].set);
   if (by['notagame.zip'].ok || !/not a MAME Neo Geo romset/.test(by['notagame.zip'].problem))
     throw new Error('unknown zip reason: ' + JSON.stringify(by['notagame.zip']));
+  if (by['notagame.zip'].set !== null) throw new Error('unknown set: ' + by['notagame.zip'].set);
 }, true);
 
 // #79: blocked reasons follow the page language, so the KO page does not show
@@ -256,6 +260,7 @@ await t('preflight/korean-unknown-romset-reason', async () => {
   const rows = await preflight(db, RomSet, [fakeZip('notagame.zip')], { lang: 'ko' });
   if (rows[0].ok || !/MAME/.test(rows[0].problem) || !/롬셋/.test(rows[0].problem))
     throw new Error('expected a Korean MAME romset reason: ' + JSON.stringify(rows[0]));
+  if (rows[0].set !== null) throw new Error('unknown romset leaked a set: ' + rows[0].set);
 });
 
 await t('preflight/korean-unsupported-cart-reason', async () => {
@@ -573,6 +578,37 @@ await t('progress/producer-fracs-stay-in-stage', async () => {
     const [lo, hi] = STAGES[step];
     if (frac < lo || frac > hi) throw new Error(`${step} ${frac} outside [${lo},${hi}]`);
     if (stageFraction(step, frac) !== frac) throw new Error(`${step} ${frac} was clamped`);
+  }
+});
+
+// ── #125 web analytics contract (pure, DOM-free) ──────────────────────────
+// Only these three events may leave the page. The test pins names, property
+// keys and the values; a zip file name must always collapse to 'unknown'.
+await t('analytics/event-payloads', async () => {
+  const { startEvent, doneEvent, failEvent } = await import('./analytics.js');
+  const same = (got, want, tag) => {
+    if (JSON.stringify(got) !== JSON.stringify(want))
+      throw new Error(`${tag}: ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
+  };
+  same(startEvent('cia'), { name: 'convert_start', data: { mode: 'cia' } }, 'cia');
+  same(startEvent('pack'), { name: 'convert_start', data: { mode: 'pack' } }, 'pack');
+  same(startEvent('launcher'), { name: 'convert_start', data: { mode: 'launcher' } }, 'launcher');
+  same(startEvent('pack', true), { name: 'convert_start', data: { mode: 'batch' } }, 'batch');
+  same(startEvent('bogus'), { name: 'convert_start', data: { mode: 'cia' } }, 'unknown mode');
+  same(doneEvent('kof98h'), { name: 'convert_done', data: { game: 'kof98h' } }, 'done');
+  same(failEvent('kof98h', 'romfs'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'romfs' } }, 'fail');
+  same(failEvent('kof98h', null), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'no stage');
+  same(failEvent('kof98h', 'weird'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'bad stage');
+});
+
+await t('analytics/game-name-never-is-a-zip-file', async () => {
+  const { gameSet } = await import('./analytics.js');
+  for (const value of ['kof98h', 'mslug', 's1945p', 'a'.repeat(40), 'kof98_h']) {
+    if (gameSet(value) !== value) throw new Error(`rejected catalog name ${value}`);
+  }
+  for (const value of ['KOF98H', 'kof98h.zip', 'KOF98H.ZIP', 'kof 98', 'kof-98', 'a'.repeat(41),
+    '../kof98h', 'kof98h\n', '', null, undefined, 98]) {
+    if (gameSet(value) !== 'unknown') throw new Error(`leaked ${JSON.stringify(value)}`);
   }
 });
 

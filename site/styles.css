@@ -399,6 +399,16 @@ a.dl-row:hover{background:var(--panel-2);color:var(--gold)}
 .compat td.note{color:var(--dim);font-size:12px}
 .compat .compat-back{margin:20px 0 0}
 
+/* ── 개인정보 문서 (privacy.html, #125) ──────────────────────────────── */
+.doc{max-width:820px;margin:0 auto;padding:28px 24px 72px}
+.doc h1{font-size:clamp(22px,3.4vw,32px)}
+.doc .lede{margin:12px 0 28px}
+.doc h2{font-size:20px;margin:32px 0 10px}
+.doc p{color:#C9C9D2;font-size:15.5px;line-height:1.7;max-width:var(--prose)}
+.doc ul{margin:0 0 16px;padding-left:20px;max-width:var(--prose)}
+.doc li{margin:0 0 6px;color:#C9C9D2;font-size:15px;line-height:1.7}
+.doc a{color:var(--gold)}
+
 /* ── 반대 언어판 힌트 (#130): 흐름 밖 고정이라 CLS 없음 ───────────────── */
 .lang-note{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;align-items:center;gap:12px;
   max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--gold);border-radius:4px;

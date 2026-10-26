@@ -287,6 +287,7 @@ COMPAT_PAGE = '''<!doctype html>
 </script>
 <link rel="icon" href="{css_icon}">
 <link rel="stylesheet" href="{css}">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
 </head>
 <body>
 <header class="bar">
