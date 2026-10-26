@@ -83,6 +83,7 @@ Instead of installing a CIA per game, pick games from one app. Only one HOME men
 2. Convert a game zip in **[Launcher file]** mode to get a `.neo3ds` file. The settings (system, region) work as for a CIA.
 3. Copy the `.neo3ds` files to `/neo3ds/games/` on the SD card.
 4. Start the launcher: pick a game with Up/Down (L/R for a page) or by touch, and start it with **A** or **a double tap**.
+   **Favorites (from 1.3.0)**: press **SELECT** or tap the `*` at the left of a game to add it to the favorites or take it out. Left/Right or a tap on the tabs at the top switches between **All** and **Fav**. The favorites and the last tab are remembered.
 5. In a game, tap **[Game list]** on the bottom screen twice to go back to the list.
 
 The same game shares its key config, backup RAM and quick saves whether it runs as a CIA or from the launcher.
