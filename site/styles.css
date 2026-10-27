@@ -198,7 +198,7 @@ section[id]{scroll-margin-top:64px}
 .out-card-launch{border-color:var(--gold)}
 .out-card-launch .kicker{margin:0 0 8px}
 .out-launch-body{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:20px;align-items:start;margin:14px 0 4px}
-.fig-launch{margin:0}
+.fig.fig-launch{margin:0}
 .fig-launch img{border:1px solid var(--line);border-radius:3px;width:100%;height:auto}
 .fig-launch .fig-note{font-size:13px;margin-top:10px}
 .out-card-launch .panel-list{margin:0}
