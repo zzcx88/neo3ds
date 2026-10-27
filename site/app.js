@@ -64,7 +64,7 @@ const EN = {
   'games.fAll': 'All', 'games.fVerified': 'On hardware', 'games.fOk': 'Buildable', 'games.fNo': 'Not supported', 'games.filters': 'Filters',
   'games.sort': 'Sort', 'games.sortDefault': 'Hardware first', 'games.sortName': 'Title',
   'games.sortYear': 'Year', 'games.sortSize': 'ROM size',
-  'games.more': 'Show more',
+  'games.pagesLabel': 'Pages', 'games.prev': 'Previous page', 'games.next': 'Next page',
   'games.cavH3': 'Notes',
   'games.cav1': 'Some decryption is implemented but never played, because we lack the ROMs.',
   'games.cav1b': 'Games we could not check because we have no ROM — CMC42: Sengoku 3, Zupapa, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead · CMC50: KOF2001 · PCM2: Metal Slug 4 Plus, Rage of the Dragons, Pochi and Nyaa',
@@ -204,9 +204,9 @@ const tiles = (mb) => Math.round((mb * 1048576) / 128);   // 스프라이트 128
 /* ══════════════════════════════════════════════════════════════════════
    5. 호환성 목록 (처음에는 12줄만)
    ════════════════════════════════════════════════════════════════════ */
-const FIRST = 12, MORE = 60;
+const PAGE = 12;
 const exList = $('#exList'), exDetail = $('#exDetail'), exFilters = $('#exFilters');
-let filter = 'all', query = '', sort = 'default', shown = FIRST, selected = null;
+let filter = 'all', query = '', sort = 'default', page = 1, selected = null;
 
 const statusText = (st) => st === 1 ? t('실기 확인', 'on hardware') : st === 0 ? t('변환 가능', 'buildable') : t('변환 불가', 'not supported');
 const matches = ([set, title, year, , , , st]) => {
@@ -228,13 +228,16 @@ const sorted = (rows) => {
 
 const narrow = matchMedia('(max-width: 1080px)');
 const exListWrap = $('.ex-list-wrap');
-const exMore = $('#exMore'), exCount = $('#exCount');
+const exPages = $('#exPages'), exCount = $('#exCount');
 
 function renderList() {
   const rows = sorted(DB.games.filter(matches));
   if (selected && !rows.some((r) => r[0] === selected)) selected = null;
-  const page = rows.slice(0, shown);
-  exList.innerHTML = page.map(([set, title, year, , mb, , st]) => {
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  page = Math.min(page, pages);
+  const start = (page - 1) * PAGE;
+  const visible = rows.slice(start, start + PAGE);
+  exList.innerHTML = visible.map(([set, title, year, , mb, , st]) => {
     const badge = st === 1 ? `<span class="badge">${t('실기 확인', 'hardware')}</span>`
       : st === 2 ? `<span class="badge">${t('불가', 'no')}</span>` : '';
     return `<div class="ex-item" role="listitem" data-set="${set}"><button type="button" class="ex-row${selected === set ? ' sel' : ''}" data-st="${st}" data-set="${set}" title="${title}">
@@ -243,11 +246,39 @@ function renderList() {
       <span class="ex-year">${year}</span>
       <span class="ex-size">${mb}MB</span></button></div>`;
   }).join('');
-  exMore.classList.toggle('hidden', rows.length <= shown);
-  exCount.textContent = t(`${page.length} / ${rows.length}개 표시`, `${page.length} / ${rows.length} shown`);
+  renderPages(pages);
+  const end = start + visible.length;
+  exCount.textContent = rows.length
+    ? t(`${start + 1}–${end} / ${rows.length}개`, `${start + 1}–${end} / ${rows.length}`)
+    : t('0 / 0개', '0 / 0');
   $$('.ex-row', exList).forEach((b) => b.addEventListener('click', () => {
     selected = b.dataset.set;
     refresh();
+  }));
+}
+
+function renderPages(pages) {
+  exPages.classList.toggle('hidden', pages <= 1);
+  if (pages <= 1) { exPages.innerHTML = ''; return; }
+  const prev = `<button type="button" data-page="${page - 1}" aria-label="${t('이전 페이지', EN['games.prev'])}"${page === 1 ? ' disabled' : ''}>‹</button>`;
+  const next = `<button type="button" data-page="${page + 1}" aria-label="${t('다음 페이지', EN['games.next'])}"${page === pages ? ' disabled' : ''}>›</button>`;
+  const nums = [];
+  let last = 0;
+  [...new Set([1, pages, page - 1, page, page + 1])]
+    .filter((n) => n >= 1 && n <= pages)
+    .sort((a, b) => a - b)
+    .forEach((n) => {
+      if (n - last > 1) nums.push('<span class="ex-gap" aria-hidden="true">…</span>');
+      nums.push(`<button type="button" data-page="${n}"${n === page ? ' aria-current="page"' : ''}>${n}</button>`);
+      last = n;
+    });
+  exPages.innerHTML = prev + nums.join('') + next;
+  $$('button', exPages).forEach((b) => b.addEventListener('click', () => {
+    if (b.disabled) return;
+    page = Number(b.dataset.page);
+    refresh();
+    const top = exList.getBoundingClientRect().top + scrollY - 70;
+    scrollTo({ top, behavior: 'auto' });
   }));
 }
 
@@ -290,14 +321,13 @@ function refresh() {
 
 function applyFilters() {
   $$('button', exFilters).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
-  shown = FIRST;
+  page = 1;
   refresh();
 }
 if (exList) {
   $$('button', exFilters).forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; applyFilters(); }));
-  $('#exSearch').addEventListener('input', (e) => { query = e.target.value.trim(); shown = FIRST; refresh(); });
-  $('#exSort').addEventListener('change', (e) => { sort = e.target.value; refresh(); });
-  exMore.addEventListener('click', () => { shown += MORE; refresh(); });
+  $('#exSearch').addEventListener('input', (e) => { query = e.target.value.trim(); page = 1; refresh(); });
+  $('#exSort').addEventListener('change', (e) => { sort = e.target.value; page = 1; refresh(); });
   $('#cAll').textContent = DB.counts.total;
   $('#cVerified').textContent = DB.counts.verified;
   $('#cOk').textContent = DB.counts.ok;
