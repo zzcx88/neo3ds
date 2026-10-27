@@ -163,9 +163,14 @@
     </ol>
 
     <div class="outputs">
-      <div class="out-card">
+      <div class="out-card out-card-cia">
         <h3 data-i18n="out.ciaH">게임 CIA</h3>
         <p data-i18n="out.ciaP">게임마다 설치 파일 하나. HOME 메뉴에 게임별 아이콘이 생깁니다.</p>
+        <ul class="out-points">
+          <li data-i18n="out.p1">HOME 아이콘·배너가 게임별로</li>
+          <li data-i18n="out.p2">키 설정·세이브·퀵세이브가 게임별로</li>
+          <li data-i18n="out.p3">하고 싶은 게임만 골라 설치</li>
+        </ul>
         <a class="btn btn-ghost" href="convert.html?mode=cia" data-i18n="out.ciaCta">게임 CIA 만들기</a>
       </div>
 
@@ -199,7 +204,7 @@
         <li data-i18n="chip.slots">세이브 3슬롯</li>
         <li data-i18n="chip.system">AES / MVS</li>
       </ul>
-      <p class="tiny"><a href="https://github.com/zzcx88/neo3ds/blob/main/README.ko.md#조작" data-i18n-attr="href:controls.href" data-i18n="controls.more">전체 조작표는 README에서</a></p>
+      <p class="tiny"><a href="https://github.com/zzcx88/neo3ds/blob/main/README.ko.md#조작" data-i18n-attr="href:controls.href" data-i18n="controls.more">전체 조작표는 README 참고</a></p>
     </div>
 
     <div class="prep">
@@ -237,7 +242,7 @@
         <label class="sort">
           <span data-i18n="games.sort">정렬</span>
           <select id="exSort">
-            <option value="default" data-i18n="games.sortDefault">실기 확인 먼저</option>
+            <option value="default" data-i18n="games.sortDefault">실기 확인 우선</option>
             <option value="name" data-i18n="games.sortName">제목</option>
             <option value="year" data-i18n="games.sortYear">연도</option>
             <option value="size" data-i18n="games.sortSize">롬 크기</option>
@@ -258,11 +263,11 @@
     <div class="caveat">
       <h3 data-i18n="games.cavH3">참고 사항</h3>
       <ul>
-        <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다.</li>
-        <li data-i18n="games.cav1b">롬이 없어 확인하지 못한 게임 — CMC42: 전국전승 3, 줏파파, 스트라이커즈 1945 플러스, 프리히스토릭 아일 2, 나이트메어 인 더 다크, 간류, 뱅 비드 · CMC50: KOF2001 · PCM2: 메탈슬러그 4 플러스, 레이지 오브 드래곤즈, 포치와 냐</li>
-        <li data-i18n="games.cav2">KOF '98 MVS판은 보호 칩 때문에 변환되지 않습니다. 가정용판(kof98h)이 zip에 있으면 자동으로 그쪽으로 변환됩니다.</li>
         <li data-i18n="games.cav3">메모리가 빠듯한 롬셋은 변환기가 미리 경고합니다.</li>
-        <li data-i18n="games.cav4">메탈슬러그 2·X·3은 적과 폭발이 많은 장면에서 원래 아케이드 기판도 느려집니다. neo3ds도 그 구간에서는 똑같이 프레임이 떨어지고, PC 에뮬레이터도 마찬가지입니다.</li>
+        <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다.</li>
+        <li data-i18n="games.cav4">메탈슬러그 2·X·3은 적과 폭발이 많은 장면에서 원래 아케이드 기판도 느려집니다. neo3ds도 그 구간에서는 똑같이 프레임이 떨어집니다.</li>
+        <li data-i18n="games.cav1b">롬이 없어서 확인하지 못한 게임은 다음과 같습니다 - CMC42: 전국전승 3, 줏파파, 스트라이커즈 1945 플러스, 프리히스토릭 아일 2, 나이트메어 인 더 다크, 간류, 뱅 비드 · CMC50: KOF2001 · PCM2: 메탈슬러그 4 플러스, 레이지 오브 드래곤즈, 포치와 냐</li>
+        <li data-i18n="games.cav2">KOF '98 MVS판은 보호 칩 때문에 변환되지 않습니다. 가정용판(kof98h)이 zip에 있으면 자동으로 그쪽으로 변환됩니다.</li>
       </ul>
     </div>
   </div>

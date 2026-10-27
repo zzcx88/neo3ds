@@ -180,11 +180,21 @@ section[id]{scroll-margin-top:64px}
 .prep .tiny{margin:14px 0 0}
 
 /* ── 출력 선택 (게임 CIA / 런처) ─────────────────────────────────────── */
-.outputs{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);gap:22px;margin-top:44px;align-items:start}
+.outputs{display:grid;gap:18px;margin-top:44px}
 .out-card{border:1px solid var(--line);border-radius:4px;padding:20px;background:var(--panel-2)}
 .out-card h3{font-size:18px;font-family:var(--text);font-weight:600;margin:0 0 8px}
 .out-card p{font-size:15px;color:#C9C9D2}
 .out-card .btn{margin-top:4px}
+.out-points{display:flex;flex-wrap:wrap;gap:4px 20px;margin:10px 0 0}
+.out-points li{position:relative;padding-left:14px;font-size:14.5px;color:#C9C9D2}
+.out-points li::before{content:"·";position:absolute;left:2px;color:var(--gold)}
+@media (min-width:900px){
+  .out-card-cia{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 32px;align-items:center}
+  .out-card-cia h3,.out-card-cia p,.out-card-cia .out-points{grid-column:1}
+  .out-card-cia h3{margin:0}
+  .out-card-cia p{margin:0}
+  .out-card-cia .btn{grid-column:2;grid-row:1 / span 3;margin:0}
+}
 .out-card-launch{border-color:var(--gold)}
 .out-card-launch .kicker{margin:0 0 8px}
 .out-launch-body{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:20px;align-items:start;margin:14px 0 4px}
@@ -346,7 +356,7 @@ section[id]{scroll-margin-top:64px}
   .bar-end .btn{padding:8px 10px;font-size:11px}
   body{font-size:16px}
   .sec{padding:46px 0}
-  .steps,.check,.outputs,.out-launch-body{grid-template-columns:minmax(0,1fr)}
+  .steps,.check,.out-launch-body{grid-template-columns:minmax(0,1fr)}
   .fig-launch img{max-width:240px;margin:0 auto}
   .panel-list li{grid-template-columns:minmax(0,1fr);gap:4px;padding:12px 0}
   .out-card-launch .panel-list li{padding:8px 0}
