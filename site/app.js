@@ -145,7 +145,6 @@ const EN = {
   'tiles': 'tiles',
   /* manual.html (#162) — 3DS 사용 안내 */
   'man.h1': '3DS manual',
-  'man.lede': 'Launcher controls, the 3DS button layout, bottom-screen buttons, key config and where saves live — all on one page.',
   'man.nav.launch': 'Launcher', 'man.nav.controls': 'Controls', 'man.nav.keys': 'Key config',
   'man.launchH2': 'Launcher',
   'man.launchAlt': 'Launcher game list with the All and Fav tabs',
