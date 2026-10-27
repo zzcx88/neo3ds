@@ -17,7 +17,7 @@
 - **One launcher, update once.** Install the launcher app, drop `.neo3ds` game files on the SD card, and update by reinstalling only the launcher. Or build one CIA per game with its own HOME menu icon.
 - **Made for a handheld.** Quick save, per-game key config with button combos, turbo, full screen, a bottom-screen backlight switch and the arcade BIOS service menu, all from touch buttons on the bottom screen.
 
-**New in 1.3.0**: launcher favorites, mid-screen raster effects (Neo Turf Masters, Neo Drift Out), windowed converters for Linux and macOS, faster conversion. [Release notes](https://github.com/zzcx88/neo3ds/releases/tag/v1.3.0)
+**New in 1.3.0**: launcher favorites, mid-screen raster effects (Neo Turf Masters, Neo Drift Out), windowed converters for Linux and macOS, faster conversion. [Changelog](https://zzcx88.github.io/neo3ds/changelog.html)
 
 ## Quick start
 

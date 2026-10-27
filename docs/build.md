@@ -106,7 +106,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 배포물 (`site/`, 전부 정적):
 
 **영어가 기본**(루트), 한국어는 `/ko/` (#141). 저작 원본은 한국어 `site/ko/*.html` + 게임 DB이고,
-루트 5페이지는 생성물이다.
+루트 6페이지는 생성물이다.
 
 - `index.html` — 소개 (EN, 생성물). `ko/index.html` — 한국어 원본
 - `convert.html` — 웹 변환기 (EN, 생성물) · per-game CIA · 런처 CIA · `.neo3ds` 팩 · 배치. `ko/convert.html` — 한국어 원본
@@ -115,10 +115,12 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
   `index.html`·`convert.html` 푸터에서 링크한다 (#125)
 - `manual.html` — 3DS 사용 안내: 런처·조작·아래 화면·키 설정·세이브 경로 (EN, 생성물).
   `ko/manual.html` — 한국어 원본. 조작 표는 README와 같아야 하고 `site_gate.sh`가 대조한다 (#162)
+- `changelog.html` — 패치노트: 릴리스 타임라인 (EN·KO 둘 다 생성물, 출처 `site/releases.json`).
+  릴리스마다 JSON 항목 하나를 추가하고 생성기를 돌린다. 최상단 버전이 `<Version>`과 다르면 게이트 실패 (#166)
 - `sitemap.xml`, `media/og.png`(EN 카드), `media/og-ko.png`(KO 카드), `media/favicon.svg` — 색인·공유 (#130)
 - `vendor/` — WASM 3종 + `engine.elf` + `neogeo_games.json` (CI가 빌드·스테이징, git 제외)
 
-`index.html`·`convert.html`·`compat.html`·`manual.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,
+`index.html`·`convert.html`·`compat.html`·`manual.html`·`changelog.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,
 변환 페이지는 `convert_start`/`convert_done`/`convert_fail` 세 이벤트만 추가로 보낸다. 게임 식별자는
 공개 카탈로그의 롬셋 이름(`set`)뿐이며 zip 파일명은 보내지 않는다 (#125, ADR 0001).
 
@@ -126,6 +128,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 ```bash
 python3 scripts/gen_site_games.py    # site/games.js + compat.html (EN) + ko/compat.html
+python3 scripts/gen_site_changelog.py  # site/changelog.html + ko/changelog.html (출처: site/releases.json)
 node scripts/gen_site_i18n.mjs       # site/{index,convert,privacy,manual}.html (EN 문자열 출처: site/app.js 의 EN 표)
 python3 scripts/gen_site_seo.py      # site/sitemap.xml
 ```
@@ -140,9 +143,10 @@ chrome --headless=new --window-size=1200,630 --screenshot=site/media/og-ko.png \
 ```
 
 CI는 같은 생성기를 돌려 산출물이 커밋본과 같은지 확인한다 (`--check` / `git diff --exit-code`).
-`site/` 검증 게이트(`bash scripts/site_gate.sh`, PR에서도 실행): JS `node --check` · 10개 페이지 태그 균형 ·
-KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 5페이지에 `data-i18n`/한글 잔재 0 ·
-통계 페이지 8개의 Umami 태그 존재 · `sitemap.xml`·canonical·hreflang·og:image(로케일별) 일치.
+`site/` 검증 게이트(`bash scripts/site_gate.sh`, PR에서도 실행): JS `node --check` · 12개 페이지 태그 균형 ·
+KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 6페이지에 `data-i18n`/한글 잔재 0 ·
+통계 페이지 10개의 Umami 태그 존재 · `sitemap.xml`·canonical·hreflang·og:image(로케일별) 일치 ·
+패치노트 최상단 버전 = `converter/Directory.Build.props` `<Version>`.
 
 수동 실행: Actions → Pages → Run workflow.
 로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.

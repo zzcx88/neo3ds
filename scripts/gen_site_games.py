@@ -174,7 +174,7 @@ COMPAT = {
         'counts': '롬셋 {total}종 · {ok}종 변환 가능 · {verified}종 실기 확인',
         'th': ['게임', '롬셋', '연도', '제작사', '롬 MB', '상태', '비고'],
         'back': '← 소개 페이지로',
-        'foot': ['소개', '변환기', '3DS 사용 안내', '저장소'],
+        'foot': ['소개', '변환기', '3DS 사용 안내', '패치노트', '저장소'],
         'note': '게임 화면과 상표의 권리는 각 권리자에게 있습니다.',
         'lang_label': '언어',
         'sections': '섹션',
@@ -196,7 +196,7 @@ COMPAT = {
         'counts': '{total} romsets · {ok} convert · {verified} verified on hardware',
         'th': ['Game', 'Romset', 'Year', 'Maker', 'ROM MB', 'Status', 'Note'],
         'back': '← Back to the intro page',
-        'foot': ['Intro', 'Converter', '3DS manual', 'Repository'],
+        'foot': ['Intro', 'Converter', '3DS manual', 'Changelog', 'Repository'],
         'note': 'Game footage and trademarks belong to their respective owners.',
         'lang_label': 'Language',
         'sections': 'Sections',
@@ -242,6 +242,7 @@ def write_compat(rows, counts):
             home=home[locale], convert=convert[locale], back=html.escape(c['back']),
             foot0=html.escape(c['foot'][0]), foot1=html.escape(c['foot'][1]),
             foot2=html.escape(c['foot'][2]), foot3=html.escape(c['foot'][3]),
+            foot4=html.escape(c['foot'][4]),
             note=html.escape(c['note']), lang_label=html.escape(c['lang_label']),
             sections=html.escape(c['sections']),
             nav0=html.escape(c['nav'][0]), nav1=html.escape(c['nav'][1]),
@@ -336,7 +337,8 @@ COMPAT_PAGE = '''<!doctype html>
       <a href="{home}">{foot0}</a>
       <a href="{convert}">{foot1}</a>
       <a href="manual.html">{foot2}</a>
-      <a href="https://github.com/zzcx88/neo3ds">{foot3}</a>
+      <a href="changelog.html">{foot3}</a>
+      <a href="https://github.com/zzcx88/neo3ds">{foot4}</a>
     </nav>
     <p class="tiny">{note}</p>
   </div>
