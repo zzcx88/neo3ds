@@ -21,6 +21,7 @@ const EN = {
   'hero.lede': 'Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon. It runs at 60 fps even on an Old 3DS.',
   'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'on an Old 3DS',
   'hero.req': 'Runs in the browser · nothing to install · GPL-2.0',
+  'hero.notes': 'Patch notes — what changed in each version',
   'cta.dl': 'Get the offline converter', 'cta.dlWin': 'Get it for Windows',
   'cta.dlLin': 'Get it for Linux x64', 'cta.dlMac': 'Get it for macOS (Apple Silicon)',
   'steps.h2': 'Set-up in three steps',
@@ -202,9 +203,6 @@ const EN = {
   'man.p1': 'Key config', 'man.p2': 'Backup RAM', 'man.p3': 'Quick saves',
   'man.p4': 'Launcher game files', 'man.p5': 'Launcher favorites',
   'man.pathP': 'The title ID comes from the romset (zip) name, so rebuilding from the same zip or starting the game from the launcher uses the same files.',
-  'man.nextH2': 'Next',
-  'man.nextP': 'If you have not built a game yet, start with the converter. The game list shows which romsets are supported.',
-  'man.nextCompat': 'See the game list',
   'foot.manual': '3DS manual', 'foot.changelog': 'Changelog',
 };
 
