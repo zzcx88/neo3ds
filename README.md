@@ -97,6 +97,8 @@ neo3ds-converter --help
 
 ## On the 3DS
 
+There is a [3DS manual](https://zzcx88.github.io/neo3ds/manual.html) with screenshots.
+
 ### Launcher
 
 <img src="docs/images/launcher.png" width="400" alt="Launcher game list with the All and Fav tabs">

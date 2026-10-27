@@ -97,6 +97,8 @@ neo3ds-converter --help
 
 ## 3DS에서
 
+그림과 함께 정리한 [3DS 사용 안내](https://zzcx88.github.io/neo3ds/ko/manual.html)가 있습니다.
+
 ### 런처
 
 <img src="docs/images/launcher.png" width="400" alt="All·Fav 탭이 있는 런처 게임 목록">
