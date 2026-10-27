@@ -156,12 +156,15 @@ KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 6페�
 태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가 3종 패키지를 만들고
 GitHub Release에 올린다 (#55에서 복원, #102에서 GUI 동봉).
 
-1. `<Version>` 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
+1. `site/releases.json` 맨 위에 릴리스 항목(버전·날짜·KO/EN 불릿)을 추가하고
+   `python3 scripts/gen_site_changelog.py` 실행 — `<Version>` 범프와 **같은 커밋**에 넣는다.
+   JSON이 `<Version>`보다 뒤처지면 `site_gate.sh`가 실패해 Pages 배포가 막힌다 (§7.1)
+2. `<Version>` 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
    (CI가 검증: 태그 ≠ `<Version>`이면 실패)
-2. `git tag vX.Y.Z && git push origin vX.Y.Z`
-3. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package-windows` + `package-unix` 매트릭스 2종
+3. `git tag vX.Y.Z && git push origin vX.Y.Z`
+4. Actions → Release 워크플로 확인: `engine`(devkitARM Docker로 `engine.elf` 빌드) → `package-windows` + `package-unix` 매트릭스 2종
    (windows-latest + ubuntu-latest + macos-15) → `release`(Release 생성 + 4개 파일 첨부)
-4. 릴리스 페이지에서 4개 파일 확인
+5. 릴리스 페이지에서 4개 파일 확인
 
 산출물 (파일명 고정 — README·소개 페이지의 latest/download 링크가 깨지지 않게):
 

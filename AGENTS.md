@@ -41,7 +41,8 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 릴리스 패키징�
 - 게임 DB 변경 시 `scripts/gen_site_games.py`로 `site/games.js` 재생성 — 수동 편집 금지
 - VERIFIED 수 변경 시 README 호환성 표 + `site/` 문구를 같은 커밋에 함께 갱신
 - 호환성 표는 실기 확인 결과만, 미확인은 "추정" 표기
-- 버전 단일 출처: `converter/Directory.Build.props`의 `<Version>` (릴리스 시 여기만 올리기). 웹용 `site/vendor/conv/version.js`는 `scripts/build_wasm.sh`가 여기서 생성 (git 제외)
+- 버전 단일 출처: `converter/Directory.Build.props`의 `<Version>` (릴리스 시 여기서 올린다). 웹용 `site/vendor/conv/version.js`는 `scripts/build_wasm.sh`가 여기서 생성 (git 제외)
+- 릴리스 절차: `docs/build.md` §7.2. 릴리스는 AI가 진행하므로 `<Version>` 범프와 같은 커밋에 `site/releases.json` 최상단 항목 + `python3 scripts/gen_site_changelog.py` 산출물을 포함한다. 빠뜨리면 `site_gate.sh`의 `<Version>` 대조에서 실패해 Pages 배포가 막힌다
 - `site/` 색·폰트·수치는 실제 코드에서만(`ui.h` 팔레트, `ui.c` 좌표, 진단 화면 값) — 창작 금지
 - 문서 전용 변경은 `docs/`·`site/`·README 범위 유지
 
