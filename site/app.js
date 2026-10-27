@@ -205,7 +205,7 @@ const EN = {
   'man.nextH2': 'Next',
   'man.nextP': 'If you have not built a game yet, start with the converter. The game list shows which romsets are supported.',
   'man.nextCompat': 'See the game list',
-  'foot.manual': '3DS manual',
+  'foot.manual': '3DS manual', 'foot.changelog': 'Changelog',
 };
 
 /* 언어는 URL이 정합니다: / 는 한국어, /en/ 은 영어 (#130 P4).

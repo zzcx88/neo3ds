@@ -26,8 +26,9 @@ class P(html.parser.HTMLParser):
         else: self.errs.append(f'{tag}@{self.getpos()}')
 
 pages = ['site/index.html', 'site/convert.html', 'site/compat.html', 'site/privacy.html', 'site/manual.html',
+         'site/changelog.html',
          'site/ko/index.html', 'site/ko/convert.html', 'site/ko/compat.html', 'site/ko/privacy.html',
-         'site/ko/manual.html']
+         'site/ko/manual.html', 'site/ko/changelog.html']
 for page in pages:
     p = P(); p.feed(open(page, encoding='utf-8').read())
     assert not p.errs and not p.stack, f'{page}: {p.errs} {p.stack}'
@@ -48,7 +49,7 @@ for (const page of ['site/ko/index.html', 'site/ko/convert.html', 'site/ko/priva
   if (missing.length) { console.error(page, 'missing EN:', missing); process.exit(1); }
 }
 
-for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html', 'site/privacy.html', 'site/manual.html']) {
+for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html', 'site/privacy.html', 'site/manual.html', 'site/changelog.html']) {
   const html = fs.readFileSync(page, 'utf8');
   if (html.includes('data-i18n')) { console.error(page, 'still has i18n bindings'); process.exit(1); }
   if (/[\uac00-\ud7a3]/.test(html)) { console.error(page, 'still has Korean text'); process.exit(1); }
@@ -57,7 +58,8 @@ const UMAMI_ID = 'data-website-id=\"cf5cd373-6021-4643-a392-c3823e8f3cdd\"';
 const UMAMI_DOMAINS = 'data-domains=\"zzcx88.github.io\"';
 for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html',
   'site/ko/index.html', 'site/ko/convert.html', 'site/ko/compat.html',
-  'site/manual.html', 'site/ko/manual.html']) {
+  'site/manual.html', 'site/ko/manual.html',
+  'site/changelog.html', 'site/ko/changelog.html']) {
   const html = fs.readFileSync(page, 'utf8');
   if (!html.includes(UMAMI_ID) || !html.includes(UMAMI_DOMAINS)) {
     console.error(page, 'missing Umami tracker (#125)');
@@ -69,12 +71,20 @@ console.log('i18n + analytics OK');
 
 # Generated pages must match their sources: a stale commit fails here instead of on main.
 python3 scripts/gen_site_games.py > /dev/null
+python3 scripts/gen_site_changelog.py > /dev/null
 node scripts/gen_site_i18n.mjs --check
 python3 scripts/gen_site_seo.py --check
-git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html site/manual.html || {
-  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html, site/manual.html' >&2
-  exit 1
-}
+# The changelog must start at the version the site builds (#166).
+python3 - << 'EOF'
+import json, re, sys
+props = open('converter/Directory.Build.props', encoding='utf-8').read()
+version = re.search(r'<Version>([^<]+)</Version>', props).group(1)
+top = json.load(open('site/releases.json', encoding='utf-8'))[0]['version']
+if top != version:
+    sys.exit('site/releases.json: top release %s != <Version> %s' % (top, version))
+print('changelog top release matches <Version>')
+EOF
+
 # The control table is duplicated in README and manual.html; keep them saying the same thing (#162).
 python3 - << 'EOF'
 import html, re, sys
@@ -122,5 +132,10 @@ if failed:
     sys.exit(1)
 print('README control tables match manual.html')
 EOF
+
+git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html site/manual.html site/changelog.html site/ko/changelog.html || {
+  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html, site/manual.html, site/changelog.html, site/ko/changelog.html' >&2
+  exit 1
+}
 
 echo "SITE GATES OK"

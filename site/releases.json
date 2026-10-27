@@ -1,0 +1,310 @@
+[
+  {
+    "version": "1.3.1",
+    "date": "2026-10-27",
+    "items": [
+      {
+        "t": { "ko": "macOS 앱 서명", "en": "macOS app signing" },
+        "d": {
+          "ko": "서명 없이 배포돼 Gatekeeper가 \"손상됨\"으로 막던 macOS 변환기를 ad-hoc 서명해 실행되게 했습니다. (#165)",
+          "en": "The macOS converter was blocked as damaged by Gatekeeper; it is now ad-hoc signed and opens. (#165)"
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "date": "2026-10-26",
+    "items": [
+      {
+        "t": { "ko": "런처 즐겨찾기", "en": "Launcher favorites" },
+        "d": {
+          "ko": "SELECT를 누르거나 게임 왼쪽 *를 터치해 넣고 뺍니다. All·Fav 탭과 마지막 탭을 기억합니다. (#135)",
+          "en": "Press SELECT or tap the * at the left of a game; All and Fav plus the last tab are remembered. (#135)"
+        }
+      },
+      {
+        "t": { "ko": "Linux·macOS 창 변환기", "en": "Windowed converter on Linux and macOS" },
+        "d": {
+          "ko": "Windows처럼 창에서 CIA·런처용 파일·런처 CIA를 만듭니다. 명령줄도 그대로 들어 있습니다.",
+          "en": "Build CIAs, launcher files and the launcher CIA in a window, as on Windows; the command line stays."
+        }
+      },
+      {
+        "t": { "ko": "더 빠른 변환", "en": "Faster conversion" },
+        "d": {
+          "ko": "그래픽을 16KB 단위로 묶어 압축해 변환 시간이 줄고 파일도 조금 작아졌습니다. (#123)",
+          "en": "Graphics are compressed in 16KB blocks, so conversion is faster and files are a little smaller. (#123)"
+        }
+      },
+      {
+        "t": { "ko": "래스터 효과", "en": "Raster effects" },
+        "d": {
+          "ko": "네오 터프 마스터즈의 물/잔디, 네오 드리프트 아웃의 스테이지 시작 계단과 커브 배경 어긋남을 고쳤습니다. (#131)",
+          "en": "Neo Turf Masters water and grass, plus Neo Drift Out stage-start edges and curve backgrounds, are fixed. (#131)"
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.2.1",
+    "date": "2026-10-22",
+    "items": [
+      {
+        "t": { "ko": "한글·일본어 아이콘", "en": "Korean and Japanese icons" },
+        "d": {
+          "ko": "오프라인 변환기에서 한글·일본어 제목의 HOME 아이콘·배너 글자가 □로 나오던 문제를 고쳤습니다. 웹 변환기는 영향이 없었습니다. (#86)",
+          "en": "Offline converter icons and banners no longer show □ for Korean or Japanese titles; the web converter was not affected. (#86)"
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-10-21",
+    "items": [
+      {
+        "t": { "ko": "풀스크린", "en": "Fullscreen" },
+        "d": {
+          "ko": "키 설정 Screen에서 위 화면을 가득 채우도록 늘릴 수 있고, 게임별로 저장됩니다.",
+          "en": "Screen > Full stretches the top screen, saved per game."
+        }
+      },
+      {
+        "t": { "ko": "아래 화면 끄기", "en": "Bottom screen off" },
+        "d": {
+          "ko": "아래 화면 오른쪽 위 ⏻로 백라이트를 끄고, 아무 데나 터치하면 다시 켜집니다.",
+          "en": "⏻ at the top right of the bottom screen turns the backlight off; touch anywhere to turn it back on."
+        }
+      },
+      {
+        "t": { "ko": "더 빠른 그리기", "en": "Faster drawing" },
+        "d": {
+          "ko": "띠 단위 렌더링과 두 코어 분담으로 풀스크린과 무거운 장면의 프레임 드랍이 줄었습니다.",
+          "en": "Banded rendering split across two cores cuts frame drops in fullscreen and heavy scenes."
+        }
+      },
+      {
+        "t": { "ko": "Linux·macOS 명령줄 변환기", "en": "Linux and macOS command-line converter" },
+        "d": {
+          "ko": "Windows에 이어 Linux x64·macOS(Apple Silicon) 변환기를 제공합니다.",
+          "en": "Linux x64 and macOS (Apple Silicon) command-line builds join Windows."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-10-18",
+    "items": [
+      {
+        "t": { "ko": "런처", "en": "Launcher" },
+        "d": {
+          "ko": "CIA 하나를 설치하고 만든 .neo3ds 파일을 SD 카드 /neo3ds/games/에 넣으면 앱 하나에서 게임을 고릅니다. (#11)",
+          "en": "Install one CIA and drop .neo3ds files in /neo3ds/games/ to pick games in one app. (#11)"
+        }
+      },
+      {
+        "t": { "ko": "퀵세이브", "en": "Quick saves" },
+        "d": {
+          "ko": "게임마다 슬롯 3개. 아래 화면 [Slot] [Save] [Load](두 번) 또는 SELECT+L·SELECT+R. (#10)",
+          "en": "Three slots per game, via the bottom-screen [Slot] [Save] [Load] (tap twice) or SELECT+L / SELECT+R. (#10)"
+        }
+      },
+      {
+        "t": { "ko": "서비스 메뉴·백업 RAM", "en": "Service menu and backup RAM" },
+        "d": {
+          "ko": "MVS 바이오스 설정 메뉴를 열고, 기판 설정·하이스코어를 SD 카드에 저장합니다. (#9)",
+          "en": "Opens the MVS BIOS service menu and saves board settings and high scores to the SD card. (#9)"
+        }
+      },
+      {
+        "t": { "ko": "지역·일괄 변환", "en": "Region and batch conversion" },
+        "d": {
+          "ko": "유럽·아시아(기본)/일본/미국을 고르고, zip 여러 개를 차례로 변환합니다. (#8, #12)",
+          "en": "Pick Europe-Asia (default), Japan or USA, and convert several zips in a row. (#8, #12)"
+        }
+      },
+      {
+        "t": { "ko": "사운드 수정", "en": "Sound fixes" },
+        "d": {
+          "ko": "메탈슬러그 1 배경음악 처짐과 소닉윙즈 2·3 음악 정지를 고쳤습니다. (#7, #6)",
+          "en": "Metal Slug 1 BGM slowdown and Sonic Wings 2/3 music stopping are fixed. (#7, #6)"
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.8",
+    "date": "2026-10-12",
+    "items": [
+      {
+        "t": { "ko": "무거운 장면", "en": "Heavy scenes" },
+        "d": {
+          "ko": "조금 늦은 프레임이 한 프레임을 통째로 잃지 않아 메탈슬러그 3의 헤비머신건·폭발 장면 프레임 드랍이 크게 줄었습니다.",
+          "en": "A slightly late frame no longer costs a whole frame, so Metal Slug 3's heavy machine gun and explosions drop far less."
+        }
+      },
+      {
+        "t": { "ko": "사운드 CPU·타이밍", "en": "Sound CPU and timing" },
+        "d": {
+          "ko": "메탈슬러그 2·X·3의 사운드 드라이버 대기 시간을 건너뛰고, 레지스터 변경을 프레임 안의 제 위치에서 재생합니다.",
+          "en": "Idle time of the sound driver is skipped in Metal Slug 2/X/3, and register changes play at their place within the frame."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.7",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "t": { "ko": "아래 화면 GUI", "en": "Bottom screen GUI" },
+        "d": {
+          "ko": "Key config·Turbo·System·Diagnostics·Restart 터치 버튼과 게임 이름·FPS·키 배치를 표시하고, 바뀔 때만 다시 그립니다.",
+          "en": "Touch buttons for Key config, Turbo, System, Diagnostics and Restart, plus title, fps and the key layout; redrawn only on change."
+        }
+      },
+      {
+        "t": { "ko": "키 설정 화살표", "en": "Key config arrows" },
+        "d": {
+          "ko": "키 설정 화면의 각 줄에 < > 버튼이 생겼습니다.",
+          "en": "Every line of the key config screen now has < > buttons."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.6",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "t": { "ko": "SVC Chaos Plus", "en": "SVC Chaos Plus" },
+        "d": {
+          "ko": "파이트케이드에서 쓰는 부틀렉 롬셋(svcplus)을 구형 3DS 풀스피드로 지원합니다.",
+          "en": "The svcplus bootleg set Fightcade players use runs at full speed on an Old 3DS."
+        }
+      },
+      {
+        "t": { "ko": "AES/MVS 전환", "en": "AES/MVS switch" },
+        "d": {
+          "ko": "변환기의 System 옵션과 3DS 키 설정 System 줄로 가정용·아케이드 바이오스를 바꿉니다.",
+          "en": "Switch between the home and arcade BIOS with the converter's System option or the System line in key config."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.5",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "t": { "ko": "확대 스프라이트", "en": "Zoomed sprites" },
+        "d": {
+          "ko": "축소 장면의 스프라이트 행을 배율별로 언롤해 사무라이 쇼다운 V 스페셜이 풀스피드가 됐습니다.",
+          "en": "Shrunk sprite rows are unrolled per zoom step, so Samurai Shodown V Special runs at full speed."
+        }
+      },
+      {
+        "t": { "ko": "호환성 확인", "en": "Compatibility" },
+        "d": {
+          "ko": "사무라이 쇼다운 V 스페셜을 실기 확인했고, KOF2003·메탈슬러그 5·가로우 60fps 제보를 반영했습니다.",
+          "en": "Samurai Shodown V Special verified on hardware; KOF2003, Metal Slug 5 and Garou reported at 60 fps."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.4",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "t": { "ko": "키 설정", "en": "Key config" },
+        "d": {
+          "ko": "A·B·X·Y·L·R·ZL·ZR·START·SELECT에 네오지오 버튼·동시 누르기·스타트·코인을 지정하고 게임별로 저장합니다.",
+          "en": "Map each 3DS button to a Neo Geo button, a combination, Start or Coin; saved per game."
+        }
+      },
+      {
+        "t": { "ko": "재시작", "en": "Restart" },
+        "d": {
+          "ko": "SELECT+START를 1초 누르면 게임을 다시 시작합니다.",
+          "en": "Hold SELECT + START for a second to restart the game."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.3",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "t": { "ko": "PVC 카트", "en": "PVC carts" },
+        "d": {
+          "ko": "SNK vs. Capcom: SVC Chaos를 비롯한 PVC 칩 게임을 변환합니다. 메탈슬러그 5·KOF2003은 아직 실기 미검증입니다.",
+          "en": "PVC-chip games convert, including SNK vs. Capcom: SVC Chaos. Metal Slug 5 and KOF2003 are not verified on hardware yet."
+        }
+      },
+      {
+        "t": { "ko": "KOF2002 수정 포함", "en": "Includes the KOF2002 fix" },
+        "d": {
+          "ko": "1.0.2의 KOF2002 크래시 수정이 들어 있습니다.",
+          "en": "The 1.0.2 KOF2002 crash fix is included."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.2",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "t": { "ko": "KOF2002 크래시", "en": "KOF2002 crash" },
+        "d": {
+          "ko": "비디오 레지스터의 홀수 바이트를 읽을 때 ROM 밖을 읽던 포인터를 고쳤습니다.",
+          "en": "A read of the odd byte of a video register used the wrong pointer and read far outside the ROM; fixed."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.1",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "t": { "ko": "fix 레이어 뱅킹", "en": "Fix layer banking" },
+        "d": {
+          "ko": "128KB를 넘는 fix ROM의 뱅킹을 MAME처럼 처리해 메탈슬러그 3·KOF2000·가로우·메탈슬러그 4·마트리미리의 HUD를 고쳤습니다.",
+          "en": "Fix ROMs past 128KB are banked as MAME does, fixing the HUD in Metal Slug 3, KOF2000, Garou, Metal Slug 4 and Matrimelee."
+        }
+      },
+      {
+        "t": { "ko": "풀스피드 확인", "en": "Full speed" },
+        "d": {
+          "ko": "KOF2000·KOF2002를 구형 3DS 실기에서 확인했습니다.",
+          "en": "KOF2000 and KOF2002 verified at full speed on an Old 3DS."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-10-10",
+    "items": [
+      {
+        "t": { "ko": "첫 릴리스", "en": "First release" },
+        "d": {
+          "ko": "구형 3DS 풀스피드(KOF'98·KOF'99, 메탈슬러그 X·3), 롬셋 282종 중 235종 변환, CMC42/50·SMA·PCM2·KOF2002 복호화.",
+          "en": "Full speed on an Old 3DS (KOF '98/'99, Metal Slug X/3), 235 of 282 romsets convert, CMC42/50, SMA, PCM2 and KOF2002 decryption."
+        }
+      },
+      {
+        "t": { "ko": "변환기", "en": "Converter" },
+        "d": {
+          "ko": "Windows 창 변환기, 터보(R+버튼), 한국어·영어 UI.",
+          "en": "Windows window converter, turbo (hold R + button), Korean and English UI."
+        }
+      }
+    ]
+  }
+]

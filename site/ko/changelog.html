@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>패치노트 — neo3ds 릴리스 기록 | neo3ds</title>
+<meta name="description" content="neo3ds 1.0.0부터 1.3.1까지 릴리스 14개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#16161C">
+<link rel="canonical" href="https://zzcx88.github.io/neo3ds/ko/changelog.html">
+<link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/ko/changelog.html">
+<link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/changelog.html">
+<link rel="alternate" hreflang="x-default" href="https://zzcx88.github.io/neo3ds/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="neo3ds">
+<meta property="og:title" content="neo3ds 패치노트 | neo3ds">
+<meta property="og:description" content="neo3ds 1.0.0부터 1.3.1까지 릴리스 14개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.">
+<meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/changelog.html">
+<meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="neo3ds">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="neo3ds 패치노트 | neo3ds">
+<meta name="twitter:description" content="1.0.0부터 1.3.1까지, 버전별 새 기능과 수정.">
+<meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "neo3ds 패치노트 | neo3ds",
+  "url": "https://zzcx88.github.io/neo3ds/ko/changelog.html",
+  "inLanguage": [
+    "ko",
+    "en"
+  ],
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "neo3ds",
+    "url": "https://zzcx88.github.io/neo3ds/"
+  }
+}
+</script>
+<link rel="icon" href="../media/favicon.svg">
+<link rel="stylesheet" href="../styles.css">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="index.html" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
+  <nav class="bar-nav" aria-label="섹션">
+    <a href="index.html">소개</a>
+    <a href="convert.html">변환기</a>
+    <a href="compat.html">호환성</a>
+  </nav>
+  <div class="bar-end">
+    <div class="lang" role="group" aria-label="언어">
+      <a href="changelog.html" aria-current="true">KO</a>
+      <a href="../changelog.html">EN</a>
+    </div>
+    <a class="btn btn-primary" href="convert.html">변환하기</a>
+  </div>
+</header>
+<main id="main" class="changelog">
+  <div class="changelog-wrap">
+    <h1>패치노트</h1>
+    <ol class="rel-list">
+      <li class="rel is-latest" id="v1-3-1">
+        <div class="rel-head">
+          <span class="rel-v">v1.3.1</span>
+          <span class="rel-latest">최신</span>
+          <time class="rel-date" datetime="2026-10-27">2026-10-27</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>macOS 앱 서명</b>: 서명 없이 배포돼 Gatekeeper가 "손상됨"으로 막던 macOS 변환기를 ad-hoc 서명해 실행되게 했습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/165">#165</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.3.1">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-3-0">
+        <div class="rel-head">
+          <span class="rel-v">v1.3.0</span>
+          <time class="rel-date" datetime="2026-10-26">2026-10-26</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>런처 즐겨찾기</b>: SELECT를 누르거나 게임 왼쪽 *를 터치해 넣고 뺍니다. All·Fav 탭과 마지막 탭을 기억합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/135">#135</a>)</li>
+            <li><b>Linux·macOS 창 변환기</b>: Windows처럼 창에서 CIA·런처용 파일·런처 CIA를 만듭니다. 명령줄도 그대로 들어 있습니다.</li>
+            <li><b>더 빠른 변환</b>: 그래픽을 16KB 단위로 묶어 압축해 변환 시간이 줄고 파일도 조금 작아졌습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</li>
+            <li><b>래스터 효과</b>: 네오 터프 마스터즈의 물/잔디, 네오 드리프트 아웃의 스테이지 시작 계단과 커브 배경 어긋남을 고쳤습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/131">#131</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.3.0">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-2-1">
+        <div class="rel-head">
+          <span class="rel-v">v1.2.1</span>
+          <time class="rel-date" datetime="2026-10-22">2026-10-22</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>한글·일본어 아이콘</b>: 오프라인 변환기에서 한글·일본어 제목의 HOME 아이콘·배너 글자가 □로 나오던 문제를 고쳤습니다. 웹 변환기는 영향이 없었습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/86">#86</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.2.1">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-2-0">
+        <div class="rel-head">
+          <span class="rel-v">v1.2.0</span>
+          <time class="rel-date" datetime="2026-10-21">2026-10-21</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>풀스크린</b>: 키 설정 Screen에서 위 화면을 가득 채우도록 늘릴 수 있고, 게임별로 저장됩니다.</li>
+            <li><b>아래 화면 끄기</b>: 아래 화면 오른쪽 위 ⏻로 백라이트를 끄고, 아무 데나 터치하면 다시 켜집니다.</li>
+            <li><b>더 빠른 그리기</b>: 띠 단위 렌더링과 두 코어 분담으로 풀스크린과 무거운 장면의 프레임 드랍이 줄었습니다.</li>
+            <li><b>Linux·macOS 명령줄 변환기</b>: Windows에 이어 Linux x64·macOS(Apple Silicon) 변환기를 제공합니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.2.0">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-1-0">
+        <div class="rel-head">
+          <span class="rel-v">v1.1.0</span>
+          <time class="rel-date" datetime="2026-10-18">2026-10-18</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>런처</b>: CIA 하나를 설치하고 만든 .neo3ds 파일을 SD 카드 /neo3ds/games/에 넣으면 앱 하나에서 게임을 고릅니다. (<a href="https://github.com/zzcx88/neo3ds/issues/11">#11</a>)</li>
+            <li><b>퀵세이브</b>: 게임마다 슬롯 3개. 아래 화면 [Slot] [Save] [Load](두 번) 또는 SELECT+L·SELECT+R. (<a href="https://github.com/zzcx88/neo3ds/issues/10">#10</a>)</li>
+            <li><b>서비스 메뉴·백업 RAM</b>: MVS 바이오스 설정 메뉴를 열고, 기판 설정·하이스코어를 SD 카드에 저장합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/9">#9</a>)</li>
+            <li><b>지역·일괄 변환</b>: 유럽·아시아(기본)/일본/미국을 고르고, zip 여러 개를 차례로 변환합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/8">#8</a>, <a href="https://github.com/zzcx88/neo3ds/issues/12">#12</a>)</li>
+            <li><b>사운드 수정</b>: 메탈슬러그 1 배경음악 처짐과 소닉윙즈 2·3 음악 정지를 고쳤습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/7">#7</a>, <a href="https://github.com/zzcx88/neo3ds/issues/6">#6</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.1.0">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-8">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.8</span>
+          <time class="rel-date" datetime="2026-10-12">2026-10-12</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>무거운 장면</b>: 조금 늦은 프레임이 한 프레임을 통째로 잃지 않아 메탈슬러그 3의 헤비머신건·폭발 장면 프레임 드랍이 크게 줄었습니다.</li>
+            <li><b>사운드 CPU·타이밍</b>: 메탈슬러그 2·X·3의 사운드 드라이버 대기 시간을 건너뛰고, 레지스터 변경을 프레임 안의 제 위치에서 재생합니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.8">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-7">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.7</span>
+          <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>아래 화면 GUI</b>: Key config·Turbo·System·Diagnostics·Restart 터치 버튼과 게임 이름·FPS·키 배치를 표시하고, 바뀔 때만 다시 그립니다.</li>
+            <li><b>키 설정 화살표</b>: 키 설정 화면의 각 줄에 &lt; &gt; 버튼이 생겼습니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.7">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-6">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.6</span>
+          <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>SVC Chaos Plus</b>: 파이트케이드에서 쓰는 부틀렉 롬셋(svcplus)을 구형 3DS 풀스피드로 지원합니다.</li>
+            <li><b>AES/MVS 전환</b>: 변환기의 System 옵션과 3DS 키 설정 System 줄로 가정용·아케이드 바이오스를 바꿉니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.6">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-5">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.5</span>
+          <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>확대 스프라이트</b>: 축소 장면의 스프라이트 행을 배율별로 언롤해 사무라이 쇼다운 V 스페셜이 풀스피드가 됐습니다.</li>
+            <li><b>호환성 확인</b>: 사무라이 쇼다운 V 스페셜을 실기 확인했고, KOF2003·메탈슬러그 5·가로우 60fps 제보를 반영했습니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.5">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-4">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.4</span>
+          <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>키 설정</b>: A·B·X·Y·L·R·ZL·ZR·START·SELECT에 네오지오 버튼·동시 누르기·스타트·코인을 지정하고 게임별로 저장합니다.</li>
+            <li><b>재시작</b>: SELECT+START를 1초 누르면 게임을 다시 시작합니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.4">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-3">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.3</span>
+          <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>PVC 카트</b>: SNK vs. Capcom: SVC Chaos를 비롯한 PVC 칩 게임을 변환합니다. 메탈슬러그 5·KOF2003은 아직 실기 미검증입니다.</li>
+            <li><b>KOF2002 수정 포함</b>: 1.0.2의 KOF2002 크래시 수정이 들어 있습니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.3">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-2">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.2</span>
+          <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>KOF2002 크래시</b>: 비디오 레지스터의 홀수 바이트를 읽을 때 ROM 밖을 읽던 포인터를 고쳤습니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.2">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-1">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.1</span>
+          <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>fix 레이어 뱅킹</b>: 128KB를 넘는 fix ROM의 뱅킹을 MAME처럼 처리해 메탈슬러그 3·KOF2000·가로우·메탈슬러그 4·마트리미리의 HUD를 고쳤습니다.</li>
+            <li><b>풀스피드 확인</b>: KOF2000·KOF2002를 구형 3DS 실기에서 확인했습니다.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.1">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-0-0">
+        <div class="rel-head">
+          <span class="rel-v">v1.0.0</span>
+          <time class="rel-date" datetime="2026-10-10">2026-10-10</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>첫 릴리스</b>: 구형 3DS 풀스피드(KOF'98·KOF'99, 메탈슬러그 X·3), 롬셋 282종 중 235종 변환, CMC42/50·SMA·PCM2·KOF2002 복호화.</li>
+            <li><b>변환기</b>: Windows 창 변환기, 터보(R+버튼), 한국어·영어 UI.</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.0">GitHub 릴리스</a>
+      </li>
+    </ol>
+    <p class="tiny end-note">전체 릴리스와 다운로드 파일은 <a href="https://github.com/zzcx88/neo3ds/releases">GitHub 릴리스</a>에 있습니다.</p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <span class="brand-plate">neo3ds</span>
+    <nav>
+      <a href="compat.html">게임 목록</a>
+      <a href="manual.html">3DS 사용 안내</a>
+      <a href="changelog.html" aria-current="page">패치노트</a>
+      <a href="https://github.com/zzcx88/neo3ds">저장소</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases">릴리스</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md">README</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/build.md">빌드 절차</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/LICENSE">라이선스</a>
+      <a href="privacy.html">개인정보</a>
+    </nav>
+    <p class="tiny">게임 화면과 상표의 권리는 각 권리자에게 있습니다.</p>
+  </div>
+</footer>
+</body>
+</html>

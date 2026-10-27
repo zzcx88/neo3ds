@@ -12,6 +12,7 @@ on:
       - 'scripts/build_wasm.sh'
       - 'scripts/wasm-shim/**'
       - 'scripts/gen_site_games.py'
+      - 'scripts/gen_site_changelog.py'
       - 'scripts/gen_site_seo.py'
       - 'scripts/gen_site_i18n.mjs'
       - '.github/workflows/pages.yml'
