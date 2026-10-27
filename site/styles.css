@@ -440,7 +440,6 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 .path-table td{padding:9px 0;border-top:1px solid var(--line);color:#C9C9D2;vertical-align:top}
 .path-table td:first-child{width:1%;white-space:nowrap;padding-right:16px}
 .path-table code{font-size:12px;overflow-wrap:anywhere}
-.manual .cta-row{margin:16px 0 0}
 @media(max-width:640px){
   .card-grid{grid-template-columns:minmax(0,1fr)}
   .kv li{grid-template-columns:minmax(0,1fr);gap:3px}
