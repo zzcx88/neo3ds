@@ -24,10 +24,12 @@ PAGES = [
     ('site/convert.html', 'convert.html', 'en'),
     ('site/compat.html', 'compat.html', 'en'),
     ('site/privacy.html', 'privacy.html', 'en'),
+    ('site/manual.html', 'manual.html', 'en'),
     ('site/ko/index.html', 'ko/', 'ko'),
     ('site/ko/convert.html', 'ko/convert.html', 'ko'),
     ('site/ko/compat.html', 'ko/compat.html', 'ko'),
     ('site/ko/privacy.html', 'ko/privacy.html', 'ko'),
+    ('site/ko/manual.html', 'ko/manual.html', 'ko'),
 ]
 
 # Per-locale share card, and the path of each slug in each locale.
@@ -37,6 +39,7 @@ SLUGS = {
     'convert.html': {'en': 'convert.html', 'ko': 'ko/convert.html'},
     'compat.html': {'en': 'compat.html', 'ko': 'ko/compat.html'},
     'privacy.html': {'en': 'privacy.html', 'ko': 'ko/privacy.html'},
+    'manual.html': {'en': 'manual.html', 'ko': 'ko/manual.html'},
 }
 OG_LOCALE = {'ko': 'ko_KR', 'en': 'en_US'}
 

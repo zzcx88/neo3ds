@@ -8,6 +8,8 @@ measured from those files (black bars around each screen), so a re-captured imag
 
 The hero GIFs are a slideshow of those captures - real frames of real hardware, not a recorded video.
 """
+import os
+
 import numpy as np
 from PIL import Image
 
@@ -50,11 +52,19 @@ def build(frames, size, gif, poster):
     print(f'{gif}: {len(images)} frames')
 
 
+def manual_shot(name):
+    """manual.html (#162): the key config screen, cropped from its 2x capture."""
+    img = Image.open(f'{SRC}/{name}.png').convert('RGB').crop(BOTTOM_BOX).resize((320, 240), Image.LANCZOS)
+    path = f'{OUT}/manual-keys.png'
+    img.save(path, optimize=True)
+    print(f'  {path}: {os.path.getsize(path) / 1024:.0f} KB')
+
+
 def main():
-    import os
     os.makedirs(OUT, exist_ok=True)
     build(TOP_FRAMES, (400, 240), f'{OUT}/hero-top.gif', f'{OUT}/hero-top.png')
     build(BOTTOM_FRAMES, (320, 240), f'{OUT}/hero-bottom.gif', f'{OUT}/hero-bottom.png')
+    manual_shot('keyconfig3_kof99')
     for name in ('hero-top', 'hero-bottom'):
         for ext in ('gif', 'png'):
             path = f'{OUT}/{name}.{ext}'

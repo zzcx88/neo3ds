@@ -77,6 +77,24 @@ const PAGES = {
       isPartOf: { '@type': 'WebSite', name: 'neo3ds', url: SITE },
     },
   },
+  'manual.html': {
+    file: 'manual.html',
+    url: 'manual.html',
+    title: '3DS manual — launcher, controls, key config | neo3ds',
+    description: 'Launcher controls, the 3DS button layout, bottom-screen buttons, key config, turbo, quick saves and save paths — all on one page.',
+    ogTitle: '3DS manual — launcher, controls, key config | neo3ds',
+    ogDescription: 'Launcher controls, button layout, bottom-screen buttons and where saves live.',
+    twitterDescription: 'Launcher controls, 3DS buttons, key config and save paths.',
+    ogImageAlt: 'neo3ds — 3DS manual',
+    jsonld: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: '3DS manual — launcher, controls, key config | neo3ds',
+      url: SITE + 'manual.html',
+      inLanguage: ['en', 'ko'],
+      isPartOf: { '@type': 'WebSite', name: 'neo3ds', url: SITE },
+    },
+  },
 };
 
 // Root-relative asset references that must gain one `../` on a page inside site/en/.
