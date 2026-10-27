@@ -21,7 +21,6 @@ const EN = {
   'hero.lede': 'Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon. It runs at 60 fps even on an Old 3DS.',
   'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'on an Old 3DS',
   'hero.req': 'Runs in the browser · nothing to install · GPL-2.0',
-  'hero.dlNote': 'Keep the extracted offline-converter folder together.',
   'cta.dl': 'Get the offline converter', 'cta.dlWin': 'Get it for Windows',
   'cta.dlLin': 'Get it for Linux x64', 'cta.dlMac': 'Get it for macOS (Apple Silicon)',
   'steps.h2': 'Set-up in three steps',
