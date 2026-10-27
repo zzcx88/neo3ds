@@ -166,6 +166,9 @@ GitHub Release에 올린다 (#55에서 복원, #102에서 GUI 동봉).
 - `neo3ds-converter-osx-arm64.zip` — macOS `.app` 번들 (폴더 안) + 런처 CIA
 - `neo3ds-launcher.cia` — 별도 첨부 (Windows에서 1회 생성, 3종에 동일 파일 주입)
 
+macOS `.app`은 macOS 러너에서 ad-hoc 서명(`codesign --force --deep --sign -`) 후 `ditto`로 재압축한다 (#164).
+공증은 하지 않으므로 첫 실행 경고 대응은 README를 따른다.
+
 Windows 도구는 최신 릴리스 zip에서 부트스트랩한다(최초 1회는 수동 배치, §2).
 Linux·macOS 도구는 CI가 `scripts/build_unix_tools.sh`로 소스에서 빌드한다(upstream 태그 고정).
 

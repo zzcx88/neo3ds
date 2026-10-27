@@ -138,6 +138,15 @@ jobs:
           ./scripts/package_release.ps1 -Runtimes ${{ matrix.runtime }} `
             -OutDir dist -LauncherCia launcher-inject/neo3ds-launcher.cia `
             -VersionOverride '${{ inputs.version }}'
+      - name: Ad-hoc sign macOS .app
+        if: matrix.runtime == 'osx-arm64'
+        shell: bash
+        run: |
+          # Gatekeeper reports an unsigned bundle as "damaged" (#164). Ad-hoc keeps D3
+          # (no Developer ID); it only makes the bundle verifiable and enables "Open Anyway".
+          app=dist/stage/neo3ds-converter-osx-arm64/neo3ds-converter.app
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
       - name: Re-zip macOS package with ditto
         if: matrix.runtime == 'osx-arm64'
         shell: bash
