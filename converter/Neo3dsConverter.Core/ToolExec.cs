@@ -3,8 +3,9 @@ namespace Neo3dsConverter;
 /// <summary>
 /// The path to execute for a bundled tool (makerom, bannertool).
 ///
-/// The macOS .app ships its tools executable, but a tool can still arrive without the execute bit
-/// (the Linux zip writes tools/&lt;rid&gt;/ at 0644, see #179) or in a folder that cannot be written:
+/// The release zips ship their tools executable (#179), but a tool can still arrive without the
+/// execute bit — an extractor that drops modes, a release up to v1.3.1 whose Linux zip wrote
+/// tools/&lt;rid&gt;/ at 0644 — or in a folder that cannot be written:
 /// <list type="bullet">
 /// <item>macOS Gatekeeper App Translocation: a quarantined .app launched from where it was unzipped
 /// runs from a read-only copy under /private/var/folders/…/AppTranslocation, so even a no-op chmod
