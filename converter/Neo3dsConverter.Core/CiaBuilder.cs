@@ -108,7 +108,7 @@ public sealed class CiaBuilder
 
     static readonly string Makerom = OperatingSystem.IsWindows() ? "makerom.exe" : "makerom";
     static readonly string Bannertool = OperatingSystem.IsWindows() ? "bannertool.exe" : "bannertool";
-    static readonly HashSet<string> executableTools = new(StringComparer.Ordinal);
+    readonly Dictionary<string, string> toolPaths = new(StringComparer.Ordinal);
 
     static string? ToolRid => RuntimeInformation.OSArchitecture switch
     {
@@ -145,7 +145,7 @@ public sealed class CiaBuilder
             string cia = Path.Combine(job.OutputDir, job.RomName + ".cia");
             string product = ("NEO3DS-" + job.RomName.ToUpperInvariant());
             if (product.Length > 16) product = product[..16];
-            MakeCia(cia, product, job.UniqueId, icon, banner, romfs);
+            MakeCia(cia, product, job.UniqueId, icon, banner, romfs, work);
 
             log(L($"[4/4] 완료: {cia} ({new FileInfo(cia).Length / 1048576.0:F1} MB)", $"[4/4] Done: {cia} ({new FileInfo(cia).Length / 1048576.0:F1} MB)"));
             return cia;
@@ -185,13 +185,13 @@ public sealed class CiaBuilder
         File.WriteAllBytes(Path.Combine(work, "icon.png"), Art.Icon(title, iconImage));
         File.WriteAllBytes(Path.Combine(work, "banner.png"), Art.Banner(title, bannerImage));
         Art.SaveSilentWav(Path.Combine(work, "banner.wav"));
-        Run(Bannertool, $"makebanner -i \"{Path.Combine(work, "banner.png")}\" -a \"{Path.Combine(work, "banner.wav")}\" -o \"{banner}\"");
+        Run(Bannertool, $"makebanner -i \"{Path.Combine(work, "banner.png")}\" -a \"{Path.Combine(work, "banner.wav")}\" -o \"{banner}\"", work);
         Run(Bannertool, $"makesmdh -s \"{Smdh(title, 64)}\" -l \"{Smdh(longTitle, 128)}\" " +
-                              $"-p \"{Smdh(publisher, 64)}\" -i \"{Path.Combine(work, "icon.png")}\" -o \"{icon}\"");
+                              $"-p \"{Smdh(publisher, 64)}\" -i \"{Path.Combine(work, "icon.png")}\" -o \"{icon}\"", work);
         return (icon, banner);
     }
 
-    void MakeCia(string cia, string product, uint uniqueId, string icon, string banner, string romfs)
+    void MakeCia(string cia, string product, uint uniqueId, string icon, string banner, string romfs, string work)
     {
         foreach (var format in Environment.GetEnvironmentVariable("NEO3DS_CXI") != null ? new[] { "cia", "cxi" } : new[] { "cia" })
             Run(Makerom, // the CXI is a dev aid: it boots directly in Azahar without installing
@@ -199,7 +199,7 @@ public sealed class CiaBuilder
                 $"-rsf \"{ToolPath("neo3ds.rsf")}\" -elf \"{ToolPath("engine.elf")}\" " +
                 $"-icon \"{icon}\" -banner \"{banner}\" " +
                 $"-DAPP_TITLE=neo3ds -DAPP_PRODUCT_CODE={product} -DAPP_UNIQUE_ID=0x{uniqueId:X5} " +
-                $"-DAPP_ROMFS=\"{romfs}\"");
+                $"-DAPP_ROMFS=\"{romfs}\"", work);
     }
 
     /// <summary>A game file for the launcher: the files a CIA's romfs/game holds, plus the zip's name
@@ -276,7 +276,7 @@ public sealed class CiaBuilder
             Directory.CreateDirectory(outDir);
             string cia = Path.Combine(outDir, "neo3ds-launcher.cia");
             log(L($"[2/2] 런처 CIA 생성 (Title ID 00040000{LauncherUniqueId << 8:X8})", $"[2/2] Building the launcher CIA (Title ID 00040000{LauncherUniqueId << 8:X8})"));
-            MakeCia(cia, "NEO3DS-LAUNCHER", LauncherUniqueId, icon, banner, romfs);
+            MakeCia(cia, "NEO3DS-LAUNCHER", LauncherUniqueId, icon, banner, romfs, work);
             log(L($"완료: {cia}", $"Done: {cia}"));
             return cia;
         }
@@ -319,20 +319,23 @@ public sealed class CiaBuilder
         return s.Length > max ? s[..max] : s;
     }
 
-    void Run(string exe, string args)
+    /// <summary>The path to execute for a bundled tool, cached for this build. A staged copy lives in
+    /// the build's temp folder, so the cache is revalidated when that folder is gone.</summary>
+    string ExecutablePath(string exe, string work)
     {
-        string path = ToolPath(exe);
-        if (!OperatingSystem.IsWindows())
+        string tool = ToolPath(exe);
+        lock (toolPaths)
         {
-            lock (executableTools)
-            {
-                if (!executableTools.Contains(path))
-                {
-                    File.SetUnixFileMode(path, File.GetUnixFileMode(path) | UnixFileMode.UserExecute);
-                    executableTools.Add(path);
-                }
-            }
+            if (toolPaths.TryGetValue(tool, out var cached) && File.Exists(cached)) return cached;
+            return toolPaths[tool] = ToolExec.Prepare(tool, Path.Combine(work, "tools"));
         }
+    }
+
+    /// <summary>Runs a bundled tool. <paramref name="work"/> is the build's temp folder: a copy of the
+    /// tool is staged there when its own folder cannot be made executable (read-only media).</summary>
+    void Run(string exe, string args, string work)
+    {
+        string path = ExecutablePath(exe, work);
         var psi = new ProcessStartInfo(path, args)
         {
             RedirectStandardOutput = true,
