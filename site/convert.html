@@ -69,6 +69,11 @@
 .drop-meta{display:block;font:400 11px/1.6 var(--pixel-sm);color:var(--dim);margin-top:10px;word-break:break-all}
 .gate-side{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px}
 .gate-side .conv-file{display:block;margin-bottom:14px}
+/* #172: batch + neogeo.zip required + MAME-only facts under the hero lede */
+.gate-facts{margin:22px 0 0;padding:12px 14px;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:4px;background:var(--panel-2);display:grid;gap:8px;max-width:560px}
+.gate-facts li{position:relative;padding-left:13px;font-size:13.5px;line-height:1.6;color:var(--paper);word-break:keep-all;overflow-wrap:anywhere}
+.gate-facts li::before{content:"▸";position:absolute;left:0;color:var(--gold)}
+.gate-facts b{color:var(--gold);font-weight:700}
 #gateDl,#gateBatchAll{background:var(--gold);border-color:var(--gold);color:#16161C;font-weight:700}
 #gateDl:hover,#gateBatchAll:hover:not(:disabled){background:var(--gold);border-color:#fff;color:#16161C}
 #gateBatchAll:disabled{opacity:.55;cursor:default}
@@ -129,7 +134,7 @@
 .result-line:empty{display:none}
 .result-actions{display:flex;flex-wrap:wrap;gap:10px}
 .result .tiny{margin:10px 0 0}
-.gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px}
+.gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px;overflow-wrap:anywhere}
 .run-hint{margin:8px 0 0;color:var(--gold)}
 @media(max-width:760px){.gate-side{order:-1}}
 </style>
@@ -160,9 +165,12 @@
     <div class="hero-copy">
       <p class="kicker">Web converter · no server · files stay in this tab</p>
       <h1>Convert<br>in the browser.</h1>
-      <p class="lede">Drop the game zip + neogeo.zip and this tab converts them. Neither the rom nor the result ever leaves it.</p>
-      <p class="tiny">Merged sets: drop the game + parent zips together (e.g. kof98h.zip + kof98.zip + neogeo.zip)</p>
-      <p class="tiny">Only MAME Neo Geo romset zips are supported. A romset that does not match MAME's names and chip CRCs will not convert.</p>
+      <p class="lede">Drop several game zips plus neogeo.zip and this tab converts them one after another. Neither the rom nor the result ever leaves it.</p>
+      <ul class="gate-facts" aria-label="Before you convert">
+        <li><b>neogeo.zip (BIOS) is required</b> <span>— drop it together with the game zip. Without it nothing converts.</span></li>
+        <li><b>Many games at once</b> <span>— drop several game zips and they convert one after another. No refresh between games.</span></li>
+        <li><b>MAME Neo Geo romset zips only</b> <span>— a romset whose names or chip CRCs differ from MAME will not convert. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</span></li>
+      </ul>
     </div>
 
     <div class="gate-side">
@@ -170,7 +178,7 @@
       <label class="drop" id="gateDrop">
         <input type="file" id="gateZips" accept=".zip" multiple>
         <b>Drop rom zips</b>
-        <span class="tiny">Click or drag here (game zip + neogeo.zip)</span>
+        <span class="tiny">Click or drag here · multiple files allowed (game zip + neogeo.zip)</span>
         <span class="drop-meta" id="gateMeta"></span>
       </label>
       <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0">

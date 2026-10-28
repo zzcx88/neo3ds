@@ -1236,6 +1236,7 @@ function failRow(row, message, stage = null) {
   finishOverallRow(row);
   paintBatchHeader();
   logGameFail(row, message, secs);
+  showBatchFailures(); // #172: the reason must also land in #progress
 }
 
 function finishBatchRun() {
@@ -1374,6 +1375,22 @@ function showAlert(text) {
 function failAlert(message) {
   showAlert(t(`변환에 실패했습니다: ${message} 로그를 확인한 뒤 변환하기를 다시 누르세요.`,
     `Conversion failed: ${message} Check the log, then press Convert to try again.`));
+}
+
+// #172: batch failures must state their reason where the reader lands after
+// pressing Convert (#progress), not only in the list above the fold. Each row
+// keeps its own detail line; this is the summary, capped so it stays readable.
+function showBatchFailures() {
+  if (!batch) return;
+  const failed = batch.filter((row) => row.status === STATUS.FAILED);
+  if (failed.length === 0) return;
+  const shown = failed.slice(0, 3).map((row) =>
+    `${row.name} — ${row.detail || row.problem || t('이유 없음', 'no reason given')}`);
+  const rest = failed.length - shown.length;
+  showAlert(t(
+    `변환 실패 ${failed.length}개: ${shown.join(' / ')}${rest > 0 ? ` 외 ${rest}개` : ''}. 게임별 이유는 위 목록에 있습니다.`,
+    `${failed.length} failed: ${shown.join(' / ')}${rest > 0 ? `, ${rest} more` : ''}. Per-game reasons are in the list above.`,
+  ));
 }
 
 function resetResults() {
