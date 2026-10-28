@@ -184,7 +184,7 @@ Linux·macOS 도구는 CI가 `scripts/build_unix_tools.sh`로 소스에서 빌�
 
 릴리스 롤백: 깨진 Release는 GitHub에서 삭제 후 `<Version>`을 올린 새 태그로 다시 낸다. 기존 태그를 덮어쓰지 않는다.
 
-Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌드 + Headless 테스트 + no-ROM 스모크가 자동 실행된다.
+Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌드 + Headless 테스트 + Core 테스트(도구 실행 권한) + no-ROM 스모크가 자동 실행된다.
 
 수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성. 3종 산출물은 Artifacts로 받음).
 로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`

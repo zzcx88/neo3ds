@@ -50,6 +50,8 @@ jobs:
         run: dotnet build converter/Neo3dsConverter.Desktop -c Release
       - name: Headless tests
         run: dotnet test converter/Neo3dsConverter.Desktop.Tests -c Release --no-build
+      - name: Core tests (tool execution on read-only media)
+        run: dotnet test converter/Neo3dsConverter.Core.Tests -c Release
       - name: No-ROM smoke (help + version paths)
         shell: bash
         run: |
