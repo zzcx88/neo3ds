@@ -90,7 +90,7 @@ const EN = {
   'priv.whatH2': 'What is measured',
   'priv.whatP': 'Visit statistics come from Umami Cloud. It counts the following without cookies.',
   'priv.pageviews': 'Page views: the page URL, the referring page, browser and operating system, device type, and country. The IP address is not stored; only the country is derived from it.',
-  'priv.events': 'Conversion events: the output mode, the game\'s romset name (only when it is in the public catalog, otherwise <code>unknown</code>), and the stage that failed (<code>load</code> · <code>romfs</code> · <code>art</code> · <code>cia</code> · <code>worker</code>).',
+  'priv.events': 'Conversion events: the output mode (the game-count range when several zips are queued), the game\'s romset name (only when it is in the public catalog, otherwise <code>unknown</code>), the stage and reason a run failed (<code>load/bios</code> pairs step and cause), and the output mode of a download click.',
   'priv.notSent': 'Not sent: rom files, zip file names, custom icon or banner images, or the converted file. All of them stay inside the browser tab.',
   'priv.cookiesH2': 'Cookies and ad blockers',
   'priv.cookiesP': 'No cookies are used, so there is no consent banner. Umami tells visits apart without cookies.',
@@ -100,7 +100,7 @@ const EN = {
   'priv.purposeP': 'The numbers are used only to improve the site: which page people read, where conversion fails, and which games are popular. No advertising, selling or profiling.',
   'priv.contactH2': 'Contact',
   'priv.contactP': 'Questions about this page go to the <a href="https://github.com/zzcx88/neo3ds/issues">repository issues</a>.',
-  'priv.updated': 'Last updated 2026-10-26.',
+  'priv.updated': 'Last updated 2026-10-28.',
   /* convert.html — web converter */
   'gate.meta': 'Drop game zips and convert in the browser. Files never leave this tab.',
   'gate.noscript': 'This page needs JavaScript.',

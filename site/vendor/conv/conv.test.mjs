@@ -581,11 +581,12 @@ await t('progress/producer-fracs-stay-in-stage', async () => {
   }
 });
 
-// ── #125 web analytics contract (pure, DOM-free) ──────────────────────────
-// Only these three events may leave the page. The test pins names, property
-// keys and the values; a zip file name must always collapse to 'unknown'.
+// ── #125/#175 web analytics contract (pure, DOM-free) ─────────────────────
+// Only these four events may leave the page. The test pins names, property
+// keys and the values; a zip file name must always collapse to 'unknown' and
+// the batch size and failure reason stay inside the existing property values.
 await t('analytics/event-payloads', async () => {
-  const { startEvent, doneEvent, failEvent } = await import('./analytics.js');
+  const { startEvent, doneEvent, failEvent, saveEvent } = await import('./analytics.js');
   const same = (got, want, tag) => {
     if (JSON.stringify(got) !== JSON.stringify(want))
       throw new Error(`${tag}: ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
@@ -593,12 +594,21 @@ await t('analytics/event-payloads', async () => {
   same(startEvent('cia'), { name: 'convert_start', data: { mode: 'cia' } }, 'cia');
   same(startEvent('pack'), { name: 'convert_start', data: { mode: 'pack' } }, 'pack');
   same(startEvent('launcher'), { name: 'convert_start', data: { mode: 'launcher' } }, 'launcher');
-  same(startEvent('pack', true), { name: 'convert_start', data: { mode: 'batch' } }, 'batch');
+  same(startEvent('pack', true, 2), { name: 'convert_start', data: { mode: 'batch:2' } }, 'batch 2');
+  same(startEvent('pack', true, 5), { name: 'convert_start', data: { mode: 'batch:3-5' } }, 'batch 5');
+  same(startEvent('pack', true, 6), { name: 'convert_start', data: { mode: 'batch:6+' } }, 'batch 6');
   same(startEvent('bogus'), { name: 'convert_start', data: { mode: 'cia' } }, 'unknown mode');
   same(doneEvent('kof98h'), { name: 'convert_done', data: { game: 'kof98h' } }, 'done');
   same(failEvent('kof98h', 'romfs'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'romfs' } }, 'fail');
+  same(failEvent('kof98h', 'load', 'bios'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'load/bios' } }, 'reason');
+  same(failEvent('kof98h', 'romfs', 'oom'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'romfs/oom' } }, 'oom');
+  same(failEvent('kof98h', null, 'crash'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker/crash' } }, 'crash');
   same(failEvent('kof98h', null), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'no stage');
   same(failEvent('kof98h', 'weird'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'bad stage');
+  same(failEvent('kof98h', 'load', 'not-a-code'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'load' } }, 'bad reason');
+  same(saveEvent('pack'), { name: 'convert_save', data: { mode: 'pack' } }, 'save pack');
+  same(saveEvent('batch'), { name: 'convert_save', data: { mode: 'batch' } }, 'save batch');
+  same(saveEvent('nonsense'), { name: 'convert_save', data: { mode: 'cia' } }, 'save fallback');
 });
 
 await t('analytics/game-name-never-is-a-zip-file', async () => {

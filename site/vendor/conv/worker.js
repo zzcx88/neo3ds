@@ -48,9 +48,22 @@ self.onmessage = async (e) => {
     const one = await buildOneCapture(db, files, null, { region, system, mode, art, lang }, post);
     post({ type: 'done', cia: one.bin, stats: { ...one.stats, memMB: memMB(), secs: ((performance.now() - t0) / 1000).toFixed(1) } });
   } catch (err) {
-    post({ type: 'error', message: String(err?.message ?? err) });
+    post({ type: 'error', message: String(err?.message ?? err), code: reasonCode(err) });
   }
 };
+
+// #175: analytics gets a stable reason code; the message stays localized text.
+function fail(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
+function reasonCode(err) {
+  if (typeof err?.code === 'string') return err.code;
+  const message = String(err?.message ?? err);
+  // Browsers word this differently per engine; both mean the run ran out of memory.
+  if (/out of memory|allocation failed|cannot enlarge memory/i.test(message)) return 'oom';
+  return 'unknown';
+}
 
 function memMB() {
   return performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(0) : null;
@@ -61,7 +74,7 @@ function smdh(s, max) { return s.replaceAll('"', "'").slice(0, max); }
 function makeRun() {
   return (mod, args) => {
     try { mod.callMain(args); }
-    catch (e) { if (e.code !== 0 && e.status !== 0) throw new Error(`exit ${e.code ?? e.status}: ${args.join(' ')}`); }
+    catch (e) { if (e.code !== 0 && e.status !== 0) throw fail('wasm', `exit ${e.code ?? e.status}: ${args.join(' ')}`); }
   };
 }
 
@@ -75,7 +88,7 @@ async function prepArt(bt, icon, banner) {
 async function fetchTools(mr) {
   for (const f of ['neo3ds.rsf', 'engine.elf']) {
     const r = await fetch('../' + f);
-    if (!r.ok) throw new Error(`vendor/${f}: ${r.status}`);
+    if (!r.ok) throw fail('wasm', `vendor/${f}: ${r.status}`);
     mr.FS.writeFile('/work/' + f, new Uint8Array(await r.arrayBuffer()));
   }
 }
@@ -140,7 +153,7 @@ async function buildBatch(db, files, zips, opts, post, t0) {
       ok++;
     } catch (err) {
       failed++;
-      post({ type: 'batch-error', index: i, name: zips[i].name, message: String(err?.message ?? err) });
+      post({ type: 'batch-error', index: i, name: zips[i].name, message: String(err?.message ?? err), code: reasonCode(err) });
     }
   }
   post({ type: 'batch-done', count: zips.length, ok, failed, secs: ((performance.now() - t0) / 1000).toFixed(1) });
@@ -151,12 +164,12 @@ async function buildBatch(db, files, zips, opts, post, t0) {
 async function decodeArt(file, lang) {
   if (!file) return null;
   if (typeof createImageBitmap !== 'function')
-    throw new Error(L(lang, '이미지를 읽을 수 없습니다: 이 브라우저에는 createImageBitmap이 없습니다.',
+    throw fail('image', L(lang, '이미지를 읽을 수 없습니다: 이 브라우저에는 createImageBitmap이 없습니다.',
       'Cannot decode image: browser has no createImageBitmap.'));
   try {
     return await createImageBitmap(file);
   } catch {
-    throw new Error(L(lang, `이미지를 읽을 수 없습니다: ${file.name}`, `Cannot decode image: ${file.name}`));
+    throw fail('image', L(lang, `이미지를 읽을 수 없습니다: ${file.name}`, `Cannot decode image: ${file.name}`));
   }
 }
 
@@ -167,12 +180,17 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   const gameFile = forceZip
     ? files.find((f) => f.name.toLowerCase() === forceZip.toLowerCase())
     : files.find((f) => f.name.toLowerCase() !== 'neogeo.zip');
-  if (!gameFile) throw new Error(L(lang, '게임 zip과 neogeo.zip을 함께 올려 주세요.', 'Drop a game zip together with neogeo.zip.'));
+  if (!gameFile) throw fail('nofile', L(lang, '게임 zip과 neogeo.zip을 함께 올려 주세요.', 'Drop a game zip together with neogeo.zip.'));
   const zipName = gameFile.name.replace(/\.zip$/i, '').toLowerCase();
-  const { game, problem, romset } = await pickGame(db, RomSet, files, zipName, { lang });
-  if (!game) throw new Error(problem);
+  // A zip whose index cannot be read fails at the same point as pickGame's
+  // own verdicts, so both carry a code (#175).
+  let picked;
+  try { picked = await pickGame(db, RomSet, files, zipName, { lang }); }
+  catch (err) { throw fail('zip', String(err?.message ?? err)); }
+  const { game, problem, romset, code } = picked;
+  if (!game) throw fail(code ?? 'unknown', problem);
   const biosFile = files.find((f) => f.name.toLowerCase() === 'neogeo.zip');
-  if (!biosFile) throw new Error(biosMissing(lang));
+  if (!biosFile) throw fail('bios', biosMissing(lang));
   const tid = titleId(zipName), uid = uniqueId(zipName);
 
   const Z = await loadZstd('../zstd.js');

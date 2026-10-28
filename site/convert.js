@@ -14,7 +14,7 @@ import {
 } from './vendor/conv/art.js';
 import { zipResults } from './vendor/conv/bundle.js';
 import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
-import { startEvent, doneEvent, failEvent, send as sendEvent } from './vendor/conv/analytics.js';
+import { startEvent, doneEvent, failEvent, saveEvent, send as sendEvent } from './vendor/conv/analytics.js';
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
@@ -25,22 +25,27 @@ const t = (ko, en) => (isEn() ? en : ko);
 // language the page is in so a KO page gets KO reasons (#79).
 const uiLang = () => (isEn() ? 'en' : 'ko');
 
-/* ── #125 usage events: three events, all optional. A blocked Umami script or
-   a throwing track() must leave the conversion untouched. ─────────────── */
+/* ── #125/#175 usage events: four events, all optional. A blocked Umami script
+   or a throwing track() must leave the conversion untouched. ─────────────── */
 function track(ev) {
   sendEvent(window.umami, ev);
 }
 
-function trackStart(mode, isBatch) {
-  track(startEvent(mode, isBatch));
+function trackStart(mode, isBatch, count) {
+  track(startEvent(mode, isBatch, count));
 }
 
 function trackDone(set) {
   track(doneEvent(set));
 }
 
-function trackFail(set, stage) {
-  track(failEvent(set, stage));
+function trackFail(set, stage, code) {
+  track(failEvent(set, stage, code));
+}
+
+// Fires on the download click, not when the file is built (#175).
+function trackSave(mode) {
+  if (mode) track(saveEvent(mode));
 }
 
 /* ── Log (#152): one line per event, tagged so parallel workers stay readable.
@@ -111,6 +116,7 @@ let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
 let overallView = null; // #81 {fraction, kind, index, ready, end} shown in #progress
 let bundleBusy = false, bundleUrl = null, bundleSeq = 0; // #81 "download all" ZIP
+let dlMode = null; // #175 output mode behind the single download link
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
 const batchPanel = $('gateBatchList'), batchRowsEl = $('gateBatchRows');
@@ -167,6 +173,7 @@ function cancelBundle() {
 function clearSingleLink() {
   const dl = $('gateDl');
   if (dl.dataset.url) { revokeUrl(dl.dataset.url); delete dl.dataset.url; }
+  dlMode = null;
   dl.removeAttribute('href');
   dl.classList.add('hidden');
   paintResult();
@@ -755,6 +762,7 @@ function makeRow(row, index) {
   detail.className = 'batch-detail';
   const link = document.createElement('a');
   link.className = 'btn btn-ghost btn-sm batch-dl';
+  link.addEventListener('click', () => trackSave('batch')); // #175: saved, not just built
   li.append(head, titleRow, detail, link);
   li.addEventListener('click', (e) => {
     if (e.target.closest?.('a')) return; // download link, not row selection
@@ -841,6 +849,7 @@ async function downloadBatchZip() {
     document.body.append(a);
     a.click();
     a.remove();
+    trackSave('batch'); // #175
     logEvent('', t(`[ZIP] ${rows.length}개 결과를 ${name}로 묶었습니다`, `[ZIP] Bundled ${rows.length} results into ${name}`), 'meta');
   } catch (err) {
     if (seq === bundleSeq) logEvent('', t(`[ZIP 실패] ${err?.message ?? err}`, `[ZIP failed] ${err?.message ?? err}`), 'fail');
@@ -853,6 +862,7 @@ async function downloadBatchZip() {
 }
 
 dlAllBtn.addEventListener('click', () => { void downloadBatchZip(); });
+$('gateDl').addEventListener('click', () => trackSave(dlMode)); // #175
 
 function updateRow(index) {
   if (!batch) return;
@@ -1000,7 +1010,7 @@ function markRunningRowsFailed(message) {
   for (let i = 0; i < batch.length; i++) {
     if (batch[i].status === STATUS.RUNNING) {
       markFailed(batch, i, message);
-      trackFail(batchSource?.[i]?.set, 'worker');
+      trackFail(batchSource?.[i]?.set, 'worker', 'crash');
     }
   }
   renderBatch();
@@ -1116,7 +1126,7 @@ runBtn.addEventListener('click', () => {
   focusProgress(); // #81: show the progress section without hunting for it
   running = true;
   runInputs = { files, mode };
-  trackStart(mode, isBatch);
+  trackStart(mode, isBatch, gameZips().length);
   runBtn.disabled = true;
   cancelBtn.classList.remove('hidden');
   resetResults(); // #74/#143: a new run drops every previous result and download URL
@@ -1225,13 +1235,14 @@ function jobFinished(w, job) {
 }
 
 // Every way a row can fail ends the same way: mark, redraw, count, log.
-// `stage` overrides the row's last progress step for a worker crash (#125).
-function failRow(row, message, stage = null) {
+// `stage` overrides the row's last progress step for a worker crash (#125);
+// `code` is the worker's machine-readable reason (#175).
+function failRow(row, message, stage = null, code = null) {
   const secs = rowSecs(row);
   // markFailed clears row.step, so read the analytics stage first.
   const failedAt = stage ?? batch?.[row]?.step ?? null;
   markFailed(batch, row, message);
-  trackFail(batchSource?.[row]?.set, failedAt);
+  trackFail(batchSource?.[row]?.set, failedAt, code);
   updateRow(row);
   finishOverallRow(row);
   paintBatchHeader();
@@ -1259,14 +1270,14 @@ function workerFailed(w, message) {
   if (!running) return;
   if (w.single || job == null) {
     markRunningRowsFailed(t('워커 오류', 'Worker error'));
-    if (w.single) trackFail(singleRow?.set, 'worker');
+    if (w.single) trackFail(singleRow?.set, 'worker', 'crash');
     endOverall('error');
     finish();
     failAlert(message);
     logGameFail(-1, t(`워커 오류 (${message})`, `worker error (${message})`), rowSecs(-1));
     return;
   }
-  failRow(job.row, message, 'worker');
+  failRow(job.row, message, 'worker', 'crash');
   if (queue.length) pushJob(spawnWorker(w.base));
   else if (workers.every((x) => x.job == null)) finishBatchRun();
 }
@@ -1304,7 +1315,7 @@ function onWorkerMessage(w, m) {
     logGameDone(row, name, m.stats.ciaMB, rowSecs(row));
     jobFinished(w, job);
   } else if (m.type === 'batch-error' || m.type === 'error') {
-    failRow(row, m.message);
+    failRow(row, m.message, null, m.code);
     jobFinished(w, job);
   }
   // batch-done carries no per-row news: jobFinished already ran for the game.
@@ -1325,7 +1336,7 @@ function onSingleMessage(m) {
     finish();
     trackDone(m.stats.set);
     for (const s of PIPE_STEPS) setStep(s, 'done');
-    showDownload(m.cia, downloadName(m.stats));
+    showDownload(m.cia, downloadName(m.stats), m.stats.mode ?? currentMode());
     showStats(m.stats);
     logGameDone(-1, downloadName(m.stats), m.stats.ciaMB, m.stats.secs);
     if (m.stats.tiles) logEvent('   ', t(
@@ -1333,7 +1344,7 @@ function onSingleMessage(m) {
       `${m.stats.tiles.toLocaleString()} tiles · graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
   } else if (m.type === 'error') {
     markRunningRowsFailed(m.message);
-    trackFail(singleRow?.set, singleStage);
+    trackFail(singleRow?.set, singleStage, m.code);
     endOverall('error');
     finish();
     failAlert(m.message);
@@ -1400,9 +1411,10 @@ function resetResults() {
   $('gateResult').classList.add('hidden');
 }
 
-function showDownload(bin, name) {
+function showDownload(bin, name, mode = null) {
   const dl = $('gateDl');
   clearSingleLink();
+  dlMode = mode ?? currentMode();
   const url = makeUrl(bin);
   dl.dataset.url = url;
   dl.href = url;

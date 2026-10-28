@@ -39,24 +39,26 @@ export function zipsFor(g, files, zipName) {
 // Options keep the C# `set` argument and the page language distinct.
 export async function pickGame(db, RomSetCls, files, name, { set = null, lang = 'en' } = {}) {
   const exact = db.find(set ?? name);
-  if (!exact) return { game: null, problem: L(lang,
+  if (!exact) return { game: null, code: 'notromset', problem: L(lang,
     `'${name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. MAME 롬셋 zip만 지원합니다. zip 파일 이름을 바꾸지 마세요.`,
     `'${name}' is not a MAME Neo Geo romset name. Only MAME romset zips are supported; keep the zip's original file name.`) };
-  let problem = null;
+  let problem = null, code = null;
   const cands = set != null ? [exact] : [exact, ...db.clonesOf(exact.name)];
   for (const g of cands) {
     const why = db.unsupported(g, lang);
-    if (why != null) { problem ??= `${db.title(exact)}: ${why}`; continue; }
+    if (why != null) { problem ??= `${db.title(exact)}: ${why}`; code ??= 'unsupported'; continue; }
     // Index-only open (#121): the browser reads the zip tail + central directory,
     // so judging a romset no longer inflates its chips.
     const zips = await RomSetCls.open(zipsFor(g, files, name));
     const missing = zips.missing(g);
-    if (missing.length === 0) return { game: g, problem: null, romset: zips };
-    if (g === exact || problem == null)
+    if (missing.length === 0) return { game: g, code: null, problem: null, romset: zips };
+    if (g === exact || problem == null) {
       problem = `${g.name}: ` + L(lang, '롬 파일이 빠졌습니다', 'ROM files are missing') +
         ` (${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ' ...' : ''})`;
+      code = 'missing';
+    }
   }
-  return { game: null, problem, romset: null };
+  return { game: null, code: code ?? 'unknown', problem, romset: null };
 }
 
 export function productCode(romName) {

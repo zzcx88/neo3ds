@@ -121,8 +121,9 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 - `vendor/` — WASM 3종 + `engine.elf` + `neogeo_games.json` (CI가 빌드·스테이징, git 제외)
 
 `index.html`·`convert.html`·`compat.html`·`manual.html`·`changelog.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,
-변환 페이지는 `convert_start`/`convert_done`/`convert_fail` 세 이벤트만 추가로 보낸다. 게임 식별자는
-공개 카탈로그의 롬셋 이름(`set`)뿐이며 zip 파일명은 보내지 않는다 (#125, ADR 0001).
+변환 페이지는 `convert_start`(모드, 배치면 `batch:3-5`처럼 규모 접미), `convert_done`(게임),
+`convert_fail`(게임, `load/bios`처럼 단계/사유), `convert_save`(다운로드 클릭의 출력 모드) 네 이벤트만 보낸다.
+게임 식별자는 공개 카탈로그의 롬셋 이름(`set`)뿐이며 zip 파일명은 보내지 않는다 (#125·#175, ADR 0001).
 
 생성물은 손으로 고치지 않는다. 한국어 원본을 고치고 아래를 실행해 산출물을 같이 커밋한다:
 

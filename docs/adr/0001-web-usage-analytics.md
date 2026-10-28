@@ -18,3 +18,14 @@
 - 보존이 6개월이므로 장기 추세는 CSV 내보내기로 보관한다.
 - 변환 실패는 단계(`load|romfs|art|cia`)까지만 기록한다. 차단 사유 코드는 필요해지면 별도로 추가한다.
 - 페이지의 `stats.rom`은 사용자가 올린 zip 파일명이므로 게임 식별자로 쓰지 않는다. 워커가 정규 롬셋 이름(`set`)을 함께 보내야 한다.
+
+## Amendment 2026-10-28 (#175)
+
+이벤트를 늘리지 않고 값에 정보를 접어 넣는 방향으로 계약을 넓혔다. 프로퍼티 수는 그대로라 과금 단가도 그대로다.
+
+- **이벤트 4개**: `convert_start(mode)`, `convert_done(game)`, `convert_fail(game, stage)`, `convert_save(mode)`.
+  - `mode` 값에 배치 규모를 접는다: `batch:2`·`batch:3-5`·`batch:6+`.
+  - `stage` 값에 실패 사유를 접는다: `load/bios`·`load/notromset`·`load/missing`·`load/zip`·`load/nofile`·`art/image`·`romfs/oom`·`cia/wasm`·`worker/crash`·`.../unknown`.
+  - `convert_save`는 변환 완료가 아니라 **다운로드 클릭**에서만 발생한다. 변환은 했지만 파일을 가져가지 않은 경우를 구분하기 위해서다.
+- 사유 코드는 워커가 오류에 싣는 기계용 값이며, 사람이 보는 메시지는 그대로 지역화한다. 코드 목록은 `site/vendor/conv/analytics.js`가 화이트리스트로 닫고 `conv.test.mjs`가 고정한다.
+- 새 값도 개인 식별자가 아니다. `site/privacy.html` KO/EN과 `docs/build.md` §7.1을 같은 커밋에서 갱신했다.
