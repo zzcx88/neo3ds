@@ -14,7 +14,8 @@ import {
 } from './vendor/conv/art.js';
 import { zipResults } from './vendor/conv/bundle.js';
 import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
-import { startEvent, doneEvent, failEvent, saveEvent, send as sendEvent } from './vendor/conv/analytics.js';
+import { startEvent, doneEvent, failEvent, saveEvent, submitEvent, send as sendEvent } from './vendor/conv/analytics.js';
+import { buildReport, failuresFrom, fitPayload } from './vendor/conv/report.js';
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
@@ -25,7 +26,7 @@ const t = (ko, en) => (isEn() ? en : ko);
 // language the page is in so a KO page gets KO reasons (#79).
 const uiLang = () => (isEn() ? 'en' : 'ko');
 
-/* ── #125/#175 usage events: four events, all optional. A blocked Umami script
+/* ── #125/#175/#189 usage events: five events, all optional. A blocked Umami script
    or a throwing track() must leave the conversion untouched. ─────────────── */
 function track(ev) {
   sendEvent(window.umami, ev);
@@ -46,6 +47,111 @@ function trackFail(set, stage, code) {
 // Fires on the download click, not when the file is built (#175).
 function trackSave(mode) {
   if (mode) track(saveEvent(mode));
+}
+
+/* ── #188/#189 anonymous report: the run's log and failure context go to the
+   worker only after report.js swaps every zip file name for its catalog name.
+   The endpoint comes from a meta tag, set once after the worker is deployed. */
+const REPORT_ENDPOINT = (document.querySelector('meta[name="neo3ds-report-endpoint"]')?.content ?? '').trim();
+const reportForm = $('gateReport'), reportSendBtn = $('reportSend');
+const reportTypeSel = $('reportType'), reportMsg = $('reportMsg'), reportLink = $('reportLink');
+const failInfo = new Map(); // batch row -> { code, stage }; row.step is cleared on fail
+let singleFail = null; // { code, stage } for the single-game path
+let lastErrorDetail = ''; // worker crash location, when the browser reports one
+let reportSending = false;
+let reportTypeTouched = false; // once the visitor picks a type, stop overriding it
+
+function reportFailures() {
+  if (batch && batchStarted) return failuresFrom(batch, batchSource, failInfo);
+  if (singleFail) return [{ set: singleRow?.set ?? null, title: singleRow?.title ?? null, ...singleFail }];
+  return [];
+}
+
+// Preflight rows carry the zip name (page-only) and the catalog name (safe).
+function reportSources() {
+  if (batchSource) return batchSource.map((row) => ({ name: row.name, set: row.set }));
+  if (singleRow) return [{ name: singleRow.name, set: singleRow.set }];
+  return [];
+}
+
+function openReport(scroll = false) {
+  if (!reportForm) return;
+  reportForm.classList.remove('hidden');
+  // Follow the run state until the visitor picks a type themselves: a failed
+  // run pre-selects "conversion failed" and keeps the attached game table.
+  if (!reportTypeTouched) reportTypeSel.value = reportFailures().length ? 'convert-fail' : 'site-bug';
+  if (scroll) reportForm.scrollIntoView({ block: 'start' });
+}
+
+function reportMessage(text) {
+  reportMsg.textContent = text;
+}
+
+async function converterVersion() {
+  try {
+    const mod = await import('./vendor/conv/version.js');
+    return mod.CONVERTER_VERSION ?? null;
+  } catch { return null; } // build product absent in local dev
+}
+
+if (reportForm) {
+  reportTypeSel.addEventListener('change', () => { reportTypeTouched = true; });
+  reportForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (reportSending) return;
+    const summary = $('reportText').value.trim();
+    if (!summary) {
+      reportMessage(t('증상을 한 줄 이상 적어 주세요.', 'Describe the problem first.'));
+      $('reportText').focus();
+      return;
+    }
+    if (!REPORT_ENDPOINT) {
+      reportMessage(t('지금은 제보를 받을 수 없습니다.', 'Reporting is not available right now.'));
+      return;
+    }
+    const type = reportTypeSel.value;
+    const report = fitPayload(buildReport({
+      type,
+      summary,
+      game: $('reportGame').value,
+      mode: currentMode(),
+      version: await converterVersion(),
+      failures: type === 'convert-fail' ? reportFailures() : [],
+      log: logEl.textContent,
+      error: [$('gateAlert').textContent, lastErrorDetail].filter(Boolean).join('\n\n') || null,
+      sources: reportSources(),
+      website: $('reportTrap').value,
+    }));
+    reportSending = true;
+    reportSendBtn.disabled = true;
+    reportLink.classList.add('hidden');
+    reportMessage(t('보내는 중…', 'Sending…'));
+    try {
+      const res = await fetch(REPORT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(report),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.url) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      track(submitEvent());
+      reportMessage(t('접수되었습니다.', 'Sent.'));
+      reportLink.href = data.url;
+      reportLink.textContent = `${t('이슈', 'issue')} #${data.number}`;
+      reportLink.classList.remove('hidden');
+      $('reportText').value = '';
+    } catch (err) {
+      reportMessage(t(`보내지 못했습니다: ${err?.message ?? err}`, `Could not send: ${err?.message ?? err}`));
+    } finally {
+      reportSending = false;
+      reportSendBtn.disabled = false;
+    }
+  });
+
+  $('gateReportOpen')?.addEventListener('click', () => {
+    openReport(true);
+    $('reportText').focus({ preventScroll: true });
+  });
 }
 
 /* ── Log (#152): one line per event, tagged so parallel workers stay readable.
@@ -1009,6 +1115,7 @@ function markRunningRowsFailed(message) {
   if (!batch) return;
   for (let i = 0; i < batch.length; i++) {
     if (batch[i].status === STATUS.RUNNING) {
+      failInfo.set(i, { code: 'crash', stage: 'worker' });
       markFailed(batch, i, message);
       trackFail(batchSource?.[i]?.set, 'worker', 'crash');
     }
@@ -1137,6 +1244,9 @@ runBtn.addEventListener('click', () => {
   singleStage = null;
   rowT0.clear();
   rowMeta.clear();
+  failInfo.clear();
+  singleFail = null;
+  lastErrorDetail = '';
 
   if (isBatch) {
     // Fresh statuses for this run, but keep every row's chosen picture (#76).
@@ -1168,7 +1278,7 @@ function spawnWorker(base) {
   const w = new Worker(new URL('./vendor/conv/worker.js', import.meta.url), { type: 'module' });
   w.base = base;
   w.job = null;
-  w.onerror = (e) => workerFailed(w, e.message || 'load failed');
+  w.onerror = (e) => workerFailed(w, e.message || 'load failed', e.error?.stack ?? null);
   w.onmessage = (e) => onWorkerMessage(w, e.data);
   workers.push(w);
   return w;
@@ -1241,6 +1351,7 @@ function failRow(row, message, stage = null, code = null) {
   const secs = rowSecs(row);
   // markFailed clears row.step, so read the analytics stage first.
   const failedAt = stage ?? batch?.[row]?.step ?? null;
+  failInfo.set(row, { code: code ?? null, stage: failedAt });
   markFailed(batch, row, message);
   trackFail(batchSource?.[row]?.set, failedAt, code);
   updateRow(row);
@@ -1263,14 +1374,15 @@ function finishBatchRun() {
 
 // A crashed worker loses its game (failed row) and is replaced while work is
 // left, so one bad game cannot strand the rest of the queue.
-function workerFailed(w, message) {
+function workerFailed(w, message, detail = null) {
   const job = w.job;
+  if (detail) lastErrorDetail = String(detail).slice(0, 1000);
   workers = workers.filter((x) => x !== w);
   try { w.terminate(); } catch { /* already gone */ }
   if (!running) return;
   if (w.single || job == null) {
     markRunningRowsFailed(t('워커 오류', 'Worker error'));
-    if (w.single) trackFail(singleRow?.set, 'worker', 'crash');
+    if (w.single) { singleFail = { code: 'crash', stage: 'worker' }; trackFail(singleRow?.set, 'worker', 'crash'); }
     endOverall('error');
     finish();
     failAlert(message);
@@ -1344,6 +1456,7 @@ function onSingleMessage(m) {
       `${m.stats.tiles.toLocaleString()} tiles · graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
   } else if (m.type === 'error') {
     markRunningRowsFailed(m.message);
+    singleFail = { code: m.code ?? null, stage: singleStage };
     trackFail(singleRow?.set, singleStage, m.code);
     endOverall('error');
     finish();
@@ -1381,6 +1494,8 @@ function showAlert(text) {
   const el = $('gateAlert');
   el.textContent = text;
   el.classList.toggle('hidden', !text);
+  // Every failure path lands here: surface the report form with the log attached.
+  if (text) openReport();
 }
 
 function failAlert(message) {
@@ -1459,3 +1574,9 @@ cancelBtn.addEventListener('click', () => {
   finish();
   logEvent('', t('취소됨', 'Cancelled'), 'meta');
 });
+
+// Footer links land here (#191): open the form and scroll to it, including the
+// case where the link only changes the hash on this page.
+const openFromHash = () => { if (location.hash === '#feedback') openReport(true); };
+openFromHash();
+window.addEventListener('hashchange', openFromHash);

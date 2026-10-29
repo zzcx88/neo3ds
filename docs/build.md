@@ -122,8 +122,9 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 `index.html`·`convert.html`·`compat.html`·`manual.html`·`changelog.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,
 변환 페이지는 `convert_start`(모드, 배치면 `batch:3-5`처럼 규모 접미), `convert_done`(게임),
-`convert_fail`(게임, `load/bios`처럼 단계/사유), `convert_save`(다운로드 클릭의 출력 모드) 네 이벤트만 보낸다.
-게임 식별자는 공개 카탈로그의 롬셋 이름(`set`)뿐이며 zip 파일명은 보내지 않는다 (#125·#175, ADR 0001).
+`convert_fail`(게임, `load/bios`처럼 단계/사유), `convert_save`(다운로드 클릭의 출력 모드),
+`feedback_submit`(제보 전송 1회, 속성 없음) 다섯 이벤트만 보낸다.
+게임 식별자는 공개 카탈로그의 롬셋 이름(`set`)뿐이며 zip 파일명은 보내지 않는다 (#125·#175·#189, ADR 0001).
 
 생성물은 손으로 고치지 않는다. 한국어 원본을 고치고 아래를 실행해 산출물을 같이 커밋한다:
 
@@ -192,3 +193,36 @@ Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌
 수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성. 3종 산출물은 Artifacts로 받음).
 로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`
 (전제: §1 엔진 빌드 + §2 외부 도구 배치. Unix는 해당 OS에서 `bash scripts/build_unix_tools.sh` 먼저)
+
+### 7.3 익명 제보 Worker (Cloudflare)
+
+변환 페이지의 제보 폼은 정적 페이지에서 Cloudflare Worker(`worker/`)로 POST하고, Worker가 이 저장소에
+`needs-triage` 라벨 이슈를 만든다 (#188). 제보자는 계정이 필요 없고, zip 파일명·롬 데이터는 전송되지 않는다.
+프라이버시 고지는 §7.1의 `privacy.html`이 담당한다 (#192).
+
+최초 1회:
+
+1. `npx wrangler login`
+2. fine-grained PAT 발급: 이 저장소만, `Issues: Read/Write`
+3. `cd worker && npx wrangler secret put GITHUB_TOKEN`
+4. (권장) `npx wrangler kv namespace create RATE` → `worker/wrangler.toml`의 KV 주석 해제 + id 입력.
+   없으면 isolate 메모리 카운터로 대체된다(시간당 5건, 근사치)
+5. `npx wrangler deploy` → 출력된 `https://neo3ds-report.<account>.workers.dev` 확인
+6. `site/ko/convert.html`의 `<meta name="neo3ds-report-endpoint" content="...">`에 그 URL을 넣고
+   `node scripts/gen_site_i18n.mjs` 실행 → 같은 커밋에 KO 원본과 EN 생성물을 함께 넣는다
+7. Pages 배포 후 변환 페이지에서 제보 1건 전송 → 이슈 생성 확인
+
+endpoint가 비어 있으면 폼은 "지금은 제보를 받을 수 없습니다"만 표시하고 아무것도 보내지 않는다.
+
+로컬 검증:
+
+```bash
+node --test worker/test/*.test.mjs      # 검증·본문·핸들러 계약 (GitHub 호출은 스텁)
+npx wrangler dev                        # 로컬 KV/메모리 사용
+curl -X POST http://127.0.0.1:8787/ -H 'Origin: http://localhost:8788' \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"site-bug","summary":"test report","log":"","website":""}'
+```
+
+`wrangler dev`에 실제 `GITHUB_TOKEN`을 넣으면 로컬에서 진짜 이슈가 만들어진다 —
+검증 후에는 스팸 이슈를 닫고, 테스트용 토큰은 쓰지 않는다.

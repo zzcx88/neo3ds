@@ -39,7 +39,7 @@ TEXT = {
         'nav': ['Compatibility', 'Converter'],
         'sections': 'Sections',
         'lang_label': 'Language',
-        'foot': ['Intro', 'Compatibility', '3DS manual', 'Changelog', 'Repository'],
+        'foot': ['Intro', 'Compatibility', '3DS manual', 'Changelog', 'Repository', 'Report a problem'],
         'note': 'Game footage and trademarks belong to their respective owners.',
         'series': 'More series',
     },
@@ -53,7 +53,7 @@ TEXT = {
         'nav': ['게임 호환성', '변환기'],
         'sections': '섹션',
         'lang_label': '언어',
-        'foot': ['소개', '게임 호환성', '3DS 사용 안내', '패치노트', '저장소'],
+        'foot': ['소개', '게임 호환성', '3DS 사용 안내', '패치노트', '저장소', '문제 신고'],
         'note': '게임 화면과 상표의 권리는 각 권리자에게 있습니다.',
         'series': '다른 시리즈',
     },
@@ -155,7 +155,7 @@ def page(series, rows, counts, total, locale):
         sections=html.escape(t['sections']), lang_label=html.escape(t['lang_label']),
         foot0=html.escape(t['foot'][0]), foot1=html.escape(t['foot'][1]),
         foot2=html.escape(t['foot'][2]), foot3=html.escape(t['foot'][3]),
-        foot4=html.escape(t['foot'][4]), note=html.escape(t['note']), site=SITE, up=up,
+        foot4=html.escape(t['foot'][4]), foot5=html.escape(t['foot'][5]), note=html.escape(t['note']), site=SITE, up=up,
         series_label=html.escape(t['series']), peers=peers,
         ko_href=ko_href, en_href=en_href,
         ko_current=' aria-current="true"' if locale == 'ko' else '',
@@ -257,6 +257,7 @@ PAGE = '''<!doctype html>
       <a href="{compat}">{foot1}</a>
       <a href="{page_up}manual.html">{foot2}</a>
       <a href="{page_up}changelog.html">{foot3}</a>
+      <a href="{page_up}convert.html#feedback">{foot5}</a>
       <a href="https://github.com/zzcx88/neo3ds">{foot4}</a>
     </nav>
     <p class="tiny">{note}</p>

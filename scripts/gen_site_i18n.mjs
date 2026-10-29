@@ -63,7 +63,7 @@ const PAGES = {
     file: 'privacy.html',
     url: 'privacy.html',
     title: 'Privacy — web usage stats | neo3ds',
-    description: 'The web converter measures page views and three conversion events with Umami. No cookies, no rom files, no zip file names.',
+    description: 'The web converter measures page views and conversion events with Umami, and discloses what a problem report sends. No cookies, no rom files, no zip file names.',
     ogTitle: 'Privacy — web usage stats | neo3ds',
     ogDescription: 'What the web converter measures. No cookies, no rom files, no zip file names.',
     twitterDescription: 'What the web converter measures. No cookies, no ROM files.',
