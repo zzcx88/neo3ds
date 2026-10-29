@@ -67,10 +67,21 @@
   <div class="changelog-wrap">
     <h1>Changelog</h1>
     <ol class="rel-list">
-      <li class="rel is-latest" id="v1-3-1">
+      <li class="rel is-latest" id="v1-3-2">
+        <div class="rel-head">
+          <span class="rel-v">v1.3.2</span>
+          <span class="rel-latest">Latest</span>
+          <time class="rel-date" datetime="2026-10-29">2026-10-29</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>macOS: run it where you unzipped it</b>: The app converts even when you launch it from where you unzipped it. Up to v1.3.1 Gatekeeper ran it from a read-only copy and every build failed with "Read-only file system : .../bannertool"; the README also covers moving the app to ~/Applications. (<a href="https://github.com/zzcx88/neo3ds/issues/177">#177</a>)</li>
+            <li><b>Linux: runnable after unzip</b>: The Linux zip ships makerom and bannertool as executable (0755), so conversion works as soon as you unzip. (<a href="https://github.com/zzcx88/neo3ds/issues/179">#179</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.3.2">GitHub release</a>
+      </li>
+      <li class="rel" id="v1-3-1">
         <div class="rel-head">
           <span class="rel-v">v1.3.1</span>
-          <span class="rel-latest">Latest</span>
           <time class="rel-date" datetime="2026-10-27">2026-10-27</time>
         </div>
         <ul class="rel-items">
