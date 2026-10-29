@@ -57,7 +57,7 @@ Chrome, Edge, Firefox, Safari에서 됩니다. 테스트 PC에서 KOF '98 변환
 
 <img src="docs/images/converter2_ko.png" width="520" alt="오프라인 변환기 창">
 
-1. 압축을 풀고 `Neo3dsConverter.exe`(Windows), `neo3ds-converter`(Linux), `neo3ds-converter.app`(macOS)을 실행합니다.
+1. 압축을 풀고 `Neo3dsConverter.exe`(Windows), `neo3ds-converter`(Linux), `neo3ds-converter.app`(macOS, `~/Downloads` 밖으로 먼저 옮김 — *OS별 첫 실행* 참고)을 실행합니다.
 2. 게임 zip을 창에 끌어 놓거나(`neogeo.zip`은 같은 폴더에) 찾아보기 버튼으로 엽니다.
 3. 롬셋이 인식되면 필요에 따라 이름·시스템·지역·아이콘·배너를 바꿉니다. 미리보기가 실제 HOME 메뉴 모양입니다.
 4. **CIA**, **런처용 파일**, **런처 CIA** 중 하나를 만듭니다. Windows는 zip 옆에, Linux·macOS는 `~/Downloads`에 저장합니다.
@@ -68,7 +68,7 @@ Chrome, Edge, Firefox, Safari에서 됩니다. 테스트 PC에서 KOF '98 변환
 <summary>OS별 첫 실행</summary>
 
 - **Windows**: "알 수 없는 게시자" 경고가 나오면 **[추가 정보] → [실행]**을 누릅니다.
-- **macOS**: 압축을 푼 뒤 터미널에서 `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64`를 한 번 실행합니다. 서명되지 않은 앱이라 경고가 나오면 **열기**를 누릅니다.
+- **macOS**: 앱을 **처음 실행하기 전에** `neo3ds-converter.app`을 `~/Applications`나 `/Applications`로 옮깁니다. 또는 `neo3ds-converter-osx-arm64` 폴더가 있는 자리에서 터미널로 `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64`를 한 번 실행합니다. `~/Downloads`에서 바로 실행하면 macOS가 앱을 읽기 전용 App Translocation 사본에서 돌립니다. 변환기 v1.3.1 이하에서는 이 상태로 CIA를 만들면 `Read-only file system : '…/AppTranslocation/…/tools/osx-arm64/bannertool'`로 실패합니다. 서명되지 않은 앱이라 경고가 나오면 **열기**를 누릅니다.
 - **Linux**: `libx11-6`, `libice6`, `libsm6`, `libfontconfig1`이 필요합니다(Ubuntu 기준). Xubuntu 26.10(X11)에서 확인했습니다. 아이콘·배너의 한글 제목은 시스템 글꼴로 그리므로 `fonts-noto-cjk` 같은 한글 글꼴을 설치하세요. X11/XWayland에서 돌고, Wayland 네이티브는 지원하지 않습니다.
 - **미지원**: Intel Mac, linux-arm64.
 

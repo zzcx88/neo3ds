@@ -57,7 +57,7 @@ The same converter as a program on your PC, with a window and a command line. It
 
 <img src="docs/images/converter2_en.png" width="520" alt="Offline converter window">
 
-1. Unzip and run `Neo3dsConverter.exe` (Windows), `neo3ds-converter` (Linux) or `neo3ds-converter.app` (macOS).
+1. Unzip and run `Neo3dsConverter.exe` (Windows), `neo3ds-converter` (Linux) or `neo3ds-converter.app` (macOS; move it out of `~/Downloads` first, see *First run*).
 2. Drop game zips on the window (keep `neogeo.zip` in the same folder) or open them with the browse button.
 3. When the romset shows as recognized, change the title, system, region, icon or banner if you like; the preview shows the HOME menu art.
 4. Build a **CIA**, a **launcher file** or the **launcher CIA**. Windows saves next to the zip; Linux and macOS save to `~/Downloads`.
@@ -68,7 +68,7 @@ The language button switches between Korean and English.
 <summary>First run on each OS</summary>
 
 - **Windows**: on an "unknown publisher" warning, click **[More info] → [Run anyway]**.
-- **macOS**: after unzipping, run `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64` once in Terminal. The app is unsigned, so press **Open** if a warning appears.
+- **macOS**: move `neo3ds-converter.app` into `~/Applications` or `/Applications` **before the first launch**, or run `xattr -dr com.apple.quarantine neo3ds-converter-osx-arm64` in the folder that contains it. Launched straight from `~/Downloads`, macOS runs the app from a read-only App Translocation copy; converter v1.3.1 and older fail to build CIAs there with `Read-only file system : '…/AppTranslocation/…/tools/osx-arm64/bannertool'`. The app is unsigned, so press **Open** if a warning appears.
 - **Linux**: needs `libx11-6`, `libice6`, `libsm6`, `libfontconfig1` (Ubuntu names). Verified on Xubuntu 26.10 (X11). Icon and banner titles in Korean use the system font, so install a Korean font such as `fonts-noto-cjk`. Runs on X11/XWayland; native Wayland is not supported.
 - **Not supported**: Intel Macs, linux-arm64.
 

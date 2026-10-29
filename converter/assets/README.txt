@@ -14,7 +14,11 @@ https://github.com/zzcx88/neo3ds
 Linux·macOS: 인자 없이 실행하면 창이 뜨고(Linux는 ./neo3ds-converter, macOS는 neo3ds-converter.app),
              인자를 주면 명령줄로 동작합니다. ./neo3ds-converter kof99.zip 처럼 실행하고, 옵션은 --help.
              런처 CIA는 ./neo3ds-converter --launcher 로 만듭니다.
-             macOS에서 실행이 막히면 터미널에서 xattr -dr com.apple.quarantine <이 폴더> 를 한 번 실행하세요.
+             macOS: 앱을 처음 실행하기 전에 neo3ds-converter.app을 ~/Applications나 /Applications로
+             옮기세요. 압축을 푼 자리(~/Downloads)에서 바로 실행하면 macOS가 앱을 읽기 전용 사본에서
+             돌리며, 변환기 v1.3.1 이하는 이 상태로 CIA를 만들면
+             "Read-only file system : .../AppTranslocation/.../bannertool"로 실패합니다.
+             옮기기 어려우면 위 폴더에서 xattr -dr com.apple.quarantine <이 폴더> 를 한 번 실행하세요.
              Linux는 libx11-6, libice6, libsm6, libfontconfig1이 필요합니다.
              창 한글은 앱 내장 글꼴로 나오지만 아이콘·배너 한글 제목은 시스템 한글 글꼴이
              필요하며, 없으면 □로 나옵니다. fonts-noto-cjk 같은 패키지를 설치하세요.
@@ -33,7 +37,11 @@ If Windows shows an "unknown publisher" warning on first run, click [More info] 
 Linux, macOS: with no arguments the window opens (Linux: ./neo3ds-converter, macOS: neo3ds-converter.app);
               with arguments it runs as a command line. Run it like ./neo3ds-converter kof99.zip; options: --help.
               ./neo3ds-converter --launcher builds the launcher CIA.
-              If macOS blocks it, run xattr -dr com.apple.quarantine <this folder> once in Terminal.
+              macOS: before the first launch, move neo3ds-converter.app into ~/Applications or /Applications.
+              Launched where it was unzipped (~/Downloads), macOS runs the app from a read-only copy, and
+              converter v1.3.1 and older fail to build CIAs there with
+              "Read-only file system : .../AppTranslocation/.../bannertool".
+              Instead you can run xattr -dr com.apple.quarantine <this folder> once in Terminal.
               Linux needs libx11-6, libice6, libsm6, libfontconfig1.
               Window text uses the bundled Korean font, but icon/banner titles with
               Hangul need a system Korean font; without one they show as boxes.
