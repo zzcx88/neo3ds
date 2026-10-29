@@ -73,6 +73,14 @@ test('validateReport: keeps catalog names, drops zip names and extras', () => {
   assert.deepEqual(check.report.failures[0], { set: 'kof98h', title: "KOF '98", code: 'image', stage: 'art' });
 });
 
+test('validateReport: truncation keeps the newest log lines', () => {
+  const log = 'HEAD\n' + 'x'.repeat(45000) + '\nTAIL';
+  const report = validateReport(payload({ log })).report;
+  assert.equal(report.log.length, 40000);
+  assert.equal(report.log.endsWith('TAIL'), true);
+  assert.equal(report.log.includes('HEAD'), false);
+});
+
 test('issueTitle: type prefix and one-line summary', () => {
   const title = issueTitle(validateReport(payload()).report);
   assert.equal(title.startsWith('[제보] 변환 실패: '), true);

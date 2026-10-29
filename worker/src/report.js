@@ -52,7 +52,9 @@ export function validateReport(input) {
       mode: MODES.has(input.mode) ? input.mode : null,
       version: str(input.version, 32) || null,
       failures,
-      log: str(input.log, 40000), // GitHub caps an issue body at 64KB
+      // Keep the newest lines: the issue section promises the tail, and GitHub
+      // caps an issue body at 64KB.
+      log: typeof input.log === 'string' ? input.log.slice(-40000) : '',
       error: str(input.error, 2000) || null,
     },
   };

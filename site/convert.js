@@ -71,7 +71,9 @@ function reportFailures() {
 function reportSources() {
   if (batchSource) return batchSource.map((row) => ({ name: row.name, set: row.set }));
   if (singleRow) return [{ name: singleRow.name, set: singleRow.set }];
-  return [];
+  // Launcher runs skip preflight, but the log still tags lines with zip names:
+  // without this fallback those names would reach the public issue.
+  return gameZips().map((file) => ({ name: file.name, set: null }));
 }
 
 function openReport(scroll = false) {
@@ -109,24 +111,26 @@ if (reportForm) {
       reportMessage(t('지금은 제보를 받을 수 없습니다.', 'Reporting is not available right now.'));
       return;
     }
-    const type = reportTypeSel.value;
-    const report = fitPayload(buildReport({
-      type,
-      summary,
-      game: $('reportGame').value,
-      mode: currentMode(),
-      version: await converterVersion(),
-      failures: type === 'convert-fail' ? reportFailures() : [],
-      log: logEl.textContent,
-      error: [$('gateAlert').textContent, lastErrorDetail].filter(Boolean).join('\n\n') || null,
-      sources: reportSources(),
-      website: $('reportTrap').value,
-    }));
+    // Guard before the first await: the version import may hit the network,
+    // and a double click must not file two issues (#189).
     reportSending = true;
     reportSendBtn.disabled = true;
     reportLink.classList.add('hidden');
     reportMessage(t('보내는 중…', 'Sending…'));
     try {
+      const type = reportTypeSel.value;
+      const report = fitPayload(buildReport({
+        type,
+        summary,
+        game: $('reportGame').value,
+        mode: currentMode(),
+        version: await converterVersion(),
+        failures: type === 'convert-fail' ? reportFailures() : [],
+        log: logEl.textContent,
+        error: [$('gateAlert').textContent, lastErrorDetail].filter(Boolean).join('\n\n') || null,
+        sources: reportSources(),
+        website: $('reportTrap').value,
+      }));
       const res = await fetch(REPORT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
