@@ -138,6 +138,9 @@ jobs:
           ./scripts/package_release.ps1 -Runtimes ${{ matrix.runtime }} `
             -OutDir dist -LauncherCia launcher-inject/neo3ds-launcher.cia `
             -VersionOverride '${{ inputs.version }}'
+      - name: Verify packaged zip entry modes
+        shell: bash
+        run: bash scripts/check_zip_modes.sh "dist/neo3ds-converter-${{ matrix.runtime }}.zip" "${{ matrix.runtime }}"
       - name: Ad-hoc sign macOS .app
         if: matrix.runtime == 'osx-arm64'
         shell: bash
@@ -154,6 +157,9 @@ jobs:
           rm dist/neo3ds-converter-osx-arm64.zip
           ditto -c -k --sequesterRsrc --keepParent dist/stage/neo3ds-converter-osx-arm64 dist/neo3ds-converter-osx-arm64.zip
           unzip -l dist/neo3ds-converter-osx-arm64.zip | head -8
+      - name: Verify zip entry modes
+        shell: bash
+        run: bash scripts/check_zip_modes.sh "dist/neo3ds-converter-${{ matrix.runtime }}.zip" "${{ matrix.runtime }}"
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.runtime }}

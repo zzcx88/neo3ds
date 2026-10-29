@@ -188,6 +188,19 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
   $zip = Join-Path $root $OutDir "$packageName.zip"
   if (Test-Path $zip) { Remove-Item $zip -Force }
   $base = Split-Path $stage -Parent
+  # Programs get 0100755, data 0100644, including the runtime-specific tool copies the converter
+  # prefers (tools/<rid>/…) — a 0644 makerom/bannertool would only run if the converter could chmod
+  # it at run time, which fails on read-only media (#179).
+  $programs = @($binary, "tools/$($toolNames[0])", "tools/$($toolNames[1])",
+    "tools/$runtime/$($toolNames[0])", "tools/$runtime/$($toolNames[1])")
+  if ($isMacRid) {
+    $appMac = 'neo3ds-converter.app/Contents/MacOS'
+    $appPrograms = $programs | ForEach-Object { "$appMac/$_" }
+    $programs += $appPrograms
+  }
+  # 0100755 for programs, 0100644 for data (Unix zips only).
+  $modeProgram = 33261
+  $modeData = 33188
   $z = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
   try {
     foreach ($f in Get-ChildItem $stage -Recurse -File) {
@@ -195,12 +208,7 @@ foreach ($runtime in ($Runtimes | Select-Object -Unique)) {
       $entry = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f.FullName, $name, [IO.Compression.CompressionLevel]::Optimal)
       if (-not $isWindowsRid) {
         $relative = $name.Substring($packageName.Length + 1)
-        # Unix regular files: 0100755 for programs, 0100644 for data.
-        $mode = if ($relative -in @($binary, "tools/makerom", "tools/bannertool",
-            "neo3ds-converter.app/Contents/MacOS/neo3ds-converter",
-            "neo3ds-converter.app/Contents/MacOS/tools/osx-arm64/makerom",
-            "neo3ds-converter.app/Contents/MacOS/tools/osx-arm64/bannertool") -or
-          $relative -match '\.(so(\.[0-9]+)*|dylib)$') { 33261 } else { 33188 }
+        $mode = if ($relative -in $programs -or $relative -match '\.(so(\.[0-9]+)*|dylib)$') { $modeProgram } else { $modeData }
         $entry.ExternalAttributes = $mode -shl 16
       }
     }

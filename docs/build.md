@@ -176,6 +176,9 @@ GitHub Release에 올린다 (#55에서 복원, #102에서 GUI 동봉).
 
 macOS `.app`은 macOS 러너에서 ad-hoc 서명(`codesign --force --deep --sign -`) 후 `ditto`로 재압축한다 (#164).
 공증은 하지 않으므로 첫 실행 경고 대응은 README를 따른다.
+Unix zip의 변환기·`makerom`·`bannertool`(평면·rid 사본)은 0755여야 한다 — 압축을 풀면 바로 실행되어야 하고
+변환기의 chmod는 읽기 전용 미디어 폴백일 뿐이다 (#179). CI가 `bash scripts/check_zip_modes.sh <zip> <runtime>`로
+패키징 직후와 macOS `ditto` 재압축 후 두 번 검사한다(로컬에서도 같은 명령으로 확인 가능).
 
 Windows 도구는 최신 릴리스 zip에서 부트스트랩한다(최초 1회는 수동 배치, §2).
 Linux·macOS 도구는 CI가 `scripts/build_unix_tools.sh`로 소스에서 빌드한다(upstream 태그 고정).
