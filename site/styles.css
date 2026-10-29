@@ -392,6 +392,9 @@ section[id]{scroll-margin-top:64px}
 .compat tr[data-status="2"] td.status{color:var(--a)}
 .compat td.note{color:var(--dim);font-size:12px}
 .compat .compat-back{margin:20px 0 0}
+.compat .series{display:flex;flex-wrap:wrap;gap:8px 14px;margin:18px 0 24px;font-size:13px}
+.compat .series a{color:var(--dim);border-bottom:1px solid var(--line)}
+.compat .series a:hover{color:var(--gold);border-color:var(--gold)}
 
 /* ── 개인정보 문서 (privacy.html, #125) ──────────────────────────────── */
 .doc{max-width:820px;margin:0 auto;padding:28px 24px 72px}

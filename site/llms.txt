@@ -1,0 +1,38 @@
+# neo3ds
+
+> neo3ds turns Neo Geo (MAME) romsets into installable Nintendo 3DS CIAs and runs them
+> on real hardware — including the original Old 3DS — at 60 fps, one HOME menu icon per
+> game. 242 of the 282 romsets in its game database convert; 25 are confirmed on real
+> hardware. The converter runs offline (Windows, Linux, macOS) and in the browser.
+
+## Pages
+
+- [Intro](https://zzcx88.github.io/neo3ds/): what neo3ds is, the three-step set-up, and a compatibility summary.
+- [Compatibility list](https://zzcx88.github.io/neo3ds/compat.html): every one of the 282 romsets with its conversion status, generated from the game database.
+- [Web converter](https://zzcx88.github.io/neo3ds/convert.html): converts a romset zip to a CIA inside the browser tab. Nothing is uploaded and nothing is installed.
+- [3DS manual](https://zzcx88.github.io/neo3ds/manual.html): launcher, controls, key configuration, and how to install a CIA with FBI.
+- [Changelog](https://zzcx88.github.io/neo3ds/changelog.html): every release, newest first.
+- [Korean site](https://zzcx88.github.io/neo3ds/ko/): the same pages in Korean.
+
+## Series pages
+
+- [Metal Slug](https://zzcx88.github.io/neo3ds/series/metal-slug.html)
+- [The King of Fighters](https://zzcx88.github.io/neo3ds/series/king-of-fighters.html)
+- [Samurai Shodown](https://zzcx88.github.io/neo3ds/series/samurai-shodown.html)
+- [Fatal Fury and Garou](https://zzcx88.github.io/neo3ds/series/fatal-fury.html)
+- [Art of Fighting](https://zzcx88.github.io/neo3ds/series/art-of-fighting.html)
+- [The Last Blade](https://zzcx88.github.io/neo3ds/series/last-blade.html)
+- [World Heroes](https://zzcx88.github.io/neo3ds/series/world-heroes.html)
+- [Sengoku](https://zzcx88.github.io/neo3ds/series/sengoku.html)
+- [Puzzle Bobble](https://zzcx88.github.io/neo3ds/series/puzzle-bobble.html)
+- [Shock Troopers](https://zzcx88.github.io/neo3ds/series/shock-troopers.html)
+- [Super Sidekicks](https://zzcx88.github.io/neo3ds/series/super-sidekicks.html)
+- [King of the Monsters](https://zzcx88.github.io/neo3ds/series/king-of-the-monsters.html)
+
+## Facts
+
+- Requirements: a Neo Geo romset zip (MAME set names) plus `neogeo.zip` for encrypted carts.
+- Output: one CIA per game, installed with FBI on the 3DS.
+- Conversion is done locally. The browser converter uses WebAssembly in a worker and never uploads the rom.
+- The engine targets Old 3DS, New 3DS, 2DS and 3DS XL.
+- Source: https://github.com/zzcx88/neo3ds
