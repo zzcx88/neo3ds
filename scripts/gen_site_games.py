@@ -22,6 +22,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_site_seo import SITE  # single source for the deployed base URL (#130 P1)
+from site_series_data import SERIES  # series links on the compat page (#186)
 
 # Protection.Supported (Protection.cs:13): the cart types the converter can decrypt.
 SUPPORTED_PREFIXES = ('cmc42_', 'sma_', 'pcm2_', 'k2k2_', 'pvc_')
@@ -106,9 +107,8 @@ def scheme(cart):
     return ''
 
 
-def main():
-    src = sys.argv[1] if len(sys.argv) > 1 else 'converter/assets/neogeo_games.json'
-    dst = sys.argv[2] if len(sys.argv) > 2 else 'site/games.js'
+def build_rows(src='converter/assets/neogeo_games.json'):
+    """(rows, counts, schemes) for every romset. gen_site_series.py imports this (#186)."""
     games = json.load(open(src, encoding='utf-8'))
 
     rows, counts = [], {'total': 0, 'ok': 0, 'no': 0, 'verified': 0}
@@ -134,7 +134,13 @@ def main():
 
     # Verified sets first, then the rest by title: the proof leads, the catalogue follows.
     rows.sort(key=lambda r: (r[6] != 1, r[1].lower()))
+    return rows, counts, schemes
 
+
+def main():
+    src = sys.argv[1] if len(sys.argv) > 1 else 'converter/assets/neogeo_games.json'
+    dst = sys.argv[2] if len(sys.argv) > 2 else 'site/games.js'
+    rows, counts, schemes = build_rows(src)
     write_games_js(dst, rows, counts, schemes)
     write_compat(rows, counts)
 
@@ -180,6 +186,7 @@ COMPAT = {
         'sections': '섹션',
         'nav': ['게임 호환성', '변환기'],
         'cta': '변환하기',
+        'series_label': '시리즈별로 보기',
     },
     'en': {
         'file': 'site/compat.html',
@@ -202,6 +209,7 @@ COMPAT = {
         'sections': 'Sections',
         'nav': ['Compatibility', 'Converter'],
         'cta': 'Convert',
+        'series_label': 'Browse by series',
     },
 }
 
@@ -226,6 +234,8 @@ def write_compat(rows, counts):
                 % (status, html.escape(title), html.escape(set_name), year, html.escape(maker),
                    rom_mb, STATUS[locale][status], html.escape(note)))
         th = ''.join('<th>%s</th>' % html.escape(h) for h in c['th'])
+        series = '\n        '.join('<a href="series/%s.html">%s</a>'
+                                   % (s['slug'], html.escape(s[locale]['name'])) for s in SERIES)
         page = COMPAT_PAGE.format(
             lang='ko' if locale == 'ko' else 'en',
             site=SITE, url=SITE + c['url'],
@@ -251,6 +261,7 @@ def write_compat(rows, counts):
             ko_current=' aria-current="true"' if locale == 'ko' else '',
             en_current=' aria-current="true"' if locale == 'en' else '',
             rows='\n      '.join(body),
+            series=series, series_label=html.escape(c['series_label']),
         )
         os.makedirs(os.path.dirname(c['file']), exist_ok=True)
         with open(c['file'], 'w', encoding='utf-8') as f:
@@ -320,6 +331,9 @@ COMPAT_PAGE = '''<!doctype html>
     <h1>{h1}</h1>
     <p class="lede">{lede}</p>
     <p class="tiny">{counts}</p>
+    <nav class="series" aria-label="{series_label}">
+        {series}
+    </nav>
     <table>
       <caption>{caption}</caption>
       <thead><tr>{th}</tr></thead>

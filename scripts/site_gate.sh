@@ -54,6 +54,12 @@ for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html', 
   if (html.includes('data-i18n')) { console.error(page, 'still has i18n bindings'); process.exit(1); }
   if (/[\uac00-\ud7a3]/.test(html)) { console.error(page, 'still has Korean text'); process.exit(1); }
 }
+// Series pages (#186) are generated per locale, so the EN side must be free of Korean too.
+for (const f of require('node:fs').readdirSync('site/series')) {
+  const html = fs.readFileSync('site/series/' + f, 'utf8');
+  if (html.includes('data-i18n')) { console.error(f, 'has i18n bindings'); process.exit(1); }
+  if (/[\uac00-\ud7a3]/.test(html)) { console.error(f, 'has Korean text'); process.exit(1); }
+}
 const UMAMI_ID = 'data-website-id=\"cf5cd373-6021-4643-a392-c3823e8f3cdd\"';
 const UMAMI_DOMAINS = 'data-domains=\"zzcx88.github.io\"';
 for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html',
@@ -71,6 +77,7 @@ console.log('i18n + analytics OK');
 
 # Generated pages must match their sources: a stale commit fails here instead of on main.
 python3 scripts/gen_site_games.py > /dev/null
+python3 scripts/gen_site_series.py > /dev/null
 python3 scripts/gen_site_changelog.py > /dev/null
 node scripts/gen_site_i18n.mjs --check
 python3 scripts/gen_site_seo.py --check
@@ -133,8 +140,8 @@ if failed:
 print('README control tables match manual.html')
 EOF
 
-git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html site/manual.html site/changelog.html site/ko/changelog.html || {
-  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html, site/manual.html, site/changelog.html, site/ko/changelog.html' >&2
+git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html site/manual.html site/changelog.html site/ko/changelog.html site/series site/ko/series || {
+  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html, site/manual.html, site/changelog.html, site/ko/changelog.html, site/series, site/ko/series' >&2
   exit 1
 }
 
