@@ -72,8 +72,9 @@
   <h2>Problem reports</h2>
   <p>Pressing send in the converter's report form sends the values below to an anonymous Cloudflare Worker, which opens an issue in the public GitHub repository. No account is needed.</p>
   <ul>
-    <li>Sent: your description, the last 200 lines of the converter log, the failed games' public romset names, reasons and stages, the converter version, the output mode, the page address, and browser information (user agent).</li>
+    <li>Sent: the report type, your description and optional game name, the last 200 lines of the converter log, the failed games' public romset names, reasons and stages, the error message, the converter version, the output mode, the page address, and browser information (user agent).</li>
     <li>The issue is public and anyone can read it; closing it does not delete it. No identity or email is collected, and no reply is promised.</li>
+    <li>Abuse limit: instead of the IP itself the worker keeps a hash of IP and hour for at most one hour, to allow 5 reports per hour.</li>
     <li>A report never carries zip file names, rom files, icon or banner images.</li>
   </ul>
 

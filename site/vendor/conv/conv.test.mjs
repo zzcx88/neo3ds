@@ -633,7 +633,7 @@ await t('report/zip-names-never-leave-the-tab', async () => {
     summary: 'converted but hangs',
     log: '  1.2s #1 KOF98.ZIP [1/4] load\n  2.0s #1 kof98.zip ✗ bios\n  neogeo.zip ok\n  kof98h ok',
     error: 'kof98.zip: banner failed',
-    sources: [{ name: 'KOF98.ZIP', set: 'kof98h' }, { name: 'neogeo.zip', set: null }],
+    sources: [{ name: 'KOF98.ZIP', set: 'kof98h' }],
   });
   for (const text of [report.log, report.error]) {
     if (/kof98\.zip/i.test(text)) throw new Error(`zip name leaked: ${text}`);

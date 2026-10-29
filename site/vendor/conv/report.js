@@ -31,7 +31,9 @@ export function tailLines(text, max = MAX_LOG_LINES) {
 
 // name (zip, page-side) → replacement, for every dropped zip except the BIOS.
 export function redactions(sources = []) {
-  const map = new Map();
+  // The BIOS zip has one public name shared by every visitor, and preflight
+  // strips it from the rows: seed it here so its name never reaches the issue.
+  const map = new Map([['neogeo.zip', 'BIOS']]);
   for (const source of sources) {
     const name = String(source?.name ?? '');
     if (!name) continue;
