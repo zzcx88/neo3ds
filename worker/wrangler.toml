@@ -13,6 +13,6 @@ ALLOWED_ORIGINS = "https://zzcx88.github.io"
 # Without it the worker falls back to a per-isolate counter.
 #   npx wrangler kv namespace create RATE
 # then uncomment and paste the returned id.
-# [[kv_namespaces]]
-# binding = "RATE"
-# id = ""
+[[kv_namespaces]]
+binding = "RATE"
+id = "545dba4edb4e43889bbb5a65cca71dc3"
