@@ -29,8 +29,8 @@ META = {
         'og_alt': 'en_US',
         'title': '패치노트 — neo3ds 릴리스 기록 | neo3ds',
         'og_title': 'neo3ds 패치노트 | neo3ds',
-        'desc': 'neo3ds 1.0.0부터 1.3.1까지 릴리스 14개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.',
-        'tw_desc': '1.0.0부터 1.3.1까지, 버전별 새 기능과 수정.',
+        'desc': 'neo3ds %(first)s부터 %(top)s까지 릴리스 %(n)d개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.',
+        'tw_desc': '%(first)s부터 %(top)s까지, 버전별 새 기능과 수정.',
         'h1': '패치노트',
         'latest': '최신',
         'link': 'GitHub 릴리스',
@@ -52,8 +52,8 @@ META = {
         'og_alt': 'ko_KR',
         'title': 'Changelog — every neo3ds release | neo3ds',
         'og_title': 'neo3ds changelog | neo3ds',
-        'desc': 'Every neo3ds release from 1.0.0 to 1.3.1, newest first: engine, launcher and converter features and fixes.',
-        'tw_desc': 'Every release from 1.0.0 to 1.3.1, newest first.',
+        'desc': 'Every neo3ds release from %(first)s to %(top)s, newest first: engine, launcher and converter features and fixes.',
+        'tw_desc': 'Every release from %(first)s to %(top)s, newest first.',
         'h1': 'Changelog',
         'latest': 'Latest',
         'link': 'GitHub release',
@@ -225,7 +225,9 @@ def page(meta, releases):
 
 def main():
     releases = load()
+    span = {'first': releases[-1]['version'], 'top': releases[0]['version'], 'n': len(releases)}
     for meta in META.values():
+        meta = dict(meta, desc=meta['desc'] % span, tw_desc=meta['tw_desc'] % span)
         out = page(meta, releases)
         os.makedirs(os.path.dirname(meta['file']), exist_ok=True)
         with open(meta['file'], 'w', encoding='utf-8') as f:
