@@ -81,6 +81,8 @@ function stashPending() {
   const partial = buildReport({
     type: 'convert-fail', summary: 'pending', mode: currentMode(),
     failures, log, error, sources: reportSources(),
+    // #202: only the profile that belongs to the files on screen right now.
+    bios: checkFiles === files ? checkBios : null,
   });
   try {
     localStorage.setItem(PENDING_KEY, JSON.stringify({
@@ -88,6 +90,7 @@ function stashPending() {
       log: partial.log,
       error: partial.error,
       mode: partial.mode,
+      bios: partial.bios,
     }));
   } catch { /* storage can be blocked */ }
 }
@@ -166,7 +169,7 @@ let singleStage = null; // #125: last progress message stage for convert_fail
 const rowT0 = new Map(); // #152: batch row (-1 = single) -> start time
 const rowMeta = new Map(); // #152: batch row (-1 = single) -> { romset, bios } once logged
 let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
-let checkRows = null, checkFiles = null, checkError = '', checkProgress = null;
+let checkRows = null, checkFiles = null, checkBios = null, checkError = '', checkProgress = null;
 let singleRow = null; // #143: the one game's check row when there is no batch list
 let batch = null, batchSource = null;
 let batchStarted = false, readyIndexes = [];
@@ -644,7 +647,7 @@ function runPreflight(fileList, { onRows, onError, onProgress } = {}) {
       return;
     }
     stop();
-    if (m.type === 'preflight') onRows?.(Array.isArray(m.rows) ? m.rows : []);
+    if (m.type === 'preflight') onRows?.(Array.isArray(m.rows) ? m.rows : [], m.bios ?? null);
     else if (m.type === 'error') onError?.(m.message, 'error');
     else onError?.(m.type, 'unexpected');
   };
@@ -664,7 +667,7 @@ function resetCheckModel() {
   batch = null; batchSource = null; singleRow = null;
   batchStarted = false; readyIndexes = [];
   selectedIndex = -1;
-  checkRows = null; checkFiles = null; checkError = ''; checkShape = false;
+  checkRows = null; checkFiles = null; checkBios = null; checkError = ''; checkShape = false;
 }
 
 // #143: every mode that converts a game gets the same romset check, including
@@ -688,10 +691,11 @@ function startCheck() {
       paintBatchHeader();
       if (artEligible()) syncArt();
     },
-    onRows(rows) {
+    onRows(rows, bios) {
       checking = false;
       checkProgress = null;
       checkRows = rows;
+      checkBios = bios ?? null;
       checkShape = wantsBatch();
       batchSource = rows;
       batch = checkShape ? createBatch(rows) : null;

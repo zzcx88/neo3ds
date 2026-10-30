@@ -37,3 +37,12 @@
 - **이벤트 1개 추가**: `feedback_submit` — 제보 Worker가 이슈를 만든 뒤 성공했을 때만 1회. 프로퍼티 없음.
 - 제보 본문(증상·로그·실패 게임·UA)은 분석 이벤트가 아니라 공개 GitHub 이슈로만 간다. 게임 식별자는 계속 공개 카탈로그의 `set`이며, zip 파일명은 제보 로그에서도 카탈로그 이름으로 치환된다(BIOS `neogeo.zip`은 `BIOS`).
 - 새 이벤트도 개인 식별자가 아니다. `site/privacy.html` KO/EN과 `docs/build.md` §7.1을 같은 커밋에서 갱신했다.
+
+## Amendment 2026-10-30 (#202)
+
+제보 본문에 BIOS 구성 프로필을 추가했다. 이벤트는 늘지 않고, 이 필드는 분석 이벤트가 아니라 공개 이슈에만 실린다.
+
+- `bios` 필드: `neogeo.zip` 존재 여부, ZIP 읽기 실패, CRC+size가 일치하는 AES/MVS 칩 이름·지역, `sfix.sfix`/`000-lo.lo`의 `ok|missing`.
+- `neogeo.zip` 파일명·엔트리 원본 이름·롬 바이트는 보내지 않는다. 알려진 슬롯 이름과 세 지역 라벨만 화이트리스트로 전송한다.
+- 프로필은 ZIP 중앙 디렉터리만 읽어 만들며, 엔트리를 inflate하지 않는다.
+- `site/privacy.html` KO/EN과 `docs/build.md` §7.3을 같은 커밋에서 갱신했다.

@@ -74,6 +74,7 @@ if (form) {
         mode: pending?.mode ?? null,
         version,
         failures: type === 'convert-fail' ? pending?.failures ?? [] : [],
+        bios: type === 'convert-fail' ? pending?.bios ?? null : null,
         log: pending?.log ?? '',
         error: pending?.error ?? null,
         website: $('reportTrap').value,

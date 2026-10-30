@@ -23,6 +23,14 @@ const SET_NAME = /^[a-z0-9_]{1,40}$/;
 const CODE = /^[a-z]{1,16}$/;
 const STAGE = /^[a-z]{1,16}$/;
 const MODES = new Set(['cia', 'pack', 'launcher']);
+// Mirrors GameDb.BIOS: the only BIOS chip names a report may carry. The worker
+// keeps the same allow-list; a name outside it is dropped, never echoed.
+const BIOS_NAMES = new Set([
+  'neo-epo.bin', 'neo-po.bin', 'sp-s2.sp1', 'sp-s.sp1', 'asia-s3.rom', 'sp-45.sp1',
+  'vs-bios.rom', 'sp-j2.sp1', 'sp1.jipan.1024', 'usa_2slt.bin', 'sp-e.sp1',
+]);
+const BIOS_REGION = /^(Europe\/Asia|Japan|USA)$/;
+const BIOS_STATES = new Set(['ok', 'missing']);
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Last `max` lines of the converter log, newline-normalised, no trailing blank.
@@ -73,6 +81,30 @@ function cleanFailure(input) {
   return row.set || row.title ? row : null;
 }
 
+// #202: BIOS profile only. Known slots and the three region names survive;
+// entry names, zip names and arbitrary strings never do.
+function cleanBios(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  if (input.present !== true) return { present: false };
+  if (input.error === 'zip') return { present: true, error: 'zip' };
+  const chips = (list) => (Array.isArray(list) ? list : [])
+    .slice(0, 12)
+    .map((c) => {
+      const name = String(c?.name ?? '');
+      const region = String(c?.region ?? '');
+      return BIOS_NAMES.has(name) && BIOS_REGION.test(region) ? { name, region } : null;
+    })
+    .filter(Boolean);
+  return {
+    present: true,
+    error: null,
+    aes: chips(input.aes),
+    mvs: chips(input.mvs),
+    sfix: BIOS_STATES.has(input.sfix) ? input.sfix : 'missing',
+    lo: BIOS_STATES.has(input.lo) ? input.lo : 'missing',
+  };
+}
+
 export function buildReport(input = {}) {
   const type = Object.hasOwn(REPORT_TYPES, input.type) ? input.type : 'other';
   const map = redactions(input.sources);
@@ -86,6 +118,7 @@ export function buildReport(input = {}) {
     mode: MODES.has(input.mode) ? input.mode : null,
     version: input.version ? String(input.version).slice(0, 32) : 'unknown',
     failures,
+    bios: cleanBios(input.bios),
     log: redact(tailLines(input.log), map),
     error: redact(String(input.error ?? '').slice(0, 2000), map) || null,
     website: String(input.website ?? ''),
