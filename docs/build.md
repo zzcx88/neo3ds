@@ -198,6 +198,7 @@ Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌
 
 소개 페이지의 문제 신고 폼은 정적 페이지에서 Cloudflare Worker(`worker/`)로 POST하고, Worker가 이 저장소에
 `needs-triage` 라벨 이슈를 만든다 (#188). 제보자는 계정이 필요 없고, zip 파일명·롬 데이터는 전송되지 않는다.
+BIOS는 파일 대신 구성 프로필(존재·읽기 실패 여부, AES/MVS 칩 이름·지역, sfix/lo 일치 여부)만 보낸다 (#202).
 프라이버시 고지는 §7.1의 `privacy.html`이 담당한다 (#192).
 
 최초 1회:

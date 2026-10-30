@@ -150,6 +150,12 @@ function baseName(p) {
   return (i >= 0 ? p.slice(i + 1) : p).toLowerCase();
 }
 
+// Index-only open (#202): the central directory is enough to match BIOS chips;
+// callers that need bytes call ZipFile.read(). Node paths and browser Files both work.
+export async function openZipIndex(pathOrFile) {
+  return ZipFile.open(await sourceOf(pathOrFile));
+}
+
 export class RomSet {
   constructor(zips) {
     // zips: ZipFile[] — index only; entry bytes are inflated by read()
@@ -171,7 +177,7 @@ export class RomSet {
   // or {name, arrayBuffer()} fakes.
   static async open(pathsOrFiles) {
     const zips = [];
-    for (const p of pathsOrFiles) zips.push(await ZipFile.open(await sourceOf(p)));
+    for (const p of pathsOrFiles) zips.push(await openZipIndex(p));
     return new RomSet(zips);
   }
 
@@ -215,7 +221,7 @@ export class BiosSet {
 
   // neogeo.zip is ~1.7MB: load it whole so read() stays synchronous.
   static async open(pathOrFile) {
-    const zip = await ZipFile.open(await sourceOf(pathOrFile));
+    const zip = await openZipIndex(pathOrFile);
     await Promise.all(zip.meta().filter((e) => e.usize > 0).map((e) => zip.read(e.name)));
     return new BiosSet(zip);
   }

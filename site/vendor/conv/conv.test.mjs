@@ -112,6 +112,74 @@ await t('zipset/truncated-zip-throws', async () => {
   if (!/zip archive|central directory/.test(msg)) throw new Error('expected a zip error, got ' + JSON.stringify(msg));
 });
 
+// ── #202 BIOS profile: central directory only, known slots, sfix/lo ─────────
+// The table is injectable so the test can use synthetic bytes: real BIOS CRCs
+// would need the copyrighted ROMs. Production uses GameDb's table.
+const biosFixture = async (entries, seed = 20) => {
+  const { zipSync } = await import('./fflate.js');
+  const { openZipIndex } = await import('./zipset.js');
+  const { crc32Bytes } = await import('./job.js');
+  const bytes = {};
+  for (const [i, name] of entries.names.entries()) bytes[name] = noise(0x20000, seed + i);
+  const table = {
+    chips: (entries.chips ?? []).map((name) => ({
+      name, crc: crc32Bytes(bytes[name]), size: bytes[name].length,
+    })),
+    fix: entries.fix ? { name: 'sfix.sfix', crc: crc32Bytes(bytes['sfix.sfix']), size: bytes['sfix.sfix'].length } : undefined,
+    zoom: entries.zoom ? { name: '000-lo.lo', crc: crc32Bytes(bytes['000-lo.lo']), size: bytes['000-lo.lo'].length } : undefined,
+  };
+  const files = Object.fromEntries(entries.names.map((name) => [name, bytes[name]]));
+  return { zip: await openZipIndex(fileSourceOf('neogeo.zip', zipSync(files))), table, bytes };
+};
+
+await t('biosinfo/profile-lists-known-aes-mvs-and-support-roms', async () => {
+  const { biosProfile } = await import('./biosinfo.js');
+  const { zip, table } = await biosFixture({
+    names: ['neo-epo.bin', 'sp-s2.sp1', 'sfix.sfix', '000-lo.lo'],
+    chips: ['neo-epo.bin', 'sp-s2.sp1'], fix: true, zoom: true,
+  });
+  const p = biosProfile(zip, table);
+  const got = JSON.stringify({ aes: p.aes, mvs: p.mvs, sfix: p.sfix, lo: p.lo });
+  const want = JSON.stringify({
+    aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+    mvs: [{ name: 'sp-s2.sp1', region: 'Europe/Asia' }],
+    sfix: 'ok', lo: 'ok',
+  });
+  if (!p.present || p.error !== null || got !== want) throw new Error(got);
+});
+
+await t('biosinfo/name-with-wrong-crc-is-not-a-match', async () => {
+  const { biosProfile } = await import('./biosinfo.js');
+  const { zip, table } = await biosFixture({
+    names: ['neo-epo.bin', 'sfix.sfix'],
+    chips: ['neo-epo.bin'], fix: true, zoom: false,
+  });
+  // Same name, different bytes than the table expects: #202 only reports exact CRC+size matches.
+  table.chips[0].crc ^= 0xdead;
+  const p = biosProfile(zip, table);
+  if (p.aes.length !== 0) throw new Error('wrong-CRC chip listed: ' + JSON.stringify(p.aes));
+  if (p.sfix !== 'ok' || p.lo !== 'missing') throw new Error(JSON.stringify({ sfix: p.sfix, lo: p.lo }));
+});
+
+await t('biosinfo/no-bios-file-and-unreadable-zip', async () => {
+  const { readBiosProfile } = await import('./biosinfo.js');
+  const none = await readBiosProfile([fileSourceOf('kof98.zip', new Uint8Array(8))]);
+  if (JSON.stringify(none) !== JSON.stringify({ present: false })) throw new Error(JSON.stringify(none));
+  const bad = await readBiosProfile([fileSourceOf('neogeo.zip', new Uint8Array(0))]);
+  if (bad.present !== true || bad.error !== 'zip') throw new Error(JSON.stringify(bad));
+});
+
+await t('biosinfo/profile-needs-no-entry-bytes', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const f = fileSourceOf('neogeo.zip', zipSync({
+    'neo-epo.bin': noise(0x20000, 31), 'sp-s2.sp1': noise(0x20000, 32),
+    'sfix.sfix': noise(0x20000, 33), '000-lo.lo': noise(0x20000, 34),
+  }));
+  const { readBiosProfile } = await import('./biosinfo.js');
+  await readBiosProfile([f]);
+  if (f.bytesRead > 100_000) throw new Error(`read ${f.bytesRead} bytes of a ${f.size} byte zip`);
+});
+
 // BuildRegions: kof98h sprites 64MB via 16b interleave
 await t('rompack/regions', async () => {
   const { GameDb } = await import('./gamedb.js');
@@ -712,6 +780,59 @@ await t('report/payload-fits-the-worker-cap', async () => {
   const bytes = payloadBytes(fitted);
   if (bytes > 64 * 1024) throw new Error('still ' + bytes);
   if (fitted.log.split('\n').at(-1).trim() === '') throw new Error('tail dropped the newest line');
+});
+
+// ── #202 BIOS profile in the report payload ──────────────────────────────
+await t('report/bios-profile-survives', async () => {
+  const { buildReport } = await import('./report.js');
+  const bios = {
+    present: true, error: null,
+    aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+    mvs: [{ name: 'sp-s2.sp1', region: 'Europe/Asia' }],
+    sfix: 'missing', lo: 'ok',
+  };
+  const got = buildReport({ type: 'convert-fail', summary: 'x', bios }).bios;
+  if (JSON.stringify(got) !== JSON.stringify(bios)) throw new Error(JSON.stringify(got));
+});
+
+await t('report/bios-profile-drops-unknown-names-and-states', async () => {
+  const { buildReport } = await import('./report.js');
+  const report = buildReport({
+    type: 'convert-fail', summary: 'x',
+    bios: {
+      present: true, error: null,
+      aes: [{ name: 'kof98.zip', region: '<script>' }, { name: 'neo-epo.bin', region: 'Europe/Asia' }],
+      mvs: Array.from({ length: 20 }, () => ({ name: 'sp-s2.sp1', region: 'Europe/Asia' })),
+      sfix: 'weird', lo: 'missing', secret: 'drop me',
+    },
+  });
+  const text = JSON.stringify(report);
+  if (text.includes('kof98.zip') || text.includes('<script>') || text.includes('drop me'))
+    throw new Error('unknown data leaked: ' + text);
+  if (report.bios.aes.length !== 1 || report.bios.aes[0].name !== 'neo-epo.bin')
+    throw new Error('aes: ' + JSON.stringify(report.bios.aes));
+  if (report.bios.mvs.length !== 12) throw new Error('cap: ' + report.bios.mvs.length);
+  if (report.bios.sfix !== 'missing') throw new Error('state: ' + report.bios.sfix);
+});
+
+await t('report/bios-not-dropped-and-unreadable', async () => {
+  const { buildReport } = await import('./report.js');
+  const none = buildReport({ type: 'convert-fail', summary: 'x', bios: { present: false, extra: 1 } }).bios;
+  if (JSON.stringify(none) !== JSON.stringify({ present: false })) throw new Error(JSON.stringify(none));
+  const bad = buildReport({ type: 'convert-fail', summary: 'x', bios: { present: true, error: 'zip', aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }] } }).bios;
+  if (JSON.stringify(bad) !== JSON.stringify({ present: true, error: 'zip' })) throw new Error(JSON.stringify(bad));
+});
+
+await t('report/bios-profile-keeps-every-gamedb-chip-name', async () => {
+  const { GameDb } = await import('./gamedb.js');
+  const { buildReport } = await import('./report.js');
+  const aes = GameDb.BIOS.map((f) => ({ name: f.name, region: 'Europe/Asia' }));
+  const report = buildReport({
+    type: 'convert-fail', summary: 'x',
+    bios: { present: true, error: null, aes, mvs: [], sfix: 'ok', lo: 'ok' },
+  });
+  if (report.bios.aes.length !== GameDb.BIOS.length)
+    throw new Error(`${report.bios.aes.length}/${GameDb.BIOS.length}`);
 });
 
 process.exit(fail ? 1 : 0);

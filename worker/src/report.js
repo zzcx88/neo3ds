@@ -17,6 +17,14 @@ const SET_NAME = /^[a-z0-9_]{1,40}$/;
 const CODE = /^[a-z]{1,16}$/;
 const STAGE = /^[a-z]{1,16}$/;
 const MODES = new Set(['cia', 'pack', 'launcher']);
+// Mirrors GameDb.BIOS (site/vendor/conv/gamedb.js): a public issue may carry
+// only these chip names and the three region labels.
+const BIOS_NAMES = new Set([
+  'neo-epo.bin', 'neo-po.bin', 'sp-s2.sp1', 'sp-s.sp1', 'asia-s3.rom', 'sp-45.sp1',
+  'vs-bios.rom', 'sp-j2.sp1', 'sp1.jipan.1024', 'usa_2slt.bin', 'sp-e.sp1',
+]);
+const BIOS_REGION = /^(Europe\/Asia|Japan|USA)$/;
+const BIOS_STATES = new Set(['ok', 'missing']);
 
 const str = (value, max) => (typeof value === 'string' ? value.slice(0, max) : '');
 const oneLine = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -31,6 +39,30 @@ function failure(input) {
   };
   // A row with neither a catalog name nor a display title says nothing.
   return row.set || row.title ? row : null;
+}
+
+// #202: BIOS profile from the page. Extra fields are dropped; only known
+// slots, region labels and the two states leave this function.
+function bios(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  if (input.present !== true) return { present: false };
+  if (input.error === 'zip') return { present: true, error: 'zip' };
+  const chips = (list) => (Array.isArray(list) ? list : [])
+    .slice(0, 12)
+    .map((c) => {
+      const name = typeof c?.name === 'string' ? c.name : '';
+      const region = typeof c?.region === 'string' ? c.region : '';
+      return BIOS_NAMES.has(name) && BIOS_REGION.test(region) ? { name, region } : null;
+    })
+    .filter(Boolean);
+  return {
+    present: true,
+    error: null,
+    aes: chips(input.aes),
+    mvs: chips(input.mvs),
+    sfix: BIOS_STATES.has(input.sfix) ? input.sfix : 'missing',
+    lo: BIOS_STATES.has(input.lo) ? input.lo : 'missing',
+  };
 }
 
 // Returns { ok: true, report } or { ok: false, error } with a short, stable code.
@@ -52,6 +84,7 @@ export function validateReport(input) {
       mode: MODES.has(input.mode) ? input.mode : null,
       version: str(input.version, 32) || null,
       failures,
+      bios: bios(input.bios),
       // Keep the newest lines: the issue section promises the tail, and GitHub
       // caps an issue body at 64KB.
       log: typeof input.log === 'string' ? input.log.slice(-40000) : '',
@@ -75,6 +108,18 @@ function failureTable(rows) {
   return [...head, ...body].join('\n');
 }
 
+function biosTable(b) {
+  const cell = (list) => (list ?? []).map((c) => `${c.name} (${c.region})`).join(', ') || '-';
+  return [
+    '| 항목 | 상태 |',
+    '| --- | --- |',
+    `| AES | ${cell(b.aes)} |`,
+    `| MVS | ${cell(b.mvs)} |`,
+    `| sfix.sfix | ${b.sfix} |`,
+    `| 000-lo.lo | ${b.lo} |`,
+  ].join('\n');
+}
+
 // meta: { ua, origin, at } — the request header and clock, never stored by the worker.
 export function issueBody(report, meta = {}) {
   const lines = [
@@ -83,6 +128,10 @@ export function issueBody(report, meta = {}) {
     `- 유형: ${TYPES[report.type]}`,
     `- 변환기 버전: ${report.version ?? '알 수 없음'}`,
     `- 모드: ${report.mode ?? '알 수 없음'}`,
+  ];
+  if (report.bios && !report.bios.present) lines.push('- BIOS: not dropped');
+  else if (report.bios?.error === 'zip') lines.push('- BIOS: unreadable');
+  lines.push(
     `- 게임(직접 입력): ${report.game ?? '-'}`,
     `- 보낸 페이지: ${meta.origin ?? '-'}`,
     `- 브라우저: ${meta.ua || '-'}`,
@@ -91,7 +140,10 @@ export function issueBody(report, meta = {}) {
     '## 증상',
     '',
     report.summary,
-  ];
+  );
+  if (report.bios?.present && !report.bios.error) {
+    lines.push('', '## BIOS (neogeo.zip)', '', biosTable(report.bios));
+  }
   if (report.failures.length) {
     lines.push('', `## 실패한 게임 (${report.failures.length})`, '', failureTable(report.failures));
   }

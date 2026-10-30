@@ -7,7 +7,7 @@
 // Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia, stats}
 //   | {id, type:'batch-one', batch, bin, stats} | {id, type:'batch-error', index, name, message}
 //   | {id, type:'batch-done', count, ok, failed, secs}
-//   | {id, type:'preflight-progress', done, total, name} | {id, type:'preflight', rows}
+//   | {id, type:'preflight-progress', done, total, name} | {id, type:'preflight', rows, bios}
 //   | {id, type:'error', message}
 // Cancellation: the page calls worker.terminate() directly.
 import { GameDb, Region } from './gamedb.js';
@@ -16,6 +16,7 @@ import { pickGame, titleId, uniqueId, productCode } from './job.js';
 import { writeGameFiles, buildPack } from './pack.js';
 import { iconPng, bannerPng, silentWav } from './art.js';
 import { preflight, biosMissing } from './preflight.js';
+import { readBiosProfile } from './biosinfo.js';
 import { L } from './lang.js';
 import { loadZstd } from './zstd-adapter.js';
 
@@ -33,13 +34,15 @@ self.onmessage = async (e) => {
     const db = await GameDb.load('../neogeo_games.json');
     if (msg.type === 'preflight') {
       // #81: the recognition bar follows the same zip-by-zip loop as the judgment.
-      post({
-        type: 'preflight',
-        rows: await preflight(db, RomSet, files, {
+      // #202: the BIOS profile is index-only and independent of the game rows.
+      const [rows, bios] = await Promise.all([
+        preflight(db, RomSet, files, {
           lang,
           onProgress: (done, total, name) => post({ type: 'preflight-progress', done, total, name }),
         }),
-      });
+        readBiosProfile(files),
+      ]);
+      post({ type: 'preflight', rows, bios });
       return;
     }
     const t0 = performance.now();

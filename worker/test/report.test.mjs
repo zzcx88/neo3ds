@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 
 import { issueBody, issueTitle, validateReport } from '../src/report.js';
 import worker from '../src/index.js';
+import { GameDb } from '../../site/vendor/conv/gamedb.js';
 
 const ORIGIN = 'https://zzcx88.github.io';
 
@@ -109,6 +110,72 @@ test('issueBody: every failed game keeps its own reason', () => {
   assert.match(body, /\| mslug \| bios \| load \| Metal Slug \|/);
   assert.match(body, /\| svc \| oom \| romfs \| SVC Chaos \|/);
   assert.match(body, /\| kof98h \| crash \| worker \| KOF '98 \|/);
+});
+
+test('validateReport: BIOS keeps known slots and drops unknown names', () => {
+  const check = validateReport(payload({
+    bios: {
+      present: true,
+      error: null,
+      aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }, { name: 'kof98.zip', region: 'Europe/Asia' }],
+      mvs: [{ name: 'sp-s2.sp1', region: '<script>' }, { name: 'sp-s2.sp1', region: 'Japan' }],
+      sfix: 'nope',
+      lo: 'ok',
+      secret: 'drop me',
+    },
+  }));
+  assert.equal(check.ok, true);
+  assert.deepEqual(check.report.bios, {
+    present: true,
+    error: null,
+    aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+    mvs: [{ name: 'sp-s2.sp1', region: 'Japan' }],
+    sfix: 'missing',
+    lo: 'ok',
+  });
+  assert.equal(check.report.secret, undefined);
+});
+
+test('validateReport: BIOS absent and unreadable keep only their state', () => {
+  const none = validateReport(payload({ bios: { present: false, aes: [{ name: 'neo-epo.bin', region: 'Japan' }] } }));
+  assert.deepEqual(none.report.bios, { present: false });
+  const bad = validateReport(payload({ bios: { present: true, error: 'zip', mvs: [{ name: 'sp-s2.sp1', region: 'Japan' }] } }));
+  assert.deepEqual(bad.report.bios, { present: true, error: 'zip' });
+});
+
+test('validateReport: BIOS allow-list covers every GameDb chip', () => {
+  for (const chip of GameDb.BIOS) {
+    const check = validateReport(payload({
+      bios: { present: true, error: null, aes: [{ name: chip.name, region: 'Europe/Asia' }], mvs: [], sfix: 'ok', lo: 'ok' },
+    }));
+    assert.equal(check.report.bios.aes.length, 1, chip.name);
+  }
+});
+
+test('issueBody: BIOS table shows AES/MVS and sfix/lo', () => {
+  const report = validateReport(payload({
+    bios: {
+      present: true,
+      error: null,
+      aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+      mvs: [{ name: 'sp-s2.sp1', region: 'Japan' }],
+      sfix: 'missing',
+      lo: 'ok',
+    },
+  })).report;
+  const body = issueBody(report, {});
+  assert.match(body, /## BIOS \(neogeo\.zip\)/);
+  assert.match(body, /\| AES \| neo-epo\.bin \(Europe\/Asia\) \|/);
+  assert.match(body, /\| MVS \| sp-s2\.sp1 \(Japan\) \|/);
+  assert.match(body, /\| sfix\.sfix \| missing \|/);
+  assert.match(body, /\| 000-lo\.lo \| ok \|/);
+});
+
+test('issueBody: BIOS not dropped and unreadable are one line', () => {
+  const none = issueBody(validateReport(payload({ bios: { present: false } })).report, {});
+  assert.match(none, /- BIOS: not dropped/);
+  const bad = issueBody(validateReport(payload({ bios: { present: true, error: 'zip' } })).report, {});
+  assert.match(bad, /- BIOS: unreadable/);
 });
 
 test('handler: foreign origin is rejected', async () => {
