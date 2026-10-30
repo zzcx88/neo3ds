@@ -127,7 +127,7 @@
 .recog{margin:0 0 10px}
 .recog-text,.overall-text{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px;overflow-wrap:anywhere}
 .overall{margin:0 0 24px;max-width:640px}
-#progress{scroll-margin-top:72px}
+#progress,#feedback{scroll-margin-top:72px}
 #gateProgH2:focus{outline:2px solid var(--gold);outline-offset:6px}
 /* #143: result block, run reason, failure alert */
 .result{margin:0 0 22px;padding:16px 18px;border:1px solid var(--gold);border-radius:6px;background:var(--panel-2);max-width:640px}
@@ -138,11 +138,12 @@
 .result .tiny{margin:10px 0 0}
 .gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px;overflow-wrap:anywhere}
 .run-hint{margin:8px 0 0;color:var(--gold)}
+#gateReportJump{margin:0 0 18px}
 /* #188/#189: anonymous report form */
-.report{margin:0 0 22px;scroll-margin-top:72px;padding:18px;border:1px solid var(--line);border-radius:6px;background:var(--panel);max-width:640px}
+.report{margin:0;scroll-margin-top:72px;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
 .report h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0 0 8px}
 .report .tiny{margin:10px 0}
-.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .report-field{display:block;margin:0 0 12px}
 .report-field>span{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px}
 .report select,.report input[type=text],.report textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--paper);font:400 13px/1.6 var(--pixel-sm);padding:10px 12px;border-radius:3px}
@@ -150,7 +151,7 @@
 .report-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .report #reportMsg:empty{display:none}
 .trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-@media (max-width:720px){.report-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -287,6 +288,7 @@
     <h2 id="gateProgH2" tabindex="-1">Progress</h2>
     <p class="lede narrow">Each step reports here. Download right here when it is done.</p>
     <p class="gate-alert hidden" id="gateAlert" role="alert"></p>
+    <button type="button" class="btn btn-ghost btn-sm hidden" id="gateReportJump">Report a problem</button>
     <div class="result hidden" id="gateResult" role="region" aria-labelledby="gateResultH">
       <h3 id="gateResultH">Result</h3>
       <p class="result-line" id="gateResultLine"></p>
@@ -297,6 +299,30 @@
       </div>
       <p class="tiny" id="gateResultNote"></p>
     </div>
+    <div class="overall hidden" id="gateOverall">
+      <span class="overall-text" id="gateOverallText">Ready to convert</span>
+      <div class="pbar" id="gateOverallBar" role="progressbar" aria-labelledby="gateOverallText" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="">
+        <span class="pbar-fill" id="gateOverallFill"></span>
+      </div>
+    </div>
+    <div class="conv-grid">
+      <ol class="pipe" id="gatePipe">
+        <li data-step="load"><span class="pipe-no">1</span><div><h3>Checking romset</h3><p>Find the romset by zip name and check chips by CRC.</p></div></li>
+        <li data-step="romfs"><span class="pipe-no">2</span><div><h3>Compressing graphics</h3><p>Pack sprites into 16KB zstd blocks.</p></div></li>
+        <li data-step="art"><span class="pipe-no">3</span><div><h3>Icon·banner</h3><p>Icon (48×48) and banner (256×128) from the title or from a picture you pick.</p></div></li>
+        <li data-step="cia"><span class="pipe-no">4</span><div><h3>Packing the output</h3><p>Bundle the output with WASM tooling.</p></div></li>
+      </ol>
+      <div class="conv-side">
+        <pre class="log" id="gateLog" aria-label="Converter log"></pre>
+        <p class="tiny">Each log line shows the elapsed time, game and stage. Outputs are usually tens of MB.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec" id="feedback">
+  <div class="wrap">
     <form class="report hidden" id="gateReport" novalidate>
       <h3>Something went wrong?</h3>
       <p class="tiny">The converter log and the failed games are attached automatically. Anonymous, no account.</p>
@@ -327,24 +353,6 @@
       </div>
       <p class="tiny" id="reportMsg" role="status"></p>
     </form>
-    <div class="overall hidden" id="gateOverall">
-      <span class="overall-text" id="gateOverallText">Ready to convert</span>
-      <div class="pbar" id="gateOverallBar" role="progressbar" aria-labelledby="gateOverallText" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="">
-        <span class="pbar-fill" id="gateOverallFill"></span>
-      </div>
-    </div>
-    <div class="conv-grid">
-      <ol class="pipe" id="gatePipe">
-        <li data-step="load"><span class="pipe-no">1</span><div><h3>Checking romset</h3><p>Find the romset by zip name and check chips by CRC.</p></div></li>
-        <li data-step="romfs"><span class="pipe-no">2</span><div><h3>Compressing graphics</h3><p>Pack sprites into 16KB zstd blocks.</p></div></li>
-        <li data-step="art"><span class="pipe-no">3</span><div><h3>Icon·banner</h3><p>Icon (48×48) and banner (256×128) from the title or from a picture you pick.</p></div></li>
-        <li data-step="cia"><span class="pipe-no">4</span><div><h3>Packing the output</h3><p>Bundle the output with WASM tooling.</p></div></li>
-      </ol>
-      <div class="conv-side">
-        <pre class="log" id="gateLog" aria-label="Converter log"></pre>
-        <p class="tiny">Each log line shows the elapsed time, game and stage. Outputs are usually tens of MB.</p>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -357,12 +365,12 @@
       <a href="https://github.com/zzcx88/neo3ds">Repository</a>
       <a href="manual.html">3DS manual</a>
       <a href="changelog.html">Changelog</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip">Offline converter (Windows)</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip">Offline converter (Linux)</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip">Offline converter (macOS)</a>
       <a href="convert.html#feedback">Report a problem</a>
       <a href="index.html">Intro page</a>
       <a href="privacy.html">Privacy</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip">Offline converter (Windows)</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip">Offline converter (Linux)</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip">Offline converter (macOS)</a>
     </nav>
     <p class="tiny">Game screens and trademarks belong to their owners.</p>
   </div>

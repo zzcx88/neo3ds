@@ -152,10 +152,12 @@ if (reportForm) {
     }
   });
 
-  $('gateReportOpen')?.addEventListener('click', () => {
-    openReport(true);
-    $('reportText').focus({ preventScroll: true });
-  });
+  for (const id of ['gateReportOpen', 'gateReportJump']) {
+    $(id)?.addEventListener('click', () => {
+      openReport(true);
+      $('reportText').focus({ preventScroll: true });
+    });
+  }
 }
 
 /* ── Log (#152): one line per event, tagged so parallel workers stay readable.
@@ -1498,7 +1500,10 @@ function showAlert(text) {
   const el = $('gateAlert');
   el.textContent = text;
   el.classList.toggle('hidden', !text);
-  // Every failure path lands here: surface the report form with the log attached.
+  // Every failure path lands here: surface the form at the page bottom and
+  // offer a jump to it, so the alert keeps its place.
+  const jump = $('gateReportJump');
+  if (jump) jump.classList.toggle('hidden', !text);
   if (text) openReport();
 }
 

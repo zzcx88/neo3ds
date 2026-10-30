@@ -115,7 +115,7 @@
 .recog{margin:0 0 10px}
 .recog-text,.overall-text{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px;overflow-wrap:anywhere}
 .overall{margin:0 0 24px;max-width:640px}
-#progress{scroll-margin-top:72px}
+#progress,#feedback{scroll-margin-top:72px}
 #gateProgH2:focus{outline:2px solid var(--gold);outline-offset:6px}
 /* #143: result block, run reason, failure alert */
 .result{margin:0 0 22px;padding:16px 18px;border:1px solid var(--gold);border-radius:6px;background:var(--panel-2);max-width:640px}
@@ -126,11 +126,12 @@
 .result .tiny{margin:10px 0 0}
 .gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px;overflow-wrap:anywhere}
 .run-hint{margin:8px 0 0;color:var(--gold)}
+#gateReportJump{margin:0 0 18px}
 /* #188/#189: anonymous report form */
-.report{margin:0 0 22px;scroll-margin-top:72px;padding:18px;border:1px solid var(--line);border-radius:6px;background:var(--panel);max-width:640px}
+.report{margin:0;scroll-margin-top:72px;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
 .report h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0 0 8px}
 .report .tiny{margin:10px 0}
-.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .report-field{display:block;margin:0 0 12px}
 .report-field>span{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px}
 .report select,.report input[type=text],.report textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--paper);font:400 13px/1.6 var(--pixel-sm);padding:10px 12px;border-radius:3px}
@@ -138,7 +139,7 @@
 .report-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .report #reportMsg:empty{display:none}
 .trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-@media (max-width:720px){.report-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -275,6 +276,7 @@
     <h2 id="gateProgH2" tabindex="-1" data-i18n="gate.progH2">진행</h2>
     <p class="lede narrow" data-i18n="gate.progLede">변환 단계마다 결과가 표시됩니다. 완료되면 여기에서 다운로드하세요.</p>
     <p class="gate-alert hidden" id="gateAlert" role="alert"></p>
+    <button type="button" class="btn btn-ghost btn-sm hidden" id="gateReportJump" data-i18n="report.open">문제 보고</button>
     <div class="result hidden" id="gateResult" role="region" aria-labelledby="gateResultH">
       <h3 id="gateResultH" data-i18n="gate.resultH">결과</h3>
       <p class="result-line" id="gateResultLine"></p>
@@ -285,6 +287,30 @@
       </div>
       <p class="tiny" id="gateResultNote"></p>
     </div>
+    <div class="overall hidden" id="gateOverall">
+      <span class="overall-text" id="gateOverallText" data-i18n="gate.overallReady">변환 준비</span>
+      <div class="pbar" id="gateOverallBar" role="progressbar" aria-labelledby="gateOverallText" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="">
+        <span class="pbar-fill" id="gateOverallFill"></span>
+      </div>
+    </div>
+    <div class="conv-grid">
+      <ol class="pipe" id="gatePipe">
+        <li data-step="load"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">롬셋 확인</h3><p data-i18n="gate.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다.</p></div></li>
+        <li data-step="romfs"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">그래픽 압축</h3><p data-i18n="gate.p2d">스프라이트를 16KB 블록으로 zstd 압축합니다.</p></div></li>
+        <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름 또는 직접 지정한 그림으로 아이콘(48×48)과 배너(256×128)를 만듭니다.</p></div></li>
+        <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">WASM 도구로 결과물을 묶습니다.</p></div></li>
+      </ol>
+      <div class="conv-side">
+        <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>
+        <p class="tiny" data-i18n="gate.logNote">로그 한 줄마다 경과 시간·게임·단계가 표시됩니다. 결과물은 보통 수십 MB입니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 익명 제보 (#189) — 페이지 맨 아래, 실패 시 자동 노출 ──────────────── -->
+<section class="sec" id="feedback">
+  <div class="wrap">
     <form class="report hidden" id="gateReport" novalidate>
       <h3 data-i18n="report.h">문제가 있었나요?</h3>
       <p class="tiny" data-i18n="report.lede">변환 로그와 실패한 게임 정보가 자동으로 첨부됩니다. 계정 없이 익명으로 보냅니다.</p>
@@ -315,24 +341,6 @@
       </div>
       <p class="tiny" id="reportMsg" role="status"></p>
     </form>
-    <div class="overall hidden" id="gateOverall">
-      <span class="overall-text" id="gateOverallText" data-i18n="gate.overallReady">변환 준비</span>
-      <div class="pbar" id="gateOverallBar" role="progressbar" aria-labelledby="gateOverallText" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="">
-        <span class="pbar-fill" id="gateOverallFill"></span>
-      </div>
-    </div>
-    <div class="conv-grid">
-      <ol class="pipe" id="gatePipe">
-        <li data-step="load"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">롬셋 확인</h3><p data-i18n="gate.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다.</p></div></li>
-        <li data-step="romfs"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">그래픽 압축</h3><p data-i18n="gate.p2d">스프라이트를 16KB 블록으로 zstd 압축합니다.</p></div></li>
-        <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름 또는 직접 지정한 그림으로 아이콘(48×48)과 배너(256×128)를 만듭니다.</p></div></li>
-        <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">WASM 도구로 결과물을 묶습니다.</p></div></li>
-      </ol>
-      <div class="conv-side">
-        <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>
-        <p class="tiny" data-i18n="gate.logNote">로그 한 줄마다 경과 시간·게임·단계가 표시됩니다. 결과물은 보통 수십 MB입니다.</p>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -345,12 +353,12 @@
       <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
       <a href="manual.html" data-i18n="foot.manual">3DS 사용 안내</a>
       <a href="changelog.html" data-i18n="foot.changelog">패치노트</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="gate.offWin">오프라인 변환기 (Windows)</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip" data-i18n="gate.offLin">오프라인 변환기 (Linux)</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip" data-i18n="gate.offMac">오프라인 변환기 (macOS)</a>
       <a href="convert.html#feedback" data-i18n="foot.report">문제 신고</a>
       <a href="index.html" data-i18n="gate.home">소개 페이지</a>
       <a href="privacy.html" data-i18n="foot.privacy">개인정보</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="gate.offWin">오프라인 변환기 (Windows)</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip" data-i18n="gate.offLin">오프라인 변환기 (Linux)</a>
+      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip" data-i18n="gate.offMac">오프라인 변환기 (macOS)</a>
     </nav>
     <p class="tiny" data-i18n="foot.note">게임 화면과 상표의 권리는 각 권리자에게 있습니다.</p>
   </div>
