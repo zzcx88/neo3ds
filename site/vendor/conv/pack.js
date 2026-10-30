@@ -59,14 +59,14 @@ export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
     log(`  ${GameDb.isAesBios(b) ? 'AES' : 'MVS'} BIOS: ${b.name} (${regionName(GameDb.regionOf(b), false)})` +
       (GameDb.regionOf(b) !== region ? ` - no ${regionName(region, false)} BIOS, used instead` : ''));
   }
+  const mvsFirst = mvs != null && (aes == null || (startMvs ?? GameDb.needsMvsBios(game)));
+  out.set('biosmode.bin', new Uint8Array([mvsFirst ? 1 : 0]));
+  log(mvsFirst ? '  System: MVS (arcade)' : '  System: AES (home)');
   if (aes) out.set('bios_aes.bin', bios.read(aes));
   if (mvs) {
     out.set('bios_mvs.bin', bios.read(mvs));
     out.set('sfix.bin', bios.read(GameDb.BIOS_FIX));
   }
-  const mvsFirst = mvs != null && (aes == null || (startMvs ?? GameDb.needsMvsBios(game)));
-  out.set('biosmode.bin', new Uint8Array([mvsFirst ? 1 : 0]));
-  log(mvsFirst ? '  System: MVS (arcade)' : '  System: AES (home)');
   out.set('lo.bin', bios.read(GameDb.ZOOM_TABLE));
 
   log('  Converting and compressing graphics...');
