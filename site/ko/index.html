@@ -82,7 +82,7 @@
         <details class="dl-drop">
           <summary class="btn btn-ghost btn-lg" data-i18n="cta.dl">오프라인 변환기 받기</summary>
           <div class="dl-panel">
-            <a class="dl-row" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.dlWin">Windows용 받기</a>
+            <a class="dl-row" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.dlWin">Windows x64 받기</a>
             <a class="dl-row" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip" data-i18n="cta.dlLin">Linux x64 받기</a>
             <a class="dl-row" href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip" data-i18n="cta.dlMac">macOS Apple Silicon 받기</a>
           </div>
@@ -202,10 +202,22 @@
     <div class="controls">
       <h3 data-i18n="controls.h3">3DS 조작</h3>
       <ul class="tags">
-        <li data-i18n="chip.key">키 설정</li>
-        <li data-i18n="chip.turbo">터보</li>
-        <li data-i18n="chip.slots">세이브 3슬롯</li>
-        <li data-i18n="chip.system">AES / MVS</li>
+        <li><details>
+          <summary data-i18n="chip.key">키 설정</summary>
+          <p data-i18n="chip.keyD">3DS 버튼마다 네오지오 A~D·동시 누르기·코인을 지정하고 게임별로 저장합니다.</p>
+        </details></li>
+        <li><details>
+          <summary data-i18n="chip.turbo">터보</summary>
+          <p data-i18n="chip.turboD">R을 누른 채 버튼을 누르면 연사가 되고, 계속 쓰려면 키 설정에서 고정합니다.</p>
+        </details></li>
+        <li><details>
+          <summary data-i18n="chip.slots">세이브 3슬롯</summary>
+          <p data-i18n="chip.slotsD">게임마다 퀵세이브 3슬롯, MVS 백업 RAM은 SD 카드에 자동 저장합니다.</p>
+        </details></li>
+        <li><details>
+          <summary data-i18n="chip.system">AES / MVS</summary>
+          <p data-i18n="chip.systemD">AES/MVS 바이오스를 바꿔 실행합니다. MVS는 SELECT로 코인을 넣어야 시작합니다.</p>
+        </details></li>
       </ul>
       <p class="tiny"><a href="manual.html" data-i18n-attr="href:controls.href" data-i18n="controls.more">전체 조작표 보기</a></p>
     </div>
@@ -311,7 +323,7 @@
   <div class="wrap legal">
     <h2 data-i18n="legal.h2">법적 고지</h2>
     <p data-i18n="legal.p1">롬·바이오스·게임 데이터는 저장소와 배포 파일에 없습니다. 직접 가진 게임으로만 만들고, 만든 CIA는 배포하지 마세요.</p>
-    <p data-i18n="legal.p2">neo3ds는 개인 팬 프로젝트이며 SNK·Nintendo와 관계가 없습니다. NEOGEO는 SNK CORPORATION, Nintendo 3DS는 Nintendo의 상표입니다. 크레딧과 외부 코드는 <a href="https://github.com/zzcx88/neo3ds/blob/main/THIRD_PARTY_NOTICES.md">THIRD_PARTY_NOTICES.md</a>, 소스는 GPL-2.0입니다.</p>
+    <p data-i18n="legal.p2">neo3ds는 개인 팬 프로젝트이며 SNK·Nintendo와 관계가 없습니다. NEOGEO는 SNK CORPORATION, Nintendo 3DS는 Nintendo의 상표입니다. 크레딧과 외부 코드는 <a href="https://github.com/zzcx88/neo3ds/blob/main/THIRD_PARTY_NOTICES.md">제3자 고지사항</a>, 소스는 GPL-2.0입니다.</p>
   </div>
 </section>
 

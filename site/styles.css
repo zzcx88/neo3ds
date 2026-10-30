@@ -202,9 +202,13 @@ section[id]{scroll-margin-top:64px}
 /* ── 3DS 조작 요약 ───────────────────────────────────────────────────── */
 .controls{margin-top:36px}
 .controls h3{font-size:19px;font-family:var(--text);font-weight:600;margin-bottom:12px}
-.tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.tags li{font:400 11px/1 var(--pixel-sm);padding:9px 11px;background:var(--panel);color:var(--dim);
-  border:1px solid var(--line);border-radius:3px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:flex-start}
+.tags summary{display:block;list-style:none;cursor:pointer;font:400 11px/1 var(--pixel-sm);padding:9px 11px;
+  background:var(--panel);color:var(--dim);border:1px solid var(--line);border-radius:3px}
+.tags summary::-webkit-details-marker{display:none}
+.tags summary:hover{border-color:var(--gold);color:var(--paper)}
+.tags details[open] summary{border-color:var(--gold);color:var(--paper)}
+.tags details p{font:400 14px/1.6 var(--text);color:#B9B9C4;margin:6px 0 0;padding:0 12px}
 
 /* ── 조작 ────────────────────────────────────────────────────────────── */
 .panel-list{margin:30px 0 0;display:grid}
