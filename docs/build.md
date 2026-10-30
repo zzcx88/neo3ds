@@ -93,6 +93,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 공통: `converter/Directory.Build.props`의 `<Version>`을 올린다 (단일 출처, AGENTS.md 버전 규칙).
 웹용 `site/vendor/conv/version.js`는 `build_wasm.sh`가 `<Version>`에서 자동 생성한다.
+`site/releases.json` 최상단에 새 항목을 넣고 `python3 scripts/gen_site_changelog.py`(사이트 패치노트)와 `python3 scripts/gen_changelog.py`(루트 `CHANGELOG.md`)를 같은 커밋에 넣는다. `scripts/site_gate.sh`가 `<Version>`·`site/releases.json`·`CHANGELOG.md`를 대조한다.
 
 ### 7.1 웹 변환기 (Pages)
 

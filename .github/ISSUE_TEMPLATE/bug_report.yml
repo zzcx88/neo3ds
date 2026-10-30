@@ -1,0 +1,91 @@
+name: 버그 신고
+description: 변환 실패, 실행 오류, 화면·소리 문제를 신고합니다.
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        롬·바이오스 파일은 첨부하지 마세요. 게임 이름과 BIOS 구성만 적으면 재현에 충분합니다.
+        웹 변환기에서 실패했다면 사이트의 제보 기능이 게임 이름과 BIOS 구성을 자동으로 함께 보냅니다.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 무엇이 잘못됐나요
+      description: 기대한 동작과 실제 동작을 구분해서 적어 주세요.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 절차
+      placeholder: |
+        1. mslug.zip과 neogeo.zip을 준비한다
+        2. 변환기에서 mslug.zip을 연다
+        3. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: path
+    attributes:
+      label: 사용한 경로
+      options:
+        - 웹 변환기 (사이트)
+        - 오프라인 변환기 GUI
+        - 오프라인 변환기 명령줄
+        - 3DS 실행 (설치한 CIA)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 버전
+      description: "릴리스 태그 또는 앱 정보에 보이는 버전 (예: 1.3.2)"
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 플랫폼
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - 3DS 실기 (Old 3DS / 2DS)
+        - 3DS 실기 (New 3DS / 2DS)
+        - Azahar
+    validations:
+      required: true
+
+  - type: input
+    id: game
+    attributes:
+      label: 게임 롬셋 이름
+      description: "MAME 롬셋 이름 (예: mslug, kof98). 롬 파일은 첨부하지 마세요."
+
+  - type: textarea
+    id: bios
+    attributes:
+      label: BIOS 구성
+      description: neogeo.zip에 들어 있는 파일 목록 (sfix.sfix, 000-lo.lo, AES/MVS 바이오스 칩, UniBIOS 여부). 파일 자체는 첨부하지 마세요.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그·오류 메시지
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 확인
+      options:
+        - label: 롬·바이오스 파일을 첨부하지 않았습니다
+          required: true
+        - label: 최신 릴리스에서 다시 확인했습니다
+        - label: 같은 문제의 이슈가 이미 있는지 검색했습니다
+          required: true

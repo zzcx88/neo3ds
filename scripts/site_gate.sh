@@ -108,6 +108,9 @@ if top != version:
 print('changelog top release matches <Version>')
 EOF
 
+# CHANGELOG.md at the repo root is generated from the same data (scripts/gen_changelog.py).
+python3 scripts/gen_changelog.py --check
+
 # The control table is duplicated in README and manual.html; keep them saying the same thing (#162).
 python3 - << 'EOF'
 import html, re, sys
