@@ -7,8 +7,6 @@
 <meta name="description" content="Drop a game zip and it becomes a CIA inside your browser. Nothing is uploaded, nothing to install, no account. 242 of 282 romsets supported.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
-
-<meta name="neo3ds-report-endpoint" content="">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/convert.html">
 <link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/ko/convert.html">
 <link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/convert.html">
@@ -127,7 +125,7 @@
 .recog{margin:0 0 10px}
 .recog-text,.overall-text{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px;overflow-wrap:anywhere}
 .overall{margin:0 0 24px;max-width:640px}
-#progress,#feedback{scroll-margin-top:72px}
+#progress{scroll-margin-top:72px}
 #gateProgH2:focus{outline:2px solid var(--gold);outline-offset:6px}
 /* #143: result block, run reason, failure alert */
 .result{margin:0 0 22px;padding:16px 18px;border:1px solid var(--gold);border-radius:6px;background:var(--panel-2);max-width:640px}
@@ -139,19 +137,6 @@
 .gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px;overflow-wrap:anywhere}
 .run-hint{margin:8px 0 0;color:var(--gold)}
 #gateReportJump{margin:0 0 18px}
-/* #188/#189: anonymous report form */
-.report{margin:0;scroll-margin-top:72px;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
-.report h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0 0 8px}
-.report .tiny{margin:10px 0}
-.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.report-field{display:block;margin:0 0 12px}
-.report-field>span{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px}
-.report select,.report input[type=text],.report textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--paper);font:400 13px/1.6 var(--pixel-sm);padding:10px 12px;border-radius:3px}
-.report textarea{resize:vertical}
-.report-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.report #reportMsg:empty{display:none}
-.trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-
 </style>
 </head>
 <body>
@@ -288,14 +273,14 @@
     <h2 id="gateProgH2" tabindex="-1">Progress</h2>
     <p class="lede narrow">Each step reports here. Download right here when it is done.</p>
     <p class="gate-alert hidden" id="gateAlert" role="alert"></p>
-    <button type="button" class="btn btn-ghost btn-sm hidden" id="gateReportJump">Report a problem</button>
+    <a class="btn btn-ghost btn-sm hidden" id="gateReportJump" href="index.html#feedback">Report a problem</a>
     <div class="result hidden" id="gateResult" role="region" aria-labelledby="gateResultH">
       <h3 id="gateResultH">Result</h3>
       <p class="result-line" id="gateResultLine"></p>
       <div class="result-actions">
         <a class="btn btn-ghost btn-lg hidden" id="gateDl">Download</a>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
-        <button type="button" class="btn btn-ghost btn-lg" id="gateReportOpen">Report a problem</button>
+        <a class="btn btn-ghost btn-lg" id="gateReportOpen" href="index.html#feedback">Report a problem</a>
       </div>
       <p class="tiny" id="gateResultNote"></p>
     </div>
@@ -323,36 +308,9 @@
 
 <section class="sec" id="feedback">
   <div class="wrap">
-    <form class="report hidden" id="gateReport" novalidate>
-      <h3>Something went wrong?</h3>
-      <p class="tiny">The converter log and the failed games are attached automatically. Anonymous, no account.</p>
-      <div class="report-grid">
-        <label class="report-field">
-          <span>Type</span>
-          <select id="reportType">
-            <option value="convert-fail">Conversion failed</option>
-            <option value="site-bug">Site / converter bug</option>
-            <option value="feature">Feature request</option>
-            <option value="other">Something else</option>
-          </select>
-        </label>
-        <label class="report-field">
-          <span>Game name (optional)</span>
-          <input id="reportGame" type="text" maxlength="80" autocomplete="off">
-        </label>
-      </div>
-      <label class="report-field">
-        <span>What went wrong?</span>
-        <textarea id="reportText" rows="4" maxlength="4000" required></textarea>
-      </label>
-      <input class="trap" id="reportTrap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <p class="tiny">The report (symptom, log, browser info) becomes a public GitHub issue. Do not include personal details.</p>
-      <div class="report-actions">
-        <button type="submit" class="btn btn-primary" id="reportSend">Send</button>
-        <a class="btn btn-ghost hidden" id="reportLink" target="_blank" rel="noopener"></a>
-      </div>
-      <p class="tiny" id="reportMsg" role="status"></p>
-    </form>
+    <h2>Something went wrong?</h2>
+    <p class="lede narrow">Reports go through the form on the intro page. The log and game details of the failed run travel with you.</p>
+    <a class="btn btn-primary btn-lg" id="gateReportGo" href="index.html#feedback">Report on the intro page</a>
   </div>
 </section>
 
@@ -365,7 +323,7 @@
       <a href="https://github.com/zzcx88/neo3ds">Repository</a>
       <a href="manual.html">3DS manual</a>
       <a href="changelog.html">Changelog</a>
-      <a href="convert.html#feedback">Report a problem</a>
+      <a href="index.html#feedback">Report a problem</a>
       <a href="index.html">Intro page</a>
       <a href="privacy.html">Privacy</a>
       <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip">Offline converter (Windows)</a>

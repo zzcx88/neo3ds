@@ -341,6 +341,19 @@ section[id]{scroll-margin-top:64px}
 .foot nav a{color:var(--dim);text-decoration:none}
 .foot-grid .tiny{flex:1 1 100%;max-width:var(--prose);margin:6px 0 0}
 
+/* ── 익명 제보 폼 (#189) — 소개 페이지 ───────────────────────────────── */
+#feedback{scroll-margin-top:72px}
+.report{margin:0;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.report-field{display:block;margin:0 0 12px}
+.report-field>span{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px}
+.report select,.report input[type=text],.report textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--paper);font:400 13px/1.6 var(--pixel-sm);padding:10px 12px;border-radius:3px}
+.report textarea{resize:vertical}
+.report .tiny{margin:10px 0}
+.report-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.report #reportMsg:empty{display:none}
+.trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
 /* ── 반응형 ─────────────────────────────────────────────────────────── */
 @media (max-width:1080px){
   .hero-grid{grid-template-columns:minmax(0,1fr);gap:34px}

@@ -352,7 +352,7 @@ COMPAT_PAGE = '''<!doctype html>
       <a href="{convert}">{foot1}</a>
       <a href="manual.html">{foot2}</a>
       <a href="changelog.html">{foot3}</a>
-      <a href="convert.html#feedback">{foot5}</a>
+      <a href="index.html#feedback">{foot5}</a>
       <a href="https://github.com/zzcx88/neo3ds">{foot4}</a>
     </nav>
     <p class="tiny">{note}</p>

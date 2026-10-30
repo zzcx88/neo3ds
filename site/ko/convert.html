@@ -7,8 +7,6 @@
 <meta name="description" content="게임 zip을 올리면 브라우저 안에서 바로 변환합니다. 설치도 계정도 필요 없고, 파일은 외부로 전송되지 않습니다. 롬셋 282종 중 242종 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
-<!-- 익명 제보 엔드포인트 (#188). 배포 후 worker URL을 넣는다: docs/build.md §7.3 -->
-<meta name="neo3ds-report-endpoint" content="">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/ko/convert.html">
 <link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/ko/convert.html">
 <link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/convert.html">
@@ -115,7 +113,7 @@
 .recog{margin:0 0 10px}
 .recog-text,.overall-text{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px;overflow-wrap:anywhere}
 .overall{margin:0 0 24px;max-width:640px}
-#progress,#feedback{scroll-margin-top:72px}
+#progress{scroll-margin-top:72px}
 #gateProgH2:focus{outline:2px solid var(--gold);outline-offset:6px}
 /* #143: result block, run reason, failure alert */
 .result{margin:0 0 22px;padding:16px 18px;border:1px solid var(--gold);border-radius:6px;background:var(--panel-2);max-width:640px}
@@ -127,19 +125,6 @@
 .gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px;overflow-wrap:anywhere}
 .run-hint{margin:8px 0 0;color:var(--gold)}
 #gateReportJump{margin:0 0 18px}
-/* #188/#189: anonymous report form */
-.report{margin:0;scroll-margin-top:72px;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
-.report h3{font:700 12px/1.4 var(--pixel-sm);color:var(--gold);margin:0 0 8px}
-.report .tiny{margin:10px 0}
-.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.report-field{display:block;margin:0 0 12px}
-.report-field>span{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px}
-.report select,.report input[type=text],.report textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--paper);font:400 13px/1.6 var(--pixel-sm);padding:10px 12px;border-radius:3px}
-.report textarea{resize:vertical}
-.report-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.report #reportMsg:empty{display:none}
-.trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-
 </style>
 </head>
 <body>
@@ -276,14 +261,14 @@
     <h2 id="gateProgH2" tabindex="-1" data-i18n="gate.progH2">진행</h2>
     <p class="lede narrow" data-i18n="gate.progLede">변환 단계마다 결과가 표시됩니다. 완료되면 여기에서 다운로드하세요.</p>
     <p class="gate-alert hidden" id="gateAlert" role="alert"></p>
-    <button type="button" class="btn btn-ghost btn-sm hidden" id="gateReportJump" data-i18n="report.open">문제 보고</button>
+    <a class="btn btn-ghost btn-sm hidden" id="gateReportJump" href="index.html#feedback" data-i18n="report.open">문제 보고</a>
     <div class="result hidden" id="gateResult" role="region" aria-labelledby="gateResultH">
       <h3 id="gateResultH" data-i18n="gate.resultH">결과</h3>
       <p class="result-line" id="gateResultLine"></p>
       <div class="result-actions">
         <a class="btn btn-ghost btn-lg hidden" id="gateDl" data-i18n="gate.dl">다운로드</a>
         <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
-        <button type="button" class="btn btn-ghost btn-lg" id="gateReportOpen" data-i18n="report.open">문제 보고</button>
+        <a class="btn btn-ghost btn-lg" id="gateReportOpen" href="index.html#feedback" data-i18n="report.open">문제 보고</a>
       </div>
       <p class="tiny" id="gateResultNote"></p>
     </div>
@@ -308,39 +293,12 @@
   </div>
 </section>
 
-<!-- ── 익명 제보 (#189) — 페이지 맨 아래, 실패 시 자동 노출 ──────────────── -->
+<!-- ── 익명 제보 (#189) — 폼은 소개 페이지에 있고, 여기서는 이동만 ───────── -->
 <section class="sec" id="feedback">
   <div class="wrap">
-    <form class="report hidden" id="gateReport" novalidate>
-      <h3 data-i18n="report.h">문제가 있었나요?</h3>
-      <p class="tiny" data-i18n="report.lede">변환 로그와 실패한 게임 정보가 자동으로 첨부됩니다. 계정 없이 익명으로 보냅니다.</p>
-      <div class="report-grid">
-        <label class="report-field">
-          <span data-i18n="report.type">유형</span>
-          <select id="reportType">
-            <option value="convert-fail" data-i18n="report.typeConvert">변환 실패</option>
-            <option value="site-bug" data-i18n="report.typeBug">사이트·변환기 버그</option>
-            <option value="feature" data-i18n="report.typeFeature">기능 제안</option>
-            <option value="other" data-i18n="report.typeOther">기타</option>
-          </select>
-        </label>
-        <label class="report-field">
-          <span data-i18n="report.gameLabel">게임 이름 (선택)</span>
-          <input id="reportGame" type="text" maxlength="80" autocomplete="off">
-        </label>
-      </div>
-      <label class="report-field">
-        <span data-i18n="report.textLabel">무엇이 잘못됐나요?</span>
-        <textarea id="reportText" rows="4" maxlength="4000" required></textarea>
-      </label>
-      <input class="trap" id="reportTrap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <p class="tiny" data-i18n="report.public">전송 내용(증상·로그·브라우저 정보)은 공개 GitHub 이슈로 등록됩니다. 개인정보는 적지 마세요.</p>
-      <div class="report-actions">
-        <button type="submit" class="btn btn-primary" id="reportSend" data-i18n="report.send">보내기</button>
-        <a class="btn btn-ghost hidden" id="reportLink" target="_blank" rel="noopener"></a>
-      </div>
-      <p class="tiny" id="reportMsg" role="status"></p>
-    </form>
+    <h2 data-i18n="report.h">문제가 있었나요?</h2>
+    <p class="lede narrow" data-i18n="report.convertLede">제보는 소개 페이지의 문제 신고 폼에서 받습니다. 방금 실패한 변환의 로그와 게임 정보도 함께 전달됩니다.</p>
+    <a class="btn btn-primary btn-lg" id="gateReportGo" href="index.html#feedback" data-i18n="report.go">소개 페이지에서 신고하기</a>
   </div>
 </section>
 
@@ -353,7 +311,7 @@
       <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
       <a href="manual.html" data-i18n="foot.manual">3DS 사용 안내</a>
       <a href="changelog.html" data-i18n="foot.changelog">패치노트</a>
-      <a href="convert.html#feedback" data-i18n="foot.report">문제 신고</a>
+      <a href="index.html#feedback" data-i18n="foot.report">문제 신고</a>
       <a href="index.html" data-i18n="gate.home">소개 페이지</a>
       <a href="privacy.html" data-i18n="foot.privacy">개인정보</a>
       <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="gate.offWin">오프라인 변환기 (Windows)</a>

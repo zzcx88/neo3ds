@@ -257,7 +257,7 @@ PAGE = '''<!doctype html>
       <a href="{compat}">{foot1}</a>
       <a href="{page_up}manual.html">{foot2}</a>
       <a href="{page_up}changelog.html">{foot3}</a>
-      <a href="{page_up}convert.html#feedback">{foot5}</a>
+      <a href="{page_up}index.html#feedback">{foot5}</a>
       <a href="https://github.com/zzcx88/neo3ds">{foot4}</a>
     </nav>
     <p class="tiny">{note}</p>

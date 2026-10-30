@@ -196,7 +196,7 @@ Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌
 
 ### 7.3 익명 제보 Worker (Cloudflare)
 
-변환 페이지의 제보 폼은 정적 페이지에서 Cloudflare Worker(`worker/`)로 POST하고, Worker가 이 저장소에
+소개 페이지의 문제 신고 폼은 정적 페이지에서 Cloudflare Worker(`worker/`)로 POST하고, Worker가 이 저장소에
 `needs-triage` 라벨 이슈를 만든다 (#188). 제보자는 계정이 필요 없고, zip 파일명·롬 데이터는 전송되지 않는다.
 프라이버시 고지는 §7.1의 `privacy.html`이 담당한다 (#192).
 
@@ -208,9 +208,9 @@ Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌
 4. (권장) `npx wrangler kv namespace create RATE` → `worker/wrangler.toml`의 KV 주석 해제 + id 입력.
    없으면 isolate 메모리 카운터로 대체된다(시간당 5건, 근사치)
 5. `npx wrangler deploy` → 출력된 `https://neo3ds-report.<account>.workers.dev` 확인
-6. `site/ko/convert.html`의 `<meta name="neo3ds-report-endpoint" content="...">`에 그 URL을 넣고
+6. `site/ko/index.html`의 `<meta name="neo3ds-report-endpoint" content="...">`에 그 URL을 넣고
    `node scripts/gen_site_i18n.mjs` 실행 → 같은 커밋에 KO 원본과 EN 생성물을 함께 넣는다
-7. Pages 배포 후 변환 페이지에서 제보 1건 전송 → 이슈 생성 확인
+7. Pages 배포 후 소개 페이지에서 제보 1건 전송 → 이슈 생성 확인
 
 endpoint가 비어 있으면 폼은 "지금은 제보를 받을 수 없습니다"만 표시하고 아무것도 보내지 않는다.
 

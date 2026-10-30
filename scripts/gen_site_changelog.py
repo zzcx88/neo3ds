@@ -66,7 +66,7 @@ META = {
     },
 }
 
-FOOT_HREF = ['compat.html', 'manual.html', 'changelog.html', 'convert.html#feedback',
+FOOT_HREF = ['compat.html', 'manual.html', 'changelog.html', 'index.html#feedback',
              'https://github.com/zzcx88/neo3ds', RELEASES,
              'https://github.com/zzcx88/neo3ds/blob/main/README.md',
              'https://github.com/zzcx88/neo3ds/blob/main/docs/build.md',

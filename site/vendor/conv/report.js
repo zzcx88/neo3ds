@@ -14,6 +14,8 @@ export const REPORT_TYPES = Object.freeze({
 });
 
 export const MAX_LOG_LINES = 200;
+// sessionStorage key: the converter page hands its failed run to the landing form.
+export const PENDING_KEY = 'neo3ds:report';
 export const MAX_PAYLOAD_BYTES = 64 * 1024;
 
 const SET_NAME = /^[a-z0-9_]{1,40}$/;

@@ -7,6 +7,8 @@
 <meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
+<!-- 익명 제보 엔드포인트 (#188). 배포 후 worker URL을 넣는다: docs/build.md §7.3 -->
+<meta name="neo3ds-report-endpoint" content="">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/ko/">
 <link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/ko/">
 <link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/">
@@ -313,6 +315,43 @@
   </div>
 </section>
 
+<!-- ── 문제 신고 (#189) — 사이트의 유일한 제보 폼 ─────────────────────── -->
+<section class="sec" id="feedback">
+  <div class="wrap">
+    <h2 data-i18n="report.landingH">문제 신고</h2>
+    <p class="lede narrow" data-i18n="report.landingLede">의견이나 문제를 남겨 주세요. 계정 없이 익명으로 접수되고 공개 GitHub 이슈로 등록됩니다.</p>
+    <form class="report" id="reportForm" novalidate>
+      <div class="report-grid">
+        <label class="report-field">
+          <span data-i18n="report.type">유형</span>
+          <select id="reportType">
+            <option value="convert-fail" data-i18n="report.typeConvert">변환 실패</option>
+            <option value="site-bug" data-i18n="report.typeBug">사이트·변환기 버그</option>
+            <option value="feature" data-i18n="report.typeFeature">기능 제안</option>
+            <option value="other" data-i18n="report.typeOther">기타</option>
+          </select>
+        </label>
+        <label class="report-field">
+          <span data-i18n="report.gameLabel">게임 이름 (선택)</span>
+          <input id="reportGame" type="text" maxlength="80" autocomplete="off">
+        </label>
+      </div>
+      <label class="report-field">
+        <span data-i18n="report.textLabel">무엇이 잘못됐나요?</span>
+        <textarea id="reportText" rows="4" maxlength="4000" required></textarea>
+      </label>
+      <input class="trap" id="reportTrap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="tiny hidden" id="reportPending" data-i18n="report.pending">방금 실패한 변환의 로그와 게임 정보가 함께 첨부됩니다.</p>
+      <p class="tiny" data-i18n="report.public">전송 내용(증상·로그·브라우저 정보)은 공개 GitHub 이슈로 등록됩니다. 개인정보는 적지 마세요.</p>
+      <div class="report-actions">
+        <button type="submit" class="btn btn-primary" id="reportSend" data-i18n="report.send">보내기</button>
+        <a class="btn btn-ghost hidden" id="reportLink" target="_blank" rel="noopener"></a>
+      </div>
+      <p class="tiny" id="reportMsg" role="status"></p>
+    </form>
+  </div>
+</section>
+
 </main>
 
 <footer class="foot">
@@ -322,7 +361,7 @@
       <a href="compat.html" data-i18n="foot.compat">게임 목록</a>
       <a href="manual.html" data-i18n="foot.manual">3DS 사용 안내</a>
       <a href="changelog.html" data-i18n="foot.changelog">패치노트</a>
-      <a href="convert.html#feedback" data-i18n="foot.report">문제 신고</a>
+      <a href="index.html#feedback" data-i18n="foot.report">문제 신고</a>
       <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
       <a href="https://github.com/zzcx88/neo3ds/releases" data-i18n="foot.rel">릴리스</a>
       <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md" data-i18n="foot.readme">README</a>
@@ -336,5 +375,6 @@
 
 <script src="../games.js"></script>
 <script src="../app.js"></script>
+<script type="module" src="../feedback.js"></script>
 </body>
 </html>
