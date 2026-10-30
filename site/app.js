@@ -153,7 +153,7 @@ const EN = {
   'report.landingH': 'Report a problem',
   'report.landingLede': 'Leave a comment or a problem. It is filed anonymously as a public GitHub issue, no account needed.',
   'report.convertLede': 'Reports go through the form on the intro page. The log and game details of the failed run travel with you.',
-  'report.go': 'Report on the intro page',
+  'report.go': 'Report',
   'report.pending': 'The log and game details of the failed run are attached.',
   'report.type': 'Type', 'report.typeConvert': 'Conversion failed', 'report.typeBug': 'Site / converter bug',
   'report.typeFeature': 'Feature request', 'report.typeOther': 'Something else',

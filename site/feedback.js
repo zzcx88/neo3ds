@@ -27,12 +27,13 @@ if (form) {
   let pending = null;
 
   // A failed conversion on the converter page left its (already redacted)
-  // context here. Read once, then clear so a later visit starts clean.
+  // context here — localStorage, because the CTA opens a new tab. Read once,
+  // then clear so a later visit starts clean.
   try {
-    const raw = sessionStorage.getItem(PENDING_KEY);
+    const raw = localStorage.getItem(PENDING_KEY);
     if (raw) {
       pending = JSON.parse(raw);
-      sessionStorage.removeItem(PENDING_KEY);
+      localStorage.removeItem(PENDING_KEY);
     }
   } catch { /* storage can be blocked */ }
   if (pending) {

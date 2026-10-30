@@ -83,7 +83,7 @@ function stashPending() {
     failures, log, error, sources: reportSources(),
   });
   try {
-    sessionStorage.setItem(PENDING_KEY, JSON.stringify({
+    localStorage.setItem(PENDING_KEY, JSON.stringify({
       failures: partial.failures,
       log: partial.log,
       error: partial.error,
