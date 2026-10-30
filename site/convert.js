@@ -142,6 +142,20 @@ function logGameFail(row, message, secs) {
   logEvent(gameTag(row), `✗ ${message}${secs ? ` · ${secs}s` : ''}`, 'fail');
 }
 
+// #207: pack.js reports the BIOS choice and the start system as progress
+// details. Keep them in the visible log once per game, next to the romset line.
+const BIOS_LOG = /^(AES|MVS) BIOS:|^System:/;
+
+function logBiosLine(row, detail) {
+  const text = String(detail ?? '').trim();
+  const meta = rowMeta.get(row);
+  if (!meta || !BIOS_LOG.test(text)) return;
+  meta.bios ??= new Set();
+  if (meta.bios.has(text)) return;
+  meta.bios.add(text);
+  logEvent(gameTag(row), text, 'info');
+}
+
 let files = [];
 let rejectedFiles = 0; // non-zip drops ignored by ingest (#79): say so instead of nothing
 let folderDropped = false; // folder drops arrive with no File entries; explain instead of silence
@@ -150,7 +164,7 @@ let runT0 = 0; // #152: log timestamps are relative to the run start
 let singleStep = null; // #152: one-game stage changes for the log
 let singleStage = null; // #125: last progress message stage for convert_fail
 const rowT0 = new Map(); // #152: batch row (-1 = single) -> start time
-const rowMeta = new Map(); // #152: batch row -> { romset: true } once logged
+const rowMeta = new Map(); // #152: batch row (-1 = single) -> { romset, bios } once logged
 let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
 let checkRows = null, checkFiles = null, checkError = '', checkProgress = null;
 let singleRow = null; // #143: the one game's check row when there is no batch list
@@ -1356,6 +1370,7 @@ function onWorkerMessage(w, m) {
       rowMeta.get(row).romset = true;
       logEvent(gameTag(row), m.detail, 'info');
     }
+    logBiosLine(row, m.detail);
     if (batch?.[row] && batch[row].step !== m.step) logStage(row, m.step);
     rowProgress(batch, row, m.step, m.detail);
     updateRow(row);
@@ -1383,6 +1398,7 @@ function onSingleMessage(m) {
       rowMeta.get(-1).romset = true;
       logEvent(gameTag(-1), m.detail, 'info');
     }
+    logBiosLine(-1, m.detail);
     if (m.step !== singleStep) { singleStep = m.step; logStage(-1, m.step); }
     updateOverallProgress(m);
   } else if (m.type === 'done') {
