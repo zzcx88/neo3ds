@@ -272,6 +272,13 @@ section[id]{scroll-margin-top:64px}
 .faq .perf b{color:var(--gold);font-weight:400;margin-right:6px}
 
 /* ── 호환성 ─────────────────────────────────────────────────────────── */
+/* ── 시리즈 바로가기 (#198) — 홈에서 롱테일 페이지로 가는 내부 링크 ──────── */
+.series-h{font-size:19px;font-family:var(--text);font-weight:600;margin:22px 0 10px}
+.series-nav{display:flex;flex-wrap:wrap;gap:8px}
+.series-nav a{font-size:13.5px;line-height:1.2;color:#C9C9D2;padding:7px 11px;
+  border:1px solid var(--line);border-radius:3px;text-decoration:none}
+.series-nav a:hover{border-color:var(--gold);color:var(--gold)}
+
 .explorer{margin-top:30px}
 .ex-tools{display:flex;flex-wrap:wrap;gap:14px;align-items:center;border-top:1px solid var(--line);
   border-bottom:1px solid var(--line);padding:14px 0}
