@@ -27,3 +27,6 @@ __pycache__/
 .vs/
 Thumbs.db
 .impeccable/
+# Report worker local state (#188): dev secrets and wrangler cache.
+worker/.dev.vars
+worker/.wrangler/

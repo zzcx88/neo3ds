@@ -3,15 +3,17 @@
 // Umami tracker into send(); a blocked script or a throwing track() is a no-op.
 //
 // Umami bills one pageview plus one event per stored property, so the whole
-// extra contract is four events, and each carries one property: convert_start
+// extra contract is five events, and each carries one property: convert_start
 // (mode, batch size folded into the value), convert_done (game), convert_fail
-// (game + stage/reason folded into the value), convert_save (mode).
+// (game + stage/reason folded into the value), convert_save (mode), and
+// feedback_submit (no property: the report itself is the record).
 
 export const EVENT = Object.freeze({
   start: 'convert_start',
   done: 'convert_done',
   fail: 'convert_fail',
   save: 'convert_save',
+  submit: 'feedback_submit',
 });
 
 const MODES = new Set(['cia', 'pack', 'launcher']);
@@ -72,6 +74,12 @@ export function failEvent(set, stage, code) {
 // A finished run is not an install: this fires on the download click only.
 export function saveEvent(mode) {
   return { name: EVENT.save, data: { mode: SAVE_MODES.has(mode) ? mode : 'cia' } };
+}
+
+// #189: the report itself carries the detail, so the event has no property.
+// No game name, no stage: those live in the public issue, not in analytics.
+export function submitEvent() {
+  return { name: EVENT.submit, data: {} };
 }
 
 // Caller-owned delivery: pass window.umami. Returns whether a call was

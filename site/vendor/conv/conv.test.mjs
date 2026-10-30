@@ -582,11 +582,11 @@ await t('progress/producer-fracs-stay-in-stage', async () => {
 });
 
 // ── #125/#175 web analytics contract (pure, DOM-free) ─────────────────────
-// Only these four events may leave the page. The test pins names, property
+// Only these five events may leave the page. The test pins names, property
 // keys and the values; a zip file name must always collapse to 'unknown' and
 // the batch size and failure reason stay inside the existing property values.
 await t('analytics/event-payloads', async () => {
-  const { startEvent, doneEvent, failEvent, saveEvent } = await import('./analytics.js');
+  const { startEvent, doneEvent, failEvent, saveEvent, submitEvent } = await import('./analytics.js');
   const same = (got, want, tag) => {
     if (JSON.stringify(got) !== JSON.stringify(want))
       throw new Error(`${tag}: ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
@@ -609,6 +609,7 @@ await t('analytics/event-payloads', async () => {
   same(saveEvent('pack'), { name: 'convert_save', data: { mode: 'pack' } }, 'save pack');
   same(saveEvent('batch'), { name: 'convert_save', data: { mode: 'batch' } }, 'save batch');
   same(saveEvent('nonsense'), { name: 'convert_save', data: { mode: 'cia' } }, 'save fallback');
+  same(submitEvent(), { name: 'feedback_submit', data: {} }, 'feedback submit');
 });
 
 await t('analytics/game-name-never-is-a-zip-file', async () => {
@@ -620,6 +621,97 @@ await t('analytics/game-name-never-is-a-zip-file', async () => {
     '../kof98h', 'kof98h\n', '', null, undefined, 98]) {
     if (gameSet(value) !== 'unknown') throw new Error(`leaked ${JSON.stringify(value)}`);
   }
+});
+
+// ── #188/#189 anonymous report payload (pure) ─────────────────────────────
+// A zip file name is download-only: it must never appear in the payload, in
+// the log, or in an error message. Catalog names survive untouched.
+await t('report/zip-names-never-leave-the-tab', async () => {
+  const { buildReport } = await import('./report.js');
+  const report = buildReport({
+    type: 'convert-fail',
+    summary: 'converted but hangs',
+    log: '  1.2s #1 KOF98.ZIP [1/4] load\n  2.0s #1 kof98.zip ✗ bios\n  neogeo.zip ok\n  kof98h ok',
+    error: 'kof98.zip: banner failed',
+    sources: [{ name: 'KOF98.ZIP', set: 'kof98h' }],
+  });
+  for (const text of [report.log, report.error]) {
+    if (/kof98\.zip/i.test(text)) throw new Error(`zip name leaked: ${text}`);
+    if (/kof98hh/.test(text)) throw new Error(`double substitution: ${text}`);
+  }
+  if (!report.log.includes('kof98h')) throw new Error('catalog name lost: ' + report.log);
+  if (report.log.includes('neogeo.zip')) throw new Error('BIOS zip name leaked: ' + report.log);
+  if (!report.log.includes('BIOS')) throw new Error('BIOS marker lost: ' + report.log);
+});
+
+await t('report/batch-rows-keep-their-own-reason', async () => {
+  const { buildReport, failuresFrom } = await import('./report.js');
+  const rows = [
+    { status: 'failed', title: 'A' },
+    { status: 'done', title: 'B' },
+    { status: 'failed', title: 'C' },
+    { status: 'failed', title: 'D' },
+  ];
+  const sources = [
+    { name: 'a.zip', set: 'mslug' },
+    { name: 'b.zip', set: 'kof98h' },
+    { name: 'c.zip', set: 'svc' },
+    { name: 'd.zip', set: null },
+  ];
+  const info = new Map([
+    [0, { code: 'bios', stage: 'load' }],
+    [2, { code: 'oom', stage: 'romfs' }],
+    [3, { code: 'crash', stage: 'worker' }],
+  ]);
+  const report = buildReport({
+    type: 'convert-fail', summary: 'x',
+    failures: failuresFrom(rows, sources, info),
+  });
+  const got = report.failures.map((f) => `${f.set ?? '-'}:${f.code ?? '-'}:${f.stage ?? '-'}`);
+  const want = ['mslug:bios:load', 'svc:oom:romfs', '-:crash:worker'];
+  if (JSON.stringify(got) !== JSON.stringify(want)) throw new Error(JSON.stringify(got));
+  if (report.failures.some((f) => f.title === 'B')) throw new Error('done row leaked');
+});
+
+await t('report/version-falls-back-to-unknown', async () => {
+  const { buildReport } = await import('./report.js');
+  const report = buildReport({ type: 'other', summary: 'x' });
+  if (report.version !== 'unknown') throw new Error('version ' + report.version);
+});
+
+await t('report/failure-rows-are-sanitized', async () => {
+  const { buildReport } = await import('./report.js');
+  const report = buildReport({
+    type: 'convert-fail',
+    summary: 'x',
+    failures: [
+      { set: 'kof98h', title: "KOF '98", code: 'bios', stage: 'load', name: 'kof98.zip' },
+      { set: 'KOF98H', title: '', code: 'bad code', stage: 'load' },
+      { name: 'only-zip.zip' },
+    ],
+  });
+  if (report.failures.length !== 1) throw new Error('rows: ' + JSON.stringify(report.failures));
+  const row = report.failures[0];
+  if (row.set !== 'kof98h' || row.code !== 'bios' || row.stage !== 'load') throw new Error(JSON.stringify(row));
+  if (JSON.stringify(report).includes('only-zip.zip')) throw new Error('zip name leaked');
+});
+
+await t('report/log-tail-is-bounded', async () => {
+  const { buildReport, MAX_LOG_LINES } = await import('./report.js');
+  const log = Array.from({ length: 500 }, (_, i) => `line ${i}`).join('\n');
+  const report = buildReport({ type: 'site-bug', summary: 'x', log });
+  const lines = report.log.split('\n');
+  if (lines.length !== MAX_LOG_LINES) throw new Error('lines ' + lines.length);
+  if (lines.at(-1) !== 'line 499') throw new Error('tail lost');
+});
+
+await t('report/payload-fits-the-worker-cap', async () => {
+  const { buildReport, fitPayload, payloadBytes } = await import('./report.js');
+  const log = Array.from({ length: 200 }, (_, i) => `${i} `.padEnd(400, 'x')).join('\n');
+  const fitted = fitPayload(buildReport({ type: 'convert-fail', summary: 'x', log }));
+  const bytes = payloadBytes(fitted);
+  if (bytes > 64 * 1024) throw new Error('still ' + bytes);
+  if (fitted.log.split('\n').at(-1).trim() === '') throw new Error('tail dropped the newest line');
 });
 
 process.exit(fail ? 1 : 0);

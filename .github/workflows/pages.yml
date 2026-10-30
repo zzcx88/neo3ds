@@ -15,6 +15,7 @@ on:
       - 'scripts/gen_site_changelog.py'
       - 'scripts/gen_site_seo.py'
       - 'scripts/gen_site_i18n.mjs'
+      - 'worker/**'
       - '.github/workflows/pages.yml'
   pull_request:
   workflow_dispatch:
@@ -44,6 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/site_gate.sh
+      - run: node --test worker/test/*.test.mjs
 
   build:
     if: github.event_name != 'pull_request'
@@ -77,6 +79,9 @@ jobs:
         run: |
           cd site/vendor/conv && npm i --no-save adm-zip zstd-codec > /dev/null 2>&1
           node conv.test.mjs
+
+      - name: Run report worker tests
+        run: node --test worker/test/*.test.mjs
 
       - uses: actions/configure-pages@v5
         with:

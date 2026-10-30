@@ -15,6 +15,7 @@ import {
 import { zipResults } from './vendor/conv/bundle.js';
 import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
 import { startEvent, doneEvent, failEvent, saveEvent, send as sendEvent } from './vendor/conv/analytics.js';
+import { buildReport, failuresFrom, PENDING_KEY } from './vendor/conv/report.js';
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
@@ -25,7 +26,7 @@ const t = (ko, en) => (isEn() ? en : ko);
 // language the page is in so a KO page gets KO reasons (#79).
 const uiLang = () => (isEn() ? 'en' : 'ko');
 
-/* ── #125/#175 usage events: four events, all optional. A blocked Umami script
+/* ── #125/#175/#189 usage events: five events, all optional. A blocked Umami script
    or a throwing track() must leave the conversion untouched. ─────────────── */
 function track(ev) {
   sendEvent(window.umami, ev);
@@ -46,6 +47,53 @@ function trackFail(set, stage, code) {
 // Fires on the download click, not when the file is built (#175).
 function trackSave(mode) {
   if (mode) track(saveEvent(mode));
+}
+
+/* ── #188/#189 anonymous report: the form lives on the intro page. Before
+   leaving this page, hand the failed run over in sessionStorage. report.js
+   swaps every zip file name for its catalog name first, so only public names
+   travel. */
+const failInfo = new Map(); // batch row -> { code, stage }; row.step is cleared on fail
+let singleFail = null; // { code, stage } for the single-game path
+let lastErrorDetail = ''; // worker crash location, when the browser reports one
+
+function reportFailures() {
+  if (batch && batchStarted) return failuresFrom(batch, batchSource, failInfo);
+  if (singleFail) return [{ set: singleRow?.set ?? null, title: singleRow?.title ?? null, ...singleFail }];
+  return [];
+}
+
+// Preflight rows carry the zip name (page-only) and the catalog name (safe).
+function reportSources() {
+  if (batchSource) return batchSource.map((row) => ({ name: row.name, set: row.set }));
+  if (singleRow) return [{ name: singleRow.name, set: singleRow.set }];
+  // Launcher runs skip preflight, but the log still tags lines with zip names:
+  // without this fallback those names would reach the public issue.
+  return gameZips().map((file) => ({ name: file.name, set: null }));
+}
+
+// Runs on click, before the anchor navigates to the landing form.
+function stashPending() {
+  const failures = reportFailures();
+  const log = logEl.textContent;
+  const error = [$('gateAlert').textContent, lastErrorDetail].filter(Boolean).join('\n\n');
+  if (!failures.length && !log && !error) return;
+  const partial = buildReport({
+    type: 'convert-fail', summary: 'pending', mode: currentMode(),
+    failures, log, error, sources: reportSources(),
+  });
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify({
+      failures: partial.failures,
+      log: partial.log,
+      error: partial.error,
+      mode: partial.mode,
+    }));
+  } catch { /* storage can be blocked */ }
+}
+
+for (const id of ['gateReportOpen', 'gateReportJump', 'gateReportGo']) {
+  $(id)?.addEventListener('click', stashPending);
 }
 
 /* ── Log (#152): one line per event, tagged so parallel workers stay readable.
@@ -1009,6 +1057,7 @@ function markRunningRowsFailed(message) {
   if (!batch) return;
   for (let i = 0; i < batch.length; i++) {
     if (batch[i].status === STATUS.RUNNING) {
+      failInfo.set(i, { code: 'crash', stage: 'worker' });
       markFailed(batch, i, message);
       trackFail(batchSource?.[i]?.set, 'worker', 'crash');
     }
@@ -1137,6 +1186,9 @@ runBtn.addEventListener('click', () => {
   singleStage = null;
   rowT0.clear();
   rowMeta.clear();
+  failInfo.clear();
+  singleFail = null;
+  lastErrorDetail = '';
 
   if (isBatch) {
     // Fresh statuses for this run, but keep every row's chosen picture (#76).
@@ -1168,7 +1220,7 @@ function spawnWorker(base) {
   const w = new Worker(new URL('./vendor/conv/worker.js', import.meta.url), { type: 'module' });
   w.base = base;
   w.job = null;
-  w.onerror = (e) => workerFailed(w, e.message || 'load failed');
+  w.onerror = (e) => workerFailed(w, e.message || 'load failed', e.error?.stack ?? null);
   w.onmessage = (e) => onWorkerMessage(w, e.data);
   workers.push(w);
   return w;
@@ -1241,6 +1293,7 @@ function failRow(row, message, stage = null, code = null) {
   const secs = rowSecs(row);
   // markFailed clears row.step, so read the analytics stage first.
   const failedAt = stage ?? batch?.[row]?.step ?? null;
+  failInfo.set(row, { code: code ?? null, stage: failedAt });
   markFailed(batch, row, message);
   trackFail(batchSource?.[row]?.set, failedAt, code);
   updateRow(row);
@@ -1263,14 +1316,15 @@ function finishBatchRun() {
 
 // A crashed worker loses its game (failed row) and is replaced while work is
 // left, so one bad game cannot strand the rest of the queue.
-function workerFailed(w, message) {
+function workerFailed(w, message, detail = null) {
   const job = w.job;
+  if (detail) lastErrorDetail = String(detail).slice(0, 1000);
   workers = workers.filter((x) => x !== w);
   try { w.terminate(); } catch { /* already gone */ }
   if (!running) return;
   if (w.single || job == null) {
     markRunningRowsFailed(t('워커 오류', 'Worker error'));
-    if (w.single) trackFail(singleRow?.set, 'worker', 'crash');
+    if (w.single) { singleFail = { code: 'crash', stage: 'worker' }; trackFail(singleRow?.set, 'worker', 'crash'); }
     endOverall('error');
     finish();
     failAlert(message);
@@ -1344,6 +1398,7 @@ function onSingleMessage(m) {
       `${m.stats.tiles.toLocaleString()} tiles · graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
   } else if (m.type === 'error') {
     markRunningRowsFailed(m.message);
+    singleFail = { code: m.code ?? null, stage: singleStage };
     trackFail(singleRow?.set, singleStage, m.code);
     endOverall('error');
     finish();
@@ -1381,6 +1436,9 @@ function showAlert(text) {
   const el = $('gateAlert');
   el.textContent = text;
   el.classList.toggle('hidden', !text);
+  // Every failure path lands here: offer the jump to the landing-page form.
+  const jump = $('gateReportJump');
+  if (jump) jump.classList.toggle('hidden', !text);
 }
 
 function failAlert(message) {
@@ -1459,3 +1517,4 @@ cancelBtn.addEventListener('click', () => {
   finish();
   logEvent('', t('취소됨', 'Cancelled'), 'meta');
 });
+

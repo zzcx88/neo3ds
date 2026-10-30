@@ -63,7 +63,7 @@ const PAGES = {
     file: 'privacy.html',
     url: 'privacy.html',
     title: 'Privacy — web usage stats | neo3ds',
-    description: 'The web converter measures page views and three conversion events with Umami. No cookies, no rom files, no zip file names.',
+    description: 'The web converter measures page views and conversion events with Umami, and discloses what a problem report sends. No cookies, no rom files, no zip file names.',
     ogTitle: 'Privacy — web usage stats | neo3ds',
     ogDescription: 'What the web converter measures. No cookies, no rom files, no zip file names.',
     twitterDescription: 'What the web converter measures. No cookies, no ROM files.',
@@ -98,7 +98,7 @@ const PAGES = {
 };
 
 // Root-relative asset references that must gain one `../` on a page inside site/en/.
-const ASSET_PREFIXES = ['styles.css', 'app.js', 'games.js', 'convert.js', 'media/', 'fonts/'];
+const ASSET_PREFIXES = ['styles.css', 'app.js', 'feedback.js', 'games.js', 'convert.js', 'media/', 'fonts/'];
 const VOID = new Set(['meta', 'link', 'input', 'br', 'img', 'hr', 'source', 'area', 'base', 'col', 'embed', 'param', 'track', 'wbr']);
 const RAW_TEXT = new Set(['script', 'style', 'textarea', 'title']);
 

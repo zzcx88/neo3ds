@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy — web usage stats | neo3ds</title>
-<meta name="description" content="The web converter measures page views and three conversion events with Umami. No cookies, no rom files, no zip file names.">
+<meta name="description" content="The web converter measures page views and conversion events with Umami, and discloses what a problem report sends. No cookies, no rom files, no zip file names.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/privacy.html">
@@ -59,15 +59,24 @@
 </header>
 <main id="main" class="doc">
   <h1>Privacy</h1>
-  <p class="lede">The web converter never sends your rom or its file name to a server. This is the complete list of what the site measures.</p>
+  <p class="lede">The web converter never sends your rom or its file name to a server. This is the complete list of what the site measures and what a report sends.</p>
 
   <h2>What is measured</h2>
   <p>Visit statistics come from Umami Cloud. It counts the following without cookies.</p>
   <ul>
     <li>Page views: the page URL, the referring page, browser and operating system, device type, and country. The IP address is not stored; only the country is derived from it.</li>
-    <li>Conversion events: the output mode (the game-count range when several zips are queued), the game's romset name (only when it is in the public catalog, otherwise <code>unknown</code>), the stage and reason a run failed (<code>load/bios</code> pairs step and cause), and the output mode of a download click.</li>
+    <li>Conversion events: the output mode (the game-count range when several zips are queued), the game's romset name (only when it is in the public catalog, otherwise <code>unknown</code>), the stage and reason a run failed (<code>load/bios</code> pairs step and cause), the output mode of a download click, and one event per report submission (no properties).</li>
   </ul>
   <p>Not sent: rom files, zip file names, custom icon or banner images, or the converted file. All of them stay inside the browser tab.</p>
+
+  <h2>Problem reports</h2>
+  <p>Pressing send in the intro page's report form sends the values below to an anonymous Cloudflare Worker, which opens an issue in the public GitHub repository. No account is needed.</p>
+  <ul>
+    <li>Sent: the report type, your description and optional game name, the last 200 lines of the converter log, the failed games' public romset names, reasons and stages, the error message, the converter version, the output mode, the page address, and browser information (user agent).</li>
+    <li>The issue is public and anyone can read it; closing it does not delete it. No identity or email is collected, and no reply is promised.</li>
+    <li>Abuse limit: instead of the IP itself the worker keeps a hash of IP and hour for at most one hour, to allow 5 reports per hour.</li>
+    <li>A report never carries zip file names, rom files, icon or banner images.</li>
+  </ul>
 
   <h2>Cookies and ad blockers</h2>
   <p>No cookies are used, so there is no consent banner. Umami tells visits apart without cookies.</p>
@@ -79,7 +88,7 @@
 
   <h2>Contact</h2>
   <p>Questions about this page go to the <a href="https://github.com/zzcx88/neo3ds/issues">repository issues</a>.</p>
-  <p class="tiny">Last updated 2026-10-28.</p>
+  <p class="tiny">Last updated 2026-10-30.</p>
 </main>
 
 <footer class="foot">
@@ -90,6 +99,7 @@
       <a href="convert.html">Convert now</a>
       <a href="manual.html">3DS manual</a>
       <a href="changelog.html">Changelog</a>
+      <a href="index.html#feedback">Report a problem</a>
       <a href="https://github.com/zzcx88/neo3ds">Repository</a>
       <a href="privacy.html" aria-current="page">Privacy</a>
     </nav>

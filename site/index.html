@@ -7,6 +7,8 @@
 <meta name="description" content="Turn Neo Geo (MAME) romsets into installable 3DS CIAs. Runs at 60 fps on an Old 3DS, one HOME menu icon per game. 242 of 282 romsets convert.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
+
+<meta name="neo3ds-report-endpoint" content="">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/">
 <link rel="alternate" hreflang="ko" href="https://zzcx88.github.io/neo3ds/ko/">
 <link rel="alternate" hreflang="en" href="https://zzcx88.github.io/neo3ds/">
@@ -320,6 +322,43 @@
   </div>
 </section>
 
+
+<section class="sec" id="feedback">
+  <div class="wrap">
+    <h2>Report a problem</h2>
+    <p class="lede narrow">Leave a comment or a problem. It is filed anonymously as a public GitHub issue, no account needed.</p>
+    <form class="report" id="reportForm" novalidate>
+      <div class="report-grid">
+        <label class="report-field">
+          <span>Type</span>
+          <select id="reportType">
+            <option value="convert-fail">Conversion failed</option>
+            <option value="site-bug">Site / converter bug</option>
+            <option value="feature">Feature request</option>
+            <option value="other">Something else</option>
+          </select>
+        </label>
+        <label class="report-field">
+          <span>Game name (optional)</span>
+          <input id="reportGame" type="text" maxlength="80" autocomplete="off">
+        </label>
+      </div>
+      <label class="report-field">
+        <span>What went wrong?</span>
+        <textarea id="reportText" rows="4" maxlength="4000" required></textarea>
+      </label>
+      <input class="trap" id="reportTrap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="tiny hidden" id="reportPending">The log and game details of the failed run are attached.</p>
+      <p class="tiny">The report (symptom, log, browser info) becomes a public GitHub issue. Do not include personal details.</p>
+      <div class="report-actions">
+        <button type="submit" class="btn btn-primary" id="reportSend">Send</button>
+        <a class="btn btn-ghost hidden" id="reportLink" target="_blank" rel="noopener"></a>
+      </div>
+      <p class="tiny" id="reportMsg" role="status"></p>
+    </form>
+  </div>
+</section>
+
 </main>
 
 <footer class="foot">
@@ -329,6 +368,7 @@
       <a href="compat.html">Game list</a>
       <a href="manual.html">3DS manual</a>
       <a href="changelog.html">Changelog</a>
+      <a href="index.html#feedback">Report a problem</a>
       <a href="https://github.com/zzcx88/neo3ds">Repository</a>
       <a href="https://github.com/zzcx88/neo3ds/releases">Releases</a>
       <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md">README</a>
@@ -342,5 +382,6 @@
 
 <script src="games.js"></script>
 <script src="app.js"></script>
+<script type="module" src="feedback.js"></script>
 </body>
 </html>

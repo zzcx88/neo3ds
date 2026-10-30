@@ -1,0 +1,18 @@
+# Anonymous report endpoint (#188). Deploy: npx wrangler deploy
+# Secret: GITHUB_TOKEN (fine-grained, Issues: Read/Write on zzcx88/neo3ds only)
+name = "neo3ds-report"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+GITHUB_REPO = "zzcx88/neo3ds"
+ALLOWED_ORIGINS = "https://zzcx88.github.io"
+
+# Optional but recommended: durable per-IP rate limit (5 per hour).
+# Without it the worker falls back to a per-isolate counter.
+#   npx wrangler kv namespace create RATE
+# then uncomment and paste the returned id.
+# [[kv_namespaces]]
+# binding = "RATE"
+# id = ""

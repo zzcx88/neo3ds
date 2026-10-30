@@ -52,15 +52,24 @@
 </header>
 <main id="main" class="doc">
   <h1 data-i18n="priv.h1">개인정보</h1>
-  <p class="lede" data-i18n="priv.lede">웹 변환기는 롬과 파일명을 서버로 보내지 않습니다. 사이트가 측정하는 값은 아래가 전부입니다.</p>
+  <p class="lede" data-i18n="priv.lede">웹 변환기는 롬과 파일명을 서버로 보내지 않습니다. 사이트가 측정하거나 제보로 받는 값은 아래가 전부입니다.</p>
 
   <h2 data-i18n="priv.whatH2">무엇을 측정하나요</h2>
   <p data-i18n="priv.whatP">방문 통계는 Umami Cloud로 수집합니다. 쿠키 없이 다음 값만 집계합니다.</p>
   <ul>
     <li data-i18n="priv.pageviews">페이지뷰: 방문한 페이지 주소, 유입 경로, 브라우저·운영체제·기기 종류, 국가. IP 주소는 저장하지 않고 국가만 추정합니다.</li>
-    <li data-i18n="priv.events">변환 이벤트: 출력 모드(여러 개를 넣었으면 게임 수 구간), 게임 롬셋 이름(공개 카탈로그에 있는 이름만, 없으면 <code>unknown</code>), 실패가 난 단계와 사유(<code>load/bios</code>처럼 단계와 이유를 함께), 다운로드 버튼을 누른 출력 모드.</li>
+    <li data-i18n="priv.events">변환 이벤트: 출력 모드(여러 개를 넣었으면 게임 수 구간), 게임 롬셋 이름(공개 카탈로그에 있는 이름만, 없으면 <code>unknown</code>), 실패가 난 단계와 사유(<code>load/bios</code>처럼 단계와 이유를 함께), 다운로드 버튼을 누른 출력 모드, 제보를 보낸 횟수(속성 없이 1회).</li>
   </ul>
   <p data-i18n="priv.notSent">보내지 않는 것: 롬 파일, zip 파일명, 직접 고른 아이콘·배너 이미지, 변환 결과물. 모두 브라우저 안에만 있습니다.</p>
+
+  <h2 data-i18n="priv.reportH2">문제 신고</h2>
+  <p data-i18n="priv.reportP">소개 페이지의 문제 신고 폼을 보내면 아래 값이 익명 Cloudflare Worker로 전송되고, 그 Worker가 공개 GitHub 저장소에 이슈를 만듭니다. 계정은 필요 없습니다.</p>
+  <ul>
+    <li data-i18n="priv.reportWhat">보내는 값: 제보 유형, 직접 쓴 증상과 게임 이름(선택), 변환 로그 마지막 200줄, 실패한 게임의 공개 롬셋 이름·사유·단계, 오류 메시지, 변환기 버전, 출력 모드, 보낸 페이지 주소, 브라우저 정보(UA).</li>
+    <li data-i18n="priv.reportPublic">이슈는 공개되어 누구나 읽을 수 있고, 관리자가 닫아도 삭제되지 않습니다. 보낸 사람의 신원·이메일은 받지 않으며 회신도 보장하지 않습니다.</li>
+    <li data-i18n="priv.reportRate">남용 방지: Worker는 IP 원문 대신 IP와 시간을 섞은 해시를 최대 1시간 보관해 시간당 5건으로 제한합니다.</li>
+    <li data-i18n="priv.reportNotSent">제보에도 zip 파일명·롬 파일·아이콘·배너 이미지는 보내지 않습니다.</li>
+  </ul>
 
   <h2 data-i18n="priv.cookiesH2">쿠키와 광고 차단기</h2>
   <p data-i18n="priv.cookiesP">쿠키를 쓰지 않으므로 동의 배너가 없습니다. Umami는 쿠키 없이 방문을 구분합니다.</p>
@@ -72,7 +81,7 @@
 
   <h2 data-i18n="priv.contactH2">문의</h2>
   <p data-i18n="priv.contactP">이 페이지의 처리 내용에 대한 문의는 <a href="https://github.com/zzcx88/neo3ds/issues">저장소 이슈</a>로 남겨 주세요.</p>
-  <p class="tiny" data-i18n="priv.updated">최종 갱신 2026-10-28.</p>
+  <p class="tiny" data-i18n="priv.updated">최종 갱신 2026-10-30.</p>
 </main>
 
 <footer class="foot">
@@ -83,6 +92,7 @@
       <a href="convert.html" data-i18n="cta.download">변환하기</a>
       <a href="manual.html" data-i18n="foot.manual">3DS 사용 안내</a>
       <a href="changelog.html" data-i18n="foot.changelog">패치노트</a>
+      <a href="index.html#feedback" data-i18n="foot.report">문제 신고</a>
       <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
       <a href="privacy.html" aria-current="page" data-i18n="foot.privacy">개인정보</a>
     </nav>
