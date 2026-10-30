@@ -75,6 +75,22 @@ for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html',
 console.log('i18n + analytics OK');
 "
 
+# Every series page is reachable from both home pages (#198): without this, adding a
+# series to site_series_data.py leaves the home page quietly stale.
+python3 - << 'EOF'
+import re, sys
+sys.path.insert(0, 'scripts')
+from site_series_data import SERIES
+
+for page in ('site/ko/index.html', 'site/index.html'):
+    html = open(page, encoding='utf-8').read()
+    linked = set(re.findall(r'href="series/([^"]+)\.html"', html))
+    missing = [s['slug'] for s in SERIES if s['slug'] not in linked]
+    if missing:
+        sys.exit('%s: missing series links: %s' % (page, ', '.join(missing)))
+print('home pages link all %d series' % len(SERIES))
+EOF
+
 # Generated pages must match their sources: a stale commit fails here instead of on main.
 python3 scripts/gen_site_games.py > /dev/null
 python3 scripts/gen_site_series.py > /dev/null
