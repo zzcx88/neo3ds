@@ -212,6 +212,9 @@ Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌
    `node scripts/gen_site_i18n.mjs` 실행 → 같은 커밋에 KO 원본과 EN 생성물을 함께 넣는다
 7. Pages 배포 후 소개 페이지에서 제보 1건 전송 → 이슈 생성 확인
 
+운영 토큰 만료: **2027-01-28**. 만료 2주 전(2027-01-14)에 새 토큰을 발급해
+`npx wrangler secret put GITHUB_TOKEN`으로 교체하고, 라이브 제보 1건 확인 후 이전 토큰을 Revoke한다.
+
 endpoint가 비어 있으면 폼은 "지금은 제보를 받을 수 없습니다"만 표시하고 아무것도 보내지 않는다.
 
 로컬 검증:
