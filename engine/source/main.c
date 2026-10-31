@@ -138,6 +138,8 @@ static void flush_console(void) {
 static LightEvent render_go, render_idle;
 static volatile bool render_quit;
 
+static bool skip_video; /* set by the main core before it hands a frame over */
+
 static void render_main(void *arg) {
 	(void)arg;
 	for (;;) {
@@ -146,7 +148,7 @@ static void render_main(void *arg) {
 		u64 t0 = svcGetSystemTick();
 		audio_render();
 		u64 t1 = svcGetSystemTick();
-		render_frame();
+		if (!skip_video) render_frame();
 		prof_ticks[3] += t1 - t0;
 		prof_ticks[4] += svcGetSystemTick() - t1;
 		LightEvent_Signal(&render_idle);
@@ -176,22 +178,28 @@ static void render_thread_stop(void) {
 }
 
 void screen_frame_end(void) {
+	const bool skip = neo_boot_ff != 0; /* MVS BIOS start-up: sound only */
 	if (!render_thread) {
 		u64 t0 = svcGetSystemTick();
 		audio_end_frame(conf.sample_rate);
 		audio_render();
 		u64 t1 = svcGetSystemTick();
-		video_snapshot();
-		render_frame();
+		if (!skip) {
+			video_snapshot();
+			render_frame();
+		}
 		prof_ticks[3] += t1 - t0;
 		prof_ticks[4] += svcGetSystemTick() - t1;
 		return;
 	}
-	LightEvent_Wait(&render_help); /* help core 1 with the bands */
-	bands_helped += band_work(band_bufs[1]);
+	if (!skip_video) { /* core 1 is drawing the previous frame: help it with the bands */
+		LightEvent_Wait(&render_help);
+		bands_helped += band_work(band_bufs[1]);
+	}
 	LightEvent_Wait(&render_idle); /* core 1 is done with the previous frame */
 	audio_end_frame(conf.sample_rate);
-	video_snapshot();
+	skip_video = skip; /* core 1 reads it only after render_go */
+	if (!skip) video_snapshot();
 	LightEvent_Clear(&render_help); /* left over when render_idle was waited on elsewhere */
 	LightEvent_Signal(&render_go);
 }
@@ -356,6 +364,7 @@ static void state_action(bool save, int slot) {
 			}
 		}
 		if (r == STATE_OK) r = savestate_load(slot);
+		if (r == STATE_OK) neo_boot_ff = 0; /* the state may have been saved in the game */
 		if (r == STATE_IO_ERROR) neo_restart(); /* damaged after a valid header: the state is mixed */
 		snprintf(msg, sizeof msg,
 		         r == STATE_OK ? "Loaded slot %d" : r == STATE_EMPTY ? "Slot %d is empty"
@@ -589,7 +598,7 @@ int main(void) {
 		emu_ticks += svcGetSystemTick() - t;
 
 		u64 tp = svcGetSystemTick();
-		present_frame();
+		if (!neo_boot_ff) present_frame(); /* the MVS BIOS start-up runs as fast as it can */
 		u64 tl = svcGetSystemTick();
 		present_ticks += tl - tp;
 		if (last_loop && tl - last_loop > 18 * CPU_TICKS_PER_MSEC) late++; /* missed a vblank */

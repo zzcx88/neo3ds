@@ -27,7 +27,12 @@ int neogeo_fix_bank_type; /* 0: no banked fix layer (needed by Garou/MSlug3-era 
 static int frame_counter_tick;
 int neo_watchdog_resets;
 
+int neo_boot_ff;
+
 void neogeo_reset(void) {
+	/* The MVS BIOS checks the board for ~4s before it starts the game: run that part without
+	 * drawing or waiting for the vblank (at most 10s of it, in case the BIOS stops on an error). */
+	neo_boot_ff = memory.mvs ? 600 : 0;
 	sram_lock = 0;
 	sound_code = 0;
 	pending_command = 0;
@@ -150,6 +155,11 @@ void neo_run_frame(bool render) {
 	prof_ticks[0] += t1 - t0;
 	if (render) draw_screen();
 	prof_ticks[1] += svcGetSystemTick() - t1;
+
+	if (neo_boot_ff) { /* ends at the first frame that stops in the game's code */
+		if (cpu_68k_getpc() < 0xc00000) neo_boot_ff = 0;
+		else neo_boot_ff--;
+	}
 
 	if (++memory.watchdog > 7) { /* watchdog reset after ~0.13s without a kick */
 		neo_watchdog_resets++;
