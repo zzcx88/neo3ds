@@ -160,8 +160,8 @@ KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 6페�
 GitHub Release에 올린다 (#55에서 복원, #102에서 GUI 동봉).
 
 1. `site/releases.json` 맨 위에 릴리스 항목(버전·날짜·KO/EN 불릿)을 추가하고
-   `python3 scripts/gen_site_changelog.py` 실행 — `<Version>` 범프와 **같은 커밋**에 넣는다.
-   JSON이 `<Version>`보다 뒤처지면 `site_gate.sh`가 실패해 Pages 배포가 막힌다 (§7.1)
+   `python3 scripts/gen_site_changelog.py`와 `python3 scripts/gen_changelog.py`를 실행 — `<Version>` 범프와 **같은 커밋**에 넣는다.
+   JSON이 `<Version>`보다 뒤처지거나 루트 `CHANGELOG.md`가 낡으면 `site_gate.sh`가 실패해 Pages 배포가 막힌다 (§7.1)
 2. `<Version>` 올리기 + 태그(`v<Version>`)가 `<Version>`과 일치하는지 확인
    (CI가 검증: 태그 ≠ `<Version>`이면 실패)
 3. `git tag vX.Y.Z && git push origin vX.Y.Z`

@@ -36,7 +36,8 @@ body:
         - 웹 변환기 (사이트)
         - 오프라인 변환기 GUI
         - 오프라인 변환기 명령줄
-        - 3DS 실행 (설치한 CIA)
+        - 3DS 런처 (.neo3ds)
+        - 3DS 실행 (게임별 CIA)
     validations:
       required: true
 
@@ -56,7 +57,7 @@ body:
         - Linux
         - macOS
         - 3DS 실기 (Old 3DS / 2DS)
-        - 3DS 실기 (New 3DS / 2DS)
+        - 3DS 실기 (New 3DS / New 2DS XL)
         - Azahar
     validations:
       required: true

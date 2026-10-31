@@ -41,17 +41,18 @@ git switch -c feat/<이슈번호>-<짧은설명>        # feat | fix | docs
 ## 4. 검증 명령
 
 ```sh
-# 엔진 → engine/engine.elf
+# 엔진 → engine/engine.elf (Windows + devkitPro msys2가 C:\devkitPro에 설치된 경우)
 bash scripts/build_engine.sh
 
-# 웹 변환기 → site/vendor/ (git 제외 산출물)
+# 웹 변환기 → site/vendor/ (git 제외 산출물; engine/engine.elf 필요 — 릴리스 zip의 tools/engine.elf로 대체 가능)
 bash scripts/build_wasm.sh
 
 # 오프라인 변환기: Windows는 Neo3dsConverter, Linux·macOS는 Neo3dsConverter.Desktop
+# 전제: engine/engine.elf + tools/ (docs/build.md §1·§2) — 없으면 MSB3030으로 실패한다
 dotnet build -c Release converter/Neo3dsConverter
 dotnet build -c Release converter/Neo3dsConverter.Desktop
 
-# C# 테스트
+# C# 테스트 (같은 전제)
 dotnet test converter/Neo3dsConverter.Desktop.Tests -c Release
 dotnet test converter/Neo3dsConverter.Core.Tests -c Release
 
@@ -80,12 +81,12 @@ python3 -m py_compile scripts/*.py
 | --- | --- |
 | `README.md` | `README.ko.md` |
 | `docs/TECHNICAL.md` | `docs/TECHNICAL.ko.md` |
-| `site/ko/*.html` (i18n 원본) | `node scripts/gen_site_i18n.mjs` → 영어 페이지 생성 |
+| `site/ko/{index,convert,privacy,manual}.html` + `site/app.js`(EN 표) | `node scripts/gen_site_i18n.mjs` → 영어 페이지 생성 |
 | `converter/assets/neogeo_games.json` | `python3 scripts/gen_site_games.py` → `site/games.js` |
 | `site/releases.json` | `python3 scripts/gen_site_changelog.py` → 사이트 changelog, `python3 scripts/gen_changelog.py` → `CHANGELOG.md` |
 | `<Version>` (`converter/Directory.Build.props`) | `site/releases.json` 최상단 항목 + 위 생성기 2개 |
 
-생성 파일은 손으로 고치지 않는다: `site/games.js`, `site/changelog.html`, `site/ko/changelog.html`, `CHANGELOG.md`, `site/vendor/conv/version.js`.
+생성 파일은 손으로 고치지 않는다: `site/games.js`, `site/compat.html`, `site/ko/compat.html`, `site/changelog.html`, `site/ko/changelog.html`, `CHANGELOG.md`, `site/vendor/conv/version.js`.
 
 ## 6. 커밋과 PR
 

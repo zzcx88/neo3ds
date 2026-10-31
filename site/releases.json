@@ -26,8 +26,8 @@
       {
         "t": { "ko": "macOS 앱 서명", "en": "macOS app signing" },
         "d": {
-          "ko": "서명 없이 배포돼 Gatekeeper가 \"손상됨\"으로 막던 macOS 변환기를 ad-hoc 서명해 실행되게 했습니다. (#165)",
-          "en": "The macOS converter was blocked as damaged by Gatekeeper; it is now ad-hoc signed and opens. (#165)"
+          "ko": "서명 없이 배포돼 Gatekeeper가 \"손상됨\"으로 막던 macOS 변환기를 ad-hoc 서명해 실행되게 했습니다. (#164)",
+          "en": "The macOS converter was blocked as damaged by Gatekeeper; it is now ad-hoc signed and opens. (#164)"
         }
       }
     ]

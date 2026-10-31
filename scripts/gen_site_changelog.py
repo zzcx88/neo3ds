@@ -105,6 +105,8 @@ def load():
                 pair = it.get(side) or {}
                 if not (pair.get('ko') and pair.get('en')):
                     sys.exit('%s: %s item %r needs both ko and en' % (DATA, version, it))
+    if not releases:
+        sys.exit('%s: no releases' % DATA)
     return releases
 
 

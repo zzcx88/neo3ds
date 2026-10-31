@@ -16,7 +16,7 @@ Korean text for every release: [site/ko/changelog.html](site/ko/changelog.html).
 
 ## [1.3.1](https://github.com/zzcx88/neo3ds/releases/tag/v1.3.1) - 2026-10-27
 
-- **macOS app signing** — The macOS converter was blocked as damaged by Gatekeeper; it is now ad-hoc signed and opens. ([#165](https://github.com/zzcx88/neo3ds/issues/165))
+- **macOS app signing** — The macOS converter was blocked as damaged by Gatekeeper; it is now ad-hoc signed and opens. ([#164](https://github.com/zzcx88/neo3ds/issues/164))
 
 ## [1.3.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.3.0) - 2026-10-26
 

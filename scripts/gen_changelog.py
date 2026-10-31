@@ -35,7 +35,7 @@ Korean text for every release: [site/ko/changelog.html](site/ko/changelog.html).
 
 def link_issues(s):
     """`#177` in a note becomes a link to the issue; everything else stays as written."""
-    return re.sub(r'#(\d+)', lambda m: '[#%s](%s/issues/%s)' % (m.group(1), REPO, m.group(1)), s)
+    return re.sub(r'(?<![\w/.-])#(\d+)', lambda m: '[#%s](%s/issues/%s)' % (m.group(1), REPO, m.group(1)), s)
 
 
 def render(releases):
