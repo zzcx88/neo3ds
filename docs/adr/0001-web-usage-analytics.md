@@ -46,3 +46,14 @@
 - `neogeo.zip` 파일명·엔트리 원본 이름·롬 바이트는 보내지 않는다. 알려진 슬롯 이름과 세 지역 라벨만 화이트리스트로 전송한다.
 - 프로필은 ZIP 중앙 디렉터리만 읽어 만들며, 엔트리를 inflate하지 않는다.
 - `site/privacy.html` KO/EN과 `docs/build.md` §7.3을 같은 커밋에서 갱신했다.
+
+## Amendment 2026-10-31 (#203)
+
+비표준·손상 BIOS 세트를 제보 본문에서 바로 분류하도록 `bios` 필드를 확장했다. 기존 필드는 그대로 둔다.
+
+- `sfix`/`lo` 상태에 `mismatch`를 추가한다(이름은 있으나 CRC/size가 다른 경우).
+- `mismatch`: 알려진 AES/MVS 슬롯 이름이 있으나 CRC+size가 다른 목록.
+- `unknown`: 알려진 슬롯·UniBIOS가 아닌 엔트리 수. 엔트리 이름은 보내지 않는다.
+- `unibios`: `uni-bios*.rom` 존재 여부(현재 변환 불가).
+- 이슈 표는 mismatch/unknown/UniBIOS 행을 값이 있을 때만 추가한다.
+- `site/privacy.html` KO/EN과 `docs/build.md` §7.3을 같은 커밋에서 갱신했다.

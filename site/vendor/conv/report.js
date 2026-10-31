@@ -30,7 +30,7 @@ const BIOS_NAMES = new Set([
   'vs-bios.rom', 'sp-j2.sp1', 'sp1.jipan.1024', 'usa_2slt.bin', 'sp-e.sp1',
 ]);
 const BIOS_REGION = /^(Europe\/Asia|Japan|USA)$/;
-const BIOS_STATES = new Set(['ok', 'missing']);
+const BIOS_STATES = new Set(['ok', 'missing', 'mismatch']);
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Last `max` lines of the converter log, newline-normalised, no trailing blank.
@@ -100,8 +100,12 @@ function cleanBios(input) {
     error: null,
     aes: chips(input.aes),
     mvs: chips(input.mvs),
+    ...(Array.isArray(input.mismatch) ? { mismatch: chips(input.mismatch) } : {}),
     sfix: BIOS_STATES.has(input.sfix) ? input.sfix : 'missing',
     lo: BIOS_STATES.has(input.lo) ? input.lo : 'missing',
+    ...(Number.isInteger(input.unknown) && input.unknown >= 0
+      ? { unknown: Math.min(input.unknown, 9999) } : {}),
+    ...(typeof input.unibios === 'boolean' ? { unibios: input.unibios } : {}),
   };
 }
 

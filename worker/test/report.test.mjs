@@ -171,6 +171,60 @@ test('issueBody: BIOS table shows AES/MVS and sfix/lo', () => {
   assert.match(body, /\| 000-lo\.lo \| ok \|/);
 });
 
+test('validateReport: BIOS classification keeps mismatch/unknown/UniBIOS', () => {
+  const check = validateReport(payload({
+    bios: {
+      present: true,
+      error: null,
+      aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+      mvs: [],
+      mismatch: [
+        { name: 'sp-s.sp1', region: 'Europe/Asia' },
+        { name: 'kof98.zip', region: 'Europe/Asia' },
+      ],
+      sfix: 'mismatch',
+      lo: 'missing',
+      unknown: 2,
+      unibios: true,
+      secret: 'drop me',
+    },
+  }));
+  assert.deepEqual(check.report.bios, {
+    present: true,
+    error: null,
+    aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+    mvs: [],
+    mismatch: [{ name: 'sp-s.sp1', region: 'Europe/Asia' }],
+    sfix: 'mismatch',
+    lo: 'missing',
+    unknown: 2,
+    unibios: true,
+  });
+  assert.equal(check.report.bios.secret, undefined);
+});
+
+test('issueBody: BIOS classification rows are distinct', () => {
+  const report = validateReport(payload({
+    bios: {
+      present: true,
+      error: null,
+      aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+      mvs: [],
+      mismatch: [{ name: 'sp-s.sp1', region: 'Europe/Asia' }],
+      sfix: 'mismatch',
+      lo: 'missing',
+      unknown: 2,
+      unibios: true,
+    },
+  })).report;
+  const body = issueBody(report, {});
+  assert.match(body, /\| mismatch \| sp-s\.sp1 \(Europe\/Asia\) \|/);
+  assert.match(body, /\| sfix\.sfix \| mismatch \|/);
+  assert.match(body, /\| unknown entries \| 2 \|/);
+  assert.match(body, /\| UniBIOS \| detected — unsupported \|/);
+  assert.equal(body.includes('kof98.zip'), false);
+});
+
 test('issueBody: BIOS not dropped and unreadable are one line', () => {
   const none = issueBody(validateReport(payload({ bios: { present: false } })).report, {});
   assert.match(none, /- BIOS: not dropped/);
