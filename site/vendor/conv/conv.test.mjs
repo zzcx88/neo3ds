@@ -148,17 +148,69 @@ await t('biosinfo/profile-lists-known-aes-mvs-and-support-roms', async () => {
   if (!p.present || p.error !== null || got !== want) throw new Error(got);
 });
 
-await t('biosinfo/name-with-wrong-crc-is-not-a-match', async () => {
+await t('biosinfo/name-with-wrong-crc-is-a-mismatch', async () => {
   const { biosProfile } = await import('./biosinfo.js');
   const { zip, table } = await biosFixture({
     names: ['neo-epo.bin', 'sfix.sfix'],
     chips: ['neo-epo.bin'], fix: true, zoom: false,
   });
-  // Same name, different bytes than the table expects: #202 only reports exact CRC+size matches.
+  // Same name, different bytes than the table expects: a mismatch, not a clean match or absence.
   table.chips[0].crc ^= 0xdead;
   const p = biosProfile(zip, table);
-  if (p.aes.length !== 0) throw new Error('wrong-CRC chip listed: ' + JSON.stringify(p.aes));
+  if (p.aes.length !== 0) throw new Error('wrong-CRC chip listed as present: ' + JSON.stringify(p.aes));
+  if (JSON.stringify(p.mismatch) !== JSON.stringify([{ name: 'neo-epo.bin', region: 'Europe/Asia' }]))
+    throw new Error('mismatch: ' + JSON.stringify(p.mismatch));
   if (p.sfix !== 'ok' || p.lo !== 'missing') throw new Error(JSON.stringify({ sfix: p.sfix, lo: p.lo }));
+  if (p.unknown !== 0 || p.unibios !== false) throw new Error(JSON.stringify({ unknown: p.unknown, unibios: p.unibios }));
+});
+
+await t('biosinfo/classifies-mismatch-unknown-and-unibios', async () => {
+  const { biosProfile } = await import('./biosinfo.js');
+  const { zip, table } = await biosFixture({
+    names: ['neo-epo.bin', 'sp-s.sp1', 'sfix.sfix', 'uni-bios_4_0.rom', 'extra.bin'],
+    chips: ['neo-epo.bin', 'sp-s.sp1'], fix: true, zoom: false,
+  });
+  table.chips[1].crc ^= 0xdead;
+  table.fix.crc ^= 0xdead;
+  const p = biosProfile(zip, table);
+  const got = JSON.stringify({
+    aes: p.aes, mvs: p.mvs, mismatch: p.mismatch, sfix: p.sfix, lo: p.lo,
+    unknown: p.unknown, unibios: p.unibios,
+  });
+  const want = JSON.stringify({
+    aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+    mvs: [],
+    mismatch: [{ name: 'sp-s.sp1', region: 'Europe/Asia' }],
+    sfix: 'mismatch', lo: 'missing', unknown: 1, unibios: true,
+  });
+  if (got !== want) throw new Error(got);
+});
+
+await t('biosinfo/unibios-only-set-is-flagged', async () => {
+  const { biosProfile } = await import('./biosinfo.js');
+  const { zip, table } = await biosFixture({ names: ['uni-bios_4_0.rom'], chips: [], fix: false, zoom: false });
+  const p = biosProfile(zip, table);
+  if (p.unibios !== true || p.unknown !== 0) throw new Error(JSON.stringify({ unibios: p.unibios, unknown: p.unknown }));
+  if (p.aes.length || p.mvs.length || p.mismatch.length) throw new Error('known slots in a UniBIOS-only set');
+  if (p.sfix !== 'missing' || p.lo !== 'missing') throw new Error(JSON.stringify({ sfix: p.sfix, lo: p.lo }));
+});
+
+await t('biosinfo/zero-byte-known-slot-is-mismatch', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { openZipIndex } = await import('./zipset.js');
+  const { biosProfile } = await import('./biosinfo.js');
+  const zip = await openZipIndex(fileSourceOf('neogeo.zip', zipSync({
+    'sfix.sfix': new Uint8Array(0),
+    'uni-bios_4_0.rom': new Uint8Array(0),
+  })));
+  const table = {
+    chips: [],
+    fix: { name: 'sfix.sfix', crc: 0xc2ea0cfd, size: 0x20000 },
+    zoom: undefined,
+  };
+  const p = biosProfile(zip, table);
+  if (p.sfix !== 'mismatch') throw new Error('sfix: ' + p.sfix);
+  if (p.unibios !== true) throw new Error('unibios: ' + p.unibios);
 });
 
 await t('biosinfo/no-bios-file-and-unreadable-zip', async () => {
@@ -813,6 +865,19 @@ await t('report/bios-profile-drops-unknown-names-and-states', async () => {
     throw new Error('aes: ' + JSON.stringify(report.bios.aes));
   if (report.bios.mvs.length !== 12) throw new Error('cap: ' + report.bios.mvs.length);
   if (report.bios.sfix !== 'missing') throw new Error('state: ' + report.bios.sfix);
+});
+
+await t('report/bios-classification-fields-survive', async () => {
+  const { buildReport } = await import('./report.js');
+  const bios = {
+    present: true, error: null,
+    aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
+    mvs: [],
+    mismatch: [{ name: 'sp-s.sp1', region: 'Europe/Asia' }],
+    sfix: 'mismatch', lo: 'missing', unknown: 2, unibios: true,
+  };
+  const got = buildReport({ type: 'convert-fail', summary: 'x', bios }).bios;
+  if (JSON.stringify(got) !== JSON.stringify(bios)) throw new Error(JSON.stringify(got));
 });
 
 await t('report/bios-not-dropped-and-unreadable', async () => {

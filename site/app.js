@@ -107,7 +107,7 @@ const EN = {
   'priv.notSent': 'Not sent: rom files, zip file names, custom icon or banner images, or the converted file. All of them stay inside the browser tab.',
   'priv.reportH2': 'Problem reports',
   'priv.reportP': 'Pressing send in the intro page\'s report form sends the values below to an anonymous Cloudflare Worker, which opens an issue in the public GitHub repository. No account is needed.',
-  'priv.reportWhat': 'Sent: the report type, your description and optional game name, the last 200 lines of the converter log, the failed games\' public romset names, reasons and stages, the error message, the converter version, the output mode, the page address, and browser information (user agent). Conversion-failure reports also carry the BIOS layout (whether neogeo.zip was dropped or unreadable, AES/MVS chip names and regions, and whether sfix/lo matched).',
+  'priv.reportWhat': 'Sent: the report type, your description and optional game name, the last 200 lines of the converter log, the failed games\' public romset names, reasons and stages, the error message, the converter version, the output mode, the page address, and browser information (user agent). Conversion-failure reports also carry the BIOS layout (whether neogeo.zip was dropped or unreadable, AES/MVS chip names and regions, whether sfix/lo matched, mismatched slots, the number of unknown entries, and UniBIOS detection).',
   'priv.reportPublic': 'The issue is public and anyone can read it; closing it does not delete it. No identity or email is collected, and no reply is promised.',
   'priv.reportRate': 'Abuse limit: instead of the IP itself the worker keeps a hash of IP and hour for at most one hour, to allow 5 reports per hour.',
   'priv.reportNotSent': 'A report never carries zip file names, rom files (including the BIOS), icon or banner images.',
@@ -119,7 +119,7 @@ const EN = {
   'priv.purposeP': 'The numbers are used only to improve the site: which page people read, where conversion fails, and which games are popular. No advertising, selling or profiling.',
   'priv.contactH2': 'Contact',
   'priv.contactP': 'Questions about this page go to the <a href="https://github.com/zzcx88/neo3ds/issues">repository issues</a>.',
-  'priv.updated': 'Last updated 2026-10-30.',
+  'priv.updated': 'Last updated 2026-10-31.',
   /* convert.html — web converter */
   'gate.meta': 'Drop game zips and convert in the browser. Files never leave this tab.',
   'gate.noscript': 'This page needs JavaScript.',

@@ -72,7 +72,7 @@
   <h2>Problem reports</h2>
   <p>Pressing send in the intro page's report form sends the values below to an anonymous Cloudflare Worker, which opens an issue in the public GitHub repository. No account is needed.</p>
   <ul>
-    <li>Sent: the report type, your description and optional game name, the last 200 lines of the converter log, the failed games' public romset names, reasons and stages, the error message, the converter version, the output mode, the page address, and browser information (user agent). Conversion-failure reports also carry the BIOS layout (whether neogeo.zip was dropped or unreadable, AES/MVS chip names and regions, and whether sfix/lo matched).</li>
+    <li>Sent: the report type, your description and optional game name, the last 200 lines of the converter log, the failed games' public romset names, reasons and stages, the error message, the converter version, the output mode, the page address, and browser information (user agent). Conversion-failure reports also carry the BIOS layout (whether neogeo.zip was dropped or unreadable, AES/MVS chip names and regions, whether sfix/lo matched, mismatched slots, the number of unknown entries, and UniBIOS detection).</li>
     <li>The issue is public and anyone can read it; closing it does not delete it. No identity or email is collected, and no reply is promised.</li>
     <li>Abuse limit: instead of the IP itself the worker keeps a hash of IP and hour for at most one hour, to allow 5 reports per hour.</li>
     <li>A report never carries zip file names, rom files (including the BIOS), icon or banner images.</li>
@@ -88,7 +88,7 @@
 
   <h2>Contact</h2>
   <p>Questions about this page go to the <a href="https://github.com/zzcx88/neo3ds/issues">repository issues</a>.</p>
-  <p class="tiny">Last updated 2026-10-30.</p>
+  <p class="tiny">Last updated 2026-10-31.</p>
 </main>
 
 <footer class="foot">

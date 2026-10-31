@@ -24,7 +24,7 @@ const BIOS_NAMES = new Set([
   'vs-bios.rom', 'sp-j2.sp1', 'sp1.jipan.1024', 'usa_2slt.bin', 'sp-e.sp1',
 ]);
 const BIOS_REGION = /^(Europe\/Asia|Japan|USA)$/;
-const BIOS_STATES = new Set(['ok', 'missing']);
+const BIOS_STATES = new Set(['ok', 'missing', 'mismatch']);
 
 const str = (value, max) => (typeof value === 'string' ? value.slice(0, max) : '');
 const oneLine = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -60,8 +60,12 @@ function bios(input) {
     error: null,
     aes: chips(input.aes),
     mvs: chips(input.mvs),
+    ...(Array.isArray(input.mismatch) ? { mismatch: chips(input.mismatch) } : {}),
     sfix: BIOS_STATES.has(input.sfix) ? input.sfix : 'missing',
     lo: BIOS_STATES.has(input.lo) ? input.lo : 'missing',
+    ...(Number.isInteger(input.unknown) && input.unknown >= 0
+      ? { unknown: Math.min(input.unknown, 9999) } : {}),
+    ...(typeof input.unibios === 'boolean' ? { unibios: input.unibios } : {}),
   };
 }
 
@@ -110,14 +114,17 @@ function failureTable(rows) {
 
 function biosTable(b) {
   const cell = (list) => (list ?? []).map((c) => `${c.name} (${c.region})`).join(', ') || '-';
-  return [
+  const rows = [
     '| 항목 | 상태 |',
     '| --- | --- |',
     `| AES | ${cell(b.aes)} |`,
     `| MVS | ${cell(b.mvs)} |`,
-    `| sfix.sfix | ${b.sfix} |`,
-    `| 000-lo.lo | ${b.lo} |`,
-  ].join('\n');
+  ];
+  if (b.mismatch?.length) rows.push(`| mismatch | ${cell(b.mismatch)} |`);
+  rows.push(`| sfix.sfix | ${b.sfix} |`, `| 000-lo.lo | ${b.lo} |`);
+  if (b.unknown > 0) rows.push(`| unknown entries | ${b.unknown} |`);
+  if (b.unibios) rows.push('| UniBIOS | detected — unsupported |');
+  return rows.join('\n');
 }
 
 // meta: { ua, origin, at } — the request header and clock, never stored by the worker.
