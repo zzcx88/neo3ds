@@ -28,11 +28,14 @@ static int frame_counter_tick;
 int neo_watchdog_resets;
 
 int neo_boot_ff;
+static int boot_game_frames; /* frames in a row that ended in the game's code */
 
 void neogeo_reset(void) {
-	/* The MVS BIOS checks the board for ~4s before it starts the game: run that part without
-	 * drawing or waiting for the vblank (at most 10s of it, in case the BIOS stops on an error). */
-	neo_boot_ff = memory.mvs ? 600 : 0;
+	/* The MVS BIOS checks the board for ~4-9s before it starts the game: run that part without
+	 * drawing or waiting for the vblank (at most 20s of it, in case the BIOS stops on an error).
+	 * The check draws garbage sprites, which can take a second a frame to unpack. */
+	neo_boot_ff = memory.mvs ? 1200 : 0;
+	boot_game_frames = 0;
 	sram_lock = 0;
 	sound_code = 0;
 	pending_command = 0;
@@ -156,8 +159,10 @@ void neo_run_frame(bool render) {
 	if (render) draw_screen();
 	prof_ticks[1] += svcGetSystemTick() - t1;
 
-	if (neo_boot_ff) { /* ends at the first frame that stops in the game's code */
-		if (cpu_68k_getpc() < 0xc00000) neo_boot_ff = 0;
+	if (neo_boot_ff) { /* ends once the game's code has run for half a second (Metal Slug 2 runs
+	                    * it for 7 frames before the board check, then goes back to the BIOS) */
+		boot_game_frames = cpu_68k_getpc() < 0xc00000 ? boot_game_frames + 1 : 0;
+		if (boot_game_frames == 30) neo_boot_ff = 0;
 		else neo_boot_ff--;
 	}
 
