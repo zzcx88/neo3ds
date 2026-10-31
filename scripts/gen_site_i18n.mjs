@@ -212,9 +212,11 @@ function render(src, key, en) {
     if (tag.name === 'meta') {
       const name = attr(tag.attrs, 'name');
       const prop = attr(tag.attrs, 'property');
+      // ?v=2 busts scraper caches: before #141 the root og.png was the Korean art, and
+      // messengers kept showing it. Bump this when the art changes.
       const map = {
         description: page.description,
-        'og:image': SITE + 'media/og.png',
+        'og:image': SITE + 'media/og.png?v=2',
         'og:title': page.ogTitle,
         'og:description': page.ogDescription,
         'og:url': SITE + page.url,
@@ -225,7 +227,7 @@ function render(src, key, en) {
       const twitterMap = {
         'twitter:title': page.ogTitle,
         'twitter:description': page.twitterDescription,
-        'twitter:image': SITE + 'media/og.png',
+        'twitter:image': SITE + 'media/og.png?v=2',
       };
       if (name in map) setAttr(tag.attrs, 'content', map[name]);
       if (prop in map) setAttr(tag.attrs, 'content', map[prop]);
