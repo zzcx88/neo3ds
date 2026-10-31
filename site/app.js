@@ -119,7 +119,7 @@ const EN = {
   'priv.purposeP': 'The numbers are used only to improve the site: which page people read, where conversion fails, and which games are popular. No advertising, selling or profiling.',
   'priv.contactH2': 'Contact',
   'priv.contactP': 'Questions about this page go to the <a href="https://github.com/zzcx88/neo3ds/issues">repository issues</a>.',
-  'priv.updated': 'Last updated 2026-10-30.',
+  'priv.updated': 'Last updated 2026-10-31.',
   /* convert.html — web converter */
   'gate.meta': 'Drop game zips and convert in the browser. Files never leave this tab.',
   'gate.noscript': 'This page needs JavaScript.',

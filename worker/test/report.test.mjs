@@ -159,6 +159,7 @@ test('issueBody: BIOS table shows AES/MVS and sfix/lo', () => {
       error: null,
       aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
       mvs: [{ name: 'sp-s2.sp1', region: 'Japan' }],
+      mismatch: [],
       sfix: 'missing',
       lo: 'ok',
     },
@@ -169,6 +170,9 @@ test('issueBody: BIOS table shows AES/MVS and sfix/lo', () => {
   assert.match(body, /\| MVS \| sp-s2\.sp1 \(Japan\) \|/);
   assert.match(body, /\| sfix\.sfix \| missing \|/);
   assert.match(body, /\| 000-lo\.lo \| ok \|/);
+  assert.equal(body.includes('| mismatch |'), false);
+  assert.equal(body.includes('unknown entries'), false);
+  assert.equal(body.includes('UniBIOS'), false);
 });
 
 test('validateReport: BIOS classification keeps mismatch/unknown/UniBIOS', () => {
@@ -203,6 +207,16 @@ test('validateReport: BIOS classification keeps mismatch/unknown/UniBIOS', () =>
   assert.equal(check.report.bios.secret, undefined);
 });
 
+test('validateReport: BIOS unknown is a non-negative integer, clamped', () => {
+  const cases = [[-1, undefined], [1.5, undefined], ['3', undefined], [10000, 9999]];
+  for (const [unknown, expected] of cases) {
+    const check = validateReport(payload({
+      bios: { present: true, error: null, aes: [], mvs: [], sfix: 'ok', lo: 'ok', unknown },
+    }));
+    assert.equal(check.report.bios.unknown, expected, String(unknown));
+  }
+});
+
 test('issueBody: BIOS classification rows are distinct', () => {
   const report = validateReport(payload({
     bios: {
@@ -210,7 +224,10 @@ test('issueBody: BIOS classification rows are distinct', () => {
       error: null,
       aes: [{ name: 'neo-epo.bin', region: 'Europe/Asia' }],
       mvs: [],
-      mismatch: [{ name: 'sp-s.sp1', region: 'Europe/Asia' }],
+      mismatch: [
+        { name: 'sp-s.sp1', region: 'Europe/Asia' },
+        { name: 'kof98.zip', region: 'Europe/Asia' },
+      ],
       sfix: 'mismatch',
       lo: 'missing',
       unknown: 2,
