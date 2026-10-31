@@ -44,6 +44,9 @@ PAGES += [('site/ko/series/%s.html' % s['slug'], 'ko/series/%s.html' % s['slug']
 
 # Per-locale share card, and the path of each slug in each locale.
 OG_IMAGE = {'en': 'site/media/og.png', 'ko': 'site/media/og-ko.png'}
+# Query string on the og:image URL only: scrapers key their cache by URL, so bumping it
+# refetches the art (#213). The file itself stays at the same path.
+OG_VER = '?v=2'
 SLUGS = {
     'index.html': {'en': '', 'ko': 'ko/'},
     'convert.html': {'en': 'convert.html', 'ko': 'ko/convert.html'},
@@ -122,7 +125,7 @@ def check_page(f, path, locale):
     if alt != want:
         errs.append('hreflang %r != %r' % (sorted(alt), sorted(want)))
 
-    image = SITE + OG_IMAGE[locale].split('site/', 1)[1]
+    image = SITE + OG_IMAGE[locale].split('site/', 1)[1] + OG_VER
     m = metas(html)
     for key, want_value in (('og:url', url),
                             ('og:image', image),

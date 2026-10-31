@@ -118,7 +118,8 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
   `ko/manual.html` — 한국어 원본. 조작 표는 README와 같아야 하고 `site_gate.sh`가 대조한다 (#162)
 - `changelog.html` — 패치노트: 릴리스 타임라인 (EN·KO 둘 다 생성물, 출처 `site/releases.json`).
   릴리스마다 JSON 항목 하나를 추가하고 생성기를 돌린다. 최상단 버전이 `<Version>`과 다르면 게이트 실패 (#166)
-- `sitemap.xml`, `media/og.png`(EN 카드), `media/og-ko.png`(KO 카드), `media/favicon.svg` — 색인·공유 (#130)
+- `sitemap.xml`, `media/og.png`(EN 카드), `media/og-ko.png`(KO 카드), `media/favicon.svg` — 색인·공유 (#130).
+  카드 아트를 다시 만들면 `og:image` URL의 `?v=N`을 올린다 — 스크래퍼가 URL로 캐시하므로 그대로면 옛 그림이 계속 보인다 (#213)
 - `vendor/` — WASM 3종 + `engine.elf` + `neogeo_games.json` (CI가 빌드·스테이징, git 제외)
 
 `index.html`·`convert.html`·`compat.html`·`manual.html`·`changelog.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,

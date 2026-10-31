@@ -143,7 +143,7 @@ def page(series, rows, counts, total, locale):
         caption=html.escape(t['caption']),
         jsonld=json.dumps(jsonld, ensure_ascii=False, indent=2),
         css=up + 'styles.css', icon=up + 'media/favicon.svg',
-        og_image=SITE + ('media/og-ko.png' if locale == 'ko' else 'media/og.png'),
+        og_image=SITE + ('media/og-ko.png?v=2' if locale == 'ko' else 'media/og.png?v=2'),
         og_locale='ko_KR' if locale == 'ko' else 'en_US',
         og_locale_alt='en_US' if locale == 'ko' else 'ko_KR',
         # One level up reaches the page's own locale root: site/series/ -> site/, site/ko/series/ -> site/ko/.
