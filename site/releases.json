@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.4.0",
+    "date": "2026-10-31",
+    "items": [
+      {
+        "t": { "ko": "MVS로 시작할 때 빨라짐", "en": "Faster start on the MVS BIOS" },
+        "d": {
+          "ko": "아케이드(MVS) 바이오스가 게임 전에 보드를 점검하는 구간(초록 화면)을 화면을 그리지 않고 빠르게 돌립니다. Azahar 측정으로 약 6초 → 약 1초이고, 그래픽이 큰 게임일수록 더 줄어듭니다. 점검 자체는 그대로 거치므로 게임 동작은 같습니다. 런처만 새로 설치하면 됩니다. (#209)",
+          "en": "The arcade (MVS) BIOS checks the board before the game (the green screen); that part now runs fast without drawing. Measured in Azahar it went from about 6 s to about 1 s, and games with more graphics gain more. The check itself still runs, so games behave the same. Installing the new launcher is enough. (#209)"
+        }
+      }
+    ]
+  },
+  {
     "version": "1.3.2",
     "date": "2026-10-29",
     "items": [

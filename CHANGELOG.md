@@ -9,6 +9,10 @@ assets: [GitHub releases](https://github.com/zzcx88/neo3ds/releases).
 
 Korean text for every release: [site/ko/changelog.html](site/ko/changelog.html).
 
+## [1.4.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.4.0) - 2026-10-31
+
+- **Faster start on the MVS BIOS** — The arcade (MVS) BIOS checks the board before the game (the green screen); that part now runs fast without drawing. Measured in Azahar it went from about 6 s to about 1 s, and games with more graphics gain more. The check itself still runs, so games behave the same. Installing the new launcher is enough. ([#209](https://github.com/zzcx88/neo3ds/issues/209))
+
 ## [1.3.2](https://github.com/zzcx88/neo3ds/releases/tag/v1.3.2) - 2026-10-29
 
 - **macOS: run it where you unzipped it** — The app converts even when you launch it from where you unzipped it. Up to v1.3.1 Gatekeeper ran it from a read-only copy and every build failed with "Read-only file system : .../bannertool"; the README also covers moving the app to ~/Applications. ([#177](https://github.com/zzcx88/neo3ds/issues/177))

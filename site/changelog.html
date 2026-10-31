@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Changelog — every neo3ds release | neo3ds</title>
-<meta name="description" content="Every neo3ds release from 1.0.0 to 1.3.2, newest first: engine, launcher and converter features and fixes.">
+<meta name="description" content="Every neo3ds release from 1.0.0 to 1.4.0, newest first: engine, launcher and converter features and fixes.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/changelog.html">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="neo3ds changelog | neo3ds">
-<meta property="og:description" content="Every neo3ds release from 1.0.0 to 1.3.2, newest first: engine, launcher and converter features and fixes.">
+<meta property="og:description" content="Every neo3ds release from 1.0.0 to 1.4.0, newest first: engine, launcher and converter features and fixes.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/changelog.html">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:locale:alternate" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="neo3ds changelog | neo3ds">
-<meta name="twitter:description" content="Every release from 1.0.0 to 1.3.2, newest first.">
+<meta name="twitter:description" content="Every release from 1.0.0 to 1.4.0, newest first.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png">
 <script type="application/ld+json">
 {
@@ -67,10 +67,20 @@
   <div class="changelog-wrap">
     <h1>Changelog</h1>
     <ol class="rel-list">
-      <li class="rel is-latest" id="v1-3-2">
+      <li class="rel is-latest" id="v1-4-0">
+        <div class="rel-head">
+          <span class="rel-v">v1.4.0</span>
+          <span class="rel-latest">Latest</span>
+          <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>Faster start on the MVS BIOS</b>: The arcade (MVS) BIOS checks the board before the game (the green screen); that part now runs fast without drawing. Measured in Azahar it went from about 6 s to about 1 s, and games with more graphics gain more. The check itself still runs, so games behave the same. Installing the new launcher is enough. (<a href="https://github.com/zzcx88/neo3ds/issues/209">#209</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.4.0">GitHub release</a>
+      </li>
+      <li class="rel" id="v1-3-2">
         <div class="rel-head">
           <span class="rel-v">v1.3.2</span>
-          <span class="rel-latest">Latest</span>
           <time class="rel-date" datetime="2026-10-29">2026-10-29</time>
         </div>
         <ul class="rel-items">
