@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Changelog — every neo3ds release | neo3ds</title>
-<meta name="description" content="Every neo3ds release from 1.0.0 to 1.4.0, newest first: engine, launcher and converter features and fixes.">
+<meta name="description" content="Every neo3ds release from 1.0.0 to 1.4.1, newest first: engine, launcher and converter features and fixes.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/changelog.html">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="neo3ds changelog | neo3ds">
-<meta property="og:description" content="Every neo3ds release from 1.0.0 to 1.4.0, newest first: engine, launcher and converter features and fixes.">
+<meta property="og:description" content="Every neo3ds release from 1.0.0 to 1.4.1, newest first: engine, launcher and converter features and fixes.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/changelog.html">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:locale:alternate" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="neo3ds changelog | neo3ds">
-<meta name="twitter:description" content="Every release from 1.0.0 to 1.4.0, newest first.">
+<meta name="twitter:description" content="Every release from 1.0.0 to 1.4.1, newest first.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <script type="application/ld+json">
 {
@@ -67,10 +67,20 @@
   <div class="changelog-wrap">
     <h1>Changelog</h1>
     <ol class="rel-list">
-      <li class="rel is-latest" id="v1-4-0">
+      <li class="rel is-latest" id="v1-4-1">
+        <div class="rel-head">
+          <span class="rel-v">v1.4.1</span>
+          <span class="rel-latest">Latest</span>
+          <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen</b>: Started on the arcade (MVS) BIOS, these games seemed to freeze on the green check screen for about a minute. In games where the BIOS runs some game code before the check, 1.4.0's fast start ended too early and each frame of the check screen took close to a second to draw. They now start within 2-3 s (measured in Azahar). Installing the new launcher is enough. (<a href="https://github.com/zzcx88/neo3ds/issues/215">#215</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.4.1">GitHub release</a>
+      </li>
+      <li class="rel" id="v1-4-0">
         <div class="rel-head">
           <span class="rel-v">v1.4.0</span>
-          <span class="rel-latest">Latest</span>
           <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
         </div>
         <ul class="rel-items">

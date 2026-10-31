@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.4.1",
+    "date": "2026-10-31",
+    "items": [
+      {
+        "t": { "ko": "MVS: Metal Slug 2·Last Blade 2가 초록 화면에서 멈추던 문제", "en": "MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen" },
+        "d": {
+          "ko": "아케이드(MVS) 바이오스로 시작하면 이 게임들이 초록 점검 화면에서 1분 가까이 멈춘 듯했습니다. 바이오스가 점검 전에 게임 코드를 잠깐 돌리는 게임에서 1.4.0의 빨리 감기가 일찍 끝나, 점검 화면을 한 프레임에 1초 가까이 걸려 그렸습니다. 이제 Azahar 측정으로 2~3초 안에 시작합니다. 런처만 새로 설치하면 됩니다. (#215)",
+          "en": "Started on the arcade (MVS) BIOS, these games seemed to freeze on the green check screen for about a minute. In games where the BIOS runs some game code before the check, 1.4.0's fast start ended too early and each frame of the check screen took close to a second to draw. They now start within 2-3 s (measured in Azahar). Installing the new launcher is enough. (#215)"
+        }
+      }
+    ]
+  },
+  {
     "version": "1.4.0",
     "date": "2026-10-31",
     "items": [

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>패치노트 — neo3ds 릴리스 기록 | neo3ds</title>
-<meta name="description" content="neo3ds 1.0.0부터 1.4.0까지 릴리스 16개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.">
+<meta name="description" content="neo3ds 1.0.0부터 1.4.1까지 릴리스 17개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/ko/changelog.html">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="neo3ds 패치노트 | neo3ds">
-<meta property="og:description" content="neo3ds 1.0.0부터 1.4.0까지 릴리스 16개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.">
+<meta property="og:description" content="neo3ds 1.0.0부터 1.4.1까지 릴리스 17개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/changelog.html">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="neo3ds 패치노트 | neo3ds">
-<meta name="twitter:description" content="1.0.0부터 1.4.0까지, 버전별 새 기능과 수정.">
+<meta name="twitter:description" content="1.0.0부터 1.4.1까지, 버전별 새 기능과 수정.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <script type="application/ld+json">
 {
@@ -67,10 +67,20 @@
   <div class="changelog-wrap">
     <h1>패치노트</h1>
     <ol class="rel-list">
-      <li class="rel is-latest" id="v1-4-0">
+      <li class="rel is-latest" id="v1-4-1">
+        <div class="rel-head">
+          <span class="rel-v">v1.4.1</span>
+          <span class="rel-latest">최신</span>
+          <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>MVS: Metal Slug 2·Last Blade 2가 초록 화면에서 멈추던 문제</b>: 아케이드(MVS) 바이오스로 시작하면 이 게임들이 초록 점검 화면에서 1분 가까이 멈춘 듯했습니다. 바이오스가 점검 전에 게임 코드를 잠깐 돌리는 게임에서 1.4.0의 빨리 감기가 일찍 끝나, 점검 화면을 한 프레임에 1초 가까이 걸려 그렸습니다. 이제 Azahar 측정으로 2~3초 안에 시작합니다. 런처만 새로 설치하면 됩니다. (<a href="https://github.com/zzcx88/neo3ds/issues/215">#215</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.4.1">GitHub 릴리스</a>
+      </li>
+      <li class="rel" id="v1-4-0">
         <div class="rel-head">
           <span class="rel-v">v1.4.0</span>
-          <span class="rel-latest">최신</span>
           <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
         </div>
         <ul class="rel-items">

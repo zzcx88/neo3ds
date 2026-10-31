@@ -9,6 +9,10 @@ assets: [GitHub releases](https://github.com/zzcx88/neo3ds/releases).
 
 Korean text for every release: [site/ko/changelog.html](site/ko/changelog.html).
 
+## [1.4.1](https://github.com/zzcx88/neo3ds/releases/tag/v1.4.1) - 2026-10-31
+
+- **MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen** — Started on the arcade (MVS) BIOS, these games seemed to freeze on the green check screen for about a minute. In games where the BIOS runs some game code before the check, 1.4.0's fast start ended too early and each frame of the check screen took close to a second to draw. They now start within 2-3 s (measured in Azahar). Installing the new launcher is enough. ([#215](https://github.com/zzcx88/neo3ds/issues/215))
+
 ## [1.4.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.4.0) - 2026-10-31
 
 - **Faster start on the MVS BIOS** — The arcade (MVS) BIOS checks the board before the game (the green screen); that part now runs fast without drawing. Measured in Azahar it went from about 6 s to about 1 s, and games with more graphics gain more. The check itself still runs, so games behave the same. Installing the new launcher is enough. ([#209](https://github.com/zzcx88/neo3ds/issues/209))
