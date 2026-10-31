@@ -10,5 +10,6 @@ void neo_set_input(Uint8 p1, Uint8 p2, Uint8 start, Uint8 coin);
 void neo_run_frame(bool render);
 
 extern int neo_watchdog_resets;
+extern int neo_boot_ff; /* frames of MVS BIOS start-up still to run fast, without drawing */
 
 #endif
