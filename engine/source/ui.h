@@ -29,7 +29,7 @@ bool ui_hit(UiRect r, int x, int y);
 void ui_flush(void); /* writes the framebuffer back from the cache for the display */
 
 /* The main screen */
-typedef enum { UI_NONE, UI_KEYCONFIG, UI_DIAG, UI_SYSTEM, UI_RESTART, UI_STATE_SAVE, UI_STATE_LOAD, UI_GAME_LIST } UiAction;
+typedef enum { UI_NONE, UI_KEYCONFIG, UI_DIAG, UI_SYSTEM, UI_RESTART, UI_STATE_SAVE, UI_STATE_LOAD, UI_REWIND, UI_GAME_LIST } UiAction;
 void ui_main_init(double load_secs, bool sound);
 void ui_set_launcher(void);      /* started from the launcher: a [Game list] button goes back */
 void ui_main_draw(void);

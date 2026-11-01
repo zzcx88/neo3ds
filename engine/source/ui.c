@@ -63,10 +63,11 @@ void ui_flush(void) {
 
 /* ---- main screen ---- */
 
-enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, B_SERVICE, B_SLOT, B_SAVE, B_LOAD, B_LIST, B_OFF, NB };
+enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, B_SERVICE, B_SLOT, B_SAVE, B_LOAD, B_REWIND, B_LIST, B_OFF, NB };
 static UiRect rects[NB] = {
 	{8, 44, 148, 30}, {164, 44, 148, 30}, {8, 80, 148, 30}, {164, 80, 148, 30}, {8, 116, 148, 26}, {164, 116, 148, 26},
-	{8, 148, 96, 26}, {112, 148, 96, 26}, {216, 148, 96, 26}, {0, 0, 0, 0}, /* B_LIST: launcher only */
+	{8, 148, 74, 26}, {88, 148, 74, 26}, {168, 148, 74, 26}, {248, 148, 64, 26}, /* B_REWIND */
+	{0, 0, 0, 0}, /* B_LIST: launcher only */
 	{290, 3, 20, 20}, /* B_OFF: a small square in the header */
 };
 static bool launcher; /* the third row is then Reset / Service / Game list */
@@ -128,6 +129,7 @@ static void button_label(int b, char *out, size_t n) {
 	case B_LIST: snprintf(out, n, list_confirm ? "Tap again" : "Game list"); break;
 	case B_SLOT: snprintf(out, n, "Slot %d", slot + 1); break;
 	case B_SAVE: snprintf(out, n, "Save"); break;
+	case B_REWIND: snprintf(out, n, "Rewind"); break;
 	case B_LOAD: snprintf(out, n, load_confirm ? "Tap again" : "Load"); break;
 	default: snprintf(out, n, launcher ? "Hold: reset" : "Restart (hold)"); break;
 	}
@@ -351,6 +353,7 @@ UiAction ui_main_update(void) {
 			break;
 		}
 		case B_SAVE: action = UI_STATE_SAVE; break;
+		case B_REWIND: action = UI_REWIND; break;
 		case B_OFF: set_backlight(false); break;
 		case B_LIST:
 			if (list_confirm) {

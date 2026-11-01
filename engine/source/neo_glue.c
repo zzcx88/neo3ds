@@ -4,6 +4,7 @@
 
 #include "neo_glue.h"
 #include "savestate.h"
+#include "rewind.h"
 #include "emu.h"
 #include "memory.h"
 #include "pd4990a.h"
@@ -66,6 +67,7 @@ void neo_restart(void) {
 	cpu_z80_init();
 	YM2610_sh_reset();
 	neogeo_reset();
+	rewind_reset(); /* the states before the restart belong to the old run */
 }
 
 void neo_init(void) {

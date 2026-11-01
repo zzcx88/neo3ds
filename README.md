@@ -137,6 +137,7 @@ These are the defaults; [Key config](#key-config) changes them per game. The bot
 | **Restart** | Hold until the yellow bar fills. Like switching the console off and on (cartridge saves are kept) |
 | **Service** | Opens the MVS BIOS service menu (difficulty, credits, hardware tests). MVS only |
 | **Slot / Save / Load** | Quick save: pick slot 1-3, save, load (tap twice) |
+| **Rewind** | Each tap goes back about 0.1 s (5-6 frames). Takes effect at the end of the next frame |
 | **Game list** | From the launcher only: tap twice to go back to the list |
 | **⏻** | Turns the bottom screen's backlight off; touch anywhere to turn it back on (that touch presses nothing) |
 

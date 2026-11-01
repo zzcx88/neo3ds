@@ -37,12 +37,34 @@ typedef struct {
 static FILE *file;
 static bool reading, failed;
 
+/* In-memory states (rewind.c). COUNT measures a state without touching it, so the buffer can be
+ * allocated once at load time; the module *_state() functions then run in exactly the same order
+ * as for a slot file. */
+enum { MODE_FILE, MODE_COUNT, MODE_MEM_WRITE, MODE_MEM_READ };
+static int mode;
+static void *mem;
+static size_t mem_cap, mem_pos, counted;
+
 void st_bytes(void *p, size_t n) {
 	if (failed) return;
+	if (mode == MODE_COUNT) {
+		counted += n;
+		return;
+	}
+	if (mode == MODE_MEM_WRITE || mode == MODE_MEM_READ) {
+		if (n > mem_cap - mem_pos) {
+			failed = true;
+			return;
+		}
+		if (mode == MODE_MEM_WRITE) memcpy((u8 *)mem + mem_pos, p, n);
+		else memcpy(p, (const u8 *)mem + mem_pos, n);
+		mem_pos += n;
+		return;
+	}
 	if ((reading ? fread(p, 1, n, file) : fwrite(p, 1, n, file)) != n) failed = true;
 }
 
-bool st_reading(void) { return reading; }
+bool st_reading(void) { return mode == MODE_MEM_READ || reading; }
 
 /* Addresses of a few functions and statics, and the sizes that go into the file: a different build
  * changes some of them. */
@@ -69,6 +91,34 @@ static void all_state(void) {
 	glue_state();
 	YM2610State();
 	ym_audio_State();
+}
+
+/* One run of the state modules in a memory mode. COUNT only measures; the other two copy through
+ * st_bytes, which also checks the buffer size. */
+static bool mem_state(int m, void *buf, size_t size) {
+	mode = m;
+	mem = buf;
+	mem_cap = size;
+	mem_pos = 0;
+	failed = false;
+	all_state();
+	mode = MODE_FILE;
+	mem = NULL;
+	return !failed;
+}
+
+/* One state in bytes, measured once at load time (rewind.c sizes its ring with it). */
+size_t savestate_state_size(void) {
+	counted = 0;
+	return mem_state(MODE_COUNT, NULL, 0) ? counted : 0;
+}
+
+bool savestate_store_memory(void *buf, size_t size) { return mem_state(MODE_MEM_WRITE, buf, size); }
+
+bool savestate_restore_memory(const void *buf, size_t size) {
+	const bool ok = mem_state(MODE_MEM_READ, (void *)buf, size);
+	audio_state_loaded();
+	return ok;
 }
 
 StateResult savestate_save(int slot) {

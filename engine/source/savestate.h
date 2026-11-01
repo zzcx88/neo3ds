@@ -20,4 +20,9 @@ void savestate_describe(int slot, char *out, size_t size);
 void st_bytes(void *p, size_t n);
 bool st_reading(void);
 
+/* The same stream without the file header, into memory: rewind.c keeps a few of these per frame. */
+size_t savestate_state_size(void);
+bool savestate_store_memory(void *buf, size_t size);
+bool savestate_restore_memory(const void *buf, size_t size);
+
 #endif

@@ -16,6 +16,7 @@
 #include "keys.h"
 #include "save.h"
 #include "savestate.h"
+#include "rewind.h"
 #include "launcher.h"
 #include "ui.h"
 #include "drz80/DrZ80.h"
@@ -140,6 +141,12 @@ static volatile bool render_quit;
 
 static bool skip_video; /* set by the main core before it hands a frame over */
 
+#ifdef NEO3DS_DIAG_START /* Azahar tests: start on the diagnostics */
+static bool show_stats = true;
+#else
+static bool show_stats; /* the diagnostics (text console) instead of the GUI on the bottom screen */
+#endif
+
 static void render_main(void *arg) {
 	(void)arg;
 	for (;;) {
@@ -177,11 +184,29 @@ static void render_thread_stop(void) {
 	render_thread = NULL;
 }
 
+/* The one point where the emulated state can be touched: core 1 has finished its frame, so both
+ * sound chips have taken every write, and the rest of the frame (the vblank interrupt in
+ * neo_run_frame) still runs right after. A state restored here goes on down the same path it
+ * would have taken without the rewind, which keeps a rewound run deterministic. */
+static bool rewind_request; /* set by the button, served at the next frame end */
+
+static void rewind_frame_end(void) {
+	if (!rewind_request) {
+		rewind_capture();
+		return;
+	}
+	rewind_request = false;
+	rewind_capture_now(); /* so the oldest state is exactly six frames back, not eight */
+	const bool ok = rewind_step_back();
+	if (!show_stats) ui_status(ok ? "Rewound" : "Nothing to rewind yet");
+}
+
 void screen_frame_end(void) {
 	const bool skip = neo_boot_ff != 0; /* MVS BIOS start-up: sound only */
 	if (!render_thread) {
 		u64 t0 = svcGetSystemTick();
 		audio_end_frame(conf.sample_rate);
+		if (!skip) rewind_frame_end();
 		audio_render();
 		u64 t1 = svcGetSystemTick();
 		if (!skip) {
@@ -198,6 +223,7 @@ void screen_frame_end(void) {
 	}
 	LightEvent_Wait(&render_idle); /* core 1 is done with the previous frame */
 	audio_end_frame(conf.sample_rate);
+	if (!skip) rewind_frame_end(); /* core 1 is idle here: the chips take no more writes this frame */
 	skip_video = skip; /* core 1 reads it only after render_go */
 	if (!skip) video_snapshot();
 	LightEvent_Clear(&render_help); /* left over when render_idle was waited on elsewhere */
@@ -245,11 +271,6 @@ static void print_memory(void) {
 enum { TURBO_FRAMES = 3 }; /* 60 fps / 3 = 20 presses a second: 2 frames down, 1 up */
 static const u32 face_keys = KEY_A | KEY_B | KEY_X | KEY_Y;
 static int turbo_phase;
-#ifdef NEO3DS_DIAG_START /* Azahar tests: start on the diagnostics */
-static bool show_stats = true;
-#else
-static bool show_stats; /* the diagnostics (text console) instead of the GUI on the bottom screen */
-#endif
 
 static void show_turbo(void) {
 	if (show_stats) {
@@ -364,6 +385,7 @@ static void state_action(bool save, int slot) {
 			}
 		}
 		if (r == STATE_OK) r = savestate_load(slot);
+		if (r == STATE_OK) rewind_reset(); /* the ring holds the timeline from before the load */
 		if (r == STATE_OK) neo_boot_ff = 0; /* the state may have been saved in the game */
 		if (r == STATE_IO_ERROR) neo_restart(); /* damaged after a valid header: the state is mixed */
 		snprintf(msg, sizeof msg,
@@ -374,6 +396,16 @@ static void state_action(bool save, int slot) {
 	if (show_stats) return;
 	if (redraw) ui_main_draw();
 	ui_status(msg);
+}
+
+/* Rewind, between frames like state_action: the state is restored at the frame end itself
+ * (rewind_frame_end), where core 1 is idle. */
+static void rewind_action(void) {
+	if (!rewind_ready()) {
+		if (!show_stats) ui_status("Rewind: out of memory");
+		return;
+	}
+	rewind_request = true;
 }
 
 /* The HOME menu or sleep may be followed by the console being switched off */
@@ -431,6 +463,7 @@ int main(void) {
 		return 0;
 	}
 	const double load_secs = (osGetTime() - t0) / 1000.0;
+	rewind_init(); /* one state is measured here, so the ring is sized once */
 
 	if (!video_init()) {
 		printf("\x1b[31mOut of linear memory for the screen\x1b[0m\n");
@@ -489,6 +522,10 @@ int main(void) {
 		case UI_STATE_SAVE:
 		case UI_STATE_LOAD:
 			state_action(action == UI_STATE_SAVE, ui_state_slot());
+			last_loop = 0;
+			break;
+		case UI_REWIND:
+			rewind_action();
 			last_loop = 0;
 			break;
 		case UI_KEYCONFIG:
@@ -560,21 +597,42 @@ int main(void) {
 		}
 #endif
 #ifdef NEO3DS_STATE_TEST
-		{ /* Azahar test: save at frame 1500, load at 1800; the state 300 frames on must match */
+		{ /* Azahar test: save at frame 1500, load at 1800; the state 300 frames on must match.
+		   * The same state is kept in memory and restored at 2400: the memory round trip (rewind.c)
+		   * must land on the same 300-frames-on state as the slot file. */
 			static int tf;
-			static unsigned h1;
+			static unsigned h1, h2;
+			static Uint8 *mbuf;
+			static size_t msize;
 			extern Uint8 drz80mem[0x10000];
 			unsigned h = 2166136261u;
-			if (++tf == 1800 || tf == 2100) {
+			if (++tf == 1800 || tf == 2100 || tf == 2700) {
 				for (int i = 0; i < 0x10000; i++) h = (h ^ memory.ram[i]) * 16777619u;
 				for (int i = 0; i < 0x20000; i++) h = (h ^ memory.vid.ram[i]) * 16777619u;
 				for (int i = 0; i < 0x10000; i++) h = (h ^ drz80mem[i]) * 16777619u;
 			}
-			if (tf == 1500) state_action(true, 0);
-			if (tf == 1800) { h1 = h; state_action(false, 0); }
-			if (tf == 2100) {
+			if (tf == 1500) { /* state_action first: it waits for core 1 before the copy */
+				state_action(true, 0);
+				msize = savestate_state_size();
+				mbuf = msize ? malloc(msize) : NULL;
+				if (!mbuf || !savestate_store_memory(mbuf, msize)) {
+					free(mbuf);
+					mbuf = NULL;
+				}
+			}
+			if (tf == 1800) {
+				h1 = h;
+				state_action(false, 0);
+			}
+			if (tf == 2400 && mbuf) savestate_restore_memory(mbuf, msize);
+			if (tf == 2700) {
+				h2 = h;
 				FILE *f = fopen("sdmc:/neo3ds/statetest.txt", "w");
-				if (f) { fprintf(f, "%08x %08x %s\n", h1, h, h1 == h ? "SAME" : "DIFF"); fclose(f); }
+				if (f) {
+					fprintf(f, "%08x %08x %s\n", h1, h, h1 == h ? "SAME" : "DIFF");
+					fprintf(f, "mem %08x %s\n", h2, h2 == h1 ? "SAME" : "DIFF");
+					fclose(f);
+				}
 			}
 		}
 #endif
