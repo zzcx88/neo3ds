@@ -273,6 +273,13 @@ function render(src, key, en) {
       continue;
     }
 
+    // ── asset links get the same root-relative rewrite as src ────────
+    if (tag.name === 'a') {
+      const href = attr(tag.attrs, 'href');
+      const bare = href && href.startsWith('../') ? href.slice(3) : href;
+      if (bare && ASSET_PREFIXES.some((p) => bare.startsWith(p))) setAttr(tag.attrs, 'href', bare);
+    }
+
     // ── localised content ───────────────────────────────────────────
     const i18nKey = attr(tag.attrs, 'data-i18n');
     const i18nAttrs = attr(tag.attrs, 'data-i18n-attr');
