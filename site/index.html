@@ -363,6 +363,7 @@
           <select id="reportType">
             <option value="convert-fail">Conversion failed</option>
             <option value="site-bug">Site / converter bug</option>
+            <option value="ingame">In-game bug</option>
             <option value="feature">Feature request</option>
             <option value="other">Something else</option>
           </select>
@@ -371,6 +372,47 @@
           <span>Game name (optional)</span>
           <input id="reportGame" type="text" maxlength="80" autocomplete="off">
         </label>
+      </div>
+      <div class="report-grid hidden" id="reportIngame">
+        <label class="report-field">
+          <span>Engine version (optional)</span>
+          <input id="reportEngine" type="text" maxlength="32" autocomplete="off" placeholder="v1.4.1">
+        </label>
+        <label class="report-field">
+          <span>Console (optional)</span>
+          <select id="reportConsole">
+            <option value="">Unknown</option>
+            <option value="old-3ds">Old 3DS</option>
+            <option value="new-3ds">New 3DS</option>
+            <option value="2ds">2DS</option>
+            <option value="new-2ds">New 2DS</option>
+          </select>
+        </label>
+        <label class="report-field">
+          <span>CFW (optional)</span>
+          <input id="reportCfw" type="text" maxlength="40" autocomplete="off" placeholder="Luma 13.1.2">
+        </label>
+        <label class="report-field">
+          <span>Region (optional)</span>
+          <select id="reportRegion">
+            <option value="">Unknown</option>
+            <option value="KR">Korea</option>
+            <option value="JP">Japan</option>
+            <option value="US">USA</option>
+            <option value="EU">Europe</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label class="report-field">
+          <span>Install method (optional)</span>
+          <select id="reportMode">
+            <option value="">Unknown</option>
+            <option value="cia">CIA install</option>
+            <option value="pack">.neo3ds pack</option>
+            <option value="launcher">Launcher</option>
+          </select>
+        </label>
+        <p class="tiny">The engine version is shown at the bottom of the app. Do not include serial numbers or SD card paths.</p>
       </div>
       <label class="report-field">
         <span>What went wrong?</span>

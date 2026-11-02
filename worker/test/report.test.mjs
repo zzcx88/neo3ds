@@ -325,3 +325,121 @@ test('handler: missing token is a server error, not a filed issue', async () => 
   });
   assert.equal(calls, 0);
 });
+
+// #223: in-game reports are a distinct type with their own execution fields.
+test('validateReport: ingame keeps the execution fields', () => {
+  const check = validateReport(payload({
+    type: 'ingame',
+    mode: 'cia',
+    engine: 'v1.4.1',
+    console: 'new-3ds',
+    cfw: '  Luma   13.1.2 ',
+    region: 'KR',
+    failures: [],
+    log: '',
+  }));
+  assert.equal(check.ok, true);
+  assert.deepEqual(
+    {
+      engine: check.report.engine,
+      console: check.report.console,
+      cfw: check.report.cfw,
+      region: check.report.region,
+    },
+    { engine: 'v1.4.1', console: 'new-3ds', cfw: 'Luma 13.1.2', region: 'KR' },
+  );
+});
+
+test('validateReport: ingame drops values outside the allow-lists', () => {
+  const check = validateReport(payload({
+    type: 'ingame',
+    engine: 'v1.4.1; rm -rf /',
+    console: '3ds-xl',
+    cfw: 'x'.repeat(80),
+    region: 'US-MD',
+    failures: [],
+    log: '',
+  }));
+  assert.equal(check.ok, true);
+  assert.deepEqual([check.report.engine, check.report.console, check.report.region], [null, null, null]);
+  assert.equal(check.report.cfw.length, 40);
+});
+
+test('validateReport: other types never carry execution fields', () => {
+  for (const type of ['convert-fail', 'site-bug', 'feature', 'other']) {
+    const { report } = validateReport(payload({ type, engine: 'v1.4.1', console: 'new-3ds', cfw: 'Luma', region: 'KR' }));
+    assert.equal(report.engine, undefined, type);
+    assert.equal(report.console, undefined, type);
+    assert.equal(report.cfw, undefined, type);
+    assert.equal(report.region, undefined, type);
+  }
+});
+
+test('issueTitle: ingame carries its own prefix', () => {
+  const { report } = validateReport(payload({ type: 'ingame', failures: [], log: '' }));
+  assert.match(issueTitle(report), /^\[제보\] 인게임 버그: /);
+});
+
+test('issueBody: ingame shows the execution table without a converter log', () => {
+  const { report } = validateReport(payload({
+    type: 'ingame',
+    engine: 'v1.4.1',
+    console: 'new-2ds',
+    cfw: 'Luma 13.1.2',
+    region: 'EU',
+    mode: 'pack',
+    failures: [],
+    log: '',
+    error: null,
+  }));
+  const body = issueBody(report, {});
+  assert.match(body, /## 실행 환경/);
+  assert.match(body, /\| 엔진 버전 \| v1\.4\.1 \|/);
+  assert.match(body, /\| 기기 \| new-2ds \|/);
+  assert.match(body, /\| CFW \| Luma 13\.1\.2 \|/);
+  assert.match(body, /\| 지역 \| EU \|/);
+  assert.match(body, /\| 설치 방식 \| pack \|/);
+  assert.equal(body.includes('- 변환기 버전:'), false);
+  assert.equal(body.includes('## 로그'), false);
+  assert.equal(body.includes('## 오류'), false);
+});
+
+test('issueBody: converter types keep the converter version and the empty log line', () => {
+  for (const type of ['convert-fail', 'site-bug', 'feature', 'other']) {
+    const { report } = validateReport(payload({ type, failures: [], log: '', error: null }));
+    const body = issueBody(report, {});
+    assert.match(body, /- 변환기 버전: 1\.3\.2/, type);
+    assert.match(body, /- 모드: cia/, type);
+    assert.match(body, /## 로그 \(마지막 200줄\)\n\n~~~text\n\(비어 있음\)\n~~~/, type);
+    assert.equal(body.includes('## 실행 환경'), false, type);
+  }
+});
+
+test('issueBody: a typed CFW value cannot break the table row', () => {
+  const { report } = validateReport(payload({ type: 'ingame', cfw: 'Luma | 13.1', failures: [], log: '' }));
+  const body = issueBody(report, {});
+  assert.match(body, /\| CFW \| Luma \/ 13\.1 \|/);
+});
+
+test('handler: an in-game report files one needs-triage issue', async () => {
+  let sent = null;
+  const e = env();
+  await withFetch(async (url, init) => {
+    sent = JSON.parse(init.body);
+    return new Response(JSON.stringify({ html_url: 'https://github.com/zzcx88/neo3ds/issues/1000', number: 1000 }), { status: 201 });
+  }, async () => {
+    const res = await worker.fetch(request(payload({
+      type: 'ingame',
+      engine: 'v1.4.1',
+      console: 'old-3ds',
+      cfw: 'Luma 13.1.2',
+      region: 'KR',
+      failures: [],
+      log: '',
+    }), { ip: '198.51.100.7' }), e);
+    assert.equal(res.status, 200);
+  });
+  assert.deepEqual(sent.labels, ['needs-triage']);
+  assert.match(sent.title, /^\[제보\] 인게임 버그: /);
+  assert.match(sent.body, /\| 기기 \| old-3ds \|/);
+});

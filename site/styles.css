@@ -356,9 +356,12 @@ section[id]{scroll-margin-top:64px}
 #feedback{scroll-margin-top:72px}
 .report{margin:0;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
 .report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.report-grid>.tiny{grid-column:1/-1;margin:0}
 .report-field{display:block;margin:0 0 12px}
 .report-field>span{display:block;font:400 10px/1.6 var(--pixel-sm);color:var(--gold);margin-bottom:5px}
 .report select,.report input[type=text],.report textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--paper);font:400 13px/1.6 var(--pixel-sm);padding:10px 12px;border-radius:3px}
+/* Chromium ignores line-height on select, so pin the height instead. */
+.report select,.report input[type=text]{height:42px}
 .report textarea{resize:vertical}
 .report .tiny{margin:10px 0}
 .report-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}

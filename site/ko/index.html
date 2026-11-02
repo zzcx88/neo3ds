@@ -356,6 +356,7 @@
           <select id="reportType">
             <option value="convert-fail" data-i18n="report.typeConvert">변환 실패</option>
             <option value="site-bug" data-i18n="report.typeBug">사이트·변환기 버그</option>
+            <option value="ingame" data-i18n="report.typeIngame">인게임 버그</option>
             <option value="feature" data-i18n="report.typeFeature">기능 제안</option>
             <option value="other" data-i18n="report.typeOther">기타</option>
           </select>
@@ -364,6 +365,47 @@
           <span data-i18n="report.gameLabel">게임 이름 (선택)</span>
           <input id="reportGame" type="text" maxlength="80" autocomplete="off">
         </label>
+      </div>
+      <div class="report-grid hidden" id="reportIngame">
+        <label class="report-field">
+          <span data-i18n="report.engineLabel">엔진 버전 (선택)</span>
+          <input id="reportEngine" type="text" maxlength="32" autocomplete="off" placeholder="v1.4.1">
+        </label>
+        <label class="report-field">
+          <span data-i18n="report.consoleLabel">기기 (선택)</span>
+          <select id="reportConsole">
+            <option value="" data-i18n="report.unknown">모름</option>
+            <option value="old-3ds" data-i18n="report.consoleOld">구형 3DS</option>
+            <option value="new-3ds" data-i18n="report.consoleNew">뉴 3DS</option>
+            <option value="2ds" data-i18n="report.console2ds">2DS</option>
+            <option value="new-2ds" data-i18n="report.consoleNew2ds">뉴 2DS</option>
+          </select>
+        </label>
+        <label class="report-field">
+          <span data-i18n="report.cfwLabel">CFW (선택)</span>
+          <input id="reportCfw" type="text" maxlength="40" autocomplete="off" placeholder="Luma 13.1.2">
+        </label>
+        <label class="report-field">
+          <span data-i18n="report.regionLabel">지역 (선택)</span>
+          <select id="reportRegion">
+            <option value="" data-i18n="report.unknown">모름</option>
+            <option value="KR" data-i18n="report.regionKR">한국</option>
+            <option value="JP" data-i18n="report.regionJP">일본</option>
+            <option value="US" data-i18n="report.regionUS">미국</option>
+            <option value="EU" data-i18n="report.regionEU">유럽</option>
+            <option value="other" data-i18n="report.regionOther">기타</option>
+          </select>
+        </label>
+        <label class="report-field">
+          <span data-i18n="report.modeLabel">설치 방식 (선택)</span>
+          <select id="reportMode">
+            <option value="" data-i18n="report.unknown">모름</option>
+            <option value="cia" data-i18n="report.modeCia">CIA 설치</option>
+            <option value="pack" data-i18n="report.modePack">.neo3ds 팩</option>
+            <option value="launcher" data-i18n="report.modeLauncher">런처</option>
+          </select>
+        </label>
+        <p class="tiny" data-i18n="report.ingameHint">엔진 버전은 앱 하단 화면에 표시됩니다. 시리얼·SD 경로는 적지 마세요.</p>
       </div>
       <label class="report-field">
         <span data-i18n="report.textLabel">무엇이 잘못됐나요?</span>
