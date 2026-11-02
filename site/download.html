@@ -71,25 +71,28 @@
   <p class="lede">Install the launcher CIA once with a QR code; build the game files in the converter. The offline converter runs on your PC.</p>
 
   <section id="launcher">
-    <h2>Launcher CIA (recommended)</h2>
+    <h2>Download the launcher</h2>
+    <p class="callout"><strong>Updating only takes the launcher.</strong> Existing <code>.neo3ds</code> files keep working on a new version. Per-game CIAs must be converted again; quick saves from another version cannot be loaded.</p>
     <p>The game-list app. Install it once, then put <code>.neo3ds</code> files on the SD card and pick them from the list. Only one HOME menu icon is added.</p>
+    <h3>Install with a QR code</h3>
     <div class="qr-install">
       <a class="qr-install-img" href="media/launcher-qr.svg" target="_blank" rel="noopener">
         <img src="media/launcher-qr.svg" width="200" height="200" alt="QR code that installs the launcher CIA with FBI" loading="lazy" decoding="async">
       </a>
       <div class="qr-copy">
-        <p><strong>FBI → Remote Install → Scan QR Code.</strong> Downloads the latest launcher CIA (about 400 KB).</p>
-        <p class="tiny">The 3DS needs an internet connection (2.4 GHz Wi-Fi). It does not have to be on the same network as the PC.</p>
+        <p><strong>FBI → Remote Install → Scan QR Code.</strong></p>
+        <p class="tiny">Downloads the latest launcher CIA (about 400 KB).</p>
+        <p class="tiny">The 3DS needs an internet connection (2.4 GHz Wi-Fi).</p>
+        <p class="tiny">It does not have to be on the same network as the PC.</p>
       </div>
     </div>
     <h3>Install from the SD card</h3>
     <p>If the QR fails, copy <code>neo3ds-launcher.cia</code> to the SD card and install it in FBI (SD → the file → <strong>Install CIA</strong>).</p>
     <p class="tiny"><a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-launcher.cia">Download the launcher CIA for the SD card</a></p>
-    <p class="callout"><strong>Updating only takes the launcher.</strong> The engine lives in the launcher, so the <code>.neo3ds</code> files you already made run on a new version as they are. Per-game CIAs carry their own engine and have to be converted again. Key configs and backup RAM carry over; quick saves from another version can't be loaded.</p>
   </section>
 
   <section id="game-cia">
-    <h2>Per-game CIA</h2>
+    <h2>Per-game install</h2>
     <p>To use per-game CIAs instead, copy the <code>.cia</code> to the SD card and install it in FBI (SD → the file → <strong>Install CIA</strong>). A game shares its key config, backup RAM and quick saves between its CIA and the launcher.</p>
     <p class="tiny"><a href="convert.html?mode=cia">Build a game CIA</a></p>
   </section>
