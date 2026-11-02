@@ -19,6 +19,8 @@ import { buildReport, failuresFrom, PENDING_KEY } from './vendor/conv/report.js'
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
+// #242: the launcher CIA is downloaded from download.html; old ?mode=launcher links land there.
+if (new URLSearchParams(location.search).get('mode') === 'launcher') location.replace('download.html');
 const logEl = $('gateLog'), pipe = $('gatePipe');
 const isEn = () => document.documentElement.lang === 'en';
 const t = (ko, en) => (isEn() ? en : ko);
@@ -204,10 +206,9 @@ function gameZips() {
   return files.filter((f) => f.name.toLowerCase() !== 'neogeo.zip');
 }
 
-// Multi-game non-launcher runs get the preflight list; single-game and
-// launcher runs keep their old flow untouched.
+// Multi-game runs get the preflight list; single-game runs keep their old flow.
 function wantsBatch() {
-  return currentMode() !== 'launcher' && gameZips().length > 1;
+  return gameZips().length > 1;
 }
 
 /* ── ObjectURL bookkeeping (#74): every generated file URL is revoked when a
@@ -572,7 +573,7 @@ function singleArtState() {
 }
 
 // Single CIA: the panel shows the one game directly. Multi-game CIA: it shows
-// the selected row (one at a time). Pack/launcher never show it.
+// the selected row (one at a time). Pack never shows it.
 function syncArt() {
   if (artEligible()) {
     artPanel.classList.remove('hidden');
@@ -673,7 +674,7 @@ function resetCheckModel() {
 // #143: every mode that converts a game gets the same romset check, including
 // a single game or a one-game pack. The batch list is only one place it shows.
 function needsCheck() {
-  return currentMode() !== 'launcher' && gameZips().length > 0;
+  return gameZips().length > 0;
 }
 
 function startCheck() {
@@ -731,7 +732,6 @@ function syncCheck() {
 // One entry point for every files/mode/finish change: the list, the art panel
 // and the run button must agree on whether they are visible and usable.
 function syncOutput() {
-  $('gateQr').classList.toggle('hidden', currentMode() !== 'launcher');
   syncCheck();
   syncArt();
 }
@@ -986,7 +986,6 @@ function ingest(list, { folder = false } = {}) {
 }
 
 function refreshRun() {
-  const mode = currentMode();
   const names = files.map((f) => f.name).join(', ');
   $('gateFile').textContent = files.length === 0
     ? t('zip을 올리세요', 'Drop zips')
@@ -1003,31 +1002,29 @@ function refreshRun() {
   $('gateMeta').textContent = notes.join(' · ');
 
   // #143: a disabled Convert always says why, and the same check that builds
-  // the list decides it. Launcher CIA needs no game zip.
+  // the list decides it.
   let disabled = running || artBusy;
   let hint = '';
-  if (mode !== 'launcher') {
-    if (gameZips().length === 0) {
+  if (gameZips().length === 0) {
+    disabled = true;
+    hint = t('게임 zip을 올리세요', 'Drop a game zip');
+  } else if (checking) {
+    disabled = true;
+    hint = t('롬셋과 바이오스를 확인하는 중…', 'Checking romsets and BIOS…');
+  } else if (checkError) {
+    disabled = true;
+    hint = checkError;
+  } else if (!checkRows || checkFiles !== files) {
+    disabled = true;
+  } else if (wantsBatch()) {
+    if (summary(batch ?? []).ready === 0) {
       disabled = true;
-      hint = t('게임 zip을 올리세요', 'Drop a game zip');
-    } else if (checking) {
-      disabled = true;
-      hint = t('롬셋과 바이오스를 확인하는 중…', 'Checking romsets and BIOS…');
-    } else if (checkError) {
-      disabled = true;
-      hint = checkError;
-    } else if (!checkRows || checkFiles !== files) {
-      disabled = true;
-    } else if (wantsBatch()) {
-      if (summary(batch ?? []).ready === 0) {
-        disabled = true;
-        hint = t('변환 가능한 게임이 없습니다. 목록의 이유를 확인하세요.',
-          'No convertible game. Check the reason in the list.');
-      }
-    } else if (!singleRow?.ok) {
-      disabled = true;
-      hint = t(`변환할 수 없음 — ${singleRow?.problem ?? ''}`, `Not convertible — ${singleRow?.problem ?? ''}`);
+      hint = t('변환 가능한 게임이 없습니다. 목록의 이유를 확인하세요.',
+        'No convertible game. Check the reason in the list.');
     }
+  } else if (!singleRow?.ok) {
+    disabled = true;
+    hint = t(`변환할 수 없음 — ${singleRow?.problem ?? ''}`, `Not convertible — ${singleRow?.problem ?? ''}`);
   }
   if (running) hint = '';
   else if (artBusy) hint = t('이미지 확인 중…', 'Checking the picture…');
@@ -1041,7 +1038,7 @@ document.querySelectorAll('input[name="gateMode"]').forEach((r) => r.addEventLis
   if (!running) { resetOverall(); resetResults(); syncOutput(); }
   refreshRun();
 }));
-{ // Deep-link: convert.html?mode=pack|launcher preselects the output (?mode=cia = default).
+{ // Deep-link: convert.html?mode=pack preselects the output (?mode=cia = default).
   const m = new URLSearchParams(location.search).get('mode');
   const radio = m && document.querySelector(`input[name="gateMode"][value="${m}"]`);
   if (radio) { radio.checked = true; syncOutput(); refreshRun(); }
@@ -1185,11 +1182,11 @@ function focusProgress() {
 /* ── Run ───────────────────────────────────────────────────────────────── */
 runBtn.addEventListener('click', () => {
   const mode = currentMode();
-  if (running || artBusy || (files.length === 0 && mode !== 'launcher')) return;
+  if (running || artBusy || files.length === 0) return;
   const isBatch = wantsBatch();
-  if (mode !== 'launcher' && (!checkRows || checkFiles !== files || checkError)) return;
+  if (!checkRows || checkFiles !== files || checkError) return;
   if (isBatch && (!batch || summary(batch).ready === 0)) return;
-  if (!isBatch && mode !== 'launcher' && !singleRow?.ok) return;
+  if (!isBatch && !singleRow?.ok) return;
 
   focusProgress(); // #81: show the progress section without hunting for it
   running = true;
@@ -1258,9 +1255,7 @@ function startSingleRun(base) {
   rowT0.set(-1, performance.now());
   rowMeta.set(-1, { romset: false });
   singleStep = 'load';
-  logEvent('', currentMode() === 'launcher'
-    ? t('▶ 런처 CIA · 워커 1', '▶ launcher CIA · 1 worker')
-    : t('▶ 1개 게임 · 워커 1', '▶ 1 game · 1 worker'), 'meta');
+  logEvent('', t('▶ 1개 게임 · 워커 1', '▶ 1 game · 1 worker'), 'meta');
   logStage(-1, 'load');
   w.postMessage({ ...base, id: w.job.id, batch: null });
 }
@@ -1430,7 +1425,6 @@ function onSingleMessage(m) {
 
 function downloadName(stats) {
   const mode = stats.mode ?? currentMode();
-  if (stats.rom === 'launcher') return 'neo3ds-launcher.cia';
   if (mode === 'pack') return `${stats.rom}.neo3ds`;
   return `${stats.rom}.cia`;
 }
@@ -1442,7 +1436,6 @@ function resultNote() {
   const mode = currentMode();
   if (mode === 'pack') return t('.neo3ds 파일을 SD의 /neo3ds/games/에 복사하세요.',
     'Copy the .neo3ds file to /neo3ds/games/ on the SD card.');
-  if (mode === 'launcher') return t('런처 CIA를 FBI로 한 번 설치하세요.', 'Install the launcher CIA with FBI once.');
   return t('CIA를 FBI로 설치하세요.', 'Install the CIA with FBI.');
 }
 

@@ -107,13 +107,15 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 배포물 (`site/`, 전부 정적):
 
 **영어가 기본**(루트), 한국어는 `/ko/` (#141). 저작 원본은 한국어 `site/ko/*.html` + 게임 DB이고,
-루트 6페이지는 생성물이다.
+루트 7페이지는 생성물이다.
 
 - `index.html` — 소개 (EN, 생성물). `ko/index.html` — 한국어 원본
-- `convert.html` — 웹 변환기 (EN, 생성물) · per-game CIA · 런처 CIA · `.neo3ds` 팩 · 배치. `ko/convert.html` — 한국어 원본
+- `convert.html` — 웹 변환기 (EN, 생성물) · per-game CIA · `.neo3ds` 팩 · 배치. `ko/convert.html` — 한국어 원본
+- `download.html` — 다운로드·설치 (EN, 생성물): 런처 CIA QR·업데이트·SD 설치, 게임별 CIA 설치,
+  오프라인 변환기 3종. `ko/download.html` — 한국어 원본
 - `compat.html` — 호환 롬셋 282종 표 (EN, 생성물, JS 없이 크롤 가능). `ko/compat.html` — 한국어판
 - `privacy.html` — 사용 통계·개인정보 (EN, 생성물). `ko/privacy.html` — 한국어 원본.
-  `index.html`·`convert.html` 푸터에서 링크한다 (#125)
+  `index.html`·`convert.html`·`download.html` 푸터에서 링크한다 (#125)
 - `manual.html` — 3DS 사용 안내: 런처·조작·아래 화면·키 설정·세이브 경로 (EN, 생성물).
   `ko/manual.html` — 한국어 원본. 조작 표는 README와 같아야 하고 `site_gate.sh`가 대조한다 (#162)
 - `changelog.html` — 패치노트: 릴리스 타임라인 (EN·KO 둘 다 생성물, 출처 `site/releases.json`).
@@ -122,7 +124,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
   카드 아트를 다시 만들면 `og:image` URL의 `?v=N`을 올린다 — 스크래퍼가 URL로 캐시하므로 그대로면 옛 그림이 계속 보인다 (#213)
 - `vendor/` — WASM 3종 + `engine.elf` + `neogeo_games.json` (CI가 빌드·스테이징, git 제외)
 
-`index.html`·`convert.html`·`compat.html`·`manual.html`·`changelog.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,
+`index.html`·`convert.html`·`download.html`·`compat.html`·`manual.html`·`changelog.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,
 변환 페이지는 `convert_start`(모드, 배치면 `batch:3-5`처럼 규모 접미), `convert_done`(게임),
 `convert_fail`(게임, `load/bios`처럼 단계/사유), `convert_save`(다운로드 클릭의 출력 모드),
 `feedback_submit`(제보 전송 1회, 속성 없음) 다섯 이벤트만 보낸다.
@@ -133,7 +135,7 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 ```bash
 python3 scripts/gen_site_games.py    # site/games.js + compat.html (EN) + ko/compat.html
 python3 scripts/gen_site_changelog.py  # site/changelog.html + ko/changelog.html (출처: site/releases.json)
-node scripts/gen_site_i18n.mjs       # site/{index,convert,privacy,manual}.html (EN 문자열 출처: site/app.js 의 EN 표)
+node scripts/gen_site_i18n.mjs       # site/{index,convert,download,privacy,manual}.html (EN 문자열 출처: site/app.js 의 EN 표)
 python3 scripts/gen_site_seo.py      # site/sitemap.xml
 ```
 
@@ -147,9 +149,9 @@ chrome --headless=new --window-size=1200,630 --screenshot=site/media/og-ko.png \
 ```
 
 CI는 같은 생성기를 돌려 산출물이 커밋본과 같은지 확인한다 (`--check` / `git diff --exit-code`).
-`site/` 검증 게이트(`bash scripts/site_gate.sh`, PR에서도 실행): JS `node --check` · 12개 페이지 태그 균형 ·
-KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 6페이지에 `data-i18n`/한글 잔재 0 ·
-통계 페이지 10개의 Umami 태그 존재 · `sitemap.xml`·canonical·hreflang·og:image(로케일별) 일치 ·
+`site/` 검증 게이트(`bash scripts/site_gate.sh`, PR에서도 실행): JS `node --check` · 14개 페이지 태그 균형 ·
+KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 7페이지에 `data-i18n`/한글 잔재 0 ·
+통계 페이지 12개의 Umami 태그 존재 · `sitemap.xml`·canonical·hreflang·og:image(로케일별) 일치 ·
 패치노트 최상단 버전 = `converter/Directory.Build.props` `<Version>`.
 
 수동 실행: Actions → Pages → Run workflow.
