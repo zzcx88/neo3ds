@@ -9,6 +9,7 @@
 export const REPORT_TYPES = Object.freeze({
   'convert-fail': '변환 실패',
   'site-bug': '사이트·변환기 버그',
+  'ingame': '인게임 버그',
   'feature': '기능 제안',
   'other': '기타',
 });
@@ -31,6 +32,11 @@ const BIOS_NAMES = new Set([
 ]);
 const BIOS_REGION = /^(Europe\/Asia|Japan|USA)$/;
 const BIOS_STATES = new Set(['ok', 'missing', 'mismatch']);
+// Mirrors the worker's allow-lists (#223) so the issue and the tab agree on what
+// an in-game report may carry. Anything else is dropped before it leaves the tab.
+const ENGINE_VERSION = /^v?\d{1,3}\.\d{1,3}(\.\d{1,3})?$/;
+const CONSOLES = new Set(['old-3ds', 'new-3ds', '2ds', 'new-2ds']);
+const REGIONS = new Set(['KR', 'JP', 'US', 'EU', 'other']);
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Last `max` lines of the converter log, newline-normalised, no trailing blank.
@@ -111,6 +117,8 @@ function cleanBios(input) {
 
 export function buildReport(input = {}) {
   const type = Object.hasOwn(REPORT_TYPES, input.type) ? input.type : 'other';
+  const ingame = type === 'ingame';
+  const engine = String(input.engine ?? '').trim();
   const map = redactions(input.sources);
   const failures = Array.isArray(input.failures)
     ? input.failures.slice(0, 50).map(cleanFailure).filter(Boolean)
@@ -125,6 +133,12 @@ export function buildReport(input = {}) {
     bios: cleanBios(input.bios),
     log: redact(tailLines(input.log), map),
     error: redact(String(input.error ?? '').slice(0, 2000), map) || null,
+    ...(ingame ? {
+      engine: ENGINE_VERSION.test(engine) ? engine : null,
+      console: CONSOLES.has(input.console) ? input.console : null,
+      cfw: String(input.cfw ?? '').replace(/\s+/g, ' ').trim().slice(0, 40) || null,
+      region: REGIONS.has(input.region) ? input.region : null,
+    } : {}),
     website: String(input.website ?? ''),
   };
 }

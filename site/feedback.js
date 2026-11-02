@@ -45,6 +45,18 @@ if (form) {
   text.placeholder = t('기대한 동작과 실제로 일어난 일을 적어 주세요.', 'What you expected, and what happened.');
   $('reportGame').placeholder = t('예: mslug', 'e.g. mslug');
 
+  // #223: the execution fields only make sense for an in-game report, and a
+  // stale value from another type must never ride along.
+  const ingameFields = $('reportIngame');
+  const INGAME_IDS = ['reportEngine', 'reportCfw', 'reportConsole', 'reportRegion', 'reportMode'];
+  const syncType = () => {
+    const on = typeSel.value === 'ingame';
+    ingameFields.classList.toggle('hidden', !on);
+    if (!on) INGAME_IDS.forEach((id) => { $(id).value = ''; });
+  };
+  typeSel.addEventListener('change', syncType);
+  syncType();
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (sending) return;
@@ -66,13 +78,18 @@ if (form) {
     msg.textContent = t('보내는 중…', 'Sending…');
     try {
       const type = typeSel.value;
+      const ingame = type === 'ingame';
       const version = await converterVersion();
       const report = fitPayload(buildReport({
         type,
         summary,
         game: $('reportGame').value,
-        mode: pending?.mode ?? null,
+        mode: ingame ? $('reportMode').value : pending?.mode ?? null,
         version,
+        engine: ingame ? $('reportEngine').value : null,
+        console: ingame ? $('reportConsole').value : null,
+        cfw: ingame ? $('reportCfw').value : null,
+        region: ingame ? $('reportRegion').value : null,
         failures: type === 'convert-fail' ? pending?.failures ?? [] : [],
         bios: type === 'convert-fail' ? pending?.bios ?? null : null,
         log: pending?.log ?? '',
@@ -92,6 +109,7 @@ if (form) {
       link.textContent = `${t('이슈', 'issue')} #${data.number}`;
       link.classList.remove('hidden');
       text.value = '';
+      INGAME_IDS.forEach((id) => { $(id).value = ''; });
       $('reportPending').classList.add('hidden');
       pending = null;
     } catch (err) {
