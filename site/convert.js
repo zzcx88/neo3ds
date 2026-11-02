@@ -95,7 +95,7 @@ function stashPending() {
   } catch { /* storage can be blocked */ }
 }
 
-for (const id of ['gateReportOpen', 'gateReportJump', 'gateReportGo']) {
+for (const id of ['gateReportJump', 'gateReportGo']) {
   $(id)?.addEventListener('click', stashPending);
 }
 
