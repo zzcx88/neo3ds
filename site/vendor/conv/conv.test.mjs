@@ -900,4 +900,28 @@ await t('report/bios-profile-keeps-every-gamedb-chip-name', async () => {
     throw new Error(`${report.bios.aes.length}/${GameDb.BIOS.length}`);
 });
 
+// #223: the tab and the worker must agree on what an in-game report may carry.
+await t('report/ingame-fields-are-allow-listed', async () => {
+  const { buildReport } = await import('./report.js');
+  const keep = buildReport({
+    type: 'ingame', summary: 'x', engine: 'v1.4.1', console: 'new-3ds',
+    cfw: '  Luma   13.1.2 ', region: 'EU', mode: 'pack',
+  });
+  const kept = [keep.engine, keep.console, keep.cfw, keep.region, keep.mode];
+  if (JSON.stringify(kept) !== JSON.stringify(['v1.4.1', 'new-3ds', 'Luma 13.1.2', 'EU', 'pack']))
+    throw new Error('kept ' + JSON.stringify(kept));
+
+  const drop = buildReport({
+    type: 'ingame', summary: 'x', engine: 'v1.4.1; rm -rf', console: '3ds-xl',
+    region: 'KR', mode: 'launcher',
+  });
+  if (drop.engine !== null || drop.console !== null || drop.region !== null)
+    throw new Error('allow-list leak ' + JSON.stringify([drop.engine, drop.console, drop.region]));
+  // `launcher` left the form but stays a valid converter mode (#228).
+  if (drop.mode !== 'launcher') throw new Error('mode ' + drop.mode);
+
+  const other = buildReport({ type: 'site-bug', summary: 'x', region: 'EU', console: 'new-3ds' });
+  if ('region' in other || 'console' in other) throw new Error('execution fields leaked into site-bug');
+});
+
 process.exit(fail ? 1 : 0);

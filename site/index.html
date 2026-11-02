@@ -393,23 +393,20 @@
           <input id="reportCfw" type="text" maxlength="40" autocomplete="off" placeholder="Luma 13.1.2">
         </label>
         <label class="report-field">
-          <span>Region (optional)</span>
+          <span>Game region at conversion (optional)</span>
           <select id="reportRegion">
             <option value="">Unknown</option>
-            <option value="KR">Korea</option>
             <option value="JP">Japan</option>
             <option value="US">USA</option>
-            <option value="EU">Europe</option>
-            <option value="other">Other</option>
+            <option value="EU">Europe/Asia</option>
           </select>
         </label>
         <label class="report-field">
           <span>Install method (optional)</span>
           <select id="reportMode">
             <option value="">Unknown</option>
-            <option value="cia">CIA install</option>
-            <option value="pack">.neo3ds pack</option>
-            <option value="launcher">Launcher</option>
+            <option value="cia">Per-game CIA</option>
+            <option value="pack">Launcher + .neo3ds file</option>
           </select>
         </label>
         <p class="tiny">The engine version is shown at the bottom of the app. Do not include serial numbers or SD card paths.</p>

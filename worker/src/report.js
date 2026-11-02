@@ -27,11 +27,13 @@ const BIOS_NAMES = new Set([
 const BIOS_REGION = /^(Europe\/Asia|Japan|USA)$/;
 const BIOS_STATES = new Set(['ok', 'missing', 'mismatch']);
 // In-game reports (#223): the engine prints its version on the lower screen, so
-// the value is typed, but it must still look like a version. Hardware and region
-// are allow-lists — a serial or an SD path must never reach a public issue.
+// the value is typed, but it must still look like a version. Hardware is an
+// allow-list, and `region` is the game region chosen at conversion (JP/US/EU),
+// not the reporter's own country — a serial or an SD path must never reach a
+// public issue.
 const ENGINE_VERSION = /^v?\d{1,3}\.\d{1,3}(\.\d{1,3})?$/;
 const CONSOLES = new Set(['old-3ds', 'new-3ds', '2ds', 'new-2ds']);
-const REGIONS = new Set(['KR', 'JP', 'US', 'EU', 'other']);
+const REGIONS = new Set(['JP', 'US', 'EU']);
 
 const str = (value, max) => (typeof value === 'string' ? value.slice(0, max) : '');
 const oneLine = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -105,7 +107,7 @@ export function validateReport(input) {
       log: typeof input.log === 'string' ? input.log.slice(-40000) : '',
       error: str(input.error, 2000) || null,
       ...(ingame ? {
-        engine: ENGINE_VERSION.test(engine) ? engine.slice(0, 32) : null,
+        engine: ENGINE_VERSION.test(engine) ? engine : null,
         console: CONSOLES.has(input.console) ? input.console : null,
         cfw: oneLine(str(input.cfw, 80)).slice(0, 40) || null,
         region: REGIONS.has(input.region) ? input.region : null,
@@ -145,16 +147,20 @@ function biosTable(b) {
 }
 
 // Every value is allow-listed upstream except cfw, so the only job here is to
-// keep a typed value from breaking the table row.
+// keep a typed value from breaking the table row or turning into a @mention.
 function ingameTable(report) {
   const cell = (value) => oneLine(value).replace(/\|/g, '/') || '-';
+  const code = (value) => {
+    const text = oneLine(value).replace(/[`|]/g, (c) => (c === '`' ? "'" : '/'));
+    return text ? `\`${text}\`` : '-';
+  };
   return [
     '| 항목 | 값 |',
     '| --- | --- |',
     `| 엔진 버전 | ${cell(report.engine)} |`,
     `| 기기 | ${cell(report.console)} |`,
-    `| CFW | ${cell(report.cfw)} |`,
-    `| 지역 | ${cell(report.region)} |`,
+    `| CFW | ${code(report.cfw)} |`,
+    `| 변환 지역 | ${cell(report.region)} |`,
     `| 설치 방식 | ${cell(report.mode)} |`,
   ].join('\n');
 }

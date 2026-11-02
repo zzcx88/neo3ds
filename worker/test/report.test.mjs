@@ -334,7 +334,7 @@ test('validateReport: ingame keeps the execution fields', () => {
     engine: 'v1.4.1',
     console: 'new-3ds',
     cfw: '  Luma   13.1.2 ',
-    region: 'KR',
+    region: 'EU',
     failures: [],
     log: '',
   }));
@@ -346,7 +346,7 @@ test('validateReport: ingame keeps the execution fields', () => {
       cfw: check.report.cfw,
       region: check.report.region,
     },
-    { engine: 'v1.4.1', console: 'new-3ds', cfw: 'Luma 13.1.2', region: 'KR' },
+    { engine: 'v1.4.1', console: 'new-3ds', cfw: 'Luma 13.1.2', region: 'EU' },
   );
 });
 
@@ -356,7 +356,7 @@ test('validateReport: ingame drops values outside the allow-lists', () => {
     engine: 'v1.4.1; rm -rf /',
     console: '3ds-xl',
     cfw: 'x'.repeat(80),
-    region: 'US-MD',
+    region: 'KR',
     failures: [],
     log: '',
   }));
@@ -396,8 +396,8 @@ test('issueBody: ingame shows the execution table without a converter log', () =
   assert.match(body, /## 실행 환경/);
   assert.match(body, /\| 엔진 버전 \| v1\.4\.1 \|/);
   assert.match(body, /\| 기기 \| new-2ds \|/);
-  assert.match(body, /\| CFW \| Luma 13\.1\.2 \|/);
-  assert.match(body, /\| 지역 \| EU \|/);
+  assert.match(body, /\| CFW \| `Luma 13\.1\.2` \|/);
+  assert.match(body, /\| 변환 지역 \| EU \|/);
   assert.match(body, /\| 설치 방식 \| pack \|/);
   assert.equal(body.includes('- 변환기 버전:'), false);
   assert.equal(body.includes('## 로그'), false);
@@ -415,10 +415,10 @@ test('issueBody: converter types keep the converter version and the empty log li
   }
 });
 
-test('issueBody: a typed CFW value cannot break the table row', () => {
-  const { report } = validateReport(payload({ type: 'ingame', cfw: 'Luma | 13.1', failures: [], log: '' }));
+test('issueBody: a typed CFW value cannot break the table row or mention anyone', () => {
+  const { report } = validateReport(payload({ type: 'ingame', cfw: 'Luma | 13.1 @zzcx88 `x`', failures: [], log: '' }));
   const body = issueBody(report, {});
-  assert.match(body, /\| CFW \| Luma \/ 13\.1 \|/);
+  assert.match(body, /\| CFW \| `Luma \/ 13\.1 @zzcx88 'x'` \|/);
 });
 
 test('handler: an in-game report files one needs-triage issue', async () => {
@@ -433,7 +433,7 @@ test('handler: an in-game report files one needs-triage issue', async () => {
       engine: 'v1.4.1',
       console: 'old-3ds',
       cfw: 'Luma 13.1.2',
-      region: 'KR',
+      region: 'JP',
       failures: [],
       log: '',
     }), { ip: '198.51.100.7' }), e);
