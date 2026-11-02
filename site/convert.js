@@ -732,6 +732,7 @@ function syncCheck() {
 // One entry point for every files/mode/finish change: the list, the art panel
 // and the run button must agree on whether they are visible and usable.
 function syncOutput() {
+  $('gateLauncherHint').classList.toggle('hidden', currentMode() !== 'pack');
   syncCheck();
   syncArt();
 }
@@ -987,9 +988,11 @@ function ingest(list, { folder = false } = {}) {
 
 function refreshRun() {
   const names = files.map((f) => f.name).join(', ');
-  $('gateFile').textContent = files.length === 0
-    ? t('zip을 올리세요', 'Drop zips')
+  const fileLabel = $('gateFile');
+  fileLabel.textContent = files.length === 0
+    ? ''
     : t(`${files.length}개: ${names}`, `${files.length} file${files.length === 1 ? '' : 's'}: ${names}`);
+  fileLabel.classList.toggle('hidden', files.length === 0);
   const notes = [];
   if (folderDropped) {
     notes.push(t('폴더는 지원하지 않습니다. 폴더 안의 게임 zip을 올려 주세요.',

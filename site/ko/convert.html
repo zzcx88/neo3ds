@@ -162,7 +162,7 @@
     </div>
 
     <div class="gate-side">
-      <span class="conv-file" id="gateFile" data-i18n="gate.nofile">zip을 올리세요</span>
+      <span class="conv-file hidden" id="gateFile"></span>
       <label class="drop" id="gateDrop">
         <input type="file" id="gateZips" accept=".zip" multiple>
         <b data-i18n="gate.dropT">롬 zip 올리기</b>
@@ -249,6 +249,7 @@
         <button type="button" class="btn btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
       </div>
       <p class="tiny run-hint hidden" id="gateRunHint" aria-live="polite"></p>
+      <p class="tiny hidden" id="gateLauncherHint"><a href="download.html" data-i18n="gate.launcherHint">만약 neo3ds 런처가 없다면? 다운로드 &amp; 설치</a></p>
     </div>
   </div>
 </section>
