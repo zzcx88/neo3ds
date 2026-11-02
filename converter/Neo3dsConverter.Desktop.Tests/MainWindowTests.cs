@@ -242,7 +242,7 @@ public class MainWindowTests
             window.AddBuilt(launcher, launcher: true);
             Assert.Equal(2, window.SendTargets().Count);
             Assert.True(window.FindControl<Button>("SendButton")!.IsEnabled);
-            Assert.Contains("런처", MainWindow.SendLabel(window.SendTargets().Single(t => t.Launcher)));
+            Assert.Contains(Lang.L("런처", "Launcher"), MainWindow.SendLabel(window.SendTargets().Single(t => t.Launcher)));
             Assert.Contains("kof98.cia", MainWindow.SendLabel(window.SendTargets().Single(t => !t.Launcher)));
 
             File.Delete(cia);
