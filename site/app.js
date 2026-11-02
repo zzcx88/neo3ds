@@ -199,6 +199,7 @@ const EN = {
   'dl.qrNet': 'The 3DS needs an internet connection (2.4 GHz Wi-Fi). It does not have to be on the same network as the PC.',
   'dl.sdH': 'Install from the SD card',
   'dl.sdP': 'If the QR fails, copy <code>neo3ds-launcher.cia</code> to the SD card and install it in FBI (SD → the file → <strong>Install CIA</strong>).',
+  'dl.launcherFile': 'Download the launcher CIA for the SD card',
   'dl.update': '<strong>Updating only takes the launcher.</strong> The engine lives in the launcher, so the <code>.neo3ds</code> files you already made run on a new version as they are. Per-game CIAs carry their own engine and have to be converted again. Key configs and backup RAM carry over; quick saves from another version can\'t be loaded.',
   'dl.ciaH2': 'Per-game CIA',
   'dl.ciaP': 'To use per-game CIAs instead, copy the <code>.cia</code> to the SD card and install it in FBI (SD → the file → <strong>Install CIA</strong>). A game shares its key config, backup RAM and quick saves between its CIA and the launcher.',
