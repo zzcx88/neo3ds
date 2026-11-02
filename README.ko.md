@@ -61,6 +61,7 @@ Chrome, Edge, Firefox, Safari에서 됩니다. 테스트 PC에서 KOF '98 변환
 2. 게임 zip을 창에 끌어 놓거나(`neogeo.zip`은 같은 폴더에) 찾아보기 버튼으로 엽니다.
 3. 롬셋이 인식되면 필요에 따라 이름·시스템·지역·아이콘·배너를 바꿉니다. 미리보기가 실제 HOME 메뉴 모양입니다.
 4. **CIA**, **런처용 파일**, **런처 CIA** 중 하나를 만듭니다. Windows는 zip 옆에, Linux·macOS는 `~/Downloads`에 저장합니다.
+5. SD 카드 없이 설치하려면 CIA를 만든 뒤 **[3DS로 보내기]**를 누르고, 같은 네트워크의 3DS에서 FBI(Remote Install)로 QR을 스캔합니다.
 
 언어 버튼으로 한국어와 영어를 바꿉니다.
 

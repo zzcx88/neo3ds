@@ -12,6 +12,10 @@ public partial class MainWindow : Window
 {
     CiaJob? job;
     readonly List<CiaJob> batch = new();
+    /// <summary>#236: CIAs built in this session, in build order; only these can be sent to the 3DS.</summary>
+    readonly List<BuiltCia> built = new();
+    bool busy;
+
 
     public MainWindow()
     {
@@ -26,6 +30,7 @@ public partial class MainWindow : Window
         BuildButton.Click += async (_, _) => await BuildAsync(pack: false);
         PackButton.Click += async (_, _) => await BuildAsync(pack: true);
         LauncherButton.Click += async (_, _) => await BuildLauncherAsync();
+        SendButton.Click += async (_, _) => await SendAsync();
         IconPickButton.Click += async (_, _) => await PickImage(IconBox);
         BannerPickButton.Click += async (_, _) => await PickImage(BannerBox);
         IconClearButton.Click += (_, _) => { IconBox.Text = ""; RefreshPreview(); };
@@ -63,6 +68,7 @@ public partial class MainWindow : Window
         IconPickButton.Content = BannerPickButton.Content = Lang.L("선택", "Pick");
         OutDirButton.Content = Lang.L("변경", "Change");
         LauncherButton.Content = Lang.L("런처 CIA 만들기 (한 번만 설치)", "Build the launcher CIA (install once)");
+        SendButton.Content = Lang.L("3DS로 보내기 (QR)", "Send to 3DS (QR)");
         SystemBox.ItemsSource = new[]
         {
             Lang.L("자동 (가정용 AES, 필요한 게임만 MVS)", "Automatic (home AES, MVS where a game needs it)"),
@@ -148,8 +154,8 @@ public partial class MainWindow : Window
     internal static string DoneMessage(bool pack, string file) => (pack
         ? Lang.L("런처용 파일을 만들었습니다. SD카드의 /neo3ds/games/ 폴더에 복사하세요 (런처 CIA가 설치돼 있어야 합니다).",
                  "The launcher file is ready. Copy it to /neo3ds/games/ on the SD card (the launcher CIA must be installed).")
-        : Lang.L("CIA를 만들었습니다. FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA",
-                 "The CIA is ready. Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"))
+        : Lang.L("CIA를 만들었습니다. [3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.",
+                 "The CIA is ready. Use [Send to 3DS], or copy it to the SD card and install it with FBI."))
         + $"\n\n{file}";
 
     bool? SelectedMvs => SystemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
@@ -299,11 +305,13 @@ public partial class MainWindow : Window
         return dir;
     }
 
-    void SetBusy(bool busy)
+    void SetBusy(bool on)
     {
-        Cursor = busy ? new Cursor(StandardCursorType.Wait) : null;
-        OpenButton.IsEnabled = OutDirButton.IsEnabled = LauncherButton.IsEnabled = !busy;
-        if (!busy) SetBuildEnabled(batch.Count > 0 ? batch.Any(Buildable) : job != null && Buildable(job));
+        busy = on;
+        Cursor = on ? new Cursor(StandardCursorType.Wait) : null;
+        OpenButton.IsEnabled = OutDirButton.IsEnabled = LauncherButton.IsEnabled = !on;
+        RefreshSendButton();
+        if (!on) SetBuildEnabled(batch.Count > 0 ? batch.Any(Buildable) : job != null && Buildable(job));
         else SetBuildEnabled(false);
     }
 
@@ -323,6 +331,7 @@ public partial class MainWindow : Window
         try
         {
             string file = await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+            if (!pack) AddBuilt(file, launcher: false);
             Log(Lang.L($"완료 ({sw.ElapsedMilliseconds} ms): {file}", $"Done ({sw.ElapsedMilliseconds} ms): {file}"));
             await ShowDialog(Lang.L("완료", "Done"), DoneMessage(pack, file));
         }
@@ -358,7 +367,8 @@ public partial class MainWindow : Window
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 try
                 {
-                    await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+                    string file = await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+                    if (!pack) AddBuilt(file, launcher: false);
                     done.Add(j.RomName);
                 }
                 catch (Exception ex)
@@ -371,7 +381,7 @@ public partial class MainWindow : Window
             Log(Lang.L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
             string msg = (pack
                 ? Lang.L($"런처용 파일 {done.Count}개: SD카드 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files: copy to /neo3ds/games/ on the SD card.")
-                : Lang.L($"CIA {done.Count}개. FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA", $"{done.Count} CIAs. Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"))
+                : Lang.L($"CIA {done.Count}개. [3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.", $"{done.Count} CIAs. Use [Send to 3DS], or copy them to the SD card and install with FBI."))
                 + $"\n\n{outDir}";
             if (failed.Count > 0) msg += "\n\n" + Lang.L("실패:", "Failed:") + "\n" + string.Join("\n", failed);
             await ShowDialog(Lang.L("완료", "Done"), msg);
@@ -390,6 +400,7 @@ public partial class MainWindow : Window
         {
             string dir = OutDir();
             string cia = await Task.Run(() => new CiaBuilder(Log).BuildLauncher(dir));
+            AddBuilt(cia, launcher: true);
             Log(Lang.L("FBI로 한 번만 설치하세요.", "Install it once with FBI."));
             await ShowDialog(Lang.L("완료", "Done"), cia);
         }
@@ -402,6 +413,110 @@ public partial class MainWindow : Window
         {
             SetBusy(false);
         }
+    }
+
+    /// <summary>#236: CIAs built this session that still exist; deleted files drop out of the list.</summary>
+    internal IReadOnlyList<BuiltCia> SendTargets()
+    {
+        built.RemoveAll(b => !File.Exists(b.Path));
+        return built;
+    }
+
+    /// <summary>#236: remembers a successful build. Launcher CIAs are included; .neo3ds files never are.</summary>
+    internal void AddBuilt(string path, bool launcher)
+    {
+        if (!path.EndsWith(".cia", StringComparison.OrdinalIgnoreCase) || !File.Exists(path)) return;
+        built.RemoveAll(b => string.Equals(b.Path, path, StringComparison.OrdinalIgnoreCase));
+        built.Add(new BuiltCia(Path.GetFullPath(path), launcher));
+        RefreshSendButton();
+    }
+
+    void RefreshSendButton() => SendButton.IsEnabled = !busy && SendTargets().Count > 0;
+
+    /// <summary>The launcher CIA is labelled "런처" so the list does not read like another game.</summary>
+    internal static string SendLabel(BuiltCia b) => b.Launcher
+        ? Lang.L("런처", "Launcher") + " · " + Path.GetFileName(b.Path)
+        : Path.GetFileName(b.Path);
+
+    internal static string Size(long bytes) => bytes >= 1048576
+        ? $"{bytes / 1048576.0:0.0} MB"
+        : $"{Math.Max(1, bytes / 1024)} KB";
+
+    /// <summary>#236: serve one of the session's CIAs over the LAN; no picker when only one was built.</summary>
+    async Task SendAsync()
+    {
+        var targets = SendTargets();
+        if (targets.Count == 0) { RefreshSendButton(); return; }
+        BuiltCia? target = targets.Count == 1 ? targets[0] : await PickSendTarget(targets);
+        if (target == null || !File.Exists(target.Path)) return;
+        await ShowSendDialog(target);
+    }
+
+    async Task<BuiltCia?> PickSendTarget(IReadOnlyList<BuiltCia> targets)
+    {
+        var list = new ListBox
+        {
+            ItemsSource = targets.Select(SendLabel).ToArray(),
+            SelectedIndex = 0,
+            Height = 220,
+        };
+        var send = new Button { Content = Lang.L("보내기", "Send"), Padding = new Avalonia.Thickness(20, 4) };
+        var cancel = new Button { Content = Lang.L("취소", "Cancel"), Padding = new Avalonia.Thickness(20, 4) };
+        var dlg = new Window
+        {
+            Title = Lang.L("3DS로 보내기", "Send to 3DS"),
+            Width = 440,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(16),
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = Lang.L("보낼 CIA를 선택하세요.", "Pick the CIA to send."),
+                        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    },
+                    list,
+                    new StackPanel
+                    {
+                        Orientation = Avalonia.Layout.Orientation.Horizontal,
+                        Spacing = 8,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                        Children = { cancel, send },
+                    },
+                },
+            },
+        };
+        BuiltCia? picked = null;
+        send.Click += (_, _) =>
+        {
+            if (list.SelectedIndex >= 0) picked = targets[list.SelectedIndex];
+            dlg.Close();
+        };
+        cancel.Click += (_, _) => dlg.Close();
+        await dlg.ShowDialog(this);
+        return picked;
+    }
+
+    /// <summary>The QR stays up while the server runs; closing the dialog stops it and frees the port.</summary>
+    async Task ShowSendDialog(BuiltCia target)
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0)
+        {
+            await ShowDialog(Lang.L("3DS로 보내기", "Send to 3DS"),
+                Lang.L("같은 네트워크에 연결된 LAN 주소를 찾지 못했습니다. PC와 3DS를 같은 공유기에 연결하세요.",
+                       "No LAN address found. Connect the PC and the 3DS to the same router."));
+            return;
+        }
+
+        using var dialog = new SendDialog(target, addresses);
+        await dialog.ShowAsync(this);
+        Log(Lang.L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
     }
 
     async Task ShowDialog(string title, string message)

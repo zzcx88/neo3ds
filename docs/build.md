@@ -74,8 +74,8 @@ scripts/azahar_bench.sh
 
 ## 5. 실기 테스트
 
-1. 만든 `.cia`를 SD 카드에 복사
-2. 3DS에서 FBI → SD → 파일 선택 → Install CIA
+1. 만든 `.cia`를 SD 카드에 복사하거나, 데스크톱 변환기의 **[3DS로 보내기]** 로 같은 Wi-Fi에 보낸다
+2. 3DS에서 FBI → SD → 파일 선택 → Install CIA (QR로 보냈으면 FBI가 바로 설치한다)
 3. HOME 메뉴에서 실행, FPS·사운드·조작 확인
 4. 아래 화면 Diagnostics에서 코어 시간·메모리 확인 가능
 
