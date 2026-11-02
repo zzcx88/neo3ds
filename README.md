@@ -61,6 +61,7 @@ The same converter as a program on your PC, with a window and a command line. It
 2. Drop game zips on the window (keep `neogeo.zip` in the same folder) or open them with the browse button.
 3. When the romset shows as recognized, change the title, system, region, icon or banner if you like; the preview shows the HOME menu art.
 4. Build a **CIA**, a **launcher file** or the **launcher CIA**. Windows saves next to the zip; Linux and macOS save to `~/Downloads`.
+5. To install without the SD card, build a CIA and press **Send to 3DS**, then scan the QR code in FBI (Remote Install) on the same network.
 
 The language button switches between Korean and English.
 
