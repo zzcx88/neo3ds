@@ -19,6 +19,7 @@ public sealed class MainForm : Form
     readonly Button buildButton = new() { Text = L("CIA 만들기", "Build CIA"), Dock = DockStyle.Fill, Height = 40, Enabled = false };
     readonly Button packButton = new() { Text = L("런처용 파일 만들기", "Launcher file"), Dock = DockStyle.Fill, Height = 40, Enabled = false };
     readonly Button launcherButton = new() { Text = L("런처 CIA 만들기 (게임 목록 앱, 한 번만 설치)", "Build the launcher CIA (game list app, install once)"), Dock = DockStyle.Fill, Height = 34 };
+    readonly Button sendButton = new() { Text = L("3DS로 보내기 (QR)", "Send to 3DS (QR)"), Dock = DockStyle.Fill, Height = 34, Enabled = false };
     readonly TextBox logBox = new()
     {
         Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill,
@@ -26,6 +27,8 @@ public sealed class MainForm : Form
     };
 
     CiaJob? job;
+    /// <summary>The last CIA built: what "send to 3DS" serves (#225). Null for launcher files.</summary>
+    string? lastCia;
     /// <summary>The zips picked together (two or more); empty when one game is picked.</summary>
     readonly List<CiaJob> batch = new();
     Control? iconButtons, bannerButtons;
@@ -36,8 +39,8 @@ public sealed class MainForm : Form
     public MainForm()
     {
         Text = L("neo3ds 변환기 - 네오지오 롬 → 3DS CIA", "neo3ds converter - Neo Geo ROM → 3DS CIA");
-        ClientSize = new Size(660, 791);
-        MinimumSize = new Size(560, 731);
+        ClientSize = new Size(660, 833);
+        MinimumSize = new Size(560, 773);
         Font = new Font("Malgun Gothic", 9.5f);
         AllowDrop = true;
 
@@ -53,6 +56,7 @@ public sealed class MainForm : Form
         buildButton.Click += async (_, _) => await BuildAsync(pack: false);
         packButton.Click += async (_, _) => await BuildAsync(pack: true);
         launcherButton.Click += async (_, _) => await BuildLauncherAsync();
+        sendButton.Click += (_, _) => SendTo3ds();
 
         AddRow(grid, L("롬 파일", "ROM zip"), romBox, browseRom);
         AddRow(grid, L("롬셋", "Romset"), setLabel, null);
@@ -101,6 +105,10 @@ public sealed class MainForm : Form
         grid.RowCount++;
         grid.Controls.Add(launcherButton, 0, grid.RowCount);
         grid.SetColumnSpan(launcherButton, 3);
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        grid.RowCount++;
+        grid.Controls.Add(sendButton, 0, grid.RowCount);
+        grid.SetColumnSpan(sendButton, 3);
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         grid.RowCount++;
         grid.Controls.Add(logBox, 0, grid.RowCount);
@@ -282,20 +290,26 @@ public sealed class MainForm : Form
 
     void SetBuildEnabled(bool on) => buildButton.Enabled = packButton.Enabled = on;
 
+    /// <summary>#225: the send button follows the last CIA, and is off while another build runs.</summary>
+    void RefreshSend() => sendButton.Enabled = lastCia != null && File.Exists(lastCia);
+
     static string Built(bool pack, string file) => pack
         ? L($"런처용 파일을 만들었습니다. SD카드의 /neo3ds/games/ 폴더에 복사하세요 (런처 CIA가 설치돼 있어야 합니다).\n\n{file}",
             $"The launcher file is ready. Copy it to /neo3ds/games/ on the SD card (the launcher CIA must be installed).\n\n{file}")
-        : L("CIA를 만들었습니다.", "The CIA is ready.") + $"\n\n{file}";
+        : L("CIA를 만들었습니다. [3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.",
+            "The CIA is ready. Use [Send to 3DS], or copy it to the SD card and install it with FBI.") + $"\n\n{file}";
 
     async Task BuildLauncherAsync()
     {
         string dir = string.IsNullOrWhiteSpace(outBox.Text) ? AppContext.BaseDirectory : outBox.Text;
         launcherButton.Enabled = false;
+        sendButton.Enabled = false;
         UseWaitCursor = true;
         try
         {
             var builder = new CiaBuilder(msg => BeginInvoke(() => Log(msg)));
             string cia = await Task.Run(() => builder.BuildLauncher(dir));
+            lastCia = cia;
             Log(L("FBI로 한 번만 설치하세요. 게임은 [런처용 파일 만들기]로 만든 .neo3ds 파일을 SD카드의 /neo3ds/games/에 넣으면 목록에 나옵니다.",
                   "Install it once with FBI. Games appear in its list when their .neo3ds files (from [Launcher file]) are in /neo3ds/games/ on the SD card."));
             MessageBox.Show(this, L("런처 CIA를 만들었습니다.", "The launcher CIA is ready.") + $"\n\n{cia}", L("완료", "Done"), MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -308,6 +322,7 @@ public sealed class MainForm : Form
         finally
         {
             launcherButton.Enabled = true;
+            RefreshSend();
             UseWaitCursor = false;
         }
     }
@@ -323,11 +338,13 @@ public sealed class MainForm : Form
         job.Region = SelectedRegion;
         job.OutputDir = outBox.Text;
         SetBuildEnabled(false);
+        sendButton.Enabled = false;
         UseWaitCursor = true;
         try
         {
             var builder = new CiaBuilder(msg => BeginInvoke(() => Log(msg)));
             string file = await Task.Run(() => pack ? builder.BuildPack(job) : builder.Build(job));
+            if (!pack) lastCia = file;
             if (!pack) Log(L("FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA", "Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"));
             MessageBox.Show(this, Built(pack, file), L("완료", "Done"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -339,6 +356,7 @@ public sealed class MainForm : Form
         finally
         {
             SetBuildEnabled(true);
+            RefreshSend();
             UseWaitCursor = false;
         }
     }
@@ -351,6 +369,7 @@ public sealed class MainForm : Form
         var failed = new List<string>();
         string title = Text;
         SetBuildEnabled(false);
+        sendButton.Enabled = false;
         UseWaitCursor = true;
         try
         {
@@ -366,7 +385,8 @@ public sealed class MainForm : Form
                 try
                 {
                     var builder = new CiaBuilder(msg => BeginInvoke(() => Log(msg)));
-                    await Task.Run(() => pack ? builder.BuildPack(j) : builder.Build(j));
+                    string file = await Task.Run(() => pack ? builder.BuildPack(j) : builder.Build(j));
+                    if (!pack) lastCia = file;
                     done.Add(j.RomName);
                 }
                 catch (Exception e)
@@ -379,7 +399,8 @@ public sealed class MainForm : Form
             Log(L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
             if (!pack) Log(L("FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA", "Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"));
             string msg = (pack ? L($"런처용 파일 {done.Count}개를 만들었습니다. SD카드의 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files are ready. Copy them to /neo3ds/games/ on the SD card.")
-                : L($"CIA {done.Count}개를 만들었습니다.", $"{done.Count} CIAs are ready.")) + $"\n\n{outBox.Text}";
+                : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]는 마지막 CIA 하나를 보냅니다. SD카드에 복사해 FBI로 설치할 수도 있습니다.",
+                    $"{done.Count} CIAs are ready. [Send to 3DS] serves the last one; you can also copy them to the SD card and install with FBI.")) + $"\n\n{outBox.Text}";
             if (failed.Count > 0) msg += "\n\n" + L("실패:", "Failed:") + "\n" + string.Join("\n", failed);
             MessageBox.Show(this, msg, L("완료", "Done"), MessageBoxButtons.OK, failed.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
         }
@@ -387,7 +408,83 @@ public sealed class MainForm : Form
         {
             Text = title;
             SetBuildEnabled(true);
+            RefreshSend();
             UseWaitCursor = false;
+        }
+    }
+
+    /// <summary>#225: serve the last CIA over the LAN so FBI can scan a QR code and install it.</summary>
+    void SendTo3ds()
+    {
+        if (lastCia == null || !File.Exists(lastCia)) return;
+        string? address = LanSender.FindLanAddress();
+        if (address == null)
+        {
+            MessageBox.Show(this, L("같은 네트워크에 연결된 LAN 주소를 찾지 못했습니다. PC와 3DS를 같은 공유기에 연결하세요.",
+                                    "No LAN address found. Connect the PC and the 3DS to the same router."),
+                L("3DS로 보내기", "Send to 3DS"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        try
+        {
+            using var sender = LanSender.Start(lastCia, address);
+            Log(L("3DS로 보내기: ", "Sending to 3DS: ") + sender.Url);
+            using var dlg = new Form
+            {
+                Text = L("3DS로 보내기", "Send to 3DS"),
+                ClientSize = new Size(460, 610),
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                StartPosition = FormStartPosition.CenterParent,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                ShowIcon = false,
+                Padding = new Padding(16),
+            };
+            var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true };
+            var qr = new PictureBox { Size = new Size(200, 200), SizeMode = PictureBoxSizeMode.Zoom, Margin = new Padding(0, 0, 0, 10) };
+            using (var png = new MemoryStream(QrCode.Png(sender.Url, 4)))
+            using (var image = Image.FromStream(png))
+                qr.Image = new Bitmap(image);
+            var status = new Label
+            {
+                Text = L("3DS의 FBI에서 스캔하세요.", "Scan it in FBI on the 3DS."),
+                AutoSize = true,
+                Font = new Font(Font, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 6),
+            };
+            var info = new Label { Text = $"{sender.FileName} · {sender.Length / 1048576.0:0.0} MB", AutoSize = true, Margin = new Padding(0, 0, 0, 6) };
+            var url = new TextBox { Text = sender.Url, ReadOnly = true, Width = 410, Margin = new Padding(0, 0, 0, 6) };
+            var steps = new Label
+            {
+                Text = L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다. 방화벽이 물으면 허용하세요.",
+                         "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only. Allow it if the firewall asks."),
+                AutoSize = true,
+                MaximumSize = new Size(410, 0),
+                Margin = new Padding(0, 0, 0, 10),
+            };
+            var ok = new Button { Text = "OK", AutoSize = true, Padding = new Padding(20, 2, 20, 2) };
+            panel.Controls.AddRange(new Control[] { qr, status, info, url, steps, ok });
+            dlg.Controls.Add(panel);
+            sender.Downloaded += () =>
+            {
+                try
+                {
+                    dlg.BeginInvoke(() =>
+                    {
+                        if (!status.IsDisposed)
+                            status.Text = L("전송 완료 — FBI가 설치를 계속합니다.", "Sent — FBI continues with the install.");
+                    });
+                }
+                catch (InvalidOperationException) { /* dialog already closed */ }
+            };
+            ok.Click += (_, _) => dlg.Close();
+            dlg.ShowDialog(this);
+            Log(L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
+        }
+        catch (Exception e)
+        {
+            Log(L("전송 실패: ", "Send failed: ") + e.Message);
+            MessageBox.Show(this, e.Message, L("전송 실패", "Send failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

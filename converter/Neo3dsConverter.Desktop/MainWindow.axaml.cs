@@ -12,6 +12,8 @@ public partial class MainWindow : Window
 {
     CiaJob? job;
     readonly List<CiaJob> batch = new();
+    /// <summary>The last CIA built: what "send to 3DS" serves (#225). Null for launcher files.</summary>
+    string? lastCia;
 
     public MainWindow()
     {
@@ -26,6 +28,7 @@ public partial class MainWindow : Window
         BuildButton.Click += async (_, _) => await BuildAsync(pack: false);
         PackButton.Click += async (_, _) => await BuildAsync(pack: true);
         LauncherButton.Click += async (_, _) => await BuildLauncherAsync();
+        SendButton.Click += async (_, _) => await SendAsync();
         IconPickButton.Click += async (_, _) => await PickImage(IconBox);
         BannerPickButton.Click += async (_, _) => await PickImage(BannerBox);
         IconClearButton.Click += (_, _) => { IconBox.Text = ""; RefreshPreview(); };
@@ -63,6 +66,7 @@ public partial class MainWindow : Window
         IconPickButton.Content = BannerPickButton.Content = Lang.L("선택", "Pick");
         OutDirButton.Content = Lang.L("변경", "Change");
         LauncherButton.Content = Lang.L("런처 CIA 만들기 (한 번만 설치)", "Build the launcher CIA (install once)");
+        SendButton.Content = Lang.L("3DS로 보내기 (QR)", "Send to 3DS (QR)");
         SystemBox.ItemsSource = new[]
         {
             Lang.L("자동 (가정용 AES, 필요한 게임만 MVS)", "Automatic (home AES, MVS where a game needs it)"),
@@ -148,8 +152,8 @@ public partial class MainWindow : Window
     internal static string DoneMessage(bool pack, string file) => (pack
         ? Lang.L("런처용 파일을 만들었습니다. SD카드의 /neo3ds/games/ 폴더에 복사하세요 (런처 CIA가 설치돼 있어야 합니다).",
                  "The launcher file is ready. Copy it to /neo3ds/games/ on the SD card (the launcher CIA must be installed).")
-        : Lang.L("CIA를 만들었습니다. FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA",
-                 "The CIA is ready. Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"))
+        : Lang.L("CIA를 만들었습니다. [3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.",
+                 "The CIA is ready. Use [Send to 3DS], or copy it to the SD card and install it with FBI."))
         + $"\n\n{file}";
 
     bool? SelectedMvs => SystemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
@@ -303,6 +307,7 @@ public partial class MainWindow : Window
     {
         Cursor = busy ? new Cursor(StandardCursorType.Wait) : null;
         OpenButton.IsEnabled = OutDirButton.IsEnabled = LauncherButton.IsEnabled = !busy;
+        SendButton.IsEnabled = !busy && lastCia != null;
         if (!busy) SetBuildEnabled(batch.Count > 0 ? batch.Any(Buildable) : job != null && Buildable(job));
         else SetBuildEnabled(false);
     }
@@ -323,6 +328,7 @@ public partial class MainWindow : Window
         try
         {
             string file = await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+            if (!pack) lastCia = file;
             Log(Lang.L($"완료 ({sw.ElapsedMilliseconds} ms): {file}", $"Done ({sw.ElapsedMilliseconds} ms): {file}"));
             await ShowDialog(Lang.L("완료", "Done"), DoneMessage(pack, file));
         }
@@ -358,7 +364,8 @@ public partial class MainWindow : Window
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 try
                 {
-                    await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+                    string file = await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+                    if (!pack) lastCia = file;
                     done.Add(j.RomName);
                 }
                 catch (Exception ex)
@@ -371,7 +378,8 @@ public partial class MainWindow : Window
             Log(Lang.L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
             string msg = (pack
                 ? Lang.L($"런처용 파일 {done.Count}개: SD카드 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files: copy to /neo3ds/games/ on the SD card.")
-                : Lang.L($"CIA {done.Count}개. FBI로 설치하세요: SD카드에 복사 → FBI → SD → 파일 선택 → Install CIA", $"{done.Count} CIAs. Install with FBI: copy to the SD card → FBI → SD → pick the file → Install CIA"))
+                : Lang.L($"CIA {done.Count}개. [3DS로 보내기]는 마지막 CIA 하나를 보냅니다. SD카드에 복사해 FBI로 설치할 수도 있습니다.",
+                         $"{done.Count} CIAs. [Send to 3DS] serves the last one; you can also copy them to the SD card and install with FBI."))
                 + $"\n\n{outDir}";
             if (failed.Count > 0) msg += "\n\n" + Lang.L("실패:", "Failed:") + "\n" + string.Join("\n", failed);
             await ShowDialog(Lang.L("완료", "Done"), msg);
@@ -390,6 +398,7 @@ public partial class MainWindow : Window
         {
             string dir = OutDir();
             string cia = await Task.Run(() => new CiaBuilder(Log).BuildLauncher(dir));
+            lastCia = cia;
             Log(Lang.L("FBI로 한 번만 설치하세요.", "Install it once with FBI."));
             await ShowDialog(Lang.L("완료", "Done"), cia);
         }
@@ -402,6 +411,82 @@ public partial class MainWindow : Window
         {
             SetBusy(false);
         }
+    }
+
+    /// <summary>#225: serve the last CIA over the LAN so FBI can scan a QR code and install it.</summary>
+    async Task SendAsync()
+    {
+        if (lastCia == null || !File.Exists(lastCia)) return;
+        string? address = LanSender.FindLanAddress();
+        if (address == null)
+        {
+            await ShowDialog(Lang.L("3DS로 보내기", "Send to 3DS"),
+                Lang.L("같은 네트워크에 연결된 LAN 주소를 찾지 못했습니다. PC와 3DS를 같은 공유기에 연결하세요.",
+                       "No LAN address found. Connect the PC and the 3DS to the same router."));
+            return;
+        }
+        try
+        {
+            using var sender = LanSender.Start(lastCia, address);
+            Log(Lang.L("3DS로 보내기: ", "Sending to 3DS: ") + sender.Url);
+            await ShowSendDialog(sender);
+            Log(Lang.L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
+        }
+        catch (Exception ex)
+        {
+            Log(Lang.L("전송 실패: ", "Send failed: ") + ex.Message);
+            await ShowDialog(Lang.L("전송 실패", "Send failed"), ex.Message);
+        }
+    }
+
+    /// <summary>The QR stays up while the server runs; closing the dialog stops it.</summary>
+    async Task ShowSendDialog(LanSender sender)
+    {
+        var status = new TextBlock
+        {
+            Text = Lang.L("3DS의 FBI에서 스캔하세요.", "Scan it in FBI on the 3DS."),
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            FontWeight = Avalonia.Media.FontWeight.Bold,
+        };
+        var qr = new Image
+        {
+            Source = new Avalonia.Media.Imaging.Bitmap(new MemoryStream(QrCode.Png(sender.Url, 4))),
+            Width = 200,
+            Height = 200,
+            Stretch = Avalonia.Media.Stretch.Uniform,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+        };
+        var info = new TextBlock
+        {
+            Text = $"{sender.FileName} · {sender.Length / 1048576.0:0.0} MB",
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        };
+        var url = new TextBox { Text = sender.Url, IsReadOnly = true };
+        var steps = new TextBlock
+        {
+            Text = Lang.L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다. 방화벽이 물으면 허용하세요.",
+                          "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only. Allow it if the firewall asks."),
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        };
+        var ok = new Button { Content = "OK", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Padding = new Avalonia.Thickness(24, 4) };
+        var dlg = new Window
+        {
+            Title = Lang.L("3DS로 보내기", "Send to 3DS"),
+            Width = 420,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(16),
+                Spacing = 10,
+                Children = { qr, status, info, url, steps, ok },
+            },
+        };
+        sender.Downloaded += () => Dispatcher.UIThread.Post(() =>
+            status.Text = Lang.L("전송 완료 — FBI가 설치를 계속합니다.", "Sent — FBI continues with the install."));
+        ok.Click += (_, _) => dlg.Close();
+        await dlg.ShowDialog(this);
     }
 
     async Task ShowDialog(string title, string message)

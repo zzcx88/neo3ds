@@ -8,6 +8,7 @@
     <InternalsVisibleTo Include="Neo3dsConverter.Core.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.8.1" />
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
     <!-- SkiaSharp itself only brings the Windows and macOS native libraries -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />

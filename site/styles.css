@@ -198,6 +198,13 @@ section[id]{scroll-margin-top:64px}
 .out-card-launch .panel-list{margin:0}
 .out-card-launch .panel-list li{grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 0}
 .out-card-launch .panel-list li:last-child{border-bottom:0}
+/* SD 카드 없이 런처 설치 (#225): QR + 안내 */
+.qr-install{display:flex;align-items:center;gap:14px;margin-top:16px}
+.qr-install img{flex:0 0 auto;background:#fff;border-radius:6px}
+.qr-install p{margin:0}
+.qr-install strong{color:var(--gold)}
+.qr-inline{margin-top:10px}
+.qr-inline img{width:96px;height:96px}
 
 /* ── 3DS 조작 요약 ───────────────────────────────────────────────────── */
 .controls{margin-top:36px}
@@ -384,6 +391,7 @@ section[id]{scroll-margin-top:64px}
   .fig-launch img{max-width:240px;margin:0 auto}
   .panel-list li{grid-template-columns:minmax(0,1fr);gap:4px;padding:12px 0}
   .out-card-launch .panel-list li{padding:8px 0}
+  .qr-install{flex-direction:column;align-items:flex-start}
   .ex-row{grid-template-columns:minmax(0,1fr) 44px 46px;gap:0 8px}
   .ex-set{display:none}
   .ex-year{grid-column:2}

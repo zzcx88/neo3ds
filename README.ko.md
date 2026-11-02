@@ -22,7 +22,7 @@
 ## 빠른 시작
 
 1. **3DS 준비**: [Luma3DS](https://github.com/LumaTeam/Luma3DS) 커스텀 펌웨어, [FBI](https://github.com/lifehackerhansol/FBI) 같은 CIA 설치 앱, 소리용 `/3ds/dspfirm.cdc`(DSP1로 한 번 덤프).
-2. **런처 받기**: [웹 변환기](https://zzcx88.github.io/neo3ds/ko/convert.html)에서 런처 CIA를 만들어 FBI로 설치합니다. 한 번만 하면 됩니다.
+2. **런처 받기**: [웹 변환기](https://zzcx88.github.io/neo3ds/ko/convert.html)에서 런처 CIA를 만들어 FBI로 설치하거나, [소개 페이지](https://zzcx88.github.io/neo3ds/ko/)의 QR을 FBI → Remote Install로 스캔합니다. 한 번만 하면 되고, 업데이트도 같은 QR을 씁니다.
 3. **게임 변환**: MAME 롬셋 zip을 `neogeo.zip`(바이오스)과 함께 넣고 **런처용 파일**(`.neo3ds`)로 만듭니다.
 4. **실행**: `.neo3ds` 파일을 SD 카드 `/neo3ds/games/`에 넣고 런처를 켭니다.
 
@@ -47,7 +47,7 @@ Chrome, Edge, Firefox, Safari에서 됩니다. 테스트 PC에서 KOF '98 변환
 
 ### 오프라인 변환기 (선택)
 
-같은 변환기를 PC 프로그램으로 쓰는 방법입니다. 창과 명령줄을 모두 지원하고, 게임 **이름**도 바꿀 수 있습니다. .NET 런타임은 설치할 필요가 없고, 압축을 푼 폴더는 그대로 둡니다.
+같은 변환기를 PC 프로그램으로 쓰는 방법입니다. 창과 명령줄을 모두 지원하고, 게임 **이름**도 바꿀 수 있습니다. 변환 후 **3DS로 보내기**를 누르면 QR이 뜨고, FBI가 같은 네트워크로 CIA를 받아 설치합니다. SD 카드를 꺼낼 필요가 없습니다. .NET 런타임은 설치할 필요가 없고, 압축을 푼 폴더는 그대로 둡니다.
 
 | PC | 받기 |
 |---|---|
