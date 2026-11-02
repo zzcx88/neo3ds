@@ -48,6 +48,10 @@ jobs:
           touch tools/osx-arm64/makerom tools/osx-arm64/bannertool
       - name: Build Desktop
         run: dotnet build converter/Neo3dsConverter.Desktop -c Release
+      # #225: the Windows GUI carries the same "send to 3DS" dialog; release-only builds caught it too late.
+      - name: Build Windows GUI
+        if: matrix.runtime == 'win-x64'
+        run: dotnet build converter/Neo3dsConverter -c Release
       - name: Headless tests
         run: dotnet test converter/Neo3dsConverter.Desktop.Tests -c Release --no-build
       - name: Core tests (tool execution on read-only media)
