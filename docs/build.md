@@ -202,6 +202,7 @@ Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌
 `needs-triage` 라벨 이슈를 만든다 (#188). 제보자는 계정이 필요 없고, zip 파일명·롬 데이터는 전송되지 않는다.
 BIOS는 파일 대신 구성 프로필(존재·읽기 실패 여부, AES/MVS 칩 이름·지역, sfix/lo 일치·불일치, mismatch 슬롯, unknown 엔트리 수, UniBIOS 감지)만 보낸다 (#202·#203).
 프라이버시 고지는 §7.1의 `privacy.html`이 담당한다 (#192).
+이슈 제목 접두사·유형·본문 라벨은 페이지 언어와 무관하게 영문이다 (#231). 신고자가 입력한 증상·게임 이름·CFW는 번역하지 않고 원문 그대로 싣는다.
 
 최초 1회:
 
