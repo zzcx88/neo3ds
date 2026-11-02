@@ -84,7 +84,7 @@ test('validateReport: truncation keeps the newest log lines', () => {
 
 test('issueTitle: type prefix and one-line summary', () => {
   const title = issueTitle(validateReport(payload()).report);
-  assert.equal(title.startsWith('[제보] 변환 실패: '), true);
+  assert.equal(title.startsWith('[Report] Conversion failed: '), true);
   assert.equal(title.includes('\n'), false);
 });
 
@@ -92,8 +92,8 @@ test('issueBody: failure table, fences and request metadata', () => {
   const report = validateReport(payload({ log: 'a ~~~ b' })).report;
   const body = issueBody(report, { ua: 'Mozilla/5.0', origin: ORIGIN, at: '2026-10-30T00:00:00Z' });
   assert.match(body, /\| kof98h \| image \| art \| KOF '98 \|/);
-  assert.match(body, /브라우저: Mozilla\/5\.0/);
-  assert.match(body, /보낸 페이지: https:\/\/zzcx88\.github\.io/);
+  assert.match(body, /Browser: Mozilla\/5\.0/);
+  assert.match(body, /Page: https:\/\/zzcx88\.github\.io/);
   assert.equal(body.includes('~~~ b'), false, 'user text must not close the log fence');
 });
 
@@ -106,7 +106,7 @@ test('issueBody: every failed game keeps its own reason', () => {
     ],
   })).report;
   const body = issueBody(report, {});
-  assert.match(body, /## 실패한 게임 \(3\)/);
+  assert.match(body, /## Failed games \(3\)/);
   assert.match(body, /\| mslug \| bios \| load \| Metal Slug \|/);
   assert.match(body, /\| svc \| oom \| romfs \| SVC Chaos \|/);
   assert.match(body, /\| kof98h \| crash \| worker \| KOF '98 \|/);
@@ -303,7 +303,7 @@ test('handler: creates one needs-triage issue and returns its URL', async () => 
   assert.equal(seen.init.headers.Authorization, 'Bearer test-token');
   const sent = JSON.parse(seen.init.body);
   assert.deepEqual(sent.labels, ['needs-triage']);
-  assert.match(sent.title, /^\[제보\] 변환 실패: /);
+  assert.match(sent.title, /^\[Report\] Conversion failed: /);
   assert.match(sent.body, /\| kof98h \| image \| art \|/);
 });
 
@@ -377,7 +377,7 @@ test('validateReport: other types never carry execution fields', () => {
 
 test('issueTitle: ingame carries its own prefix', () => {
   const { report } = validateReport(payload({ type: 'ingame', failures: [], log: '' }));
-  assert.match(issueTitle(report), /^\[제보\] 인게임 버그: /);
+  assert.match(issueTitle(report), /^\[Report\] In-game bug: /);
 });
 
 test('issueBody: ingame shows the execution table without a converter log', () => {
@@ -393,26 +393,41 @@ test('issueBody: ingame shows the execution table without a converter log', () =
     error: null,
   }));
   const body = issueBody(report, {});
-  assert.match(body, /## 실행 환경/);
-  assert.match(body, /\| 엔진 버전 \| v1\.4\.1 \|/);
-  assert.match(body, /\| 기기 \| new-2ds \|/);
+  assert.match(body, /## Run environment/);
+  assert.match(body, /\| Engine version \| v1\.4\.1 \|/);
+  assert.match(body, /\| Console \| new-2ds \|/);
   assert.match(body, /\| CFW \| `Luma 13\.1\.2` \|/);
-  assert.match(body, /\| 변환 지역 \| EU \|/);
-  assert.match(body, /\| 설치 방식 \| pack \|/);
-  assert.equal(body.includes('- 변환기 버전:'), false);
-  assert.equal(body.includes('## 로그'), false);
-  assert.equal(body.includes('## 오류'), false);
+  assert.match(body, /\| Game region \| EU \|/);
+  assert.match(body, /\| Install method \| pack \|/);
+  assert.equal(body.includes('- Converter version:'), false);
+  assert.equal(body.includes('## Log'), false);
+  assert.equal(body.includes('## Error'), false);
 });
 
 test('issueBody: converter types keep the converter version and the empty log line', () => {
   for (const type of ['convert-fail', 'site-bug', 'feature', 'other']) {
     const { report } = validateReport(payload({ type, failures: [], log: '', error: null }));
     const body = issueBody(report, {});
-    assert.match(body, /- 변환기 버전: 1\.3\.2/, type);
-    assert.match(body, /- 모드: cia/, type);
-    assert.match(body, /## 로그 \(마지막 200줄\)\n\n~~~text\n\(비어 있음\)\n~~~/, type);
-    assert.equal(body.includes('## 실행 환경'), false, type);
+    assert.match(body, /- Converter version: 1\.3\.2/, type);
+    assert.match(body, /- Install method: cia/, type);
+    assert.match(body, /## Log \(last 200 lines\)\n\n~~~text\n\(empty\)\n~~~/, type);
+    assert.equal(body.includes('## Run environment'), false, type);
   }
+});
+
+// #231: the issue is filed in English no matter which page language sent it.
+test('issueBody: the template has no Korean left', () => {
+  const { report } = validateReport(payload({
+    type: 'ingame',
+    engine: 'v1.4.1',
+    console: 'new-3ds',
+    cfw: 'Luma 13.1.2',
+    region: 'EU',
+    summary: 'Sound cuts out after the first stage.',
+  }));
+  const body = issueBody(report, { ua: 'Mozilla/5.0', origin: ORIGIN, at: '2026-10-30T00:00:00Z' });
+  assert.equal(/[\uac00-\ud7a3]/.test(body), false, 'template must stay English');
+  assert.equal(/[\uac00-\ud7a3]/.test(issueTitle(report)), false, 'title must stay English');
 });
 
 test('issueBody: a typed CFW value cannot break the table row or mention anyone', () => {
@@ -440,6 +455,6 @@ test('handler: an in-game report files one needs-triage issue', async () => {
     assert.equal(res.status, 200);
   });
   assert.deepEqual(sent.labels, ['needs-triage']);
-  assert.match(sent.title, /^\[제보\] 인게임 버그: /);
-  assert.match(sent.body, /\| 기기 \| old-3ds \|/);
+  assert.match(sent.title, /^\[Report\] In-game bug: /);
+  assert.match(sent.body, /\| Console \| old-3ds \|/);
 });
