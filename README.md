@@ -22,7 +22,7 @@
 ## Quick start
 
 1. **Prepare the 3DS**: [Luma3DS](https://github.com/LumaTeam/Luma3DS) custom firmware, a CIA installer such as [FBI](https://github.com/lifehackerhansol/FBI), and `/3ds/dspfirm.cdc` on the SD card for sound (dump it once with DSP1).
-2. **Get the launcher**: build the launcher CIA in the [web converter](https://zzcx88.github.io/neo3ds/convert.html) and install it with FBI, or scan the QR code on the [site](https://zzcx88.github.io/neo3ds/) with FBI → Remote Install → Scan QR Code. You do this once; updates use the same QR. If the QR fails, copy the CIA to the SD card and install it with FBI.
+2. **Get the launcher**: in the [web converter](https://zzcx88.github.io/neo3ds/convert.html), pick **Launcher CIA** and a QR code appears. Build the CIA and install it with FBI, or scan the QR with FBI → Remote Install → Scan QR Code. You do this once; updates use the same QR. If the QR fails, copy the CIA to the SD card and install it with FBI.
 3. **Convert your games**: drop your MAME romset zips together with `neogeo.zip` (BIOS) and build **launcher files** (`.neo3ds`).
 4. **Play**: copy the `.neo3ds` files to `/neo3ds/games/` on the SD card and start the launcher.
 

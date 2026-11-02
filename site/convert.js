@@ -731,6 +731,7 @@ function syncCheck() {
 // One entry point for every files/mode/finish change: the list, the art panel
 // and the run button must agree on whether they are visible and usable.
 function syncOutput() {
+  $('gateQr').classList.toggle('hidden', currentMode() !== 'launcher');
   syncCheck();
   syncArt();
 }
