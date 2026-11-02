@@ -36,7 +36,7 @@ const BIOS_STATES = new Set(['ok', 'missing', 'mismatch']);
 // an in-game report may carry. Anything else is dropped before it leaves the tab.
 const ENGINE_VERSION = /^v?\d{1,3}\.\d{1,3}(\.\d{1,3})?$/;
 const CONSOLES = new Set(['old-3ds', 'new-3ds', '2ds', 'new-2ds']);
-const REGIONS = new Set(['KR', 'JP', 'US', 'EU', 'other']);
+const REGIONS = new Set(['JP', 'US', 'EU']);
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Last `max` lines of the converter log, newline-normalised, no trailing blank.

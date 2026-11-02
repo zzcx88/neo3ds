@@ -386,23 +386,20 @@
           <input id="reportCfw" type="text" maxlength="40" autocomplete="off" placeholder="Luma 13.1.2">
         </label>
         <label class="report-field">
-          <span data-i18n="report.regionLabel">지역 (선택)</span>
+          <span data-i18n="report.regionLabel">변환 시 지역 (선택)</span>
           <select id="reportRegion">
             <option value="" data-i18n="report.unknown">모름</option>
-            <option value="KR" data-i18n="report.regionKR">한국</option>
             <option value="JP" data-i18n="report.regionJP">일본</option>
             <option value="US" data-i18n="report.regionUS">미국</option>
-            <option value="EU" data-i18n="report.regionEU">유럽</option>
-            <option value="other" data-i18n="report.regionOther">기타</option>
+            <option value="EU" data-i18n="report.regionEU">유럽·아시아</option>
           </select>
         </label>
         <label class="report-field">
           <span data-i18n="report.modeLabel">설치 방식 (선택)</span>
           <select id="reportMode">
             <option value="" data-i18n="report.unknown">모름</option>
-            <option value="cia" data-i18n="report.modeCia">CIA 설치</option>
-            <option value="pack" data-i18n="report.modePack">.neo3ds 팩</option>
-            <option value="launcher" data-i18n="report.modeLauncher">런처</option>
+            <option value="cia" data-i18n="report.modeCia">게임별 CIA</option>
+            <option value="pack" data-i18n="report.modePack">런처 + .neo3ds 파일</option>
           </select>
         </label>
         <p class="tiny" data-i18n="report.ingameHint">엔진 버전은 앱 하단 화면에 표시됩니다. 시리얼·SD 경로는 적지 마세요.</p>
