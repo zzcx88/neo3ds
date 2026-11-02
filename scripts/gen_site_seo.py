@@ -25,12 +25,14 @@ OG_SIZE = (1200, 630)
 PAGES = [
     ('site/index.html', '', 'en'),
     ('site/convert.html', 'convert.html', 'en'),
+    ('site/download.html', 'download.html', 'en'),
     ('site/compat.html', 'compat.html', 'en'),
     ('site/privacy.html', 'privacy.html', 'en'),
     ('site/manual.html', 'manual.html', 'en'),
     ('site/changelog.html', 'changelog.html', 'en'),
     ('site/ko/index.html', 'ko/', 'ko'),
     ('site/ko/convert.html', 'ko/convert.html', 'ko'),
+    ('site/ko/download.html', 'ko/download.html', 'ko'),
     ('site/ko/compat.html', 'ko/compat.html', 'ko'),
     ('site/ko/privacy.html', 'ko/privacy.html', 'ko'),
     ('site/ko/manual.html', 'ko/manual.html', 'ko'),
@@ -50,6 +52,7 @@ OG_VER = '?v=2'
 SLUGS = {
     'index.html': {'en': '', 'ko': 'ko/'},
     'convert.html': {'en': 'convert.html', 'ko': 'ko/convert.html'},
+    'download.html': {'en': 'download.html', 'ko': 'ko/download.html'},
     'compat.html': {'en': 'compat.html', 'ko': 'ko/compat.html'},
     'privacy.html': {'en': 'privacy.html', 'ko': 'ko/privacy.html'},
     'manual.html': {'en': 'manual.html', 'ko': 'ko/manual.html'},

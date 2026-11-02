@@ -25,9 +25,9 @@ class P(html.parser.HTMLParser):
         if self.stack and self.stack[-1][0] == tag: self.stack.pop()
         else: self.errs.append(f'{tag}@{self.getpos()}')
 
-pages = ['site/index.html', 'site/convert.html', 'site/compat.html', 'site/privacy.html', 'site/manual.html',
+pages = ['site/index.html', 'site/convert.html', 'site/download.html', 'site/compat.html', 'site/privacy.html', 'site/manual.html',
          'site/changelog.html',
-         'site/ko/index.html', 'site/ko/convert.html', 'site/ko/compat.html', 'site/ko/privacy.html',
+         'site/ko/index.html', 'site/ko/convert.html', 'site/ko/download.html', 'site/ko/compat.html', 'site/ko/privacy.html',
          'site/ko/manual.html', 'site/ko/changelog.html']
 for page in pages:
     p = P(); p.feed(open(page, encoding='utf-8').read())
@@ -40,7 +40,7 @@ const fs = require('node:fs');
 const src = fs.readFileSync('site/app.js', 'utf8');
 const en = new Function('return (' + src.match(/const EN = (\{[\s\S]*?\n\});/)[1] + ');')();
 
-for (const page of ['site/ko/index.html', 'site/ko/convert.html', 'site/ko/privacy.html', 'site/ko/manual.html']) {
+for (const page of ['site/ko/index.html', 'site/ko/convert.html', 'site/ko/download.html', 'site/ko/privacy.html', 'site/ko/manual.html']) {
   const html = fs.readFileSync(page, 'utf8');
   const keys = [...html.matchAll(/data-i18n=\"([^\"]+)\"/g)].map((m) => m[1]);
   for (const m of html.matchAll(/data-i18n-attr=\"([^\"]+)\"/g))
@@ -49,7 +49,7 @@ for (const page of ['site/ko/index.html', 'site/ko/convert.html', 'site/ko/priva
   if (missing.length) { console.error(page, 'missing EN:', missing); process.exit(1); }
 }
 
-for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html', 'site/privacy.html', 'site/manual.html', 'site/changelog.html']) {
+for (const page of ['site/index.html', 'site/convert.html', 'site/download.html', 'site/compat.html', 'site/privacy.html', 'site/manual.html', 'site/changelog.html']) {
   const html = fs.readFileSync(page, 'utf8');
   if (html.includes('data-i18n')) { console.error(page, 'still has i18n bindings'); process.exit(1); }
   if (/[\uac00-\ud7a3]/.test(html)) { console.error(page, 'still has Korean text'); process.exit(1); }
@@ -62,8 +62,8 @@ for (const f of require('node:fs').readdirSync('site/series')) {
 }
 const UMAMI_ID = 'data-website-id=\"cf5cd373-6021-4643-a392-c3823e8f3cdd\"';
 const UMAMI_DOMAINS = 'data-domains=\"zzcx88.github.io\"';
-for (const page of ['site/index.html', 'site/convert.html', 'site/compat.html',
-  'site/ko/index.html', 'site/ko/convert.html', 'site/ko/compat.html',
+for (const page of ['site/index.html', 'site/convert.html', 'site/download.html', 'site/compat.html',
+  'site/ko/index.html', 'site/ko/convert.html', 'site/ko/download.html', 'site/ko/compat.html',
   'site/manual.html', 'site/ko/manual.html',
   'site/changelog.html', 'site/ko/changelog.html']) {
   const html = fs.readFileSync(page, 'utf8');
@@ -159,8 +159,8 @@ if failed:
 print('README control tables match manual.html')
 EOF
 
-git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html site/manual.html site/changelog.html site/ko/changelog.html site/series site/ko/series || {
-  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html, site/manual.html, site/changelog.html, site/ko/changelog.html, site/series, site/ko/series' >&2
+git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html site/manual.html site/download.html site/changelog.html site/ko/changelog.html site/series site/ko/series || {
+  echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html, site/manual.html, site/download.html, site/changelog.html, site/ko/changelog.html, site/series, site/ko/series' >&2
   exit 1
 }
 

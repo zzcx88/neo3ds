@@ -144,7 +144,7 @@
 <header class="bar">
   <a class="brand" href="index.html" aria-label="neo3ds"><span class="brand-plate">neo3ds</span></a>
   <nav class="bar-nav" aria-label="Sections">
-    <a href="index.html#steps">Setup</a>
+    <a href="download.html">Download</a>
     <a href="index.html#games">Games</a>
     <a href="index.html#faq">FAQ</a>
   </nav>
@@ -203,18 +203,8 @@
         <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span>Game CIA</span><span class="mode-out">.cia → install with FBI</span></label>
       </div>
       <span class="tiny mode-group">For the launcher — many games in one app</span>
-      <div class="chips mode-pick" role="group" aria-label="For the launcher">
+      <div class="chips mode-pick one" role="group" aria-label="For the launcher">
         <label class="chip"><input type="radio" name="gateMode" value="pack"> <span>Launcher file</span><span class="mode-out">.neo3ds → /neo3ds/games/</span></label>
-        <label class="chip"><input type="radio" name="gateMode" value="launcher"> <span>Launcher CIA</span><span class="mode-out">.cia → install once</span></label>
-      </div>
-      <p class="tiny">To update, just install the new launcher CIA. Your existing .neo3ds files run on the new version as they are.</p>
-      <div class="qr-install qr-inline hidden" id="gateQr">
-        <a class="qr-install-img" href="media/launcher-qr.svg" target="_blank" rel="noopener">
-          <img src="media/launcher-qr.svg" width="200" height="200" alt="QR code that installs the launcher CIA with FBI" loading="lazy" decoding="async">
-        </a>
-        <div class="qr-copy">
-          <p class="tiny">Scan this in FBI to install or update the launcher without an SD card.</p>
-        </div>
       </div>
       <div class="batch hidden" id="gateBatchList" role="region" aria-labelledby="gateBatchH">
         <div class="batch-head">
@@ -327,15 +317,13 @@
   <div class="wrap foot-grid">
     <span class="brand-plate">neo3ds</span>
     <nav>
+      <a href="download.html">Download</a>
       <a href="https://github.com/zzcx88/neo3ds">Repository</a>
       <a href="manual.html">3DS manual</a>
       <a href="changelog.html">Changelog</a>
       <a href="index.html#feedback">Report a problem</a>
       <a href="index.html">Intro page</a>
       <a href="privacy.html">Privacy</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip">Offline converter (Windows)</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip">Offline converter (Linux)</a>
-      <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip">Offline converter (macOS)</a>
     </nav>
     <p class="tiny">Game screens and trademarks belong to their owners.</p>
   </div>
