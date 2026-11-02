@@ -154,7 +154,6 @@ const EN = {
   'gate.mUpd': 'To update, just install the new launcher CIA. Your existing .neo3ds files run on the new version as they are.',
   'gate.mQrAlt': 'QR code that installs the launcher CIA with FBI',
   'gate.mQr': 'Scan this in FBI to install or update the launcher without an SD card.',
-  'gate.mQrSd': 'SD card install steps',
   'gate.listH': 'Recognized games',
   'gate.recog': 'Checking…', 'gate.overallReady': 'Ready to convert',
   'gate.listHint': 'Check before converting. Select a game row to change that game\'s icon and banner. Games that cannot be converted show why and are skipped.',
@@ -194,8 +193,8 @@ const EN = {
   'ex.romset': 'romset', 'ex.year': 'year', 'ex.maker': 'maker', 'ex.rom': 'ROM size',
   'ex.gfx': 'graphics', 'ex.tiles': 'tiles', 'ex.decrypt': 'decryption',
   'tiles': 'tiles',
-  /* manual.html (#162) — 3DS 사용 안내 */
-  'man.h1': '3DS manual',
+  /* manual.html (#162) — neo3ds 사용 안내 */
+  'man.h1': 'neo3ds manual',
   'man.nav.launch': 'Launcher', 'man.nav.controls': 'Controls', 'man.nav.keys': 'Key config',
   'man.launchH2': 'Launcher',
   'man.launchAlt': 'Launcher game list with the All and Fav tabs',
