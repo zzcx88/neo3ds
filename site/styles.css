@@ -404,7 +404,7 @@ section[id]{scroll-margin-top:64px}
 .compat th,.compat td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 .compat th{font:400 10px/1.4 var(--pixel-sm);color:var(--gold);white-space:nowrap}
 .compat td.set{font-family:var(--pixel-sm);font-size:11px;color:var(--dim);white-space:nowrap}
-.compat td.num{text-align:right;white-space:nowrap;color:var(--dim)}
+.compat td.num{text-align:left;white-space:nowrap;color:var(--dim)}
 .compat td.status{white-space:nowrap;color:var(--dim)}
 .compat tr[data-status="1"] td.status{color:var(--gold)}
 .compat tr[data-status="2"] td.status{color:var(--a)}
