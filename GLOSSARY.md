@@ -1,6 +1,6 @@
 # neo3ds
 
-NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 오프라인 변환기 GUI 계획(#85)의 단계 용어를 정의한다.
+NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 오프라인 변환기 GUI 계획(#85)에서 쓴 단계 용어를 기록으로 남긴다. 모든 단계는 완료됐다.
 
 ## Language
 
@@ -9,27 +9,27 @@ macOS Avalonia 스파이크. SkiaSharp 공존·.app 패키징 go/no-go 판정. �
 _Avoid_: 맥 스파이크, spike
 
 **P1b**:
-Linux GUI 확인. Linux 창·CIA 생성 검증. 환경 미확보로 P2 이후.
+Linux GUI 확인. Linux 창·CIA 생성 검증. 완료 — 1.3.0에서 Linux·macOS 창 변환기를 제공했다.
 _Avoid_: 리눅스 스파이크
 
 **P2**:
-Avalonia GUI 포팅 단계 전체. 아래 세 티켓으로 구성.
+Avalonia GUI 포팅 단계 전체. 완료. 아래 세 티켓으로 구성했다.
 _Avoid_: 포팅
 
 **P2a**:
-단일 흐름 완성. Desktop 프로젝트 신규 생성 + 출력 폴더 변경 + CIA 버튼 + 에러 대화상자.
+단일 흐름 완성. Desktop 프로젝트 신규 생성 + 출력 폴더 변경 + CIA 버튼 + 에러 대화상자. 완료.
 _Avoid_: 단일 플로우
 
 **P2b**:
-배치·아트·런처. 배치 변환 + 아트 선택 + 런처 CIA + 런처 팩.
+배치·아트·런처. 배치 변환 + 아트 선택 + 런처 CIA + 런처 팩. 완료.
 _Avoid_: 배치 티켓
 
 **P2c**:
-언어·폰트·폴리시. KO/EN 재시작 전환 + Linux 폰트 번들(D7a) + 시각 폴리시.
+언어·폰트·폴리시. KO/EN 재시작 전환 + Linux 폰트 번들(D7a) + 시각 폴리시. 완료.
 _Avoid_: 마무리 티켓
 
 **Desktop**:
-Avalonia 기반 크로스플랫폼 GUI 프로젝트(`Neo3dsConverter.Desktop`). 스파이크 코드가 아닌 P2a에서 새로 작성하는 구현.
+Avalonia 기반 크로스플랫폼 GUI 프로젝트(`Neo3dsConverter.Desktop`). 스파이크 코드가 아닌 P2a에서 새로 작성한 구현.
 _Avoid_: 데스크톱 앱, Avalonia 앱
 
 **Spike**:

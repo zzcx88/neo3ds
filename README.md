@@ -61,7 +61,7 @@ The same converter as a program on your PC, with a window and a command line. It
 2. Drop game zips on the window (keep `neogeo.zip` in the same folder) or open them with the browse button.
 3. When the romset shows as recognized, change the title, system, region, icon or banner if you like; the preview shows the HOME menu art.
 4. Build a **CIA**, a **launcher file** or the **launcher CIA**. Windows saves next to the zip; Linux and macOS save to `~/Downloads`.
-5. To install without the SD card, build a CIA and press **Send to 3DS**, then scan the QR code in FBI (Remote Install) on the same network.
+5. To install without the SD card, build a CIA and press **Send to 3DS** (with several CIAs, pick the one to send first), then scan the QR code in FBI (Remote Install). The PC and 3DS must be on the same router: allow the converter through the firewall, and with a VPN on pick the real LAN address. The 3DS connects to 2.4 GHz Wi-Fi only.
 
 The language button switches between Korean and English.
 
