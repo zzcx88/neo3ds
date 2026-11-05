@@ -527,8 +527,16 @@ public sealed class MainForm : Form
         var url = new TextBox { ReadOnly = true, Width = 420, Margin = new Padding(0, 0, 0, 6) };
         var steps = new Label
         {
-            Text = L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다. 방화벽이 물으면 허용하세요.",
-                     "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only. Allow it if the firewall asks."),
+            Text = L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다.",
+                     "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only."),
+            AutoSize = true,
+            MaximumSize = new Size(420, 0),
+            Margin = new Padding(0, 0, 0, 6),
+        };
+        var notes = new Label
+        {
+            Text = L("• 방화벽이 물으면 허용하세요. 차단하면 FBI 다운로드가 실패합니다.\n• VPN이 켜져 있으면 위 주소에서 실제 Wi-Fi/LAN 주소를 고르세요. VPN 주소로는 3DS가 접속하지 못합니다.\n• SD 카드 공간이 부족하면 FBI 설치가 실패합니다.",
+                     "• Allow it when the firewall asks; blocking it makes the FBI download fail.\n• With a VPN on, pick the real Wi-Fi/LAN address above; the 3DS cannot reach a VPN address.\n• FBI fails to install if the SD card lacks free space."),
             AutoSize = true,
             MaximumSize = new Size(420, 0),
             Margin = new Padding(0, 0, 0, 10),
@@ -588,7 +596,7 @@ public sealed class MainForm : Form
             Stop();
         };
 
-        panel.Controls.AddRange(new Control[] { qr, status, info, addressBox, hint, url, steps, close });
+        panel.Controls.AddRange(new Control[] { qr, status, info, addressBox, hint, url, steps, notes, close });
         dlg.Controls.Add(panel);
         Log(L("3DS로 보내기: ", "Sending to 3DS: ") + url.Text);
         dlg.ShowDialog(this);
