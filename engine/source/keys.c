@@ -10,6 +10,7 @@
 
 #include "keys.h"
 #include "loader.h"
+#include "recv_test.h"
 #include "sdfiles.h"
 #include "ui.h"
 
@@ -205,7 +206,7 @@ void keys_menu(void) {
 	while (aptMainLoop()) {
 		gspWaitForVBlank();
 		hidScanInput();
-		const u32 down = hidKeysDown(), rep = hidKeysDownRepeat();
+		const u32 down = RECEIVE_KEYS_DOWN(), rep = hidKeysDownRepeat();
 		int moved = -1, changed = -1; /* rows to redraw */
 		bool activate = false, all = false;
 		if (rep & (KEY_UP | KEY_DOWN)) {
@@ -220,7 +221,7 @@ void keys_menu(void) {
 			activate = true;
 		} else if (down & KEY_TOUCH) {
 			touchPosition t;
-			hidTouchRead(&t);
+			ui_touch_read(&t);
 			for (int i = 0; i < NROWS; i++) {
 				if (ui_hit(row_rect(i, left_arrow), t.px, t.py)) change(i, -1), changed = i;
 				else if (ui_hit(row_rect(i, right_arrow), t.px, t.py)) change(i, 1), changed = i;
@@ -246,7 +247,10 @@ void keys_menu(void) {
 				status = "Defaults set";
 				all = true;
 			} else {
-				if (keys_save()) return;
+				if (keys_save()) {
+					recv_test_ui_log("keys saved");
+					return;
+				}
 				status = "Could not save";
 			}
 		}

@@ -20,6 +20,12 @@ void recv_test_list_state(int tab, const char *selected, int favorites, int coun
 void recv_test_decode_count(int codes);      /* the camera's last decode, for the line it shows */
 void recv_test_decode_error(int error);
 void recv_test_show_decode(u64 ms);
+/* A touch from the same file: KEY_TOUCH in these for the frames it lasts, and its place. */
+u32 recv_test_touch_down(void);
+u32 recv_test_touch_held(void);
+u32 recv_test_touch_up(void);
+void recv_test_touch_place(touchPosition *t);
+void recv_test_ui_log(const char *what);     /* what a touch made happen, for the test to read */
 
 #else
 
@@ -33,8 +39,19 @@ static inline void recv_test_list_state(int tab, const char *selected, int favor
 static inline void recv_test_decode_count(int codes) { (void)codes; }
 static inline void recv_test_decode_error(int error) { (void)error; }
 static inline void recv_test_show_decode(u64 ms) { (void)ms; }
+static inline u32 recv_test_touch_down(void) { return 0; }
+static inline u32 recv_test_touch_held(void) { return 0; }
+static inline u32 recv_test_touch_up(void) { return 0; }
+static inline void recv_test_touch_place(touchPosition *t) { (void)t; }
+static inline void recv_test_ui_log(const char *what) { (void)what; }
 
 #endif
+
+/* Where the touch is, on the screens the test drives. */
+static inline void ui_touch_read(touchPosition *t) {
+	hidTouchRead(t);
+	recv_test_touch_place(t);
+}
 
 /* The buttons pressed this frame, on the screens the test drives. */
 #define RECEIVE_KEYS_DOWN() (hidKeysDown() | recv_test_keys())

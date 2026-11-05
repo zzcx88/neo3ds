@@ -418,7 +418,7 @@ static void restart_with_bios(void) {
 static UiAction frame_action(void) {
 	UiAction action = UI_NONE;
 	if (show_stats) {
-		if (hidKeysDown() & KEY_TOUCH) { /* any touch goes back to the GUI */
+		if ((hidKeysDown() | recv_test_touch_down()) & KEY_TOUCH) { /* any touch goes back to the GUI */
 			show_stats = false;
 			ui_main_draw();
 		}
@@ -452,6 +452,7 @@ static bool take_action(UiAction action) {
 		pace.last_loop = 0;
 		break;
 	case UI_GAME_LIST: /* back to the list: run the launcher again, from a clean slate */
+		recv_test_ui_log("game list");
 		aptSetChainloaderToSelf();
 		return true;
 	case UI_STATE_SAVE:
@@ -460,6 +461,7 @@ static bool take_action(UiAction action) {
 		pace.last_loop = 0;
 		break;
 	case UI_KEYCONFIG:
+		recv_test_ui_log("key config");
 		keys_menu(); /* the game waits while the menu is open */
 		if (keys_bios_mvs() != memory.mvs) restart_with_bios(); /* switching the BIOS restarts the game */
 		else ui_main_draw();
@@ -477,6 +479,7 @@ static bool take_action(UiAction action) {
 		} else ui_status("Restarted");
 		break;
 	case UI_DIAG:
+		recv_test_ui_log("diagnostics");
 		show_stats = true;
 		consoleClear(); /* filled at the next one-second report */
 		show_turbo();
@@ -675,6 +678,7 @@ int main(void) {
 	ui_main_init(load_secs, sound);
 	if (from_launcher) ui_set_launcher();
 	ui_main_draw();
+	recv_test_ui_log("game running");
 #ifdef NEO3DS_DIAG_START
 	consoleClear();
 #endif
