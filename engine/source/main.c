@@ -17,7 +17,7 @@
 #include "save.h"
 #include "savestate.h"
 #include "launcher.h"
-#include "receive.h"
+#include "recv_test.h"
 #include "snapshot.h"
 #include "ui.h"
 #include "drz80/DrZ80.h"
@@ -493,13 +493,11 @@ int main(void) {
 			if (hidKeysDown() & KEY_L) action = UI_STATE_SAVE;
 			else if (hidKeysDown() & KEY_R) action = UI_STATE_LOAD;
 		}
-#ifdef NEO3DS_RECV_TEST
 		{ /* Azahar test: the same two actions, without touching the screen */
-			const u32 test = receive_test_keys();
+			const u32 test = recv_test_keys();
 			if (test & KEY_ZL) action = UI_GAME_LIST;
 			if (test & KEY_ZR) action = UI_SNAPSHOT;
 		}
-#endif
 		switch (action) {
 		case UI_SNAPSHOT:
 			ui_status(take_snapshot(true) ? "Snapshot saved for the game list" : "No snapshot taken");

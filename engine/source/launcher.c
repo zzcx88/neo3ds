@@ -14,6 +14,7 @@
 #include "launcher.h"
 #include "loader.h"
 #include "receive.h"
+#include "recv_test.h"
 #include "sdfiles.h"
 #include "snapshot.h"
 #include "ui.h"
@@ -37,11 +38,6 @@ static int tab; /* 0 All, 1 Favorites */
 
 enum { LIST_Y = 32, ROW_H = 22, ROWS = 8, STAR_W = 24 };
 enum { TAB_ALL_X = 116, TAB_FAV_X = 180, TAB_W = 60 }; /* right of the logo */
-#if defined(NEO3DS_RECEIVE) || defined(NEO3DS_RECV_TEST)
-#define HAS_RECEIVE 1
-#else
-#define HAS_RECEIVE 0
-#endif
 static const UiRect receive_button = {274, 4, 44, 18}; /* in the header, right of the tabs */
 
 static int by_title(const void *a, const void *b) { return strcasecmp(((const Game *)a)->title, ((const Game *)b)->title); }
@@ -175,15 +171,7 @@ static void snap_free(void) {
 static void draw_top(void) {
 	u16 *screen = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
 	u16 *fb = top_scratch ? top_scratch : screen;
-#ifdef NEO3DS_RECV_TEST
-	{ /* Azahar test: what the list shows, for scripts/azahar_recv_test.ps1 */
-		FILE *state = fopen(SD_DATA_DIR "/recv_list.txt", "w");
-		if (state) {
-			fprintf(state, "tab=%d sel=%s favs=%d count=%d\n", tab, nview ? games[view[sel]].name : "-", favorites(), count);
-			fclose(state);
-		}
-	}
-#endif
+	recv_test_list_state(tab, nview ? games[view[sel]].name : "-", favorites(), count);
 	if (nview) {
 		const Game *g = &games[view[sel]];
 		const SnapEntry *e = snap_find(g->name);

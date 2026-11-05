@@ -13,6 +13,7 @@
 #include "qrscan.h"
 #include "quirc.h"
 #include "receive.h"
+#include "recv_test.h"
 #include "ui.h"
 
 enum {
@@ -125,10 +126,6 @@ static void draw_preview(u16 *fb, const u8 *frame) {
 	gfxFlushBuffers();
 }
 
-#ifdef NEO3DS_RECV_TEST
-static int test_codes, test_error; /* the last decode, for the test screen */
-#endif
-
 /* Looks for codes in the frame. Of those check accepts, the one nearest the middle goes to out. */
 static bool decode_frame(struct quirc *q, const u8 *frame, char *out, size_t size, QrCheck check, const char **wrong) {
 	static struct quirc_code code;
@@ -138,16 +135,12 @@ static bool decode_frame(struct quirc *q, const u8 *frame, char *out, size_t siz
 	quirc_end(q);
 
 	long best = -1;
-#ifdef NEO3DS_RECV_TEST
-	test_codes = quirc_count(q);
-	test_error = 0;
-#endif
-	for (int i = 0; i < quirc_count(q); i++) {
+	const int codes = quirc_count(q);
+	recv_test_decode_count(codes);
+	for (int i = 0; i < codes; i++) {
 		quirc_extract(q, i, &code);
 		const quirc_decode_error_t error = quirc_decode(&code, &data);
-#ifdef NEO3DS_RECV_TEST
-		test_error = error;
-#endif
+		recv_test_decode_error(error);
 		if (error != QUIRC_SUCCESS) continue;
 		data.payload[data.payload_len < QUIRC_MAX_PAYLOAD ? data.payload_len : QUIRC_MAX_PAYLOAD - 1] = 0;
 		const char *why = check((const char *)data.payload);
@@ -228,15 +221,7 @@ QrResult qr_scan(char *out, size_t size, QrCheck check, void (*status)(const cha
 			break;
 		}
 		last_decode = osGetTime();
-#ifdef NEO3DS_RECV_TEST
-		static u64 worst;
-		char s[40];
-		if (last_decode - now > worst) worst = last_decode - now;
-		snprintf(s, sizeof s, "decode %lu ms, worst %lu, qr %d e%d", (unsigned long)(last_decode - now), (unsigned long)worst, test_codes, test_error);
-		ui_fill(8, 200, 304, 10, UI_BG);
-		ui_text(8, 200, s, UI_DIM, 1);
-		ui_flush();
-#endif
+		recv_test_show_decode(last_decode - now);
 		if (wrong && wrong != shown) {
 			shown = wrong;
 			status(wrong);

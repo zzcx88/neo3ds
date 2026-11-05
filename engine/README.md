@@ -16,7 +16,9 @@ bash scripts/build_engine.sh
 
 - `main.c` — 진입점, 프레임 루프
 - `loader.c` / `launcher.c` — 롬 로딩, 게임 선택 런처
-- `receive.c` / `qrscan.c` — 런처 수신 화면, 카메라 QR 스캔
+- `receive.c` — 런처 수신 화면의 진행 순서. `receive_url.c`(주소), `receive_net.c`(HTTP), `receive_file.c`(SD), `receive_screen.c`(그리기)
+- `qrscan.c` — 카메라 QR 스캔
+- `recv_test.c` — Azahar 수신 시험 훅 (`NEO3DS_RECV_TEST`에서만)
 - `snapshot.c` — 런처 목록의 게임 스냅샷
 - `sdfiles.c` — SD 카드의 엔진 폴더와 경로 규칙
 - `audio.c` / `keys.c` / `ui.c` — 사운드, 입력, 화면 UI

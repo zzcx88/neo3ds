@@ -14,13 +14,11 @@ bool receive_interrupted(void);
 /* At the launcher's start: clears what a receive cut short by a crash or power loss left behind. */
 void receive_recover(void);
 
-/* Azahar test builds also take buttons from a file, so a test needs no window focus. */
-#ifdef NEO3DS_RECV_TEST
-#include <3ds.h>
-u32 receive_test_keys(void);
-#define RECEIVE_KEYS_DOWN() (hidKeysDown() | receive_test_keys())
+/* The launcher's Y button and the receive screen: off until the converter can send .neo3ds files. */
+#if defined(NEO3DS_RECEIVE) || defined(NEO3DS_RECV_TEST)
+#define HAS_RECEIVE 1
 #else
-#define RECEIVE_KEYS_DOWN() hidKeysDown()
+#define HAS_RECEIVE 0
 #endif
 
 #endif
