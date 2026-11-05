@@ -238,65 +238,69 @@ DlResult recv_net_request(const Target *t, const char *method, int *sock, u64 *l
 	return DL_OK;
 }
 
-DlResult recv_read_body(int sock, FILE *out, int extra, u64 length, u64 *got_out) {
+static bool write_chunk(FILE *out, const char *buf, int n) {
+	return !recv_test_write_fails() && fwrite(buf, 1, n, out) == (size_t)n;
+}
+
+/* Reads for BATCH_MS: a chunk goes to the SD card when it is full and at the end of the file. */
+static DlResult read_batch(int sock, FILE *out, char *buf, int *fill, u64 length, u64 *got, u64 *last_data) {
+	const u64 batch_end = osGetTime() + BATCH_MS;
+	do {
+		const u64 left = length - *got;
+		const size_t room = CHUNK - *fill;
+		const ssize_t r = recv(sock, buf + *fill, left < room ? left : room, 0);
+		if (r > 0) {
+			*fill += r;
+			*got += r;
+			*last_data = osGetTime();
+			if (*fill == CHUNK || *got == length) {
+				if (!write_chunk(out, buf, *fill)) {
+					recv_set_reason("Can't write to the SD card.");
+					return DL_FAILED;
+				}
+				*fill = 0;
+			}
+		} else if (r == 0 || (errno != EWOULDBLOCK && errno != EAGAIN)) {
+			recv_set_reason("The connection ended before the whole file came.");
+			return DL_FAILED;
+		} else {
+			wait_socket(sock, POLLIN, 4);
+		}
+	} while (*got < length && osGetTime() < batch_end);
+	return DL_OK;
+}
+
+DlResult recv_read_body(int sock, FILE *out, int extra, u64 length, u64 *got) {
 	char *const buf = net_buf;
 	int fill = extra;
-	u64 got = fill, draw_t = 0, speed_t = osGetTime(), speed_got = got, last_data = speed_t;
+	*got = fill;
+	u64 draw_t = 0, speed_t = osGetTime(), speed_got = *got, last_data = speed_t;
 	u32 speed = 0;
-	while (got < length) {
-		if (!recv_still_wanted()) {
-			*got_out = got;
-			return DL_CANCELLED;
-		}
-		const u64 batch_end = osGetTime() + BATCH_MS;
-		do {
-			const u64 left = length - got;
-			const size_t room = CHUNK - fill;
-			const ssize_t r = recv(sock, buf + fill, left < room ? left : room, 0);
-			if (r > 0) {
-				fill += r;
-				got += r;
-				last_data = osGetTime();
-				if (fill == CHUNK || got == length) {
-					if (recv_test_write_fails() || fwrite(buf, 1, fill, out) != (size_t)fill) {
-						*got_out = got;
-						recv_set_reason("Can't write to the SD card.");
-						return DL_FAILED;
-					}
-					fill = 0;
-				}
-			} else if (r == 0 || (errno != EWOULDBLOCK && errno != EAGAIN)) {
-				*got_out = got;
-				recv_set_reason("The connection ended before the whole file came.");
-				return DL_FAILED;
-			} else {
-				wait_socket(sock, POLLIN, 4);
-			}
-		} while (got < length && osGetTime() < batch_end);
+	while (*got < length) {
+		if (!recv_still_wanted()) return DL_CANCELLED;
+		const DlResult result = read_batch(sock, out, buf, &fill, length, got, &last_data);
+		if (result != DL_OK) return result;
 
 		const u64 now = osGetTime();
 		if (now - last_data > IDLE_MS) {
-			*got_out = got;
 			recv_set_reason("The PC stopped sending: Wi-Fi lost?");
 			return DL_FAILED;
 		}
 		if (now - speed_t >= 1000) {
-			speed = (u32)((got - speed_got) * 1000 / (now - speed_t));
+			speed = (u32)((*got - speed_got) * 1000 / (now - speed_t));
 			speed_t = now;
-			speed_got = got;
+			speed_got = *got;
 		}
 		if (now - draw_t >= DRAW_MS) {
 			draw_t = now;
-			recv_draw_progress(got, length, speed);
+			recv_draw_progress(*got, length, speed);
 		}
 	}
 	/* a body shorter than one chunk came whole with the headers */
-	if (fill && fwrite(buf, 1, fill, out) != (size_t)fill) {
-		*got_out = got;
+	if (fill && !write_chunk(out, buf, fill)) {
 		recv_set_reason("Can't write to the SD card.");
 		return DL_FAILED;
 	}
-	*got_out = got;
-	recv_draw_progress(got, length, speed);
+	recv_draw_progress(*got, length, speed);
 	return DL_OK;
 }

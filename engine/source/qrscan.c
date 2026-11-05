@@ -165,6 +165,45 @@ static bool decode_frame(struct quirc *q, const u8 *frame, char *out, size_t siz
 	return best >= 0;
 }
 
+/* The preview and the decoding, until there is a result. */
+static QrResult watch(Capture *c, struct quirc *q, u8 *frame, char *out, size_t size, QrCheck check, void (*status)(const char *)) {
+	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+	ui_top_clear(fb);
+	u64 last_frame = osGetTime(), last_decode = 0;
+	u32 seen = 0;
+	const char *shown = NULL;
+	for (;;) {
+		if (!aptMainLoop() || receive_interrupted()) return QR_CANCELLED;
+		hidScanInput();
+		if (RECEIVE_KEYS_DOWN() & KEY_B) return QR_CANCELLED;
+		gspWaitForVBlank();
+
+		LightLock_Lock(&c->lock);
+		const bool fresh = c->frames != seen;
+		if (fresh) {
+			seen = c->frames;
+			memcpy(frame, c->ready, FRAME_BYTES);
+		}
+		LightLock_Unlock(&c->lock);
+		const u64 now = osGetTime();
+		if (!fresh) {
+			if (c->failed || now - last_frame > NO_FRAME_MS) return QR_NO_CAMERA;
+			continue;
+		}
+		last_frame = now;
+		draw_preview(fb, frame);
+		if (now - last_decode < DECODE_EVERY_MS) continue;
+		const char *wrong = NULL;
+		if (decode_frame(q, frame, out, size, check, &wrong)) return QR_FOUND;
+		last_decode = osGetTime();
+		recv_test_show_decode(last_decode - now);
+		if (wrong && wrong != shown) {
+			shown = wrong;
+			status(wrong);
+		}
+	}
+}
+
 QrResult qr_scan(char *out, size_t size, QrCheck check, void (*status)(const char *)) {
 	QrResult result = QR_NO_CAMERA;
 	static Capture c;
@@ -185,48 +224,7 @@ QrResult qr_scan(char *out, size_t size, QrCheck check, void (*status)(const cha
 	thread = threadCreate(capture_thread, &c, 0x2000, priority - 1, -2, false);
 	if (!thread) goto done;
 
-	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
-	ui_top_clear(fb);
-	u64 last_frame = osGetTime(), last_decode = 0;
-	u32 seen = 0;
-	const char *shown = NULL;
-	result = QR_CANCELLED;
-	for (;;) {
-		if (!aptMainLoop() || receive_interrupted()) break;
-		hidScanInput();
-		if (RECEIVE_KEYS_DOWN() & KEY_B) break;
-		gspWaitForVBlank();
-
-		LightLock_Lock(&c.lock);
-		const bool fresh = c.frames != seen;
-		if (fresh) {
-			seen = c.frames;
-			memcpy(frame, c.ready, FRAME_BYTES);
-		}
-		LightLock_Unlock(&c.lock);
-		const u64 now = osGetTime();
-		if (!fresh) {
-			if (c.failed || now - last_frame > NO_FRAME_MS) {
-				result = QR_NO_CAMERA;
-				break;
-			}
-			continue;
-		}
-		last_frame = now;
-		draw_preview(fb, frame);
-		if (now - last_decode < DECODE_EVERY_MS) continue;
-		const char *wrong = NULL;
-		if (decode_frame(q, frame, out, size, check, &wrong)) {
-			result = QR_FOUND;
-			break;
-		}
-		last_decode = osGetTime();
-		recv_test_show_decode(last_decode - now);
-		if (wrong && wrong != shown) {
-			shown = wrong;
-			status(wrong);
-		}
-	}
+	result = watch(&c, q, frame, out, size, check, status);
 done:
 	if (thread) {
 		svcSignalEvent(c.cancel);
