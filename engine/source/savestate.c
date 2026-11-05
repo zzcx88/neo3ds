@@ -8,12 +8,12 @@
 #include <3ds.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <time.h>
 
 #include "savestate.h"
 #include "audio.h"
 #include "loader.h"
+#include "sdfiles.h"
 #include "neo/memory.h"
 
 void cpu_68k_state(void);  /* cyclone_interf.c */
@@ -54,10 +54,10 @@ static u32 build_fingerprint(void) {
 	return h;
 }
 
-static u64 game_id(void) { return loader_game_id(); }
-
 static void path_of(int slot, char *out, size_t n) {
-	snprintf(out, n, "sdmc:/3ds/neo3ds/states/%016llX.%d", (unsigned long long)game_id(), slot + 1);
+	char ext[16];
+	snprintf(ext, sizeof ext, ".%d", slot + 1);
+	sd_game_file(out, n, "states", ext);
 }
 
 static void all_state(void) {
@@ -75,13 +75,11 @@ StateResult savestate_save(int slot) {
 	char path[64], tmp[68];
 	path_of(slot, path, sizeof path);
 	snprintf(tmp, sizeof tmp, "%s.tmp", path);
-	mkdir("sdmc:/3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds/states", 0777);
+	sd_make_data_dir("states");
 	if (!(file = fopen(tmp, "wb"))) return STATE_IO_ERROR;
 	setvbuf(file, NULL, _IOFBF, 32 * 1024);
 	reading = failed = false;
-	Header h = {MAGIC, STATE_VERSION, build_fingerprint(), game_id(), memory.mvs, {0}, (s64)time(NULL)};
+	Header h = {MAGIC, STATE_VERSION, build_fingerprint(), loader_game_id(), memory.mvs, {0}, (s64)time(NULL)};
 	st_bytes(&h, sizeof h);
 	all_state();
 	failed |= fclose(file) != 0;
@@ -100,7 +98,7 @@ static StateResult open_slot(int slot, Header *h) {
 	path_of(slot, path, sizeof path);
 	if (!(file = fopen(path, "rb"))) return STATE_EMPTY;
 	if (fread(h, sizeof *h, 1, file) != 1 || h->magic != MAGIC || h->version != STATE_VERSION ||
-	    h->build != build_fingerprint() || h->id != game_id()) {
+	    h->build != build_fingerprint() || h->id != loader_game_id()) {
 		fclose(file);
 		file = NULL;
 		return STATE_OTHER_BUILD;

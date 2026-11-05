@@ -32,10 +32,17 @@
 #include "loader.h"
 #include "qrscan.h"
 #include "receive.h"
+#include "sdfiles.h"
 #include "ui.h"
 
-#define LOG_FILE "sdmc:/3ds/neo3ds/receive.log"
+#define LOG_FILE SD_DATA_DIR "/receive.log"
 #define LOG_OLD LOG_FILE ".old"
+#define PART_SUFFIX ".part" /* being received */
+#define BAK_SUFFIX ".bak"   /* the old game, while the new one takes its name */
+
+#define NOT_AN_ADDRESS "This QR code is not a PC address."
+#define HOME_OPENED "The HOME menu opened during the transfer."
+#define NOT_SAVED "The game was not saved."
 
 enum {
 	SOC_BYTES = 0x100000,   /* page aligned, on the normal heap: returned before a game loads */
@@ -90,7 +97,7 @@ static void on_apt(APT_HookType type, void *param) {
 static bool test_write_fails;
 #endif
 
-static void set_reason(const char *fmt, const char *arg) { snprintf(reason, sizeof reason, fmt, arg); }
+static void set_reason(const char *text) { snprintf(reason, sizeof reason, "%s", text); }
 
 #ifdef NEO3DS_RECV_TEST
 /* A letter in a file, a press of that button; the file is removed. Looked at 10 times a second. */
@@ -99,17 +106,17 @@ u32 receive_test_keys(void) {
 	const u64 now = osGetTime();
 	if (now < next) return 0;
 	next = now + 100;
-	FILE *f = fopen("sdmc:/3ds/neo3ds/recv_key.txt", "r");
+	FILE *f = fopen(SD_DATA_DIR "/recv_key.txt", "r");
 	if (!f) return 0;
 	const int c = fgetc(f);
 	fclose(f);
-	remove("sdmc:/3ds/neo3ds/recv_key.txt");
+	remove(SD_DATA_DIR "/recv_key.txt");
 	if (c == 'H') interrupted = true; /* as if the HOME menu had come up */
 	if (c == 'W') test_write_fails = true;
 	if (c == 'R') return KEY_RIGHT;
 	if (c == 'T') return KEY_LEFT;
 	if (c == 'S') { /* writes down whether the console may sleep now */
-		FILE *state = fopen("sdmc:/3ds/neo3ds/recv_state.txt", "w");
+		FILE *state = fopen(SD_DATA_DIR "/recv_state.txt", "w");
 		if (state) {
 			fprintf(state, "sleep=%d\n", aptIsSleepAllowed());
 			fclose(state);
@@ -132,7 +139,7 @@ static int hex_value(int c) {
 /* A name the SD card can hold and the list will show. */
 static bool name_ok(const char *s) {
 	const size_t n = strlen(s);
-	if (n < 8 || n > NAME_MAX_BYTES || strcasecmp(s + n - 7, ".neo3ds")) return false;
+	if (n > NAME_MAX_BYTES || !sd_has_suffix(s, PACK_SUFFIX)) return false;
 	for (const char *c = s; *c; c++)
 		if ((u8)*c < 32 || *c == 127 || strchr("/\\:*?\"<>|", *c)) return false;
 	return true;
@@ -140,7 +147,7 @@ static bool name_ok(const char *s) {
 
 /* IPv4 numbers + port + path only. NULL when good, else what is wrong. */
 static const char *parse_url(const char *url, Target *t) {
-	static const char *const bad = "This QR code is not a PC address.";
+	static const char *const bad = NOT_AN_ADDRESS;
 	if (strncmp(url, "http://", 7)) return bad;
 	const char *p = url + 7;
 	u32 ip = 0;
@@ -199,7 +206,7 @@ static const char *parse_url(const char *url, Target *t) {
 
 /* The whole text of a code: every line must be good before anything is fetched. */
 static const char *parse_list(const char *text, Item *out, int *count) {
-	static const char *const bad = "This QR code is not a PC address.";
+	static const char *const bad = NOT_AN_ADDRESS;
 	char line[sizeof out[0].t.path + 32];
 	int n = 0;
 	for (const char *p = text;;) {
@@ -226,25 +233,21 @@ static const char *parse_list(const char *text, Item *out, int *count) {
 
 static void draw_top(const char *line) {
 	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
-	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
-	ui_top_text(fb, (400 - 6 * 8 * 4) / 2, 70, "neo3ds", UI_HEADER, 4);
-	ui_top_text(fb, (400 - 14 * 8 * 2) / 2, 140, "Receive a game", UI_TEXT, 2);
-	ui_top_text(fb, (400 - (int)strlen(line) * 8) / 2, 170, line, UI_DIM, 1);
+	ui_top_logo(fb);
+	ui_top_center(fb, 140, "Receive a game", UI_TEXT, 2);
+	ui_top_center(fb, 170, line, UI_DIM, 1);
 	gfxFlushBuffers();
 }
 
 /* One line, cut to the 38 characters that fit */
 static void line_text(int y, const char *s, u16 color) {
 	char t[40];
-	snprintf(t, sizeof t, strlen(s) > 38 ? "%.35s..." : "%s", s);
+	ui_fit(t, sizeof t, s, 38);
 	ui_text(8, y, t, color, 1);
 }
 
 static void draw_frame(const char *name, const char *foot) {
-	ui_fill(0, 0, 320, 240, UI_BG);
-	ui_fill(0, 0, 320, 26, UI_HEADER);
-	ui_text(8, 5, "neo3ds", UI_TEXT, 2);
-	ui_text(8 + ui_text_width("neo3ds", 2) + 8, 12, "receive", UI_TEXT, 1);
+	ui_header("receive");
 	if (name) line_text(40, name, UI_TEXT);
 	ui_text(8, 227, foot, UI_DIM, 1);
 }
@@ -321,17 +324,17 @@ static bool install(const char *part, const char *final) {
 	char bak[PATH_BYTES + 8];
 	struct stat st;
 	const bool replacing = stat(final, &st) == 0;
-	snprintf(bak, sizeof bak, "%s.bak", final);
+	snprintf(bak, sizeof bak, "%s" BAK_SUFFIX, final);
 	if (replacing) {
 		remove(bak);
 		if (rename(final, bak)) {
-			set_reason("Can't move the old file on the SD card.%s", "");
+			set_reason("Can't move the old file on the SD card.");
 			return false;
 		}
 	}
 	if (rename(part, final)) {
 		if (replacing) rename(bak, final);
-		set_reason("Can't name the new file on the SD card.%s", "");
+		set_reason("Can't name the new file on the SD card.");
 		return false;
 	}
 	if (replacing) remove(bak);
@@ -399,7 +402,7 @@ static DlResult net_send(int sock, const char *s, size_t n) {
 		}
 	}
 	if (!n) return DL_OK;
-	set_reason("The PC stopped answering.%s", "");
+	set_reason("The PC stopped answering.");
 	return DL_FAILED;
 }
 
@@ -429,19 +432,19 @@ static DlResult read_head(int sock, char *buf, int *head_end, int *got) {
 			wait_socket(sock, POLLIN, 16);
 		}
 	}
-	set_reason("The PC sent no usable answer.%s", "");
+	set_reason("The PC sent no usable answer.");
 	return DL_FAILED;
 }
 
 /* The status line and the headers that matter. True for a 200 this client can read. */
 static bool parse_head(char *head, u64 *length) {
 	if (strncmp(head, "HTTP/1.0 ", 9) && strncmp(head, "HTTP/1.1 ", 9)) {
-		set_reason("The PC sent no usable answer.%s", "");
+		set_reason("The PC sent no usable answer.");
 		return false;
 	}
 	http_status = atoi(head + 9);
 	if (http_status != 200) {
-		if (http_status == 404) set_reason("The PC no longer offers this file.%s", "");
+		if (http_status == 404) set_reason("The PC no longer offers this file.");
 		else snprintf(reason, sizeof reason, "The PC answered with error %d.", http_status);
 		return false;
 	}
@@ -465,7 +468,7 @@ static bool parse_head(char *head, u64 *length) {
 				lengths++;
 			} else if (!strcasecmp(name, "Transfer-Encoding") ||
 			           (!strcasecmp(name, "Content-Encoding") && strcasecmp(value, "identity"))) {
-				set_reason("The PC sent the file in a form this can't read.%s", "");
+				set_reason("The PC sent the file in a form this can't read.");
 				return false;
 			}
 		}
@@ -473,7 +476,7 @@ static bool parse_head(char *head, u64 *length) {
 		line = end;
 	}
 	if (lengths != 1) {
-		set_reason("The PC did not say the file's size.%s", "");
+		set_reason("The PC did not say the file's size.");
 		return false;
 	}
 	return true;
@@ -486,7 +489,7 @@ static bool free_space(u64 *available, u64 *cluster) {
 	*available = (u64)v.f_bavail * *cluster;
 #ifdef NEO3DS_RECV_TEST
 	/* Azahar always reports a large free space: the file holds the MB to pretend */
-	FILE *f = fopen("sdmc:/3ds/neo3ds/recv_free.txt", "r");
+	FILE *f = fopen(SD_DATA_DIR "/recv_free.txt", "r");
 	if (f) {
 		char s[16] = "";
 		if (fgets(s, sizeof s, f)) *available = (u64)atoi(s) << 20;
@@ -500,7 +503,7 @@ static bool free_space(u64 *available, u64 *cluster) {
 static bool space_ok(u64 bytes, int files) {
 	u64 available, cluster;
 	if (!free_space(&available, &cluster)) {
-		set_reason("Can't read the SD card's free space.%s", "");
+		set_reason("Can't read the SD card's free space.");
 		return false;
 	}
 	/* Each file ends in a part of a cluster and may need one for its folder entry; the two game
@@ -535,20 +538,20 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 					if (test_write_fails) {
 						test_write_fails = false;
 						*got_out = got;
-						set_reason("Can't write to the SD card.%s", "");
+						set_reason("Can't write to the SD card.");
 						return DL_FAILED;
 					}
 #endif
 					if (fwrite(buf, 1, fill, out) != (size_t)fill) {
 						*got_out = got;
-						set_reason("Can't write to the SD card.%s", "");
+						set_reason("Can't write to the SD card.");
 						return DL_FAILED;
 					}
 					fill = 0;
 				}
 			} else if (r == 0 || (errno != EWOULDBLOCK && errno != EAGAIN)) {
 				*got_out = got;
-				set_reason("The connection ended before the whole file came.%s", "");
+				set_reason("The connection ended before the whole file came.");
 				return DL_FAILED;
 			} else {
 				wait_socket(sock, POLLIN, 4);
@@ -558,7 +561,7 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 		const u64 now = osGetTime();
 		if (now - last_data > IDLE_MS) {
 			*got_out = got;
-			set_reason("The PC stopped sending: Wi-Fi lost?%s", "");
+			set_reason("The PC stopped sending: Wi-Fi lost?");
 			return DL_FAILED;
 		}
 		if (now - speed_t >= 1000) {
@@ -574,7 +577,7 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 	/* a body shorter than one chunk came whole with the headers */
 	if (fill && fwrite(buf, 1, fill, out) != (size_t)fill) {
 		*got_out = got;
-		set_reason("Can't write to the SD card.%s", "");
+		set_reason("Can't write to the SD card.");
 		return DL_FAILED;
 	}
 	*got_out = got;
@@ -600,7 +603,7 @@ static bool net_open(void) {
 	net_buf = malloc(CHUNK > HEAD_MAX ? CHUNK : HEAD_MAX);
 	net_soc = memalign(0x1000, SOC_BYTES);
 	if (!net_buf || !net_soc) {
-		set_reason("Out of memory.%s", "");
+		set_reason("Out of memory.");
 		net_close();
 		return false;
 	}
@@ -643,7 +646,7 @@ static DlResult net_request(const Target *t, const char *method, int *sock, u64 
 		net_buf[head_end] = saved;
 	}
 	if (result == DL_OK && (!*length || (u64)*extra > *length)) {
-		set_reason("The PC sent no usable answer.%s", "");
+		set_reason("The PC sent no usable answer.");
 		result = DL_FAILED;
 	}
 	if (result != DL_OK) {
@@ -666,14 +669,14 @@ static DlResult fetch(const Item *item, const char *part, u64 *got) {
 	if (result != DL_OK) goto done;
 	result = DL_FAILED;
 	if (length != item->length) {
-		set_reason("The file changed on the PC. Scan the code again.%s", "");
+		set_reason("The file changed on the PC. Scan the code again.");
 		goto done;
 	}
 	if (!space_ok(length, 1)) goto done;
 	mkdir("sdmc:/neo3ds", 0777);
 	mkdir(LAUNCHER_GAMES_DIR, 0777);
 	if (!(out = fopen(part, "wb"))) {
-		set_reason("Can't create the file on the SD card.%s", "");
+		set_reason("Can't create the file on the SD card.");
 		goto done;
 	}
 	setvbuf(out, NULL, _IONBF, 0); /* whole chunks, no copy */
@@ -682,13 +685,13 @@ static DlResult fetch(const Item *item, const char *part, u64 *got) {
 		const int closed = fclose(out);
 		out = NULL;
 		if (closed) {
-			set_reason("Can't finish the file on the SD card.%s", "");
+			set_reason("Can't finish the file on the SD card.");
 			result = DL_FAILED;
 		} else {
 			draw_status("Checking the file...");
 			const char *wrong = loader_check_pack(part, length);
 			if (wrong) {
-				set_reason("%s", wrong);
+				set_reason(wrong);
 				result = DL_BAD_FILE;
 			}
 		}
@@ -702,8 +705,7 @@ done:
 
 /* One line per attempt. The address is not written: its path holds the sender's token. */
 static void log_attempt(const char *name, const char *what, u64 bytes) {
-	mkdir("sdmc:/3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds", 0777);
+	sd_make_data_dir(NULL);
 	struct stat st;
 	if (stat(LOG_FILE, &st) == 0 && st.st_size >= LOG_MAX) {
 		remove(LOG_OLD);
@@ -741,7 +743,7 @@ static void scan_status(const char *s) {
 static bool get_url(char *url, size_t size) {
 #ifdef NEO3DS_RECV_TEST
 	/* Azahar test: the address can come from a file instead */
-	FILE *f = fopen("sdmc:/3ds/neo3ds/recv_url.txt", "r");
+	FILE *f = fopen(SD_DATA_DIR "/recv_url.txt", "r");
 	if (f) { /* the last line end is not part of it */
 		size_t n = fread(url, 1, size - 1, f);
 		fclose(f);
@@ -756,8 +758,7 @@ static bool get_url(char *url, size_t size) {
 	ui_flush();
 	const QrResult r = qr_scan(url, size, check_code, scan_status);
 	if (r == QR_NO_CAMERA) {
-		reason[0] = 0;
-		set_reason("%s", "The camera could not be started.");
+		set_reason("The camera could not be started.");
 		log_attempt("-", "failed", 0);
 		show_message(NULL, "Can't receive.", reason, "");
 	}
@@ -779,8 +780,7 @@ void receive_recover(void) {
 			while (n < RECOVER_MAX && (e = readdir(d))) {
 				const size_t len = strlen(e->d_name);
 				if (len >= sizeof found[0]) continue;
-				if ((len > 12 && !strcasecmp(e->d_name + len - 12, ".neo3ds.part")) ||
-				    (len > 11 && !strcasecmp(e->d_name + len - 11, ".neo3ds.bak")))
+				if (sd_has_suffix(e->d_name, PACK_SUFFIX PART_SUFFIX) || sd_has_suffix(e->d_name, PACK_SUFFIX BAK_SUFFIX))
 					strcpy(found[n++], e->d_name);
 			}
 			closedir(d);
@@ -790,19 +790,19 @@ void receive_recover(void) {
 			snprintf(path, sizeof path, LAUNCHER_GAMES_DIR "/%s", found[i]);
 			const size_t len = strlen(path);
 			int result;
-			if (!strcasecmp(path + len - 5, ".part")) { /* never a whole, checked file */
+			if (sd_has_suffix(path, PART_SUFFIX)) { /* never a whole, checked file */
 				result = remove(path);
 			} else {
 				/* .bak: the old game. With a game of that name, the new one had taken its
 				 * place; without, the old one goes back. */
 				struct stat st;
-				snprintf(final, sizeof final, "%.*s", (int)(len - 4), path);
+				snprintf(final, sizeof final, "%.*s", (int)(len - strlen(BAK_SUFFIX)), path);
 				result = stat(final, &st) == 0 ? remove(path) : rename(path, final);
 			}
 			if (result) {
 				failed = true;
 				http_status = 0;
-				set_reason("%s", "Can't clear this leftover file.");
+				set_reason("Can't clear this leftover file.");
 				log_attempt(found[i], "failed", 0);
 			}
 		}
@@ -814,15 +814,14 @@ void receive_recover(void) {
 static void draw_items(const char *title, bool results) {
 	static const char *const states[] = {"-", "saved", "skipped", "failed"};
 	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
-	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
-	ui_top_text(fb, (400 - (int)strlen(title) * 16) / 2, 30, title, UI_TEXT, 2);
+	ui_top_clear(fb);
+	ui_top_center(fb, 30, title, UI_TEXT, 2);
 	for (int i = 0; i < item_count; i++) {
 		const Item *it = &items[i];
 		const int y = 70 + i * 22;
 		char s[40];
-		snprintf(s, sizeof s, strlen(it->t.name) > 31 ? "%.28s..." : "%s", it->t.name);
-		for (char *c = s; *c; c++)
-			if ((u8)*c < 32 || (u8)*c > 126) *c = '?';
+		ui_fit(s, sizeof s, it->t.name, 31);
+		ui_printable(s);
 		ui_top_text(fb, 12, y, s, UI_TEXT, 1);
 		if (results) {
 			ui_top_text(fb, 300, y, states[it->state], it->state == ITEM_SAVED ? UI_TEXT : UI_ACCENT, 1);
@@ -886,7 +885,7 @@ static int fetch_all(DlResult *stop, u64 *bytes) {
 	for (int i = 0; i < item_count; i++) {
 		Item *it = &items[i];
 		snprintf(final, sizeof final, LAUNCHER_GAMES_DIR "/%s", it->t.name);
-		snprintf(part, sizeof part, "%s.part", final);
+		snprintf(part, sizeof part, "%s" PART_SUFFIX, final);
 		draw_top(it->t.name);
 		draw_frame(it->t.name, "B: cancel");
 		if (item_count > 1) {
@@ -914,7 +913,7 @@ static int fetch_all(DlResult *stop, u64 *bytes) {
 		}
 		*stop = r;
 		if (r == DL_CANCELLED) {
-			set_reason("%s", interrupted ? "The HOME menu opened during the transfer." : "cancelled");
+			set_reason(interrupted ? HOME_OPENED : "cancelled");
 			log_attempt(it->t.name, interrupted ? "interrupted" : "cancelled", got);
 		} else {
 			it->state = ITEM_FAILED;
@@ -933,7 +932,7 @@ static bool receive_once(void) {
 	if (!get_url(url, sizeof url)) return false;
 	const char *bad = parse_list(url, items, &item_count);
 	if (bad) {
-		set_reason("%s", bad);
+		set_reason(bad);
 		log_attempt("-", "refused", 0);
 		show_message(NULL, "Can't receive this.", bad, "");
 		return false;
@@ -942,14 +941,14 @@ static bool receive_once(void) {
 	reason[0] = 0;
 	if (!net_open()) {
 		log_attempt(only ? only : "-", "failed", 0);
-		show_message(only, "The game was not saved.", reason, only ? only : "");
+		show_message(only, NOT_SAVED, reason, only ? only : "");
 		return false;
 	}
 	if (!prepare()) {
 		net_close();
 		if (reason[0]) { /* otherwise the player left */
 			log_attempt(only ? only : "-", "failed", 0);
-			show_message(only, "The game was not saved.", reason, only ? only : "");
+			show_message(only, NOT_SAVED, reason, only ? only : "");
 		}
 		return false;
 	}
@@ -961,8 +960,8 @@ static bool receive_once(void) {
 	if (item_count == 1) {
 		if (saved) show_message(only, "Saved. It is in the list now.", "", only);
 		else if (stop == DL_CANCELLED && interrupted)
-			show_message(only, "The game was not saved.", "The HOME menu opened during the transfer. In the list, press Y to try again.", only);
-		else if (stop != DL_CANCELLED) show_message(only, "The game was not saved.", reason, only);
+			show_message(only, NOT_SAVED, HOME_OPENED " In the list, press Y to try again.", only);
+		else if (stop != DL_CANCELLED) show_message(only, NOT_SAVED, reason, only);
 		return saved > 0;
 	}
 

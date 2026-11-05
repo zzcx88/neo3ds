@@ -233,7 +233,7 @@ void audio_render(void) {
 	}
 	memcpy(wb->data_pcm16, play_buffer, n * 2 * sizeof(s16));
 	wb->nsamples = n;
-	/* kernel call instead of DSP_FlushDataCache, which waits on the DSP service (see screen_update) */
+	/* kernel call instead of DSP_FlushDataCache, which waits on the DSP service (see render_frame) */
 	svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32)wb->data_pcm16, n * 2 * sizeof(s16));
 	ndspChnWaveBufAdd(CHANNEL, wb);
 	next = (next + 1) % NBUF;

@@ -10,18 +10,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/stat.h>
 
 #include "launcher.h"
 #include "loader.h"
 #include "receive.h"
+#include "sdfiles.h"
 #include "snapshot.h"
 #include "ui.h"
 
 #define GAMES_DIR LAUNCHER_GAMES_DIR
 /* The favorites (by .neo3ds file name) and the tab, kept across games: going back to the list
  * starts the launcher again. Lines "tab=0|1" and "fav=<file name>". */
-#define CONFIG_FILE "sdmc:/3ds/neo3ds/launcher.txt"
+#define CONFIG_FILE SD_DATA_DIR "/launcher.txt"
 
 typedef struct {
 	char file[128];
@@ -51,8 +51,7 @@ static void scan(void) {
 	if (!d) return;
 	struct dirent *e;
 	while ((e = readdir(d))) {
-		const size_t n = strlen(e->d_name);
-		if (n < 8 || strcasecmp(e->d_name + n - 7, ".neo3ds")) continue;
+		if (!sd_has_suffix(e->d_name, PACK_SUFFIX)) continue;
 		Game *g = realloc(games, (count + 1) * sizeof *games);
 		if (!g) break;
 		games = g;
@@ -61,9 +60,8 @@ static void scan(void) {
 		g->fav = false;
 		char t[64];
 		if (loader_peek_pack(g->file, "title.txt", t, sizeof t)) snprintf(g->title, sizeof g->title, "%s", t);
-		else snprintf(g->title, sizeof g->title, "%.*s", (int)(n - 7), e->d_name);
-		for (char *c = g->title; *c; c++)
-			if ((u8)*c < 32 || (u8)*c > 126) *c = '?';
+		else snprintf(g->title, sizeof g->title, "%.*s", sd_pack_base(e->d_name), e->d_name);
+		ui_printable(g->title);
 		count++;
 	}
 	closedir(d);
@@ -89,8 +87,7 @@ static void load_config(void) {
 
 /* Favorites of games no longer on the SD card are dropped here. */
 static void save_config(void) {
-	mkdir("sdmc:/3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds", 0777);
+	sd_make_data_dir(NULL);
 	FILE *f = fopen(CONFIG_FILE, "w");
 	if (!f) return;
 	fprintf(f, "tab=%d\n", tab);
@@ -180,7 +177,7 @@ static void draw_top(void) {
 	u16 *fb = top_scratch ? top_scratch : screen;
 #ifdef NEO3DS_RECV_TEST
 	{ /* Azahar test: what the list shows, for scripts/azahar_recv_test.ps1 */
-		FILE *state = fopen("sdmc:/3ds/neo3ds/recv_list.txt", "w");
+		FILE *state = fopen(SD_DATA_DIR "/recv_list.txt", "w");
 		if (state) {
 			fprintf(state, "tab=%d sel=%s favs=%d count=%d\n", tab, nview ? games[view[sel]].name : "-", favorites(), count);
 			fclose(state);
@@ -195,21 +192,19 @@ static void draw_top(void) {
 		if (e && e->pixels) {
 			memcpy(fb, e->pixels, SNAPSHOT_BYTES);
 			for (int x = 0; x < 400; x++) /* the name on a band at the bottom */
-				for (int y = 0; y < 16; y++) fb[x * 240 + y] = UI_BG;
-			ui_top_text(fb, (400 - (int)strlen(g->title) * 8) / 2, 228, g->title, UI_TEXT, 1);
+				for (int y = 224; y < 240; y++) UI_PIXEL(fb, x, y) = UI_BG;
+			ui_top_center(fb, 228, g->title, UI_TEXT, 1);
 			if (fb != screen) memcpy(screen, fb, SNAPSHOT_BYTES);
 			gfxFlushBuffers();
 			return;
 		}
 	}
-	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
-	ui_top_text(fb, (400 - 6 * 8 * 4) / 2, 70, "neo3ds", UI_HEADER, 4);
+	ui_top_logo(fb);
 	if (nview) {
 		const char *t = games[view[sel]].title;
-		const int scale = strlen(t) * 16 <= 384 ? 2 : 1;
-		ui_top_text(fb, (400 - (int)strlen(t) * 8 * scale) / 2, 140, t, UI_TEXT, scale);
+		ui_top_center(fb, 140, t, UI_TEXT, ui_text_width(t, 2) <= 384 ? 2 : 1);
 	}
-	ui_top_text(fb, (400 - 29 * 8) / 2, 210, "Nintendo 3DS Neo Geo emulator", UI_DIM, 1);
+	ui_top_center(fb, 210, "Nintendo 3DS Neo Geo emulator", UI_DIM, 1);
 	if (fb != screen) memcpy(screen, fb, SNAPSHOT_BYTES);
 	gfxFlushBuffers();
 }
@@ -245,7 +240,7 @@ static void draw_list(void) {
 		if (v == sel) ui_fill(4, y, 312, ROW_H - 2, UI_PRESSED);
 		ui_text(8, y + (ROW_H - 2 - 8) / 2, "*", g->fav ? UI_HEADER : UI_DIM, 1);
 		char t[40]; /* 35 characters fit between the star and the scroll bar */
-		snprintf(t, sizeof t, strlen(g->title) > 35 ? "%.32s..." : "%s", g->title);
+		ui_fit(t, sizeof t, g->title, 35);
 		ui_text(STAR_W, y + (ROW_H - 2 - 8) / 2, t, UI_TEXT, 1);
 	}
 	if (nview > ROWS) { /* scroll bar */
@@ -257,16 +252,13 @@ static void draw_list(void) {
 }
 
 static void draw_all(void) {
-	ui_fill(0, 0, 320, 240, UI_BG);
-	ui_fill(0, 0, 320, 26, UI_HEADER);
-	ui_text(8, 5, "neo3ds", UI_TEXT, 2);
+	ui_header(count ? NULL : "game list");
 	if (count) {
 		draw_tabs();
 		ui_text(8, 214, "A/tap twice: play  SELECT/*: favorite", UI_DIM, 1);
 		ui_text(8, 227, "Up/Down, L/R: choose  Left/Right: tab", UI_DIM, 1);
 		draw_list();
 	} else {
-		ui_text(8 + ui_text_width("neo3ds", 2) + 8, 12, "game list", UI_TEXT, 1);
 		static const char *help[] = {
 			"No games yet.", "", "In the converter, make game files", "with [Launcher file] and copy the",
 			".neo3ds files to the SD card in", "/neo3ds/games/",

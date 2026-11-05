@@ -18,6 +18,7 @@ bash scripts/build_engine.sh
 - `loader.c` / `launcher.c` — 롬 로딩, 게임 선택 런처
 - `receive.c` / `qrscan.c` — 런처 수신 화면, 카메라 QR 스캔
 - `snapshot.c` — 런처 목록의 게임 스냅샷
+- `sdfiles.c` — SD 카드의 엔진 폴더와 경로 규칙
 - `audio.c` / `keys.c` / `ui.c` — 사운드, 입력, 화면 UI
 - `save.c` / `savestate.c` — SRAM 저장, 세이브스테이트
 - `neo_glue.c` — gngeo 코어와 3DS 계층 사이 접착 코드

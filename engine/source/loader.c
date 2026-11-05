@@ -349,7 +349,7 @@ bool loader_load(LoaderProgress progress, Uint32 sprite_cache_bytes) {
 		neogeo_fix_bank_type = t ? t[0] : 0;
 		free(t);
 	}
-	{ /* pvc.bin (empty): PVC cart, see pvc_write in memory.c */
+	{ /* pvc.bin (its presence is what counts): PVC cart, see pvc_write in memory.c */
 		extern Uint16 pvc_ram[0x1000];
 		Uint8 *t = read_file("pvc.bin", NULL, false, NULL);
 		memory.pvc = t != NULL;

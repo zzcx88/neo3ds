@@ -3,11 +3,11 @@
 // picture or none, never half of one.
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 
+#include "sdfiles.h"
 #include "snapshot.h"
 
-#define SNAP_DIR "sdmc:/3ds/neo3ds/snaps"
+#define SNAP_FOLDER "snaps"
 
 enum { FLAG_MANUAL = 1 };
 typedef struct {
@@ -17,9 +17,7 @@ typedef struct {
 
 /* <name without .neo3ds>.bin */
 static void path_of(const char *pack_name, char *out, size_t size) {
-	const size_t n = strlen(pack_name);
-	const int base = n > 7 ? (int)(n - 7) : (int)n;
-	snprintf(out, size, SNAP_DIR "/%.*s.bin", base, pack_name);
+	snprintf(out, size, SD_DATA_DIR "/" SNAP_FOLDER "/%.*s.bin", sd_pack_base(pack_name), pack_name);
 }
 
 static bool read_head(FILE *f, Head *h) {
@@ -45,9 +43,7 @@ bool snapshot_save(const char *pack_name, const u16 *pixels, bool manual) {
 			if (kept) return false;
 		}
 	}
-	mkdir("sdmc:/3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds", 0777);
-	mkdir(SNAP_DIR, 0777);
+	sd_make_data_dir(SNAP_FOLDER);
 	FILE *f = fopen(tmp, "wb");
 	if (!f) return false;
 	bool ok = fwrite(&h, sizeof h, 1, f) == 1 && fwrite(pixels, SNAPSHOT_BYTES, 1, f) == 1;
