@@ -44,8 +44,14 @@ internal sealed class SendDialog : IDisposable
         };
         var steps = new TextBlock
         {
-            Text = Lang.L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다. 방화벽이 물으면 허용하세요.",
-                          "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only. Allow it if the firewall asks."),
+            Text = Lang.L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다.",
+                          "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only."),
+            TextWrapping = TextWrapping.Wrap,
+        };
+        var notes = new TextBlock
+        {
+            Text = Lang.L("• 방화벽이 물으면 허용하세요. 차단하면 FBI 다운로드가 실패합니다.\n• VPN이 켜져 있으면 위 주소에서 실제 Wi-Fi/LAN 주소를 고르세요. VPN 주소로는 3DS가 접속하지 못합니다.\n• SD 카드 공간이 부족하면 FBI 설치가 실패합니다.",
+                          "• Allow it when the firewall asks; blocking it makes the FBI download fail.\n• With a VPN on, pick the real Wi-Fi/LAN address above; the 3DS cannot reach a VPN address.\n• FBI fails to install if the SD card lacks free space."),
             TextWrapping = TextWrapping.Wrap,
         };
         var close = new Button
@@ -65,7 +71,7 @@ internal sealed class SendDialog : IDisposable
             {
                 Margin = new Avalonia.Thickness(16),
                 Spacing = 10,
-                Children = { qr, status, info, addressBox, hint, url, steps, close },
+                Children = { qr, status, info, addressBox, hint, url, steps, notes, close },
             },
         };
         close.Click += (_, _) => window.Close();
