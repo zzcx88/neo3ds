@@ -1,6 +1,10 @@
 // The receive screen's camera (see qrscan.h). The camera delivers QVGA YUV422, packed Y U Y V: every
 // second byte is the grey image, which is both the preview and what quirc reads. Decoding takes much
 // longer than a frame, so it runs a few times a second and the preview keeps moving in between.
+//
+// A thread of its own keeps the transfers going: a camera whose next transfer is armed late is
+// partway down its picture by then, and on the console the image rolls vertically. The main thread
+// draws and decodes copies, however long that takes.
 #include <3ds.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,8 +26,14 @@ enum {
 	NO_FRAME_MS = 5000,      /* no picture for this long: the camera is not working */
 };
 
-/* The frame arrives (0) or the camera's buffer overflowed while no one was reading (1). */
-enum { EV_FRAME, EV_ERROR };
+typedef struct {
+	u8 *receiving, *ready;      /* the transfer's buffer and the newest whole frame: swapped */
+	u32 unit;
+	u32 frames;                 /* counts the frames put in ready */
+	LightLock lock;
+	Handle cancel, error;
+	volatile bool failed;
+} Capture;
 
 static bool cam_start(u32 *unit, Handle *error_event) {
 	if (R_FAILED(camInit())) return false;
@@ -39,8 +49,7 @@ static bool cam_start(u32 *unit, Handle *error_event) {
 	          R_SUCCEEDED(CAMU_SetTransferBytes(PORT_CAM1, *unit, W, H)) &&
 	          R_SUCCEEDED(CAMU_Activate(cam)) &&
 	          R_SUCCEEDED(CAMU_GetBufferErrorInterruptEvent(error_event, PORT_CAM1)) &&
-	          R_SUCCEEDED(CAMU_ClearBuffer(PORT_CAM1)) &&
-	          R_SUCCEEDED(CAMU_StartCapture(PORT_CAM1));
+	          R_SUCCEEDED(CAMU_ClearBuffer(PORT_CAM1));
 	if (!ok) {
 		CAMU_Activate(SELECT_NONE);
 		camExit();
@@ -53,6 +62,42 @@ static void cam_stop(void) {
 	CAMU_ClearBuffer(PORT_CAM1);
 	CAMU_Activate(SELECT_NONE);
 	camExit();
+}
+
+static void capture_thread(void *arg) {
+	Capture *c = arg;
+	enum { EV_CANCEL, EV_FRAME, EV_ERROR };
+	Handle events[3] = {c->cancel, 0, c->error};
+	if (R_FAILED(CAMU_StartCapture(PORT_CAM1)) ||
+	    R_FAILED(CAMU_SetReceiving(&events[EV_FRAME], c->receiving, PORT_CAM1, FRAME_BYTES, (s16)c->unit))) {
+		c->failed = true;
+		return;
+	}
+	for (;;) {
+		s32 which = -1;
+		if (R_FAILED(svcWaitSynchronizationN(&which, events, 3, false, U64_MAX)) || which == EV_CANCEL) break;
+		svcCloseHandle(events[EV_FRAME]);
+		events[EV_FRAME] = 0;
+		if (which == EV_FRAME) {
+			svcInvalidateProcessDataCache(CUR_PROCESS_HANDLE, (u32)c->receiving, FRAME_BYTES);
+			LightLock_Lock(&c->lock);
+			u8 *t = c->ready;
+			c->ready = c->receiving;
+			c->receiving = t;
+			c->frames++;
+			LightLock_Unlock(&c->lock);
+		} else { /* the camera's buffer overflowed */
+			svcClearEvent(c->error);
+			CAMU_ClearBuffer(PORT_CAM1);
+			CAMU_StartCapture(PORT_CAM1);
+		}
+		if (R_FAILED(CAMU_SetReceiving(&events[EV_FRAME], c->receiving, PORT_CAM1, FRAME_BYTES, (s16)c->unit))) {
+			events[EV_FRAME] = 0;
+			c->failed = true;
+			break;
+		}
+	}
+	if (events[EV_FRAME]) svcCloseHandle(events[EV_FRAME]);
 }
 
 static void draw_preview(u16 *fb, const u8 *frame) {
@@ -117,84 +162,86 @@ static bool decode_frame(struct quirc *q, const u8 *frame, char *out, size_t siz
 
 QrResult qr_scan(char *out, size_t size, QrCheck check, void (*status)(const char *)) {
 	QrResult result = QR_NO_CAMERA;
-	u8 *frame = linearAlloc(FRAME_BYTES);
+	static Capture c;
+	memset(&c, 0, sizeof c);
+	LightLock_Init(&c.lock);
+	c.receiving = linearAlloc(FRAME_BYTES);
+	c.ready = linearAlloc(FRAME_BYTES);
+	u8 *frame = malloc(FRAME_BYTES); /* the main thread's copy */
 	struct quirc *q = quirc_new();
-	if (!frame || !q || quirc_resize(q, W, H) < 0) goto done;
-
-	u32 unit = 0;
-	Handle events[2] = {0, 0};
-	if (!cam_start(&unit, &events[EV_ERROR])) goto done;
-	if (R_FAILED(CAMU_SetReceiving(&events[EV_FRAME], frame, PORT_CAM1, FRAME_BYTES, (s16)unit))) {
-		svcCloseHandle(events[EV_ERROR]);
-		cam_stop();
-		goto done;
-	}
+	Thread thread = NULL;
+	bool cam_on = false;
+	if (!c.receiving || !c.ready || !frame || !q || quirc_resize(q, W, H) < 0) goto done;
+	if (!cam_start(&c.unit, &c.error)) goto done;
+	cam_on = true;
+	if (R_FAILED(svcCreateEvent(&c.cancel, RESET_ONESHOT))) goto done;
+	s32 priority = 0x30;
+	svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
+	thread = threadCreate(capture_thread, &c, 0x2000, priority - 1, -2, false);
+	if (!thread) goto done;
 
 	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
 	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
 	u64 last_frame = osGetTime(), last_decode = 0;
+	u32 seen = 0;
 	const char *shown = NULL;
 	result = QR_CANCELLED;
 	for (;;) {
 		if (!aptMainLoop()) break;
 		hidScanInput();
 		if (RECEIVE_KEYS_DOWN() & KEY_B) break;
+		gspWaitForVBlank();
 
-		s32 which = -1;
-		const Result r = svcWaitSynchronizationN(&which, events, 2, false, 16 * 1000000LL);
+		LightLock_Lock(&c.lock);
+		const bool fresh = c.frames != seen;
+		if (fresh) {
+			seen = c.frames;
+			memcpy(frame, c.ready, FRAME_BYTES);
+		}
+		LightLock_Unlock(&c.lock);
 		const u64 now = osGetTime();
-		if (R_FAILED(r)) { /* nothing yet */
-			if (now - last_frame > NO_FRAME_MS) {
+		if (!fresh) {
+			if (c.failed || now - last_frame > NO_FRAME_MS) {
 				result = QR_NO_CAMERA;
 				break;
 			}
 			continue;
 		}
-		if (which == EV_ERROR) { /* frames were lost during a decode: start again */
-			svcClearEvent(events[EV_ERROR]);
-			svcCloseHandle(events[EV_FRAME]);
-			events[EV_FRAME] = 0;
-			CAMU_ClearBuffer(PORT_CAM1);
-			CAMU_StartCapture(PORT_CAM1);
-		} else {
-			svcCloseHandle(events[EV_FRAME]);
-			events[EV_FRAME] = 0;
-			last_frame = now;
-			svcInvalidateProcessDataCache(CUR_PROCESS_HANDLE, (u32)frame, FRAME_BYTES);
-			draw_preview(fb, frame);
-			if (now - last_decode >= DECODE_EVERY_MS) {
-				const char *wrong = NULL;
-				if (decode_frame(q, frame, out, size, check, &wrong)) {
-					result = QR_FOUND;
-					break;
-				}
-				last_decode = osGetTime();
-#ifdef NEO3DS_RECV_TEST
-				static u64 worst;
-				char s[40];
-				if (last_decode - now > worst) worst = last_decode - now;
-				snprintf(s, sizeof s, "decode %lu ms, worst %lu  ", (unsigned long)(last_decode - now), (unsigned long)worst);
-				ui_fill(8, 200, 304, 10, UI_BG);
-				ui_text(8, 200, s, UI_DIM, 1);
-				ui_flush();
-#endif
-				if (wrong && wrong != shown) {
-					shown = wrong;
-					status(wrong);
-				}
-			}
-		}
-		if (R_FAILED(CAMU_SetReceiving(&events[EV_FRAME], frame, PORT_CAM1, FRAME_BYTES, (s16)unit))) {
-			result = QR_NO_CAMERA;
-			events[EV_FRAME] = 0;
+		last_frame = now;
+		draw_preview(fb, frame);
+		if (now - last_decode < DECODE_EVERY_MS) continue;
+		const char *wrong = NULL;
+		if (decode_frame(q, frame, out, size, check, &wrong)) {
+			result = QR_FOUND;
 			break;
 		}
+		last_decode = osGetTime();
+#ifdef NEO3DS_RECV_TEST
+		static u64 worst;
+		char s[40];
+		if (last_decode - now > worst) worst = last_decode - now;
+		snprintf(s, sizeof s, "decode %lu ms, worst %lu  ", (unsigned long)(last_decode - now), (unsigned long)worst);
+		ui_fill(8, 200, 304, 10, UI_BG);
+		ui_text(8, 200, s, UI_DIM, 1);
+		ui_flush();
+#endif
+		if (wrong && wrong != shown) {
+			shown = wrong;
+			status(wrong);
+		}
 	}
-	if (events[EV_FRAME]) svcCloseHandle(events[EV_FRAME]);
-	svcCloseHandle(events[EV_ERROR]);
-	cam_stop();
 done:
+	if (thread) {
+		svcSignalEvent(c.cancel);
+		threadJoin(thread, U64_MAX);
+		threadFree(thread);
+	}
+	if (c.cancel) svcCloseHandle(c.cancel);
+	if (c.error) svcCloseHandle(c.error);
+	if (cam_on) cam_stop();
 	if (q) quirc_destroy(q);
-	if (frame) linearFree(frame);
+	free(frame);
+	if (c.ready) linearFree(c.ready);
+	if (c.receiving) linearFree(c.receiving);
 	return result;
 }

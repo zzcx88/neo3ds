@@ -271,28 +271,24 @@ static bool wait_socket(int sock, short events, int ms) {
 	return poll(&p, 1, ms) > 0;
 }
 
-/* Non-blocking connect, for at most CONNECT_MS. */
+/* Non-blocking connect, for at most CONNECT_MS. Asks by connecting again: on the console, SO_ERROR
+ * after a poll reports a failure for a connection that went through. */
 static DlResult net_connect(int sock, const Target *t) {
 	struct sockaddr_in a;
 	memset(&a, 0, sizeof a);
 	a.sin_family = AF_INET;
 	a.sin_port = htons(t->port);
 	a.sin_addr.s_addr = htonl(t->ip);
-	if (connect(sock, (struct sockaddr *)&a, sizeof a) == 0) return DL_OK;
-	if (errno != EINPROGRESS && errno != EWOULDBLOCK && errno != EALREADY) {
-		set_reason("Can't reach the PC. Is the Wi-Fi on?%s", "");
-		return DL_FAILED;
-	}
 	const u64 end = osGetTime() + CONNECT_MS;
+	int error = 0;
 	while (osGetTime() < end) {
 		if (!still_wanted()) return DL_CANCELLED;
-		if (!wait_socket(sock, POLLOUT, 16)) continue;
-		int error = 0;
-		socklen_t n = sizeof error;
-		if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &n) == 0 && error == 0) return DL_OK;
-		break;
+		if (connect(sock, (struct sockaddr *)&a, sizeof a) == 0 || errno == EISCONN) return DL_OK;
+		error = errno;
+		if (error != EINPROGRESS && error != EALREADY && error != EWOULDBLOCK) break;
+		wait_socket(sock, POLLOUT, 16);
 	}
-	set_reason("Can't reach the PC: same Wi-Fi? Firewall?%s", "");
+	snprintf(reason, sizeof reason, "Can't reach the PC: same Wi-Fi? Firewall? (error %d)", error);
 	return DL_FAILED;
 }
 
@@ -478,6 +474,16 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 	return DL_OK;
 }
 
+/* The console's Wi-Fi connection (0: none), for the reason of a failure. */
+static u32 wifi_status(void) {
+	u32 status = 0;
+	if (R_SUCCEEDED(acInit())) {
+		ACU_GetWifiStatus(&status);
+		acExit();
+	}
+	return status;
+}
+
 /* Connection to .part file. The socket service is up only for this. */
 static DlResult download(const Target *t, const char *part, u64 *got) {
 	DlResult result = DL_FAILED;
@@ -491,13 +497,14 @@ static DlResult download(const Target *t, const char *part, u64 *got) {
 		set_reason("Out of memory.%s", "");
 		goto done;
 	}
-	if (R_FAILED(socInit(soc, SOC_BYTES))) {
-		set_reason("Can't start the network.%s", "");
+	const Result soc_result = socInit(soc, SOC_BYTES);
+	if (R_FAILED(soc_result)) {
+		snprintf(reason, sizeof reason, "Can't start the network (%08lX, Wi-Fi %lu).", (unsigned long)soc_result, (unsigned long)wifi_status());
 		goto done;
 	}
 	soc_up = true;
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		set_reason("Can't start the network.%s", "");
+		snprintf(reason, sizeof reason, "No network: is the Wi-Fi on? (error %d, Wi-Fi %lu)", errno, (unsigned long)wifi_status());
 		goto done;
 	}
 	const int size = SOCK_BUFFER;
