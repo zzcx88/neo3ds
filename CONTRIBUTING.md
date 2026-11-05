@@ -70,7 +70,7 @@ bash -n scripts/*.sh
 python3 -m py_compile scripts/*.py
 ```
 
-- 엔진 동작을 바꿨으면 `bash scripts/azahar_test.sh`까지 통과시킨다. 이 스크립트는 Windows 경로(`C:\devkitPro`)가 하드코딩되어 Windows 전용이다 (`docs/build.md` §4).
+- 엔진 동작을 바꿨으면 `docs/build.md` §4 "무엇을 언제 돌리나" 기준으로 검증한다. 실기가 없으면 `bash scripts/azahar_test.sh`와 `scripts/azahar_recv_test.ps1` 전체를 돌리고, 터치·프레임 루프·카메라·성능에 영향이 있으면 PR에 `실기 확인 필요`를 적는다. 이 스크립트는 Windows 경로(`C:\devkitPro`)가 하드코딩되어 Windows 전용이다 (`docs/build.md` §4).
 - CI가 도는 검사: `.github/workflows/desktop.yml`은 3개 OS에서 C# 빌드·테스트와 no-ROM 스모크를, `.github/workflows/pages.yml`은 PR에서 `scripts/site_gate.sh`와 Worker 테스트를 돌린다.
 - 실기 확인 없이 호환성 표를 "확인"으로 바꾸지 않는다. 미확인은 "추정"으로 표기한다.
 - 롬이 있어야 도는 검증(`scripts/azahar_test.sh`, `scripts/azahar_bench.sh`)은 로컬에서만 돌린다.
