@@ -81,6 +81,7 @@ python3 -m py_compile scripts/*.py
 | --- | --- |
 | `README.md` | `README.ko.md` |
 | `docs/TECHNICAL.md` | `docs/TECHNICAL.ko.md` |
+| `converter/assets/README.txt` (릴리스 zip 동봉) | 변환기 GUI·설치 절차가 바뀌면 KO·EN 두 절 모두 |
 | `site/ko/{index,convert,privacy,manual}.html` + `site/app.js`(EN 표) | `node scripts/gen_site_i18n.mjs` → 영어 페이지 생성 |
 | `converter/assets/neogeo_games.json` | `python3 scripts/gen_site_games.py` → `site/games.js` |
 | `site/releases.json` | `python3 scripts/gen_site_changelog.py` → 사이트 changelog, `python3 scripts/gen_changelog.py` → `CHANGELOG.md` |

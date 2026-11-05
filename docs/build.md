@@ -35,6 +35,17 @@ dotnet build -c Release converter/Neo3dsConverter
 - exe와 `tools\` 폴더는 항상 같이 둔다
 - 버전: `converter/Directory.Build.props`의 `<Version>`이 단일 출처 (웹용 `version.js`는 `build_wasm.sh`가 생성, git 제외)
 
+Linux·macOS는 Desktop 프로젝트를 쓴다. 같은 전제에 더해 `tools/linux-x64/`·`tools/osx-arm64/`의 makerom·bannertool이 필요하다 (릴리스 zip에서 받거나 `bash scripts/build_unix_tools.sh`로 빌드).
+
+```sh
+dotnet build -c Release converter/Neo3dsConverter.Desktop
+dotnet test converter/Neo3dsConverter.Desktop.Tests -c Release
+dotnet test converter/Neo3dsConverter.Core.Tests -c Release
+```
+
+- 산출물: `converter/Neo3dsConverter.Desktop/bin/Release/net10.0/neo3ds-converter` — 인자 없으면 창, 인자를 주면 명령줄
+- 테스트도 같은 전제(`engine/engine.elf` + `tools/`)에서 빌드된다. CI는 3개 OS에서 같은 명령을 돌린다.
+
 ## 3. CIA 만들기 (수동 확인)
 
 ```sh
@@ -74,10 +85,12 @@ scripts/azahar_bench.sh
 
 ## 5. 실기 테스트
 
-1. 만든 `.cia`를 SD 카드에 복사하거나, 데스크톱 변환기의 **[3DS로 보내기]** 로 같은 Wi-Fi에 보낸다
+1. 만든 `.cia`를 SD 카드에 복사하거나, 오프라인 변환기(Windows GUI·Linux·macOS)의 **[3DS로 보내기]** 로 같은 공유기에 보낸다
 2. 3DS에서 FBI → SD → 파일 선택 → Install CIA (QR로 보냈으면 FBI가 바로 설치한다)
 3. HOME 메뉴에서 실행, FPS·사운드·조작 확인
 4. 아래 화면 Diagnostics에서 코어 시간·메모리 확인 가능
+
+보내기 조건: PC와 3DS가 같은 공유기에 있어야 한다. 방화벽이 물으면 허용하고, VPN이 켜져 있으면 실제 LAN 주소를 고른다. 3DS는 2.4GHz Wi-Fi만 된다. CIA를 여러 개 만들었으면 보낼 것을 고른다.
 
 ## 6. 게임 DB 갱신
 
@@ -192,7 +205,7 @@ Linux·macOS 도구는 CI가 `scripts/build_unix_tools.sh`로 소스에서 빌�
 
 릴리스 롤백: 깨진 Release는 GitHub에서 삭제 후 `<Version>`을 올린 새 태그로 다시 낸다. 기존 태그를 덮어쓰지 않는다.
 
-Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌드 + Headless 테스트 + Core 테스트(도구 실행 권한) + no-ROM 스모크가 자동 실행된다.
+Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌드 + Headless 테스트 + Core 테스트(도구 실행 권한) + no-ROM 스모크가 자동 실행된다. Windows는 WinForms 빌드를 더하고, 모든 OS에서 SkiaSharp 4.153.1 통일을 검사한다.
 
 수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성. 3종 산출물은 Artifacts로 받음).
 로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`

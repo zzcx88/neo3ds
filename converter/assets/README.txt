@@ -7,6 +7,9 @@ https://github.com/zzcx88/neo3ds
 2. Neo3dsConverter.exe를 실행하고 롬 zip을 창에 끌어다 놓은 뒤 [CIA 만들기]를 누릅니다. 여러 개를 한 번에 넣어도 됩니다.
 3. 만든 .cia를 SD 카드에 복사하고 FBI로 설치합니다. (Luma3DS 커스텀 펌웨어 필요)
    소리가 나려면 SD 카드에 /3ds/dspfirm.cdc가 있어야 합니다.
+   SD 카드 없이 설치하려면 CIA를 만든 뒤 [3DS로 보내기 (QR)]를 누르고, PC와 3DS를 같은 공유기에
+   연결해 FBI → Remote Install → Scan QR Code로 스캔합니다. 방화벽이 물으면 허용하고, VPN이
+   켜져 있으면 실제 LAN 주소를 고르세요. 3DS는 2.4GHz Wi-Fi만 됩니다.
 런처: neo3ds-launcher.cia를 한 번 설치하고, [런처용 파일 만들기]로 만든 .neo3ds 파일을 SD 카드 /neo3ds/games/에 넣으면
       앱 하나에서 게임을 골라 실행합니다.
 퀵세이브: 아래 화면 [Slot] [Save] [Load] 또는 SELECT+L(저장) / SELECT+R(불러오기).
@@ -30,6 +33,9 @@ Keep this folder (the converter program + the tools folder) together. The progra
 2. Run Neo3dsConverter.exe, drop the game zip on the window and press [Build CIA]. You can drop several at once.
 3. Copy the .cia to the SD card and install it with FBI (Luma3DS custom firmware needed).
    Sound needs /3ds/dspfirm.cdc on the SD card.
+   To install without the SD card, build a CIA and press [Send to 3DS (QR)], then scan it in FBI
+   (Remote Install → Scan QR Code) with the PC and 3DS on the same router. Allow the firewall
+   prompt; with a VPN on, pick the real LAN address. The 3DS is 2.4 GHz Wi-Fi only.
 Launcher: install neo3ds-launcher.cia once, then put the .neo3ds files made with [Launcher file] in /neo3ds/games/
           on the SD card to pick games from one app.
 Quick save: [Slot] [Save] [Load] on the bottom screen, or SELECT+L (save) / SELECT+R (load).
