@@ -261,6 +261,7 @@ static void open_receive(void) {
 
 bool launcher_pick(char *path, size_t size) {
 	gfxSetDoubleBuffering(GFX_TOP, false);
+	if (HAS_RECEIVE) receive_recover();
 	scan();
 	load_config();
 	build_view(0);

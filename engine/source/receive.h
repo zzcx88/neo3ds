@@ -8,6 +8,12 @@
  * read again. The screens are left for the caller to redraw. */
 bool receive_run(void);
 
+/* True once the HOME menu or sleep came up during the screen: a transfer or the camera stops. */
+bool receive_interrupted(void);
+
+/* At the launcher's start: clears what a receive cut short by a crash or power loss left behind. */
+void receive_recover(void);
+
 /* Azahar test builds also take buttons from a file, so a test needs no window focus. */
 #ifdef NEO3DS_RECV_TEST
 #include <3ds.h>
