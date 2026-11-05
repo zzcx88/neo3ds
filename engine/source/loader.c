@@ -54,6 +54,18 @@ bool loader_open_pack(const char *path) {
 		Uint32 version, count;
 	} h;
 	if (pack) fclose(pack);
+	pack = NULL;
+	struct stat st;
+	if (stat(path, &st)) {
+		fail("can't open %s", path);
+		return false;
+	}
+	/* Also for files copied to the SD card: a damaged one gets a message, not a crash. */
+	const char *wrong = loader_check_pack(path, st.st_size);
+	if (wrong) {
+		fail("%s", wrong);
+		return false;
+	}
 	if (!(pack = fopen(path, "rb"))) {
 		fail("can't open %s", path);
 		return false;
@@ -120,7 +132,7 @@ const char *loader_check_pack(const char *path, u64 length) {
 	const char *wrong = not_game;
 	if (fread(&h, sizeof h, 1, f) != 1 || memcmp(h.magic, PACK_MAGIC, 8)) goto done;
 	if (h.version != PACK_VERSION) {
-		wrong = "Made by another converter version.";
+		wrong = "Made by another converter version: convert it again.";
 		goto done;
 	}
 	if (h.count < 1 || h.count > PACK_MAX_ENTRIES || fread(e, sizeof e[0], h.count, f) != h.count) goto done;
@@ -128,6 +140,7 @@ const char *loader_check_pack(const char *path, u64 length) {
 	const u64 data_start = sizeof h + (u64)h.count * sizeof e[0];
 	const PackEntry *idx = NULL, *pak = NULL;
 	unsigned found = 0, bios = 0;
+	enum { VECTORS = 0x80 }; /* copied from the program and the BIOS when a game loads */
 	for (Uint32 i = 0; i < h.count; i++) {
 		if (!memchr(e[i].name, 0, sizeof e[i].name)) goto done;
 		const u64 start = e[i].offset, end = start + e[i].size;
@@ -137,8 +150,12 @@ const char *loader_check_pack(const char *path, u64 length) {
 			if (e[i].size && e[j].size && start < (u64)e[j].offset + e[j].size && e[j].offset < end) goto done;
 		}
 		for (size_t r = 0; r < sizeof required / sizeof required[0]; r++)
-			if (!strcmp(e[i].name, required[r])) found++;
-		if (!strcmp(e[i].name, "bios_aes.bin") || !strcmp(e[i].name, "bios_mvs.bin")) bios++;
+			if (!strcmp(e[i].name, required[r]) && e[i].size) found++;
+		if (!strcmp(e[i].name, "p.bin") && e[i].size < VECTORS) goto done;
+		if (!strcmp(e[i].name, "bios_aes.bin") || !strcmp(e[i].name, "bios_mvs.bin")) {
+			if (e[i].size < VECTORS) goto done;
+			bios++;
+		}
 		if (!strcmp(e[i].name, "c.idx")) idx = &e[i];
 		if (!strcmp(e[i].name, "c.pak")) pak = &e[i];
 	}
@@ -147,11 +164,23 @@ const char *loader_check_pack(const char *path, u64 length) {
 	/* The sprite index, as load_sprites reads it: header, block offsets, usage. */
 	if (idx->size < sizeof s || fseek(f, idx->offset, SEEK_SET) || fread(&s, sizeof s, 1, f) != 1) goto done;
 	if (memcmp(s.magic, "NEOC", 4) || (s.version != SPR_CODEC_LZ4 && s.version != SPR_CODEC_ZSTD)) goto done;
-	if (!s.block_size || !s.nb_blocks) goto done;
+	if (s.block_size < 128 || s.block_size > 0x100000 || !s.nb_blocks) goto done; /* blocks hold whole tiles */
 	if (sizeof s + ((u64)s.nb_blocks + 1) * 4 + (u64)(s.nb_tiles >> 4) * 4 > idx->size) goto done;
-	Uint32 last;
-	if (fseek(f, idx->offset + sizeof s + (u64)s.nb_blocks * 4, SEEK_SET) || fread(&last, sizeof last, 1, f) != 1) goto done;
-	if (last > pak->size) goto done;
+	const Uint32 tiles_per_block = s.block_size >> 7;
+	if (((u64)s.nb_tiles + tiles_per_block - 1) / tiles_per_block > s.nb_blocks) goto done; /* a tile with no block */
+	/* Every block lies inside c.pak, in order. */
+	if (fseek(f, idx->offset + sizeof s, SEEK_SET)) goto done;
+	Uint32 previous = 0;
+	for (Uint32 left = s.nb_blocks + 1; left;) {
+		Uint32 offsets[256];
+		const Uint32 n = left < 256 ? left : 256;
+		if (fread(offsets, sizeof offsets[0], n, f) != n) goto done;
+		for (Uint32 i = 0; i < n; i++) {
+			if (offsets[i] < previous || offsets[i] > pak->size) goto done;
+			previous = offsets[i];
+		}
+		left -= n;
+	}
 	wrong = NULL;
 done:
 	fclose(f);

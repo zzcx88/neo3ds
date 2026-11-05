@@ -3,6 +3,7 @@ tools/
 third_party/
 engine/build/
 engine/build_recv/
+engine/build_hw/
 engine/*.elf
 engine/*.3dsx
 engine/*.smdh

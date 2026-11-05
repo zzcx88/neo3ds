@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 public static class K {
   [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
 }
 "@
 $p = Get-Process azahar -ErrorAction Stop
@@ -14,6 +15,8 @@ Start-Sleep -Milliseconds 300
 foreach ($step in $Seq.Split(",")) {
   $k, $ms = $step.Split(":")
   if ($k -eq "wait") { Start-Sleep -Milliseconds ([int]$ms); continue }
+  # The keys go to whichever window is in front: never to anything but Azahar
+  if ([K]::GetForegroundWindow() -ne $p.MainWindowHandle) { throw "Azahar is not the window in front: no key sent" }
   $vk = [byte][char]$k.ToUpper()
   [K]::keybd_event($vk, 0, 0, [UIntPtr]::Zero)
   Start-Sleep -Milliseconds ([int]$ms)

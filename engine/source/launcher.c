@@ -136,6 +136,8 @@ static SnapEntry snaps[SNAP_CACHE];
 static int snap_count;
 static int snap_wait; /* frames until the cursor counts as stopped and the picture is read */
 static int snap_next_wait; /* frames until the next picture around the cursor is read */
+static u16 *top_scratch;   /* the top screen is composed here and copied at once: no flicker */
+static bool top_stale;     /* a picture just came in: redraw right after the next vblank */
 
 static bool snap_known(const char *name) {
 	for (int i = 0; i < snap_count; i++)
@@ -174,7 +176,17 @@ static void snap_free(void) {
 
 /* The top screen: the selected game's picture and name, or the logo and name. */
 static void draw_top(void) {
-	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+	u16 *screen = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+	u16 *fb = top_scratch ? top_scratch : screen;
+#ifdef NEO3DS_RECV_TEST
+	{ /* Azahar test: what the list shows, for scripts/azahar_recv_test.ps1 */
+		FILE *state = fopen("sdmc:/3ds/neo3ds/recv_list.txt", "w");
+		if (state) {
+			fprintf(state, "tab=%d sel=%s favs=%d count=%d\n", tab, nview ? games[view[sel]].name : "-", favorites(), count);
+			fclose(state);
+		}
+	}
+#endif
 	if (nview) {
 		const Game *g = &games[view[sel]];
 		const SnapEntry *e = snap_find(g->name);
@@ -185,6 +197,7 @@ static void draw_top(void) {
 			for (int x = 0; x < 400; x++) /* the name on a band at the bottom */
 				for (int y = 0; y < 16; y++) fb[x * 240 + y] = UI_BG;
 			ui_top_text(fb, (400 - (int)strlen(g->title) * 8) / 2, 228, g->title, UI_TEXT, 1);
+			if (fb != screen) memcpy(screen, fb, SNAPSHOT_BYTES);
 			gfxFlushBuffers();
 			return;
 		}
@@ -197,6 +210,7 @@ static void draw_top(void) {
 		ui_top_text(fb, (400 - (int)strlen(t) * 8 * scale) / 2, 140, t, UI_TEXT, scale);
 	}
 	ui_top_text(fb, (400 - 29 * 8) / 2, 210, "Nintendo 3DS Neo Geo emulator", UI_DIM, 1);
+	if (fb != screen) memcpy(screen, fb, SNAPSHOT_BYTES);
 	gfxFlushBuffers();
 }
 
@@ -316,7 +330,7 @@ static void read_list_again(void) {
 	load_config();
 	int at = 0;
 	for (int i = 0; i < count; i++)
-		if (!strcmp(games[i].file, keep)) at = i;
+		if (!strcasecmp(games[i].file, keep)) at = i; /* the SD card ignores case */
 	build_view(at);
 }
 
@@ -327,6 +341,7 @@ static void open_receive(void) {
 
 bool launcher_pick(char *path, size_t size) {
 	gfxSetDoubleBuffering(GFX_TOP, false);
+	top_scratch = malloc(SNAPSHOT_BYTES);
 	if (HAS_RECEIVE) receive_recover();
 	scan();
 	load_config();
@@ -335,19 +350,9 @@ bool launcher_pick(char *path, size_t size) {
 	hidSetRepeatParameters(15, 4);
 	while (aptMainLoop()) {
 		hidScanInput();
-		if (snap_wait && --snap_wait == 0 && nview) { /* the cursor stopped here */
-			snap_read(games[view[sel]].name);
+		if (top_stale) {
+			top_stale = false;
 			draw_top();
-		}
-		if (!snap_wait && snap_next_wait && --snap_next_wait == 0) { /* the rows around the cursor */
-			static const int around[] = {1, -1, 2, -2};
-			for (int i = 0; i < 4; i++) {
-				const int v = sel + around[i];
-				if (v < 0 || v >= nview || snap_known(games[view[v]].name)) continue;
-				snap_read(games[view[v]].name);
-				snap_next_wait = SNAP_NEXT_FRAMES;
-				break;
-			}
 		}
 		const u32 down = RECEIVE_KEYS_DOWN(), rep = hidKeysDownRepeat() | (down & KEY_DOWN);
 		if (HAS_RECEIVE) {
@@ -392,7 +397,26 @@ bool launcher_pick(char *path, size_t size) {
 			if (start && nview) {
 				snprintf(path, size, "%s", games[view[sel]].file);
 				snap_free();
+				free(top_scratch);
+				top_scratch = NULL;
 				return true;
+			}
+		}
+		/* The SD card last, and only with no key down: what follows a read starts on a new frame,
+		 * and a read never holds up a key or a redraw. */
+		if (!(hidKeysHeld() & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT | KEY_L | KEY_R))) {
+			if (snap_wait && --snap_wait == 0 && nview) { /* the cursor stopped here */
+				snap_read(games[view[sel]].name);
+				top_stale = true;
+			} else if (!snap_wait && snap_next_wait && --snap_next_wait == 0) { /* the rows around it */
+				static const int around[] = {1, -1, 2, -2};
+				for (int i = 0; i < 4; i++) {
+					const int v = sel + around[i];
+					if (v < 0 || v >= nview || snap_known(games[view[v]].name)) continue;
+					snap_read(games[view[v]].name);
+					snap_next_wait = SNAP_NEXT_FRAMES;
+					break;
+				}
 			}
 		}
 		gspWaitForVBlank();
