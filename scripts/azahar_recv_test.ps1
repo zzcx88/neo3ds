@@ -2,6 +2,9 @@
 # NEO3DS_RECV_TEST (the address comes from sdmc:/3ds/neo3ds/recv_url.txt instead of a QR code),
 # serves a game file with scripts/recv_test_server.py and presses the buttons in Azahar.
 #
+# The cam-* scenarios use Azahar's still image camera (its config is put back) and need pip for the
+# qrcode package.
+#
 # usage: pwsh scripts/azahar_recv_test.ps1 -Pack <file.neo3ds> [-Converter <folder with Neo3dsConverter.exe>]
 #        [-Scenarios ok,404,...] [-SkipBuild]
 # Results: out/recvtest/results.txt and one screenshot per scenario. The test file goes in Azahar's
@@ -9,7 +12,7 @@
 param(
     [Parameter(Mandatory)] [string] $Pack,
     [string] $Converter = "out/conv141",
-    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty"),
+    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none"),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = "Stop"
@@ -30,27 +33,21 @@ Add-Type @"
 using System;
 using System.Runtime.InteropServices;
 public static class Win {
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
 }
 "@
 
-function Press([byte] $vk) {
-    $p = Get-Process azahar
-    [Win]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
-    Start-Sleep -Milliseconds 200
-    # The keys go to whichever window is in front: never to anything but Azahar
-    if ([Win]::GetForegroundWindow() -ne $p.MainWindowHandle) { throw "Azahar is not the window in front" }
-    [Win]::keybd_event($vk, 0, 0, [UIntPtr]::Zero)
-    Start-Sleep -Milliseconds 150
-    [Win]::keybd_event($vk, 0, 2, [UIntPtr]::Zero)
+# The test build takes a button from this file: Azahar needs no focus and the PC stays usable.
+function Press([string] $key) {
+    $file = Join-Path $cfg "recv_key.txt"
+    [IO.File]::WriteAllText($file, $key)
+    for ($i = 0; $i -lt 30 -and (Test-Path $file); $i++) { Start-Sleep -Milliseconds 100 }
+    if (Test-Path $file) { Remove-Item $file; throw "the launcher did not take the key $key" }
     Start-Sleep -Milliseconds 300
 }
-# Azahar's default keys: A = A, B = S, Y = X, D-pad down = G
-$KeyA = 0x41; $KeyB = 0x53; $KeyY = 0x58; $KeyDown = 0x47
+$KeyA = "A"; $KeyB = "B"; $KeyY = "Y"; $KeyDown = "D"
 
 function Shot([string] $name) {
     $p = Get-Process azahar
@@ -58,7 +55,9 @@ function Shot([string] $name) {
     [Win]::GetWindowRect($p.MainWindowHandle, [ref] $r) | Out-Null
     $bmp = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.CopyFromScreen($r.L, $r.T, 0, 0, $bmp.Size)
+    $dc = $g.GetHdc()
+    [Win]::PrintWindow($p.MainWindowHandle, $dc, 2) | Out-Null # 2: also what the GPU drew
+    $g.ReleaseHdc($dc)
     $bmp.Save((Join-Path $out "$name.png"))
     $g.Dispose(); $bmp.Dispose()
 }
@@ -120,8 +119,72 @@ $badUrls = @(
     "http://192.0.2.1:80/x/a%3A.neo3ds",      # a character FAT refuses
     "http://192.0.2.1:80/x/$('a' * 100).neo3ds" # 107 bytes: .part would not fit
 )
+# Azahar's still image camera reads one picture, chosen in its config, when the game starts.
+$ini = Join-Path $env:APPDATA "Azahar/config/qt-config.ini"
+$iniBackup = [IO.File]::ReadAllText($ini)
+$pydeps = Join-Path $out "pydeps"
+function StartWithPicture([string] $picture) {
+    Stop-Process -Name azahar -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+    $text = $iniBackup
+    $text = $text -replace "(?m)^camera_outer_right_name\\default=.*$", "camera_outer_right_name\default=false"
+    $text = $text -replace "(?m)^camera_outer_right_name=.*$", "camera_outer_right_name=image"
+    $text = $text -replace "(?m)^camera_outer_right_config\\default=.*$", "camera_outer_right_config\default=false"
+    $text = $text -replace "(?m)^camera_outer_right_config=.*$", ("camera_outer_right_config=" + ($picture -replace "\\", "/"))
+    [IO.File]::WriteAllText($ini, $text)
+    Start-Process $azahar -ArgumentList "`"$cxi`""
+    Start-Sleep -Seconds 8
+}
+function MakeQr([string] $text, [string] $path) {
+    if (-not (Test-Path $pydeps)) { & $py -m pip install -q --target $pydeps qrcode | Out-Null }
+    $env:PYTHONPATH = $pydeps
+    & $py (Join-Path $root "scripts/recv_test_qr.py") $text $path
+    Remove-Item Env:PYTHONPATH
+}
 try {
     foreach ($s in $Scenarios) {
+        if ($s -like "cam-*") {
+            # The camera path: a fixed port so the picture can be made first
+            Remove-Item (Join-Path $cfg "recv_url.txt"), $target -ErrorAction SilentlyContinue
+            $urlFile = Join-Path $out "url.txt"
+            $srv = Start-Process $py -ArgumentList @("-I", $server, $Pack, "--name", "recvtest.neo3ds", "--port", "50123", "--url-file", "`"$urlFile`"") -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-$s.log")
+            Start-Sleep -Seconds 1
+            $picture = Join-Path $out "$s.png"
+            if ($s -eq "cam-ok") { MakeQr (Get-Content $urlFile) $picture }
+            if ($s -eq "cam-wrong") { MakeQr "http://192.0.2.1:80/0123456789abcdef/game.cia" $picture }
+            if ($s -eq "cam-none") { MakeQr "--blank" $picture }
+            StartWithPicture $picture
+            $before = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
+            Press $KeyY
+            if ($s -eq "cam-ok") {
+                $finished = WaitLog $before 120
+                Start-Sleep -Seconds 1
+                Shot "$s-done"
+                Press $KeyA
+                Start-Sleep -Seconds 1
+                Shot "$s-list"
+                $ok = $finished -and (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash
+                $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) | $(LastLog)"
+            } else {
+                Start-Sleep -Seconds 4
+                Shot "$s-scanning"
+                $still = (Get-Content $log -ErrorAction SilentlyContinue).Count -eq $before
+                Press $KeyB # leaves the camera
+                Start-Sleep -Seconds 1
+                Shot "$s-back"
+                Press $KeyY # and again: the camera must start a second time
+                Start-Sleep -Seconds 3
+                Shot "$s-again"
+                Press $KeyB
+                Start-Sleep -Seconds 1
+                Shot "$s-list"
+                $ok = $still -and -not (Test-Path $target) -and (Get-Process azahar -ErrorAction SilentlyContinue)
+                $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) stayed on the camera, left, came back"
+            }
+            $results[-1]
+            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
+            continue
+        }
         if ($s -eq "badurl") {
             foreach ($u in $badUrls) {
                 $before = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
@@ -235,9 +298,11 @@ try {
         $results[-1]
     }
 } finally {
+    if ($srv) { Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue }
     $results | Set-Content (Join-Path $out "results.txt")
     Stop-Process -Name azahar -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
+    [IO.File]::WriteAllText($ini, $iniBackup)
     if ($moved) {
         Remove-Item -Recurse -Force $games -ErrorAction SilentlyContinue
         Rename-Item (Join-Path (Split-Path $games) "games.keep") "games"

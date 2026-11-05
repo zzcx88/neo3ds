@@ -34,9 +34,9 @@ include $(DEVKITARM)/3ds_rules
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source source/neo source/neo/cyclone source/neo/drz80 source/neo/ym2610 source/lz4 \
-			source/zstd/common source/zstd/decompress
+			source/zstd/common source/zstd/decompress source/quirc
 DATA		:=	data
-INCLUDES	:=	source source/compat source/neo source/lz4 source/zstd
+INCLUDES	:=	source source/compat source/neo source/lz4 source/zstd source/quirc
 GRAPHICS	:=	gfx
 GFXBUILD	:=	$(BUILD)
 #ROMFS		:=	romfs

@@ -13,6 +13,7 @@ remain in the source files.
 | MAME Neo Geo cart decryption (CMC42/CMC50, SMA, PCM2, KOF2002-type, PVC), ported to C#; PVC cart RAM logic | `converter/Neo3dsConverter.Core/Protection.cs`, `CmcTables.cs`, `engine/source/neo/memory.c` (pvc_write) | S. Smith, David Haywood, Fabio Priuli, Razoola, Mr.K | BSD-3-Clause |
 | Zstandard (decompressor) | `engine/source/zstd/` | Meta Platforms, Inc. and affiliates | BSD-3-Clause (see `engine/source/zstd/LICENSE`) |
 | LZ4 | `engine/source/lz4/` | Yann Collet | BSD-2-Clause |
+| quirc (QR code reader, launcher) | `engine/source/quirc/` | Daniel Beer | ISC (see below and `engine/source/quirc/LICENSE`) |
 | libctru | linked into the engine | devkitPro / 3DS homebrew contributors | zlib |
 | ZstdSharp.Port (converter, NuGet) | converter build | Oleg Stepanischev | MIT |
 | SkiaSharp (converter icon/banner drawing, NuGet) | converter build, native library `libSkiaSharp` | Microsoft Corporation | MIT |
@@ -73,6 +74,27 @@ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPO
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## ISC (quirc)
+
+```
+quirc -- QR-code recognition library
+Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>
+
+Permission to use, copy, modify, and/or distribute this software for
+any purpose with or without fee is hereby granted, provided that the
+above copyright notice and this permission notice appear in all
+copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
 ```
 
 ## Trademarks

@@ -2,7 +2,7 @@
 // screen with the D-pad and A or by touch (a tap selects, a tap on the selected game starts it).
 // Two tabs, All and Favorites (D-pad left/right or a tap on the tab); SELECT or a tap on the star
 // at the left of a row adds the game to the favorites or takes it out. Y opens the receive screen
-// (receive.c), for now in test builds only: it gets its address from a QR code in the next step.
+// (receive.c), not built by default until the converter can send .neo3ds files (NEO3DS_RECEIVE).
 #include <3ds.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -35,7 +35,7 @@ static int tab; /* 0 All, 1 Favorites */
 
 enum { LIST_Y = 32, ROW_H = 22, ROWS = 8, STAR_W = 24 };
 enum { TAB_ALL_X = 116, TAB_FAV_X = 180, TAB_W = 60 }; /* right of the logo */
-#ifdef NEO3DS_RECV_TEST
+#if defined(NEO3DS_RECEIVE) || defined(NEO3DS_RECV_TEST)
 #define HAS_RECEIVE 1
 #else
 #define HAS_RECEIVE 0
@@ -268,7 +268,7 @@ bool launcher_pick(char *path, size_t size) {
 	hidSetRepeatParameters(15, 4);
 	while (aptMainLoop()) {
 		hidScanInput();
-		const u32 down = hidKeysDown(), rep = hidKeysDownRepeat();
+		const u32 down = RECEIVE_KEYS_DOWN(), rep = hidKeysDownRepeat() | (down & KEY_DOWN);
 		if (HAS_RECEIVE) {
 			touchPosition t;
 			hidTouchRead(&t);
