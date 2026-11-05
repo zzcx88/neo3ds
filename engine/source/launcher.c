@@ -3,6 +3,7 @@
 // Two tabs, All and Favorites (D-pad left/right or a tap on the tab); SELECT or a tap on the star
 // at the left of a row adds the game to the favorites or takes it out. Y opens the receive screen
 // (receive.c), not built by default until the converter can send .neo3ds files (NEO3DS_RECEIVE).
+// The top screen shows a picture of the game under the cursor, if it has one (snapshot.c).
 #include <3ds.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@
 #include "launcher.h"
 #include "loader.h"
 #include "receive.h"
+#include "snapshot.h"
 #include "ui.h"
 
 #define GAMES_DIR LAUNCHER_GAMES_DIR
@@ -120,9 +122,73 @@ static void build_view(int keep) {
 	if (top > nview - ROWS) top = nview > ROWS ? nview - ROWS : 0;
 }
 
-/* The top screen: the logo and the selected game's name. */
+/* Pictures already read, newest first: scrolling back needs no SD card. pixels NULL: no picture. */
+enum {
+	SNAP_CACHE = 8,
+	SNAP_WAIT_FRAMES = 6,  /* just over the key repeat: a held key reads nothing while it scrolls */
+	SNAP_NEXT_FRAMES = 12, /* with the cursor still, the pictures around it are read one by one */
+};
+typedef struct {
+	char name[sizeof ((Game *)0)->file];
+	u16 *pixels;
+} SnapEntry;
+static SnapEntry snaps[SNAP_CACHE];
+static int snap_count;
+static int snap_wait; /* frames until the cursor counts as stopped and the picture is read */
+static int snap_next_wait; /* frames until the next picture around the cursor is read */
+
+static bool snap_known(const char *name) {
+	for (int i = 0; i < snap_count; i++)
+		if (!strcmp(snaps[i].name, name)) return true;
+	return false;
+}
+
+/* The entry of this game, moved to the front. */
+static SnapEntry *snap_find(const char *name) {
+	for (int i = 0; i < snap_count; i++)
+		if (!strcmp(snaps[i].name, name)) {
+			const SnapEntry e = snaps[i];
+			memmove(&snaps[1], &snaps[0], i * sizeof snaps[0]);
+			snaps[0] = e;
+			return &snaps[0];
+		}
+	return NULL;
+}
+
+static void snap_read(const char *name) {
+	if (snap_count == SNAP_CACHE) free(snaps[--snap_count].pixels);
+	memmove(&snaps[1], &snaps[0], snap_count * sizeof snaps[0]);
+	snap_count++;
+	snprintf(snaps[0].name, sizeof snaps[0].name, "%s", name);
+	snaps[0].pixels = malloc(SNAPSHOT_BYTES);
+	if (snaps[0].pixels && !snapshot_load(name, snaps[0].pixels)) {
+		free(snaps[0].pixels);
+		snaps[0].pixels = NULL;
+	}
+}
+
+static void snap_free(void) {
+	for (int i = 0; i < snap_count; i++) free(snaps[i].pixels);
+	snap_count = 0;
+}
+
+/* The top screen: the selected game's picture and name, or the logo and name. */
 static void draw_top(void) {
 	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+	if (nview) {
+		const Game *g = &games[view[sel]];
+		const SnapEntry *e = snap_find(g->name);
+		snap_wait = e ? 0 : SNAP_WAIT_FRAMES;
+		snap_next_wait = SNAP_NEXT_FRAMES;
+		if (e && e->pixels) {
+			memcpy(fb, e->pixels, SNAPSHOT_BYTES);
+			for (int x = 0; x < 400; x++) /* the name on a band at the bottom */
+				for (int y = 0; y < 16; y++) fb[x * 240 + y] = UI_BG;
+			ui_top_text(fb, (400 - (int)strlen(g->title) * 8) / 2, 228, g->title, UI_TEXT, 1);
+			gfxFlushBuffers();
+			return;
+		}
+	}
 	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
 	ui_top_text(fb, (400 - 6 * 8 * 4) / 2, 70, "neo3ds", UI_HEADER, 4);
 	if (nview) {
@@ -269,6 +335,20 @@ bool launcher_pick(char *path, size_t size) {
 	hidSetRepeatParameters(15, 4);
 	while (aptMainLoop()) {
 		hidScanInput();
+		if (snap_wait && --snap_wait == 0 && nview) { /* the cursor stopped here */
+			snap_read(games[view[sel]].name);
+			draw_top();
+		}
+		if (!snap_wait && snap_next_wait && --snap_next_wait == 0) { /* the rows around the cursor */
+			static const int around[] = {1, -1, 2, -2};
+			for (int i = 0; i < 4; i++) {
+				const int v = sel + around[i];
+				if (v < 0 || v >= nview || snap_known(games[view[v]].name)) continue;
+				snap_read(games[view[v]].name);
+				snap_next_wait = SNAP_NEXT_FRAMES;
+				break;
+			}
+		}
 		const u32 down = RECEIVE_KEYS_DOWN(), rep = hidKeysDownRepeat() | (down & KEY_DOWN);
 		if (HAS_RECEIVE) {
 			touchPosition t;
@@ -311,6 +391,7 @@ bool launcher_pick(char *path, size_t size) {
 #endif
 			if (start && nview) {
 				snprintf(path, size, "%s", games[view[sel]].file);
+				snap_free();
 				return true;
 			}
 		}

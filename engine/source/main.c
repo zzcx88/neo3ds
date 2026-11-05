@@ -17,6 +17,8 @@
 #include "save.h"
 #include "savestate.h"
 #include "launcher.h"
+#include "receive.h"
+#include "snapshot.h"
 #include "ui.h"
 #include "drz80/DrZ80.h"
 
@@ -377,6 +379,16 @@ static void state_action(bool save, int slot) {
 }
 
 /* The HOME menu or sleep may be followed by the console being switched off */
+/* The .neo3ds file started from the launcher ("" in a game's own CIA) */
+static char pack_path[160];
+
+/* The frame on the top screen, as the game's picture in the launcher's list. */
+static bool take_snapshot(bool manual) {
+	if (!pack_path[0] || top_shown < 0 || neo_boot_ff) return false;
+	const char *slash = strrchr(pack_path, '/');
+	return snapshot_save(slash ? slash + 1 : pack_path, top_bufs[top_shown], manual);
+}
+
 static aptHookCookie apt_cookie;
 static void on_apt(APT_HookType type, void *param) {
 	(void)param;
@@ -403,8 +415,8 @@ int main(void) {
 		osGetMemRegionSize(MEMREGION_APPLICATION) / MB, __ctru_heap_size / MB, __ctru_linear_heap_size / MB);
 	const bool from_launcher = !loader_standalone();
 	if (from_launcher) { /* the launcher CIA: pick a .neo3ds file first */
-		char path[160];
-		if (!launcher_pick(path, sizeof path)) {
+		char *path = pack_path;
+		if (!launcher_pick(path, sizeof pack_path)) {
 			romfsExit();
 			gfxExit();
 			return 0;
@@ -481,7 +493,18 @@ int main(void) {
 			if (hidKeysDown() & KEY_L) action = UI_STATE_SAVE;
 			else if (hidKeysDown() & KEY_R) action = UI_STATE_LOAD;
 		}
+#ifdef NEO3DS_RECV_TEST
+		{ /* Azahar test: the same two actions, without touching the screen */
+			const u32 test = receive_test_keys();
+			if (test & KEY_ZL) action = UI_GAME_LIST;
+			if (test & KEY_ZR) action = UI_SNAPSHOT;
+		}
+#endif
 		switch (action) {
+		case UI_SNAPSHOT:
+			ui_status(take_snapshot(true) ? "Snapshot saved for the game list" : "No snapshot taken");
+			last_loop = 0;
+			break;
 		case UI_GAME_LIST: /* back to the list: run the launcher again, from a clean slate */
 			aptSetChainloaderToSelf();
 			quit = true;
@@ -668,6 +691,7 @@ int main(void) {
 	}
 
 	aptUnhook(&apt_cookie);
+	take_snapshot(false);
 	ui_screen_on();
 	save_exit();
 	render_thread_stop();
