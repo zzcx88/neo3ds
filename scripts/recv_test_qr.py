@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes a QR code holding a text to a PNG, for Azahar's still image camera.
 
-usage: py scripts/recv_test_qr.py <text> <out.png>
+usage: py scripts/recv_test_qr.py <text> <out.png> [module pixels]
        py scripts/recv_test_qr.py --blank <out.png>
 Needs the qrcode package (pip install qrcode); no image library.
 """
@@ -9,7 +9,7 @@ import struct
 import sys
 import zlib
 
-W, H, MODULE = 640, 480, 8
+W, H = 640, 480
 
 
 def png(path, rows):
@@ -30,10 +30,15 @@ def main():
     if text != "--blank":
         import qrcode
 
-        qr = qrcode.QRCode(border=0, error_correction=qrcode.constants.ERROR_CORRECT_M)
+        # As the converter: ECC L only for a list of addresses
+        level = qrcode.constants.ERROR_CORRECT_L if "\n" in text else qrcode.constants.ERROR_CORRECT_M
+        qr = qrcode.QRCode(border=0, error_correction=level)
         qr.add_data(text)
         qr.make(fit=True)
         matrix = qr.get_matrix()
+        print(f"{len(text)} bytes, {len(matrix)} modules")
+        # The camera halves this picture to 320x240
+        MODULE = int(sys.argv[3]) if len(sys.argv) > 3 else min(8, H // len(matrix))
         size = len(matrix) * MODULE
         x0, y0 = (W - size) // 2, (H - size) // 2
         for j, line in enumerate(matrix):
