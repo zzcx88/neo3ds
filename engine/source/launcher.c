@@ -123,7 +123,11 @@ static void build_view(int keep) {
 }
 
 /* Pictures already read, newest first: scrolling back needs no SD card. pixels NULL: no picture. */
-enum { SNAP_CACHE = 8, SNAP_WAIT_FRAMES = 10 };
+enum {
+	SNAP_CACHE = 8,
+	SNAP_WAIT_FRAMES = 6,  /* just over the key repeat: a held key reads nothing while it scrolls */
+	SNAP_NEXT_FRAMES = 12, /* with the cursor still, the pictures around it are read one by one */
+};
 typedef struct {
 	char name[sizeof ((Game *)0)->file];
 	u16 *pixels;
@@ -131,6 +135,13 @@ typedef struct {
 static SnapEntry snaps[SNAP_CACHE];
 static int snap_count;
 static int snap_wait; /* frames until the cursor counts as stopped and the picture is read */
+static int snap_next_wait; /* frames until the next picture around the cursor is read */
+
+static bool snap_known(const char *name) {
+	for (int i = 0; i < snap_count; i++)
+		if (!strcmp(snaps[i].name, name)) return true;
+	return false;
+}
 
 /* The entry of this game, moved to the front. */
 static SnapEntry *snap_find(const char *name) {
@@ -167,7 +178,8 @@ static void draw_top(void) {
 	if (nview) {
 		const Game *g = &games[view[sel]];
 		const SnapEntry *e = snap_find(g->name);
-		if (!e) snap_wait = SNAP_WAIT_FRAMES;
+		snap_wait = e ? 0 : SNAP_WAIT_FRAMES;
+		snap_next_wait = SNAP_NEXT_FRAMES;
 		if (e && e->pixels) {
 			memcpy(fb, e->pixels, SNAPSHOT_BYTES);
 			for (int x = 0; x < 400; x++) /* the name on a band at the bottom */
@@ -326,6 +338,16 @@ bool launcher_pick(char *path, size_t size) {
 		if (snap_wait && --snap_wait == 0 && nview) { /* the cursor stopped here */
 			snap_read(games[view[sel]].name);
 			draw_top();
+		}
+		if (!snap_wait && snap_next_wait && --snap_next_wait == 0) { /* the rows around the cursor */
+			static const int around[] = {1, -1, 2, -2};
+			for (int i = 0; i < 4; i++) {
+				const int v = sel + around[i];
+				if (v < 0 || v >= nview || snap_known(games[view[v]].name)) continue;
+				snap_read(games[view[v]].name);
+				snap_next_wait = SNAP_NEXT_FRAMES;
+				break;
+			}
 		}
 		const u32 down = RECEIVE_KEYS_DOWN(), rep = hidKeysDownRepeat() | (down & KEY_DOWN);
 		if (HAS_RECEIVE) {
