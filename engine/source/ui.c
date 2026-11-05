@@ -115,7 +115,7 @@ void ui_set_launcher(void) {
 	rects[B_LIST] = (UiRect){238, 116, 74, 26};
 }
 /* the test button is held while touched, and at least SERVICE_FRAMES so that a tap reaches the BIOS */
-enum { RESTART_FRAMES = 60, CONFIRM_FRAMES = 180, SERVICE_FRAMES = 15 };
+enum { CONFIRM_FRAMES = 180, SERVICE_FRAMES = 15 };
 
 static char title[40];
 static char version[16]; /* "v1.1.0", empty for CIAs from converters before it was written */
@@ -310,32 +310,74 @@ void ui_screen_on(void) {
 	if (lcd_off) set_backlight(true);
 }
 
+/* A button that asks to be tapped twice: true on the second tap. */
+static bool tap_again(int *countdown) {
+	const bool second = *countdown != 0;
+	*countdown = second ? 0 : CONFIRM_FRAMES;
+	return second;
+}
+
+/* The countdown of such a button; true when it ran out and the button was drawn back. */
+static bool countdown_ended(int *countdown, int button) {
+	if (!*countdown || --*countdown) return false;
+	draw_button(button);
+	return true;
+}
+
+/* The touch was lifted from button b. */
+static UiAction button_released(int b) {
+	switch (b) {
+	case B_KEYS: return UI_KEYCONFIG;
+	case B_DIAG: return UI_DIAG;
+	case B_TURBO:
+		keys_cycle_turbo();
+		draw_keys();
+		break;
+	case B_SYSTEM:
+		if (!loader_has_bios(!memory.mvs)) break;
+		if (tap_again(&confirm)) return UI_SYSTEM;
+		break;
+	case B_SLOT: {
+		char s[40];
+		slot = (slot + 1) % STATE_SLOTS;
+		savestate_describe(slot, s, sizeof s);
+		ui_status(s);
+		break;
+	}
+	case B_SAVE: return UI_STATE_SAVE;
+	case B_SNAP: return UI_SNAPSHOT;
+	case B_OFF: set_backlight(false); break;
+	case B_LIST:
+		if (tap_again(&list_confirm)) return UI_GAME_LIST;
+		break;
+	case B_LOAD:
+		if (tap_again(&load_confirm)) return UI_STATE_LOAD;
+		break;
+	}
+	return UI_NONE;
+}
+
+/* With the backlight off, a touch only turns it back on. */
+static void lcd_off_update(u32 down, u32 held) {
+	if (lcd_off && (down & KEY_TOUCH)) {
+		set_backlight(true);
+		lcd_waking = true;
+	}
+	if (lcd_waking && !(held & KEY_TOUCH)) lcd_waking = false;
+}
+
 UiAction ui_main_update(void) {
 	const u32 down = hidKeysDown(), held = hidKeysHeld(), up = hidKeysUp();
 	UiAction action = UI_NONE;
-	bool dirty = false;
 
 	if (lcd_off || lcd_waking) {
-		if (lcd_off && (down & KEY_TOUCH)) {
-			set_backlight(true);
-			lcd_waking = true;
-		}
-		if (lcd_waking && !(held & KEY_TOUCH)) lcd_waking = false;
+		lcd_off_update(down, held);
 		return UI_NONE;
 	}
 
-	if (confirm && --confirm == 0) {
-		draw_button(B_SYSTEM);
-		dirty = true;
-	}
-	if (load_confirm && --load_confirm == 0) {
-		draw_button(B_LOAD);
-		dirty = true;
-	}
-	if (list_confirm && --list_confirm == 0) {
-		draw_button(B_LIST);
-		dirty = true;
-	}
+	bool dirty = countdown_ended(&confirm, B_SYSTEM);
+	dirty |= countdown_ended(&load_confirm, B_LOAD);
+	dirty |= countdown_ended(&list_confirm, B_LIST);
 	if (down & KEY_TOUCH) {
 		touchPosition t;
 		hidTouchRead(&t);
@@ -362,43 +404,7 @@ UiAction ui_main_update(void) {
 		const int b = pressed;
 		pressed = -1;
 		hold = 0;
-		switch (b) {
-		case B_KEYS: action = UI_KEYCONFIG; break;
-		case B_DIAG: action = UI_DIAG; break;
-		case B_TURBO:
-			keys_cycle_turbo();
-			draw_keys();
-			break;
-		case B_SYSTEM:
-			if (!loader_has_bios(!memory.mvs)) break;
-			if (confirm) {
-				confirm = 0;
-				action = UI_SYSTEM;
-			} else confirm = CONFIRM_FRAMES;
-			break;
-		case B_SLOT: {
-			char s[40];
-			slot = (slot + 1) % STATE_SLOTS;
-			savestate_describe(slot, s, sizeof s);
-			ui_status(s);
-			break;
-		}
-		case B_SAVE: action = UI_STATE_SAVE; break;
-		case B_SNAP: action = UI_SNAPSHOT; break;
-		case B_OFF: set_backlight(false); break;
-		case B_LIST:
-			if (list_confirm) {
-				list_confirm = 0;
-				action = UI_GAME_LIST;
-			} else list_confirm = CONFIRM_FRAMES;
-			break;
-		case B_LOAD:
-			if (load_confirm) {
-				load_confirm = 0;
-				action = UI_STATE_LOAD;
-			} else load_confirm = CONFIRM_FRAMES;
-			break;
-		}
+		action = button_released(b);
 		draw_button(b);
 		dirty = true;
 	}

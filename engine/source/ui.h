@@ -21,6 +21,8 @@ enum {
 
 typedef struct { s16 x, y, w, h; } UiRect;
 
+enum { RESTART_FRAMES = 60 }; /* how long a restart is held, on the button or with SELECT + START */
+
 /* A pixel of either screen's framebuffer, x and y from the top left: the screens are stored rotated,
  * as columns of 240 pixels from the bottom row up. */
 #define UI_PIXEL(fb, x, y) ((fb)[(x) * 240 + 239 - (y)])

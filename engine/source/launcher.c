@@ -319,6 +319,55 @@ static void open_receive(void) {
 	draw_all();
 }
 
+/* The buttons and the touch screen on the list. True when the game under the cursor is to start. */
+static bool list_input(u32 down, u32 rep) {
+	bool start = false;
+	if (down & KEY_LEFT) show_tab(0);
+	if (down & KEY_RIGHT) show_tab(1);
+	if (nview) {
+		if (rep & KEY_DOWN) pick_row(sel + 1);
+		if (rep & KEY_UP) pick_row(sel - 1);
+		if (rep & KEY_R) pick_row(sel + ROWS);
+		if (rep & KEY_L) pick_row(sel - ROWS);
+		if (down & KEY_SELECT) toggle_fav(sel);
+		start = down & (KEY_A | KEY_START);
+	}
+	if (down & KEY_TOUCH) {
+		touchPosition t;
+		hidTouchRead(&t);
+		const int row = (t.py - LIST_Y) / ROW_H, v = top + row;
+		if (t.py < 26) {
+			if (t.px >= TAB_ALL_X && t.px < TAB_ALL_X + TAB_W) show_tab(0);
+			else if (t.px >= TAB_FAV_X && t.px < TAB_FAV_X + TAB_W) show_tab(1);
+		} else if (t.py >= LIST_Y && row < ROWS && v < nview) {
+			if (t.px < STAR_W) toggle_fav(v);
+			else if (v == sel) start = true;
+			else pick_row(v);
+		}
+	}
+	return start;
+}
+
+/* The SD card last in the frame, and only with no key down: what follows a read starts on a new
+ * frame, and a read never holds up a key or a redraw. */
+static void read_snapshots_when_idle(void) {
+	if (!(hidKeysHeld() & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT | KEY_L | KEY_R))) {
+		if (snap_wait && --snap_wait == 0 && nview) { /* the cursor stopped here */
+			snap_read(games[view[sel]].name);
+			top_stale = true;
+		} else if (!snap_wait && snap_next_wait && --snap_next_wait == 0) { /* the rows around it */
+			static const int around[] = {1, -1, 2, -2};
+			for (int i = 0; i < 4; i++) {
+				const int v = sel + around[i];
+				if (v < 0 || v >= nview || snap_known(games[view[v]].name)) continue;
+				snap_read(games[view[v]].name);
+				snap_next_wait = SNAP_NEXT_FRAMES;
+				break;
+			}
+		}
+	}
+}
+
 bool launcher_pick(char *path, size_t size) {
 	gfxSetDoubleBuffering(GFX_TOP, false);
 	top_scratch = malloc(SNAPSHOT_BYTES);
@@ -344,30 +393,7 @@ bool launcher_pick(char *path, size_t size) {
 			}
 		}
 		if (count) {
-			bool start = false;
-			if (down & KEY_LEFT) show_tab(0);
-			if (down & KEY_RIGHT) show_tab(1);
-			if (nview) {
-				if (rep & KEY_DOWN) pick_row(sel + 1);
-				if (rep & KEY_UP) pick_row(sel - 1);
-				if (rep & KEY_R) pick_row(sel + ROWS);
-				if (rep & KEY_L) pick_row(sel - ROWS);
-				if (down & KEY_SELECT) toggle_fav(sel);
-				start = down & (KEY_A | KEY_START);
-			}
-			if (down & KEY_TOUCH) {
-				touchPosition t;
-				hidTouchRead(&t);
-				const int row = (t.py - LIST_Y) / ROW_H, v = top + row;
-				if (t.py < 26) {
-					if (t.px >= TAB_ALL_X && t.px < TAB_ALL_X + TAB_W) show_tab(0);
-					else if (t.px >= TAB_FAV_X && t.px < TAB_FAV_X + TAB_W) show_tab(1);
-				} else if (t.py >= LIST_Y && row < ROWS && v < nview) {
-					if (t.px < STAR_W) toggle_fav(v);
-					else if (v == sel) start = true;
-					else pick_row(v);
-				}
-			}
+			bool start = list_input(down, rep);
 #ifdef NEO3DS_AUTOPICK
 			{ /* Azahar test: start the first game after two seconds */
 				static int frames;
@@ -382,23 +408,7 @@ bool launcher_pick(char *path, size_t size) {
 				return true;
 			}
 		}
-		/* The SD card last, and only with no key down: what follows a read starts on a new frame,
-		 * and a read never holds up a key or a redraw. */
-		if (!(hidKeysHeld() & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT | KEY_L | KEY_R))) {
-			if (snap_wait && --snap_wait == 0 && nview) { /* the cursor stopped here */
-				snap_read(games[view[sel]].name);
-				top_stale = true;
-			} else if (!snap_wait && snap_next_wait && --snap_next_wait == 0) { /* the rows around it */
-				static const int around[] = {1, -1, 2, -2};
-				for (int i = 0; i < 4; i++) {
-					const int v = sel + around[i];
-					if (v < 0 || v >= nview || snap_known(games[view[v]].name)) continue;
-					snap_read(games[view[v]].name);
-					snap_next_wait = SNAP_NEXT_FRAMES;
-					break;
-				}
-			}
-		}
+		read_snapshots_when_idle();
 		gspWaitForVBlank();
 	}
 	return false;

@@ -44,6 +44,7 @@ static PrintConsole bottom;
  * core 1), 2 = buffer swap, 3 = sound, 4 = rendering (includes 2), 5 = YM2610
  * synthesis (part of 3). 3-5 run on core 1 when threaded. */
 extern u64 prof_ticks[6];
+extern unsigned spr_lines[4]; /* sprite lines drawn per kind (video.c), for the diagnostics */
 
 /* Top screen, triple buffered: libctru's gfx only double-buffers, and with a frame taking most of
  * 16.7ms to draw, the next frame would start in the buffer still on screen (its swap is applied
@@ -280,8 +281,7 @@ static u32 turbo_filter(u32 k) {
 	return k;
 }
 
-// Holding SELECT + START this long restarts the game.
-enum { RESTART_FRAMES = 60 };
+// Holding SELECT + START for RESTART_FRAMES restarts the game.
 static int restart_hold;
 
 static void read_input(void) {
@@ -398,6 +398,232 @@ static void on_apt(APT_HookType type, void *param) {
 	}
 }
 
+enum { LOG_LINES = 18 }; /* seconds of fps on the diagnostics screen */
+/* The time a frame takes, for the once-a-second report. */
+static struct {
+	u64 report_t;      /* osGetTime() of the last report */
+	u64 emu_ticks, present_ticks;
+	u64 last_loop;     /* the end of the last frame; 0 after a menu or a save, whose time doesn't count */
+	int frames, late;
+} pace;
+
+static void restart_with_bios(void) {
+	loader_use_bios(keys_bios_mvs());
+	neo_restart();
+	ui_main_draw();
+	ui_status(memory.mvs ? "Restarted with the MVS BIOS" : "Restarted with the AES BIOS");
+}
+
+/* What is asked of the game this frame: the touch screen's buttons, then the held combinations. */
+static UiAction frame_action(void) {
+	UiAction action = UI_NONE;
+	if (show_stats) {
+		if (hidKeysDown() & KEY_TOUCH) { /* any touch goes back to the GUI */
+			show_stats = false;
+			ui_main_draw();
+		}
+	} else action = ui_main_update();
+#ifdef NEO3DS_KEYCONFIG_AT
+	{ /* Azahar test (screenshots): open the key config at frame NEO3DS_KEYCONFIG_AT */
+		static int frame_no;
+		if (++frame_no == NEO3DS_KEYCONFIG_AT) action = UI_KEYCONFIG;
+	}
+#endif
+	if ((hidKeysHeld() & (KEY_SELECT | KEY_START)) == (KEY_SELECT | KEY_START)) {
+		if (++restart_hold == RESTART_FRAMES) action = UI_RESTART;
+	} else restart_hold = 0;
+	if (hidKeysHeld() & KEY_SELECT) { /* SELECT + L / R: quick save / load in the slot picked */
+		if (hidKeysDown() & KEY_L) action = UI_STATE_SAVE;
+		else if (hidKeysDown() & KEY_R) action = UI_STATE_LOAD;
+	}
+	{ /* Azahar test: the same two actions, without touching the screen */
+		const u32 test = recv_test_keys();
+		if (test & KEY_ZL) action = UI_GAME_LIST;
+		if (test & KEY_ZR) action = UI_SNAPSHOT;
+	}
+	return action;
+}
+
+/* True when the game is to end. */
+static bool take_action(UiAction action) {
+	switch (action) {
+	case UI_SNAPSHOT:
+		ui_status(take_snapshot(true) ? "Snapshot saved for the game list" : "No snapshot taken");
+		pace.last_loop = 0;
+		break;
+	case UI_GAME_LIST: /* back to the list: run the launcher again, from a clean slate */
+		aptSetChainloaderToSelf();
+		return true;
+	case UI_STATE_SAVE:
+	case UI_STATE_LOAD:
+		state_action(action == UI_STATE_SAVE, ui_state_slot());
+		pace.last_loop = 0;
+		break;
+	case UI_KEYCONFIG:
+		keys_menu(); /* the game waits while the menu is open */
+		if (keys_bios_mvs() != memory.mvs) restart_with_bios(); /* switching the BIOS restarts the game */
+		else ui_main_draw();
+		pace.last_loop = 0;
+		break;
+	case UI_SYSTEM:
+		keys_set_bios_mvs(!memory.mvs);
+		restart_with_bios();
+		break;
+	case UI_RESTART:
+		neo_restart();
+		if (show_stats) {
+			printf("\x1b[29;2H\x1b[33mRestarted\x1b[0m");
+			flush_console();
+		} else ui_status("Restarted");
+		break;
+	case UI_DIAG:
+		show_stats = true;
+		consoleClear(); /* filled at the next one-second report */
+		show_turbo();
+		break;
+	default:
+		break;
+	}
+	return false;
+}
+
+/* What the test builds do between frames (docs/build.md). Nothing in a normal build. */
+static void debug_frame(void) {
+#ifdef NEO3DS_BENCH
+	/* L+R: draw the current frame 30 times with the old and the new zoomed-row code */
+	if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R)) {
+		extern int render_zoom_fast;
+		static u16 *scratch;
+		if (!scratch) scratch = malloc(TOP_BYTES);
+		double ms[2];
+		for (int mode = 0; mode < 2; mode++) {
+			render_zoom_fast = mode;
+			u64 t0 = svcGetSystemTick();
+			for (int i = 0; i < 30; i++) video_render(scratch);
+			ms[mode] = (svcGetSystemTick() - t0) / (CPU_TICKS_PER_MSEC * 30.0);
+		}
+		render_zoom_fast = 1;
+		printf("\x1b[%d;0Hbench old %5.2f new %5.2f ms", show_stats ? 19 : 26, ms[0], ms[1]);
+		flush_console();
+	}
+#endif
+#ifdef NEO3DS_VDUMP
+	if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R))
+		dump_video_state();
+#endif
+#ifdef NEO3DS_YMLOG
+	{
+		extern int ymlog_frame;
+		void ymlog_save(void);
+		if (++ymlog_frame == NEO3DS_YMLOG) { ymlog_save(); printf("\x1b[19;0Hymlog saved\n"); }
+	}
+#endif
+#ifdef NEO3DS_SERVICE_AT
+	{ /* Azahar test: hold the MVS test button for a quarter second at frame NEO3DS_SERVICE_AT */
+		static int frame_no;
+		frame_no++;
+		conf.test_switch = frame_no >= NEO3DS_SERVICE_AT && frame_no < NEO3DS_SERVICE_AT + 15;
+	}
+#endif
+#ifdef NEO3DS_STATE_TEST
+	{ /* Azahar test: save at frame 1500, load at 1800; the state 300 frames on must match */
+		static int tf;
+		static unsigned h1;
+		extern Uint8 drz80mem[0x10000];
+		unsigned h = 2166136261u;
+		if (++tf == 1800 || tf == 2100) {
+			for (int i = 0; i < 0x10000; i++) h = (h ^ memory.ram[i]) * 16777619u;
+			for (int i = 0; i < 0x20000; i++) h = (h ^ memory.vid.ram[i]) * 16777619u;
+			for (int i = 0; i < 0x10000; i++) h = (h ^ drz80mem[i]) * 16777619u;
+		}
+		if (tf == 1500) state_action(true, 0);
+		if (tf == 1800) { h1 = h; state_action(false, 0); }
+		if (tf == 2100) {
+			FILE *f = fopen("sdmc:/neo3ds/statetest.txt", "w");
+			if (f) { fprintf(f, "%08x %08x %s\n", h1, h, h1 == h ? "SAME" : "DIFF"); fclose(f); }
+		}
+	}
+#endif
+#ifdef NEO3DS_AUTODUMP
+	{
+		static int frame_no;
+		if (++frame_no % NEO3DS_AUTODUMP == 0) {
+			/* the last frame finished, so the dump is the same frame on every run */
+			if (render_thread) {
+				LightEvent_Wait(&render_idle);
+				LightEvent_Signal(&render_idle);
+			}
+			dump_video_state();
+		}
+	}
+#endif
+}
+
+/* The diagnostics screen's lines below the fps log. */
+static void print_diagnostics(double k) {
+	extern u64 prof_split[3];
+	extern unsigned prof_split_frames, z80_idle_slices;
+	extern int z80_port_writes, z80_bank_wraps, dbg_z80_resets, dbg_z80_restarts, dbg_adpcma_keyons, dbg_adpcma_oob;
+	printf("\x1b[%d;0HPC %06lx  resets %d  miss %4lu   \n", LOG_LINES + 2, cpu_68k_getpc(), neo_watchdog_resets,
+	       memory.vid.spr_cache.misses);
+	print_memory();
+	printf("main : cpu %5.2f end %4.2f present %5.2f  \n", prof_ticks[0] * k, prof_ticks[1] * k,
+	       pace.present_ticks * k);
+	/* h: bands of the 16 drawn by the main core */
+	printf("core1: snd %4.2f (ym %4.2f) rnd %5.2f h%2u  \n", prof_ticks[3] * k, prof_ticks[5] * k,
+	       prof_ticks[4] * k, bands_helped / pace.frames);
+	bands_helped = 0;
+	static int last_writes;
+	if (prof_split_frames) {
+		const double ks = 1.0 / (CPU_TICKS_PER_MSEC * prof_split_frames);
+		printf("cpu = 68k %5.2f z80 %4.2f tmr %4.2f  \n", prof_split[0] * ks, prof_split[1] * ks,
+		       prof_split[2] * ks);
+	}
+	printf("z80 wr %5d/s idle %2u%% wrap %d rst %d/%d  \n", z80_port_writes - last_writes,
+	       z80_idle_slices * 100 / (pace.frames * 264), z80_bank_wraps, dbg_z80_resets, dbg_z80_restarts);
+	z80_idle_slices = 0;
+	printf("adpcm-a %d oob %d snd+ %u drop %u  \n", dbg_adpcma_keyons, dbg_adpcma_oob,
+	       audio_catchups, audio_drops);
+	audio_catchups = audio_drops = 0;
+	printf("spr lines %4u xz %4u yz %4u  ", spr_lines[0] / pace.frames, /* last row: no newline */ spr_lines[2] / pace.frames,
+	       spr_lines[3] / pace.frames);
+	last_writes = z80_port_writes;
+	memset(prof_split, 0, sizeof prof_split);
+	prof_split_frames = 0;
+}
+
+/* Once a second: the fps, the diagnostics if they are on the screen, and the counters start over. */
+static void report_second(void) {
+	const u64 now = osGetTime();
+	const double k = 1.0 / (CPU_TICKS_PER_MSEC * pace.frames);
+	const double fps = pace.frames * 1000.0 / (now - pace.report_t);
+	/* last LOG_LINES seconds of fps and main-core time per frame, then a fixed status block */
+	static char log[LOG_LINES][41];
+	memmove(log[1], log[0], sizeof log[0] * (LOG_LINES - 1));
+	snprintf(log[0], sizeof log[0], "%4.1f fps  %5.2f ms  late %2d", fps, pace.emu_ticks * k, pace.late);
+	if (show_stats) {
+		for (int i = 0; i < LOG_LINES; i++) printf("\x1b[%d;0H%-39s", i + 1, log[i]);
+		print_diagnostics(k);
+		flush_console();
+	} else ui_fps(fps);
+	memset(prof_ticks, 0, sizeof prof_ticks);
+	memory.vid.spr_cache.misses = 0;
+	memset(spr_lines, 0, sizeof spr_lines);
+	pace.present_ticks = 0;
+	pace.late = 0;
+	pace.report_t = now;
+	pace.frames = 0;
+	pace.emu_ticks = 0;
+}
+
+/* Ends the app before the game runs. */
+static int leave(bool wait) {
+	if (wait) wait_for_exit();
+	romfsExit();
+	gfxExit();
+	return 0;
+}
+
 int main(void) {
 	gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, false);
 	consoleInit(GFX_BOTTOM, &bottom);
@@ -415,20 +641,12 @@ int main(void) {
 		osGetMemRegionSize(MEMREGION_APPLICATION) / MB, __ctru_heap_size / MB, __ctru_linear_heap_size / MB);
 	const bool from_launcher = !loader_standalone();
 	if (from_launcher) { /* the launcher CIA: pick a .neo3ds file first */
-		char *path = pack_path;
-		if (!launcher_pick(path, sizeof pack_path)) {
-			romfsExit();
-			gfxExit();
-			return 0;
-		}
+		if (!launcher_pick(pack_path, sizeof pack_path)) return leave(false);
 		consoleClear();
-		printf("\x1b[1;36mneo3ds\x1b[0m\n\n%s\n", path);
-		if (!loader_open_pack(path)) {
+		printf("\x1b[1;36mneo3ds\x1b[0m\n\n%s\n", pack_path);
+		if (!loader_open_pack(pack_path)) {
 			printf("\x1b[31mCan't open the game:\x1b[0m %s\n", loader_error());
-			wait_for_exit();
-			romfsExit();
-			gfxExit();
-			return 0;
+			return leave(true);
 		}
 	}
 	printf("Loading game...\n");
@@ -437,19 +655,13 @@ int main(void) {
 	printf("\n");
 	if (!ok) {
 		printf("\x1b[31mLoad failed:\x1b[0m %s\n", loader_error());
-		wait_for_exit();
-		romfsExit();
-		gfxExit();
-		return 0;
+		return leave(true);
 	}
 	const double load_secs = (osGetTime() - t0) / 1000.0;
 
 	if (!video_init()) {
 		printf("\x1b[31mOut of linear memory for the screen\x1b[0m\n");
-		wait_for_exit();
-		romfsExit();
-		gfxExit();
-		return 0;
+		return leave(true);
 	}
 	keys_load();
 	loader_use_bios(keys_bios_mvs());
@@ -459,10 +671,7 @@ int main(void) {
 	render_thread_start();
 	const bool sound = audio_init(conf.sample_rate);
 
-	u64 fps_t = osGetTime();
-	int frames = 0;
-	u64 emu_ticks = 0, present_ticks = 0, last_loop = 0;
-	int late = 0;
+	pace.report_t = osGetTime();
 	ui_main_init(load_secs, sound);
 	if (from_launcher) ui_set_launcher();
 	ui_main_draw();
@@ -473,219 +682,22 @@ int main(void) {
 	while (!quit && aptMainLoop()) {
 		hidScanInput();
 		read_input();
-		UiAction action = UI_NONE;
-		if (show_stats) {
-			if (hidKeysDown() & KEY_TOUCH) { /* any touch goes back to the GUI */
-				show_stats = false;
-				ui_main_draw();
-			}
-		} else action = ui_main_update();
-#ifdef NEO3DS_KEYCONFIG_AT
-		{ /* Azahar test (screenshots): open the key config at frame NEO3DS_KEYCONFIG_AT */
-			static int frame_no;
-			if (++frame_no == NEO3DS_KEYCONFIG_AT) action = UI_KEYCONFIG;
-		}
-#endif
-		if ((hidKeysHeld() & (KEY_SELECT | KEY_START)) == (KEY_SELECT | KEY_START)) {
-			if (++restart_hold == RESTART_FRAMES) action = UI_RESTART;
-		} else restart_hold = 0;
-		if (hidKeysHeld() & KEY_SELECT) { /* SELECT + L / R: quick save / load in the slot picked */
-			if (hidKeysDown() & KEY_L) action = UI_STATE_SAVE;
-			else if (hidKeysDown() & KEY_R) action = UI_STATE_LOAD;
-		}
-		{ /* Azahar test: the same two actions, without touching the screen */
-			const u32 test = recv_test_keys();
-			if (test & KEY_ZL) action = UI_GAME_LIST;
-			if (test & KEY_ZR) action = UI_SNAPSHOT;
-		}
-		switch (action) {
-		case UI_SNAPSHOT:
-			ui_status(take_snapshot(true) ? "Snapshot saved for the game list" : "No snapshot taken");
-			last_loop = 0;
-			break;
-		case UI_GAME_LIST: /* back to the list: run the launcher again, from a clean slate */
-			aptSetChainloaderToSelf();
-			quit = true;
-			break;
-		case UI_STATE_SAVE:
-		case UI_STATE_LOAD:
-			state_action(action == UI_STATE_SAVE, ui_state_slot());
-			last_loop = 0;
-			break;
-		case UI_KEYCONFIG:
-			keys_menu(); /* the game waits while the menu is open */
-			if (keys_bios_mvs() != memory.mvs) { /* switching the BIOS restarts the game */
-				loader_use_bios(keys_bios_mvs());
-				neo_restart();
-				ui_main_draw();
-				ui_status(memory.mvs ? "Restarted with the MVS BIOS" : "Restarted with the AES BIOS");
-			} else ui_main_draw();
-			last_loop = 0;
-			break;
-		case UI_SYSTEM:
-			keys_set_bios_mvs(!memory.mvs);
-			loader_use_bios(keys_bios_mvs());
-			neo_restart();
-			ui_main_draw();
-			ui_status(memory.mvs ? "Restarted with the MVS BIOS" : "Restarted with the AES BIOS");
-			break;
-		case UI_RESTART:
-			neo_restart();
-			if (show_stats) {
-				printf("\x1b[29;2H\x1b[33mRestarted\x1b[0m");
-				flush_console();
-			} else ui_status("Restarted");
-			break;
-		case UI_DIAG:
-			show_stats = true;
-			consoleClear(); /* filled at the next one-second report */
-			show_turbo();
-			break;
-		default:
-			break;
-		}
-#ifdef NEO3DS_BENCH
-		/* L+R: draw the current frame 30 times with the old and the new zoomed-row code */
-		if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R)) {
-			extern int render_zoom_fast;
-			static u16 *scratch;
-			if (!scratch) scratch = malloc(TOP_BYTES);
-			double ms[2];
-			for (int mode = 0; mode < 2; mode++) {
-				render_zoom_fast = mode;
-				u64 t0 = svcGetSystemTick();
-				for (int i = 0; i < 30; i++) video_render(scratch);
-				ms[mode] = (svcGetSystemTick() - t0) / (CPU_TICKS_PER_MSEC * 30.0);
-			}
-			render_zoom_fast = 1;
-			printf("\x1b[%d;0Hbench old %5.2f new %5.2f ms", show_stats ? 19 : 26, ms[0], ms[1]);
-			flush_console();
-		}
-#endif
-#ifdef NEO3DS_VDUMP
-		if ((hidKeysDown() & (KEY_L | KEY_R)) && (hidKeysHeld() & KEY_L) && (hidKeysHeld() & KEY_R))
-			dump_video_state();
-#endif
-#ifdef NEO3DS_YMLOG
-		{
-			extern int ymlog_frame;
-			void ymlog_save(void);
-			if (++ymlog_frame == NEO3DS_YMLOG) { ymlog_save(); printf("\x1b[19;0Hymlog saved\n"); }
-		}
-#endif
-#ifdef NEO3DS_SERVICE_AT
-		{ /* Azahar test: hold the MVS test button for a quarter second at frame NEO3DS_SERVICE_AT */
-			static int frame_no;
-			frame_no++;
-			conf.test_switch = frame_no >= NEO3DS_SERVICE_AT && frame_no < NEO3DS_SERVICE_AT + 15;
-		}
-#endif
-#ifdef NEO3DS_STATE_TEST
-		{ /* Azahar test: save at frame 1500, load at 1800; the state 300 frames on must match */
-			static int tf;
-			static unsigned h1;
-			extern Uint8 drz80mem[0x10000];
-			unsigned h = 2166136261u;
-			if (++tf == 1800 || tf == 2100) {
-				for (int i = 0; i < 0x10000; i++) h = (h ^ memory.ram[i]) * 16777619u;
-				for (int i = 0; i < 0x20000; i++) h = (h ^ memory.vid.ram[i]) * 16777619u;
-				for (int i = 0; i < 0x10000; i++) h = (h ^ drz80mem[i]) * 16777619u;
-			}
-			if (tf == 1500) state_action(true, 0);
-			if (tf == 1800) { h1 = h; state_action(false, 0); }
-			if (tf == 2100) {
-				FILE *f = fopen("sdmc:/neo3ds/statetest.txt", "w");
-				if (f) { fprintf(f, "%08x %08x %s\n", h1, h, h1 == h ? "SAME" : "DIFF"); fclose(f); }
-			}
-		}
-#endif
-#ifdef NEO3DS_AUTODUMP
-		{
-			static int frame_no;
-			if (++frame_no % NEO3DS_AUTODUMP == 0) {
-				/* the last frame finished, so the dump is the same frame on every run */
-				if (render_thread) {
-					LightEvent_Wait(&render_idle);
-					LightEvent_Signal(&render_idle);
-				}
-				dump_video_state();
-			}
-		}
-#endif
+		quit = take_action(frame_action());
+		debug_frame();
 
 		save_frame();
 		u64 t = svcGetSystemTick();
 		neo_run_frame(true); /* hands sound and picture to core 1 at its end */
-		emu_ticks += svcGetSystemTick() - t;
+		pace.emu_ticks += svcGetSystemTick() - t;
 
 		u64 tp = svcGetSystemTick();
 		if (!neo_boot_ff) present_frame(); /* the MVS BIOS start-up runs as fast as it can */
 		u64 tl = svcGetSystemTick();
-		present_ticks += tl - tp;
-		if (last_loop && tl - last_loop > 18 * CPU_TICKS_PER_MSEC) late++; /* missed a vblank */
-		last_loop = tl;
+		pace.present_ticks += tl - tp;
+		if (pace.last_loop && tl - pace.last_loop > 18 * CPU_TICKS_PER_MSEC) pace.late++; /* missed a vblank */
+		pace.last_loop = tl;
 
-		if (++frames == 60) {
-			u64 now = osGetTime();
-			const double k = 1.0 / (CPU_TICKS_PER_MSEC * frames);
-			/* last LOG_LINES seconds of fps and main-core time per frame, then a fixed status block */
-			enum { LOG_LINES = 18 };
-			static char log[LOG_LINES][41];
-			memmove(log[1], log[0], sizeof log[0] * (LOG_LINES - 1));
-			snprintf(log[0], sizeof log[0], "%4.1f fps  %5.2f ms  late %2d", frames * 1000.0 / (now - fps_t),
-			         emu_ticks * k, late);
-			if (!show_stats) ui_fps(frames * 1000.0 / (now - fps_t));
-			if (show_stats) {
-				for (int i = 0; i < LOG_LINES; i++) printf("\x1b[%d;0H%-39s", i + 1, log[i]);
-				printf("\x1b[%d;0HPC %06lx  resets %d  miss %4lu   \n", LOG_LINES + 2, cpu_68k_getpc(), neo_watchdog_resets,
-				       memory.vid.spr_cache.misses);
-				print_memory();
-				printf("main : cpu %5.2f end %4.2f present %5.2f  \n", prof_ticks[0] * k, prof_ticks[1] * k,
-				       present_ticks * k);
-				/* h: bands of the 16 drawn by the main core */
-				printf("core1: snd %4.2f (ym %4.2f) rnd %5.2f h%2u  \n", prof_ticks[3] * k, prof_ticks[5] * k,
-				       prof_ticks[4] * k, bands_helped / frames);
-				bands_helped = 0;
-				{
-					extern u64 prof_split[3];
-					extern unsigned prof_split_frames;
-					extern int z80_port_writes;
-					static int last_writes;
-					if (prof_split_frames) {
-						const double ks = 1.0 / (CPU_TICKS_PER_MSEC * prof_split_frames);
-						printf("cpu = 68k %5.2f z80 %4.2f tmr %4.2f  \n", prof_split[0] * ks, prof_split[1] * ks,
-						       prof_split[2] * ks);
-					}
-					extern int z80_bank_wraps, dbg_z80_resets, dbg_z80_restarts;
-					extern unsigned z80_idle_slices;
-					printf("z80 wr %5d/s idle %2u%% wrap %d rst %d/%d  \n", z80_port_writes - last_writes,
-					       z80_idle_slices * 100 / (frames * 264), z80_bank_wraps, dbg_z80_resets, dbg_z80_restarts);
-					z80_idle_slices = 0;
-					extern int dbg_adpcma_keyons, dbg_adpcma_oob;
-					printf("adpcm-a %d oob %d snd+ %u drop %u  \n", dbg_adpcma_keyons, dbg_adpcma_oob,
-					       audio_catchups, audio_drops);
-					audio_catchups = audio_drops = 0;
-					extern unsigned spr_lines[4];
-					printf("spr lines %4u xz %4u yz %4u  ", spr_lines[0] / frames, /* last row: no newline */ spr_lines[2] / frames,
-					       spr_lines[3] / frames);
-					last_writes = z80_port_writes;
-					memset(prof_split, 0, sizeof prof_split);
-					prof_split_frames = 0;
-				}
-				flush_console();
-			}
-			memset(prof_ticks, 0, sizeof prof_ticks);
-			memory.vid.spr_cache.misses = 0;
-			{
-				extern unsigned spr_lines[4];
-				memset(spr_lines, 0, sizeof spr_lines);
-			}
-			present_ticks = 0;
-			late = 0;
-			fps_t = now;
-			frames = 0;
-			emu_ticks = 0;
-		}
+		if (++pace.frames == 60) report_second();
 	}
 
 	aptUnhook(&apt_cookie);

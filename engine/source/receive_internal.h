@@ -52,7 +52,7 @@ void recv_net_close(void);
  * body came with the headers. */
 DlResult recv_net_request(const Target *t, const char *method, int *sock, u64 *length, int *extra);
 /* The body, into out: exactly length bytes, starting with what came with the headers. */
-DlResult recv_read_body(int sock, FILE *out, int extra, u64 length, u64 *got_out);
+DlResult recv_read_body(int sock, FILE *out, int extra, u64 length, u64 *got);
 
 /* ---- receive_file.c ---- */
 bool recv_install(const char *part, const char *final);
