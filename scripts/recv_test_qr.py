@@ -33,7 +33,7 @@ def main():
         # As the converter: ECC L only for a list of addresses
         level = qrcode.constants.ERROR_CORRECT_L if "\n" in text else qrcode.constants.ERROR_CORRECT_M
         qr = qrcode.QRCode(border=0, error_correction=level)
-        qr.add_data(text)
+        qr.add_data(text.encode("utf-8"), optimize=0)  # one byte-mode segment, as the converter's QRCoder
         qr.make(fit=True)
         matrix = qr.get_matrix()
         print(f"{len(text)} bytes, {len(matrix)} modules")
