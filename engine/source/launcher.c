@@ -334,7 +334,7 @@ static bool list_input(u32 down, u32 rep) {
 	}
 	if (down & KEY_TOUCH) {
 		touchPosition t;
-		hidTouchRead(&t);
+		ui_touch_read(&t);
 		const int row = (t.py - LIST_Y) / ROW_H, v = top + row;
 		if (t.py < 26) {
 			if (t.px >= TAB_ALL_X && t.px < TAB_ALL_X + TAB_W) show_tab(0);
@@ -386,7 +386,7 @@ bool launcher_pick(char *path, size_t size) {
 		const u32 down = RECEIVE_KEYS_DOWN(), rep = hidKeysDownRepeat() | (down & KEY_DOWN);
 		if (HAS_RECEIVE) {
 			touchPosition t;
-			hidTouchRead(&t);
+			ui_touch_read(&t);
 			if ((down & KEY_Y) || ((down & KEY_TOUCH) && ui_hit(receive_button, t.px, t.py))) {
 				open_receive();
 				continue;

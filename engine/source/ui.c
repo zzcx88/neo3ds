@@ -7,6 +7,7 @@
 
 #include "ui.h"
 #include "keys.h"
+#include "recv_test.h"
 #include "loader.h"
 #include "neo/memory.h"
 #include "neo/emu.h"
@@ -198,6 +199,7 @@ static void draw_button(int b) {
 	}
 	char label[40];
 	button_label(b, label, sizeof label);
+	recv_test_ui_log(label);
 	const UiRect r = rects[b];
 	const u16 bg = b == pressed ? UI_PRESSED : ((b == B_SYSTEM && confirm) || (b == B_LOAD && load_confirm) || (b == B_LIST && list_confirm)) ? UI_HEADER : UI_PANEL;
 	ui_button(r, label, bg, UI_TEXT);
@@ -274,6 +276,7 @@ void ui_main_draw(void) {
 void ui_status(const char *msg) {
 	snprintf(status, sizeof status, "%s", msg ? msg : default_status);
 	status_warn = msg != NULL;
+	recv_test_ui_log(status);
 	draw_status();
 	ui_flush();
 }
@@ -304,6 +307,7 @@ static void set_backlight(bool on) {
 	else GSPLCD_PowerOffBacklight(GSPLCD_SCREEN_BOTTOM);
 	gspLcdExit();
 	lcd_off = !on;
+	recv_test_ui_log(on ? "backlight on" : "backlight off");
 }
 
 void ui_screen_on(void) {
@@ -367,7 +371,8 @@ static void lcd_off_update(u32 down, u32 held) {
 }
 
 UiAction ui_main_update(void) {
-	const u32 down = hidKeysDown(), held = hidKeysHeld(), up = hidKeysUp();
+	const u32 down = hidKeysDown() | recv_test_touch_down(), held = hidKeysHeld() | recv_test_touch_held();
+	const u32 up = hidKeysUp() | recv_test_touch_up();
 	UiAction action = UI_NONE;
 
 	if (lcd_off || lcd_waking) {
@@ -380,7 +385,7 @@ UiAction ui_main_update(void) {
 	dirty |= countdown_ended(&list_confirm, B_LIST);
 	if (down & KEY_TOUCH) {
 		touchPosition t;
-		hidTouchRead(&t);
+		ui_touch_read(&t);
 		for (int b = 0; b < NB; b++)
 			if (rects[b].w && ui_hit(rects[b], t.px, t.py)) {
 				pressed = b;

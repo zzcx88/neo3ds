@@ -13,7 +13,7 @@
 param(
     [Parameter(Mandatory)] [string] $Pack,
     [string] $Converter = "dist/converter",
-    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six", "snap", "badpack", "badopen", "keep", "case", "home-ask", "recover-many", "recover-fail", "logcap-fail", "space-edge", "badfolder"),
+    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six", "snap", "badpack", "badopen", "keep", "case", "home-ask", "recover-many", "recover-fail", "logcap-fail", "space-edge", "badfolder", "touch"),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = "Stop"
@@ -100,7 +100,15 @@ if (-not (Test-Path $cxi)) { throw "no $cxi" }
 # A killed run runs no finally. What it changed is put back first, so its test values don't become
 # this run's originals: the copy on the disk stays until a run has restored them.
 $ini = Join-Path $env:APPDATA "Azahar/config/qt-config.ini"
-$settings = @{ "launcher.txt" = "$cfg/launcher.txt"; "receive.log" = $log; "qt-config.ini" = $ini }
+$settings = @{ "launcher.txt" = "$cfg/launcher.txt"; "receive.log" = $log; "qt-config.ini" = $ini
+    "keyconfig" = "$cfg/keys"; "states" = "$cfg/states"; "saves" = "$cfg/saves"; "snaps" = "$cfg/snaps" }
+function RestoreSettings {
+    foreach ($name in $settings.Keys) {
+        $saved = Join-Path $settingsCopy $name
+        Remove-Item -Recurse -Force $settings[$name] -ErrorAction SilentlyContinue # none if it did not exist
+        if (Test-Path $saved) { Copy-Item -Recurse $saved $settings[$name] }
+    }
+}
 $settingsCopy = Join-Path $out "settings-copy"
 $gamesKept = Join-Path (Split-Path $games) "games.keep"
 if ((Test-Path $settingsCopy) -or (Test-Path $gamesKept)) {
@@ -113,27 +121,19 @@ if (Test-Path $gamesKept) {
     "The game folder of a run cut short was put back."
 }
 if (Test-Path $settingsCopy) {
-    foreach ($name in $settings.Keys) {
-        $saved = Join-Path $settingsCopy $name
-        if (Test-Path $saved) { Copy-Item $saved $settings[$name] -Force }
-        else { Remove-Item $settings[$name] -ErrorAction SilentlyContinue } # it did not exist
-    }
+    RestoreSettings
     "The settings of a run cut short were put back."
 } else {
     $making = "$settingsCopy.new"
     if (Test-Path $making) { Remove-Item -Recurse -Force $making }
     New-Item -ItemType Directory $making | Out-Null
     foreach ($name in $settings.Keys) {
-        if (Test-Path $settings[$name]) { Copy-Item $settings[$name] (Join-Path $making $name) }
+        if (Test-Path $settings[$name]) { Copy-Item -Recurse $settings[$name] (Join-Path $making $name) }
     }
     Rename-Item $making "settings-copy" # whole or not at all
 }
 
 New-Item -ItemType Directory -Force $games, $cfg | Out-Null
-$configBackup = $null
-if (Test-Path "$cfg/launcher.txt") { $configBackup = Get-Content -Raw "$cfg/launcher.txt" }
-$logBackup = $null
-if (Test-Path $log) { $logBackup = [IO.File]::ReadAllBytes($log) }
 
 $results = @()
 $hash = (Get-FileHash $Pack).Hash
@@ -208,6 +208,27 @@ function StartServerFile([string] $file) { RunServer @($file, "--name", "recvtes
 function BlockName([string] $path) {
     New-Item -ItemType Directory -Force $path | Out-Null
     [IO.File]::WriteAllText((Join-Path $path "keep.txt"), "in the way")
+}
+# A touch at x, y of the bottom screen, and what the engine then says it did (recv_ui.txt)
+$uiLog = Join-Path $cfg "recv_ui.txt"
+function Tap([int] $x, [int] $y, [int] $frames = 2) { Press "t $x $y $frames" }
+function WaitUi([string] $pattern, [int] $seconds = 5) {
+    for ($i = 0; $i -lt $seconds * 4; $i++) {
+        if ((Test-Path $uiLog) -and (@(Get-Content $uiLog) -match $pattern)) { return $true }
+        Start-Sleep -Milliseconds 250
+    }
+    return $false
+}
+function TouchStep([string] $name, [int] $x, [int] $y, [string] $pattern, [int] $frames = 2) {
+    Remove-Item $uiLog -ErrorAction SilentlyContinue
+    Tap $x $y $frames
+    Report "touch-$name" (WaitUi $pattern) "wanted: $pattern"
+}
+function ListStep([string] $name, [int] $x, [int] $y, [string] $pattern) {
+    Tap $x $y
+    Start-Sleep -Milliseconds 500
+    $now = ListState
+    Report "touch-$name" ($now -match $pattern) "wanted: $pattern, now: $now"
 }
 function LogCount { if (Test-Path $log) { (Get-Content $log).Count } else { 0 } }
 # Batches: files named recvb1.neo3ds, recvb2.neo3ds...
@@ -631,6 +652,64 @@ try {
             StartAzahar
             continue
         }
+        if ($s -eq "touch") {
+            # The list and a running game by touch alone. Places as in launcher.c and ui.c (launcher layout).
+            Restart
+            ListStep "tab-fav" 200 12 "^tab=1 "
+            ListStep "tab-all" 140 12 "^tab=0 "
+            ListStep "star-on" 10 43 "favs=2 "
+            ListStep "star-off" 10 43 "favs=1 "
+            # Tapping another row moves the cursor there, and back
+            Tap 100 65; Start-Sleep -Milliseconds 500; $rowA = ListState
+            Tap 100 87; Start-Sleep -Milliseconds 500; $rowB = ListState
+            Tap 100 65; Start-Sleep -Milliseconds 500; $rowC = ListState
+            Report "touch-row" ($rowA -ne $rowB -and $rowC -eq $rowA) "a: $rowA b: $rowB"
+            [IO.File]::WriteAllText($urlFile, "http://127.0.0.1:80/x/a.neo3ds`n")
+            $before = LogCount
+            Tap 296 12 # Y:QR
+            $qr = WaitLine " refused " $before 5
+            Press $KeyA
+            Report "touch-qr" $qr ""
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
+            Remove-Item $uiLog -ErrorAction SilentlyContinue
+            # Always the same game: the only favorite, so the result doesn't depend on where the cursor was
+            Tap 200 12
+            Start-Sleep -Milliseconds 500
+            $fav = ListState
+            Tap 100 43 # the selected row: the game starts
+            $running = WaitUi "^game running$" 40
+            Report "touch-start" ($running -and $fav -match "^tab=1 sel=kof98\.neo3ds ") "list: $fav"
+            if ($running) {
+                Start-Sleep -Seconds 15
+                TouchStep "save" 160 161 "^Saved to slot 1$"
+                TouchStep "load-ask" 264 161 "^Tap again$"
+                TouchStep "load" 264 161 "^Loaded slot 1$"
+                TouchStep "slot" 56 161 "^Slot 2: empty$"
+                TouchStep "turbo" 238 59 "^Turbo: "
+                TouchStep "snapshot" 201 129 "^Snapshot saved"
+                TouchStep "lcd-off" 300 13 "^backlight off$"
+                TouchStep "lcd-on" 160 120 "^backlight on$"
+                Start-Sleep -Milliseconds 500
+                TouchStep "diagnostics" 238 95 "^diagnostics$"
+                Start-Sleep -Seconds 2
+                TouchStep "diagnostics-back" 160 120 "^Key config$"
+                TouchStep "keys-open" 82 59 "^key config$"
+                Start-Sleep -Milliseconds 500
+                TouchStep "keys-save" 238 224 "^keys saved$"
+                Start-Sleep -Milliseconds 500
+                TouchStep "restart" 50 129 "^Restarted$" 70
+                Start-Sleep -Seconds 5
+                Remove-Item $uiLog -ErrorAction SilentlyContinue
+                Tap 82 95 # System: taps twice with both BIOSes in the file
+                if (WaitUi "^Tap again: " 2) { TouchStep "system" 82 95 "^Restarted with the " ; Start-Sleep -Seconds 15 }
+                else { Report "touch-system" $true "one BIOS in this game file: nothing to switch" }
+                TouchStep "list-ask" 275 129 "^Tap again$"
+                TouchStep "list" 275 129 "^game list$"
+                Start-Sleep -Seconds 3
+            }
+            Restart
+            continue
+        }
         if ($s -eq "recover-many") {
             # More leftovers than one pass takes: one start deals with them all
             StopAzahar
@@ -920,23 +999,18 @@ try {
     if ($srv) { Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue }
     $results | Set-Content (Join-Path $out "results.txt")
     StopAzahar
-    [IO.File]::WriteAllText($ini, $iniBackup)
     CleanBatch
-    Remove-Item (Join-Path $cfg "snaps/sonicwi3.bin") -ErrorAction SilentlyContinue
     if ($moved) {
         Remove-Item -Recurse -Force $games -ErrorAction SilentlyContinue
         Rename-Item $gamesKept "games"
     }
-    Remove-Item $target, "$target.part", "$target.bak", $urlFile, $freeFile, (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), (Join-Path $cfg "recv_cluster.txt") -ErrorAction SilentlyContinue
+    Remove-Item $target, "$target.part", "$target.bak", $urlFile, $freeFile, (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), (Join-Path $cfg "recv_cluster.txt"), (Join-Path $cfg "recv_ui.txt") -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force "$log.old" -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $games "recvm*"), (Join-Path $games "recvn*") -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force (Join-Path $games "recvdir.neo3ds.part") -ErrorAction SilentlyContinue
     foreach ($left in "recvcut.neo3ds.part", "recvback.neo3ds", "recvback.neo3ds.bak", "recvnew.neo3ds", "recvnew.neo3ds.bak", "recvbad.neo3ds", "recvcase.neo3ds", "recv test.neo3ds") {
         Remove-Item -LiteralPath (Join-Path $games $left) -ErrorAction SilentlyContinue
     }
-    if ($null -ne $logBackup) { [IO.File]::WriteAllBytes($log, $logBackup) }
-    else { Remove-Item $log -ErrorAction SilentlyContinue }
-    if ($null -ne $configBackup) { [IO.File]::WriteAllText("$cfg/launcher.txt", $configBackup) }
-    else { Remove-Item "$cfg/launcher.txt" -ErrorAction SilentlyContinue }
+    RestoreSettings
     Remove-Item -Recurse -Force $settingsCopy -ErrorAction SilentlyContinue # all put back
 }

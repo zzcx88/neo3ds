@@ -1,5 +1,5 @@
 // See recv_test.h. The test's files are in SD_DATA_DIR: it writes recv_key.txt, recv_url.txt and
-// recv_free.txt, and reads recv_list.txt, recv_state.txt and recv_cluster.txt.
+// recv_free.txt, and reads recv_list.txt, recv_state.txt, recv_cluster.txt and recv_ui.txt.
 #ifdef NEO3DS_RECV_TEST
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,16 +12,47 @@
 static bool write_fails;
 static int last_codes, last_error;
 
+/* A touch goes down for a frame, stays for its frames and comes up for one. This runs once a frame:
+ * the screens that use it call recv_test_keys once a frame. */
+static enum { TOUCH_NONE, TOUCH_DOWN, TOUCH_HELD, TOUCH_UP } touch;
+static int touch_x, touch_y, touch_frames;
+
+static void touch_next_frame(void) {
+	if (touch == TOUCH_DOWN) touch = TOUCH_HELD;
+	else if (touch == TOUCH_UP) touch = TOUCH_NONE;
+	if (touch == TOUCH_HELD && --touch_frames <= 0) touch = TOUCH_UP;
+}
+
+u32 recv_test_touch_down(void) { return touch == TOUCH_DOWN ? KEY_TOUCH : 0; }
+u32 recv_test_touch_held(void) { return touch == TOUCH_DOWN || touch == TOUCH_HELD ? KEY_TOUCH : 0; }
+u32 recv_test_touch_up(void) { return touch == TOUCH_UP ? KEY_TOUCH : 0; }
+
+void recv_test_touch_place(touchPosition *t) {
+	if (touch == TOUCH_NONE) return;
+	t->px = touch_x;
+	t->py = touch_y;
+}
+
+void recv_test_ui_log(const char *what) {
+	FILE *f = fopen(SD_DATA_DIR "/recv_ui.txt", "a");
+	if (!f) return;
+	fprintf(f, "%s\n", what);
+	fclose(f);
+}
+
 u32 recv_test_keys(void) {
 	static u64 next;
+	touch_next_frame();
 	const u64 now = osGetTime();
 	if (now < next) return 0;
 	next = now + 100;
 	FILE *f = fopen(SD_DATA_DIR "/recv_key.txt", "r");
 	if (!f) return 0;
 	const int c = fgetc(f);
+	if (c == 't' && fscanf(f, " %d %d %d", &touch_x, &touch_y, &touch_frames) == 3) touch = TOUCH_DOWN;
 	fclose(f);
 	remove(SD_DATA_DIR "/recv_key.txt");
+	if (touch == TOUCH_DOWN) return KEY_TOUCH;
 	if (c == 'H') recv_interrupted = true; /* as if the HOME menu had come up */
 	if (c == 'W') write_fails = true;
 	if (c == 'R') return KEY_RIGHT;
