@@ -11,13 +11,13 @@
 # SD card folder as recvtest.neo3ds and is deleted at the end; launcher.txt is put back.
 param(
     [Parameter(Mandatory)] [string] $Pack,
-    [string] $Converter = "out/conv141",
-    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six", "snap"),
+    [string] $Converter = "dist/converter",
+    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six", "snap", "badpack", "badopen", "keep", "case", "home-ask"),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = "Stop"
 $Scenarios = $Scenarios -split "," # powershell -File passes "a,b" as one string
-$root =Split-Path $PSScriptRoot -Parent
+$root = Split-Path $PSScriptRoot -Parent
 $out = Join-Path $root "out/recvtest"
 $sd = Join-Path $env:APPDATA "Azahar/sdmc"
 $games = Join-Path $sd "neo3ds/games"
@@ -47,7 +47,10 @@ function Press([string] $key) {
     if (Test-Path $file) { Remove-Item $file; throw "the launcher did not take the key $key" }
     Start-Sleep -Milliseconds 300
 }
-$KeyA = "A"; $KeyB = "B"; $KeyY = "Y"; $KeyDown = "D"
+$KeyA = "A"; $KeyB = "B"; $KeyY = "Y"; $KeyDown = "D"; $KeyRight = "R"; $KeyLeft = "T"
+# Not buttons: as if HOME had opened, the next SD write fails, note the sleep setting,
+# leave a running game for the list, take a snapshot
+$KeyHome = "H"; $KeyBadWrite = "W"; $KeySleepState = "S"; $KeyLeaveGame = "L"; $KeySnapshot = "P"
 
 function Shot([string] $name) {
     $p = Get-Process azahar
@@ -94,14 +97,8 @@ if (-not (Test-Path $cxi)) { throw "no $cxi" }
 New-Item -ItemType Directory -Force $games, $cfg | Out-Null
 $configBackup = $null
 if (Test-Path "$cfg/launcher.txt") { $configBackup = Get-Content -Raw "$cfg/launcher.txt" }
-[IO.File]::WriteAllText("$cfg/launcher.txt", "tab=0`nfav=kof98.neo3ds`n")
-Remove-Item $target, "$target.part", "$target.bak" -ErrorAction SilentlyContinue
-if (Test-Path $log) { Remove-Item $log }
-
-Stop-Process -Name azahar -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 1
-Start-Process $azahar -ArgumentList "`"$cxi`""
-Start-Sleep -Seconds 8
+$logBackup = $null
+if (Test-Path $log) { $logBackup = [IO.File]::ReadAllBytes($log) }
 
 $results = @()
 $hash = (Get-FileHash $Pack).Hash
@@ -148,13 +145,31 @@ function Report([string] $name, [bool] $ok, [string] $note) {
 function SleepState {
     $file = Join-Path $cfg "recv_state.txt"
     Remove-Item $file -ErrorAction SilentlyContinue
-    Press "S"
+    Press $KeySleepState
     for ($i = 0; $i -lt 20 -and -not (Test-Path $file); $i++) { Start-Sleep -Milliseconds 100 }
     if (Test-Path $file) { (Get-Content $file) -join "" } else { "(no state)" }
 }
 function StartServer([string] $name, [string[]] $more = @()) {
     $urlFile = Join-Path $cfg "recv_url.txt"
     $a = @("-I", $server, $Pack, "--name", $name, "--url-file", $urlFile) + $more
+    $script:srv = Start-Process $py -ArgumentList $a -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-last.log")
+    Start-Sleep -Seconds 1
+}
+function ListState {
+    $file = Join-Path $cfg "recv_list.txt"
+    if (Test-Path $file) { (Get-Content $file -Raw).Trim() } else { "(no state)" }
+}
+function GoToGame([string] $name) {
+    for ($i = 0; $i -lt 30; $i++) {
+        if ((ListState) -match "sel=$([regex]::Escape($name)) ") { return $true }
+        Press $KeyDown
+        Start-Sleep -Milliseconds 200
+    }
+    return $false
+}
+function StartServerFile([string] $file) {
+    $urlFile = Join-Path $cfg "recv_url.txt"
+    $a = @("-I", $server, $file, "--name", "recvtest.neo3ds", "--url-file", $urlFile)
     $script:srv = Start-Process $py -ArgumentList $a -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-last.log")
     Start-Sleep -Seconds 1
 }
@@ -191,7 +206,115 @@ function MakeQr([string] $text, [string] $path, [string] $module = "") {
     Remove-Item Env:PYTHONPATH
 }
 try {
+    [IO.File]::WriteAllText("$cfg/launcher.txt", "tab=0`nfav=kof98.neo3ds`n")
+    Remove-Item $target, "$target.part", "$target.bak", (Join-Path $cfg "recv_key.txt") -ErrorAction SilentlyContinue
+    if (Test-Path $log) { Remove-Item $log }
+    Restart
     foreach ($s in $Scenarios) {
+        if ($s -eq "badpack") {
+            # Damaged game files are refused whole, without being opened
+            & $py -I (Join-Path $root "scripts/recv_test_pack.py") $Pack $out
+            foreach ($bad in "p0", "block1", "midoffset", "unordered", "fewblocks") {
+                StartServerFile (Join-Path $out "bad-$bad.neo3ds")
+                $before = LogCount
+                Press $KeyY
+                $done = WaitLine " skipped " $before 60
+                Start-Sleep -Seconds 1
+                Shot "$s-$bad"
+                Press $KeyA
+                Start-Sleep -Seconds 1
+                Report "$s-$bad" ($done -and -not (Test-Path $target) -and -not (Test-Path "$target.part")) ""
+                StopServer
+            }
+            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            continue
+        }
+        if ($s -eq "badopen") {
+            # One copied to the SD card gets a message when opened, not a crash
+            & $py -I (Join-Path $root "scripts/recv_test_pack.py") $Pack $out
+            $bad = Join-Path $games "recvbad.neo3ds"
+            Copy-Item (Join-Path $out "bad-block1.neo3ds") $bad
+            Restart
+            $found = GoToGame "recvbad.neo3ds"
+            Press $KeyA
+            Start-Sleep -Seconds 4
+            Shot $s
+            Report $s ($found -and [bool](Get-Process azahar -ErrorAction SilentlyContinue)) "see the $s screenshot"
+            Stop-Process -Name azahar -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+            Remove-Item $bad -ErrorAction SilentlyContinue
+            Restart
+            continue
+        }
+        if ($s -eq "keep") {
+            # Receiving from the Favorites tab: tab, cursor and favorites stay
+            Remove-Item $target -ErrorAction SilentlyContinue
+            Restart
+            Press $KeyRight
+            Start-Sleep -Milliseconds 500
+            $was = ListState
+            StartServer "recvtest.neo3ds"
+            $before = LogCount
+            Press $KeyY
+            $done = WaitLine " saved " $before 60
+            Start-Sleep -Seconds 1
+            Press $KeyA
+            Start-Sleep -Seconds 1
+            $now = ListState
+            Report $s ($done -and $was -match "^tab=1 sel=kof98\.neo3ds favs=1 " -and $now -match "^tab=1 sel=kof98\.neo3ds favs=1 ") "was: $was now: $now"
+            Press $KeyLeft
+            StopServer
+            Remove-Item $target, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Restart
+            continue
+        }
+        if ($s -eq "case") {
+            # Replaced by the same name in other letters: the SD card takes it for the same file
+            $lower = Join-Path $games "recvcase.neo3ds"
+            Copy-Item $Pack $lower
+            Restart
+            $found = GoToGame "recvcase.neo3ds"
+            StartServer "RECVCASE.neo3ds"
+            $before = LogCount
+            Press $KeyY
+            Start-Sleep -Seconds 1
+            Press $KeyA
+            $done = WaitLine " saved " $before 60
+            Start-Sleep -Seconds 1
+            Press $KeyA
+            Start-Sleep -Seconds 1
+            $now = ListState
+            Report $s ($found -and $done -and $now -match "(?i)sel=recvcase\.neo3ds") "now: $now"
+            StopServer
+            Stop-Process -Name azahar -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+            Remove-Item $lower, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Restart
+            continue
+        }
+        if ($s -eq "home-ask") {
+            # HOME at the question goes back to the list; the next try is not stopped by it
+            Copy-Item $Pack $target -Force
+            StartServer "recvtest.neo3ds"
+            $before = LogCount
+            Press $KeyY
+            Start-Sleep -Seconds 1
+            Press $KeyHome
+            Start-Sleep -Seconds 1
+            Shot "$s-list"
+            Press $KeyY
+            Start-Sleep -Seconds 1
+            Press $KeyA
+            $done = WaitLine " saved " $before 60
+            Start-Sleep -Seconds 1
+            Press $KeyA
+            $clean = -not ((@(Get-Content $log) | Select-Object -Skip $before) -match "interrupted")
+            Report $s ($done -and $clean) ""
+            StopServer
+            Remove-Item $target, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Restart # the list still has the file just removed
+            continue
+        }
         if ($s -in "b-ok3", "b-six", "b-corrupt", "b-short", "b-headdiff", "b-replace") {
             CleanBatch
             $list = switch ($s) {
@@ -275,7 +398,7 @@ try {
             Press $KeyA
             WaitLine " saved " $before 60 | Out-Null
             Start-Sleep -Seconds 3
-            Press "H"
+            Press $KeyHome
             $done = WaitLine " summary " $before 15
             Start-Sleep -Seconds 1
             Shot "$s-results"
@@ -344,7 +467,7 @@ try {
             Shot "$s-none"
             Press $KeyA
             Start-Sleep -Seconds 25
-            Press "L" # Azahar does not start a CXI again by itself: the list comes from a restart
+            Press $KeyLeaveGame # Azahar does not start a CXI again by itself: the list comes from a restart
             Start-Sleep -Seconds 3
             Restart
             Shot "$s-auto"
@@ -356,12 +479,12 @@ try {
             Restart
             Press $KeyA
             Start-Sleep -Seconds 15
-            Press "P"
+            Press $KeySnapshot
             Start-Sleep -Seconds 3
             Shot "$s-game"
             $manualHash = if (Test-Path $first) { (Get-FileHash $first).Hash } else { "" }
             Start-Sleep -Seconds 5
-            Press "L"
+            Press $KeyLeaveGame
             Start-Sleep -Seconds 3
             Restart
             Shot "$s-manual"
@@ -380,8 +503,8 @@ try {
             Start-Sleep -Seconds 3
             $during = SleepState
             $partSeen = Test-Path "$target.part"
-            Press "H"
-            WaitLog $before 10 | Out-Null
+            Press $KeyHome
+            $stopped = WaitLog $before 10
             Start-Sleep -Seconds 1
             Shot $s
             Press $KeyA
@@ -395,7 +518,7 @@ try {
             Start-Sleep -Seconds 1
             Press $KeyA
             $saved = $again -and (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash
-            Report $s ($partSeen -and $clean -and $saved -and $idle -eq "sleep=1" -and $during -eq "sleep=0" -and $after -eq "sleep=1") "idle=$idle during=$during after=$after clean=$clean retried=$saved"
+            Report $s ($stopped -and $partSeen -and $clean -and $saved -and $idle -eq "sleep=1" -and $during -eq "sleep=0" -and $after -eq "sleep=1") "idle=$idle during=$during after=$after clean=$clean retried=$saved"
             Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
             Remove-Item $target, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
             continue
@@ -409,7 +532,7 @@ try {
             Press $KeyY
             Start-Sleep -Seconds 2
             Shot "$s-scanning"
-            Press "H"
+            Press $KeyHome
             Start-Sleep -Seconds 1
             Shot "$s-list"
             Press $KeyY
@@ -426,7 +549,7 @@ try {
             [IO.File]::WriteAllText($target, "the old game")
             StartServer "recvtest.neo3ds"
             $before = LogCount
-            Press "W"
+            Press $KeyBadWrite
             Press $KeyY
             Start-Sleep -Seconds 1
             Press $KeyA # replace it
@@ -467,7 +590,8 @@ try {
             Copy-Item $Pack $newFinal
             [IO.File]::WriteAllText($newBak, "the old game")
             Start-Process $azahar -ArgumentList "`"$cxi`""
-            Start-Sleep -Seconds 8
+            for ($i = 0; $i -lt 40 -and ((Test-Path $part) -or (Test-Path $backBak) -or (Test-Path $newBak)); $i++) { Start-Sleep -Milliseconds 500 }
+            Start-Sleep -Seconds 1
             Shot $s
             $ok = -not (Test-Path $part) -and -not (Test-Path $backBak) -and (Test-Path $backFinal) -and (Test-Path $newFinal) -and -not (Test-Path $newBak)
             Report $s $ok "part removed, old game back, stale backup removed"
@@ -609,7 +733,13 @@ try {
         $before = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
 
         if ($s -eq "cancel") { Remove-Item $target -ErrorAction SilentlyContinue }
-        if ($s -eq "ok") { 1..3 | ForEach-Object { Press $KeyDown }; Shot "$s-before" } # the cursor must stay
+        $listBefore = ""
+        if ($s -eq "ok") { 1..3 | ForEach-Object { Press $KeyDown }; Start-Sleep -Milliseconds 300; Shot "$s-before"; $listBefore = ListState } # the cursor must stay
+        if ($s -eq "replace-yes") { # the old game: same size, other contents
+            $old = [IO.File]::ReadAllBytes($target)
+            $old[$old.Length - 1] = $old[$old.Length - 1] -bxor 0xFF
+            [IO.File]::WriteAllBytes($target, $old)
+        }
         Press $KeyY
         if ($s -eq "replace-no") {
             Start-Sleep -Seconds 1
@@ -638,7 +768,17 @@ try {
             $part = Test-Path "$target.part"
             $bak = Test-Path "$target.bak"
             $want = $s -in "ok", "replace-yes"
-            $ok = $finished -and ($saved -eq $want) -and -not $part -and -not $bak
+            $exists = Test-Path $target
+            $ok = $finished -and ($saved -eq $want) -and ($exists -eq $want) -and -not $part -and -not $bak
+            if ($s -eq "ok") { # same tab, cursor and favorites; one more game
+                $now = ListState
+                $wanted = $listBefore -replace "count=(\d+)", { "count=$([int]$_.Groups[1].Value + 1)" }
+                if ($PSVersionTable.PSVersion.Major -lt 6) {
+                    $n = [int]([regex]::Match($listBefore, "count=(\d+)").Groups[1].Value) + 1
+                    $wanted = $listBefore -replace "count=\d+", "count=$n"
+                }
+                if ($now -ne $wanted) { $ok = $false; "list: wanted '$wanted', got '$now'" }
+            }
             $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) saved=$saved part=$part bak=$bak | $(LastLog)"
         }
         Shot "$s-list"
@@ -658,7 +798,12 @@ try {
         Remove-Item -Recurse -Force $games -ErrorAction SilentlyContinue
         Rename-Item (Join-Path (Split-Path $games) "games.keep") "games"
     }
-    Remove-Item $target, "$target.part", "$target.bak", (Join-Path $cfg "recv_url.txt"), (Join-Path $cfg "recv_free.txt"), (Join-Path $cfg "recv_state.txt"), "$log.old" -ErrorAction SilentlyContinue
+    Remove-Item $target, "$target.part", "$target.bak", (Join-Path $cfg "recv_url.txt"), (Join-Path $cfg "recv_free.txt"), (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), "$log.old" -ErrorAction SilentlyContinue
+    foreach ($left in "recvcut.neo3ds.part", "recvback.neo3ds", "recvback.neo3ds.bak", "recvnew.neo3ds", "recvnew.neo3ds.bak", "recvbad.neo3ds", "recvcase.neo3ds", "recv test.neo3ds") {
+        Remove-Item -LiteralPath (Join-Path $games $left) -ErrorAction SilentlyContinue
+    }
+    if ($null -ne $logBackup) { [IO.File]::WriteAllBytes($log, $logBackup) }
+    else { Remove-Item $log -ErrorAction SilentlyContinue }
     if ($null -ne $configBackup) { [IO.File]::WriteAllText("$cfg/launcher.txt", $configBackup) }
     else { Remove-Item "$cfg/launcher.txt" -ErrorAction SilentlyContinue }
 }

@@ -86,10 +86,10 @@ scripts/azahar_bench.sh
 런처 수신 화면 (#256):
 
 ```sh
-powershell -File scripts/azahar_recv_test.ps1 -Pack <파일.neo3ds> [-Converter <변환기 폴더>] [-Scenarios ok,404,cam-ok,...] [-SkipBuild]
+powershell -File scripts/azahar_recv_test.ps1 -Pack <파일.neo3ds> [-Converter <변환기 폴더, 기본 dist/converter>] [-Scenarios ok,404,cam-ok,...] [-SkipBuild]
 ```
 
-`NEO3DS_RECV_TEST`로 런처를 빌드(`engine/engine_recv.elf`)한다. 이 빌드는 Azahar SD 폴더의 `3ds/neo3ds/recv_url.txt`가 있으면 카메라 대신 그 주소를 쓰고, `recv_key.txt`의 글자를 버튼으로 받으므로 창 포커스가 필요 없다. `scripts/recv_test_server.py`가 정상·오류 응답을 내고, `cam-*` 시나리오는 `scripts/recv_test_qr.py`로 만든 QR 그림을 Azahar 정지 이미지 카메라에 건다(pip으로 `qrcode`를 `out/recvtest/pydeps`에 받음). 결과는 `out/recvtest/results.txt`와 스크린샷. 끝나면 테스트 파일을 지우고 `launcher.txt`와 `qt-config.ini`를 되돌린다.
+`NEO3DS_RECV_TEST`로 런처를 빌드(`engine/engine_recv.elf`)한다. 이 빌드는 Azahar SD 폴더의 `3ds/neo3ds/recv_url.txt`가 있으면 카메라 대신 그 주소를 쓰고, `recv_key.txt`의 글자를 버튼으로 받으므로 창 포커스가 필요 없다. `scripts/recv_test_server.py`가 정상·오류 응답을 내고, `cam-*` 시나리오는 `scripts/recv_test_qr.py`로 만든 QR 그림을 Azahar 정지 이미지 카메라에 건다(pip으로 `qrcode`를 `out/recvtest/pydeps`에 받음). 결과는 `out/recvtest/results.txt`와 스크린샷이고, `badurl`·`b-bad`·`badpack`은 경우마다 한 줄씩 내므로 결과 줄 수가 시나리오 수보다 많다. 끝나면 중단됐더라도 테스트 파일을 지우고 `launcher.txt`·`receive.log`·`qt-config.ini`를 되돌린다.
 
 `Y` 진입은 변환기가 `.neo3ds`를 보낼 수 있을 때까지 기본 빌드에서 꺼 둔다. 실기 시험은 `EXTRA_CFLAGS=-DNEO3DS_RECEIVE`로 빌드한다.
 
