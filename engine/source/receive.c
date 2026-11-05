@@ -106,6 +106,8 @@ u32 receive_test_keys(void) {
 	remove("sdmc:/3ds/neo3ds/recv_key.txt");
 	if (c == 'H') interrupted = true; /* as if the HOME menu had come up */
 	if (c == 'W') test_write_fails = true;
+	if (c == 'R') return KEY_RIGHT;
+	if (c == 'T') return KEY_LEFT;
 	if (c == 'S') { /* writes down whether the console may sleep now */
 		FILE *state = fopen("sdmc:/3ds/neo3ds/recv_state.txt", "w");
 		if (state) {
@@ -166,7 +168,11 @@ static const char *parse_url(const char *url, Target *t) {
 	for (const char *c = p; *c; c++)
 		if ((u8)*c <= 32 || (u8)*c >= 127 || *c == '?' || *c == '#') return bad;
 
-	const char *seg = strrchr(p, '/') + 1;
+	/* The sender's form: /<16 hex digits>/<file name> */
+	for (int i = 1; i <= 16; i++)
+		if (hex_value(p[i]) < 0) return bad;
+	if (p[17] != '/' || strchr(p + 18, '/')) return bad;
+	const char *seg = p + 18;
 	size_t n = 0;
 	for (const char *c = seg; *c; n++) {
 		if (n >= sizeof t->name - 1) return "The file name is too long.";
@@ -497,8 +503,9 @@ static bool space_ok(u64 bytes, int files) {
 		set_reason("Can't read the SD card's free space.%s", "");
 		return false;
 	}
-	/* Each file ends in a part of a cluster and may need one for its folder entry */
-	const u64 needed = bytes + (u64)files * 2 * cluster;
+	/* Each file ends in a part of a cluster and may need one for its folder entry; the two game
+	 * folders may have to be made first */
+	const u64 needed = bytes + ((u64)files * 2 + 2) * cluster;
 	if (available >= needed) return true;
 	snprintf(reason, sizeof reason, "Not enough space on the SD card: needs %lu MB, %lu MB free.",
 		(unsigned long)(needed >> 20) + 1, (unsigned long)(available >> 20));
@@ -700,7 +707,10 @@ static void log_attempt(const char *name, const char *what, u64 bytes) {
 	struct stat st;
 	if (stat(LOG_FILE, &st) == 0 && st.st_size >= LOG_MAX) {
 		remove(LOG_OLD);
-		rename(LOG_FILE, LOG_OLD);
+		if (rename(LOG_FILE, LOG_OLD)) { /* it must not keep growing: start it again */
+			FILE *emptied = fopen(LOG_FILE, "w");
+			if (emptied) fclose(emptied);
+		}
 	}
 	FILE *f = fopen(LOG_FILE, "a");
 	if (!f) return;
@@ -757,35 +767,46 @@ static bool get_url(char *url, size_t size) {
 void receive_recover(void) {
 	char (*found)[NAME_MAX_BYTES + 16] = malloc(RECOVER_MAX * sizeof *found);
 	if (!found) return;
-	/* Listed first: the folder is not changed while it is being read. */
-	int n = 0;
-	DIR *d = opendir(LAUNCHER_GAMES_DIR);
-	if (d) {
-		struct dirent *e;
-		while (n < RECOVER_MAX && (e = readdir(d))) {
-			const size_t len = strlen(e->d_name);
-			if (len >= sizeof found[0]) continue;
-			if ((len > 12 && !strcasecmp(e->d_name + len - 12, ".neo3ds.part")) ||
-			    (len > 11 && !strcasecmp(e->d_name + len - 11, ".neo3ds.bak")))
-				strcpy(found[n++], e->d_name);
+	/* Lists a batch at a time: the folder is not changed while it is being read. A failure ends it
+	 * (the file would be listed again and again) and is logged; the next start tries once more. */
+	bool failed = false;
+	int n;
+	do {
+		n = 0;
+		DIR *d = opendir(LAUNCHER_GAMES_DIR);
+		if (d) {
+			struct dirent *e;
+			while (n < RECOVER_MAX && (e = readdir(d))) {
+				const size_t len = strlen(e->d_name);
+				if (len >= sizeof found[0]) continue;
+				if ((len > 12 && !strcasecmp(e->d_name + len - 12, ".neo3ds.part")) ||
+				    (len > 11 && !strcasecmp(e->d_name + len - 11, ".neo3ds.bak")))
+					strcpy(found[n++], e->d_name);
+			}
+			closedir(d);
 		}
-		closedir(d);
-	}
-	for (int i = 0; i < n; i++) {
-		char path[PATH_BYTES + 32], final[PATH_BYTES + 32];
-		snprintf(path, sizeof path, LAUNCHER_GAMES_DIR "/%s", found[i]);
-		const size_t len = strlen(path);
-		if (!strcasecmp(path + len - 5, ".part")) { /* never a whole, checked file */
-			remove(path);
-			continue;
+		for (int i = 0; i < n; i++) {
+			char path[PATH_BYTES + 32], final[PATH_BYTES + 32];
+			snprintf(path, sizeof path, LAUNCHER_GAMES_DIR "/%s", found[i]);
+			const size_t len = strlen(path);
+			int result;
+			if (!strcasecmp(path + len - 5, ".part")) { /* never a whole, checked file */
+				result = remove(path);
+			} else {
+				/* .bak: the old game. With a game of that name, the new one had taken its
+				 * place; without, the old one goes back. */
+				struct stat st;
+				snprintf(final, sizeof final, "%.*s", (int)(len - 4), path);
+				result = stat(final, &st) == 0 ? remove(path) : rename(path, final);
+			}
+			if (result) {
+				failed = true;
+				http_status = 0;
+				set_reason("%s", "Can't clear this leftover file.");
+				log_attempt(found[i], "failed", 0);
+			}
 		}
-		/* .bak: the old game. With a game of that name, the new one had taken its place;
-		 * without, the old one goes back. */
-		struct stat st;
-		snprintf(final, sizeof final, "%.*s", (int)(len - 4), path);
-		if (stat(final, &st) == 0) remove(path);
-		else rename(path, final);
-	}
+	} while (n == RECOVER_MAX && !failed);
 	free(found);
 }
 
@@ -940,7 +961,7 @@ static bool receive_once(void) {
 	if (item_count == 1) {
 		if (saved) show_message(only, "Saved. It is in the list now.", "", only);
 		else if (stop == DL_CANCELLED && interrupted)
-			show_message(only, "The game was not saved.", "The HOME menu opened during the transfer. Press Y to try again.", only);
+			show_message(only, "The game was not saved.", "The HOME menu opened during the transfer. In the list, press Y to try again.", only);
 		else if (stop != DL_CANCELLED) show_message(only, "The game was not saved.", reason, only);
 		return saved > 0;
 	}

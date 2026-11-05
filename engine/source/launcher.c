@@ -175,6 +175,15 @@ static void snap_free(void) {
 /* The top screen: the selected game's picture and name, or the logo and name. */
 static void draw_top(void) {
 	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+#ifdef NEO3DS_RECV_TEST
+	{ /* Azahar test: what the list shows, for scripts/azahar_recv_test.ps1 */
+		FILE *state = fopen("sdmc:/3ds/neo3ds/recv_list.txt", "w");
+		if (state) {
+			fprintf(state, "tab=%d sel=%s favs=%d count=%d\n", tab, nview ? games[view[sel]].name : "-", favorites(), count);
+			fclose(state);
+		}
+	}
+#endif
 	if (nview) {
 		const Game *g = &games[view[sel]];
 		const SnapEntry *e = snap_find(g->name);
@@ -316,7 +325,7 @@ static void read_list_again(void) {
 	load_config();
 	int at = 0;
 	for (int i = 0; i < count; i++)
-		if (!strcmp(games[i].file, keep)) at = i;
+		if (!strcasecmp(games[i].file, keep)) at = i; /* the SD card ignores case */
 	build_view(at);
 }
 
