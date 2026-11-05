@@ -187,7 +187,7 @@ QrResult qr_scan(char *out, size_t size, QrCheck check, void (*status)(const cha
 	const char *shown = NULL;
 	result = QR_CANCELLED;
 	for (;;) {
-		if (!aptMainLoop()) break;
+		if (!aptMainLoop() || receive_interrupted()) break;
 		hidScanInput();
 		if (RECEIVE_KEYS_DOWN() & KEY_B) break;
 		gspWaitForVBlank();

@@ -8,6 +8,7 @@
 // chunks, redirects or compression. Sockets are non-blocking so B works at any moment.
 #include <3ds.h>
 #include <arpa/inet.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <malloc.h>
@@ -30,6 +31,7 @@
 #include "ui.h"
 
 #define LOG_FILE "sdmc:/3ds/neo3ds/receive.log"
+#define LOG_OLD LOG_FILE ".old"
 
 enum {
 	SOC_BYTES = 0x100000,   /* page aligned, on the normal heap: returned before a game loads */
@@ -43,6 +45,8 @@ enum {
 	IDLE_MS = 15000,        /* no data for this long: the PC or the Wi-Fi is gone */
 	BATCH_MS = 8,           /* socket work between looks at the buttons */
 	DRAW_MS = 250,
+	LOG_MAX = 32 * 1024,    /* then it becomes the .old file: two of these at most */
+	RECOVER_MAX = 16,       /* leftovers handled per start */
 };
 
 typedef struct {
@@ -57,6 +61,19 @@ typedef enum { DL_OK, DL_CANCELLED, DL_FAILED } DlResult;
 
 static char reason[96];    /* why a download failed, for the screen and the log */
 static int http_status;
+static volatile bool interrupted;
+
+bool receive_interrupted(void) { return interrupted; }
+
+/* HOME or sleep: the sockets don't survive them, and the transfer is given up on the way back. */
+static void on_apt(APT_HookType type, void *param) {
+	(void)param;
+	if (type == APTHOOK_ONSUSPEND || type == APTHOOK_ONSLEEP) interrupted = true;
+}
+
+#ifdef NEO3DS_RECV_TEST
+static bool test_write_fails;
+#endif
 
 static void set_reason(const char *fmt, const char *arg) { snprintf(reason, sizeof reason, fmt, arg); }
 
@@ -72,6 +89,15 @@ u32 receive_test_keys(void) {
 	const int c = fgetc(f);
 	fclose(f);
 	remove("sdmc:/3ds/neo3ds/recv_key.txt");
+	if (c == 'H') interrupted = true; /* as if the HOME menu had come up */
+	if (c == 'W') test_write_fails = true;
+	if (c == 'S') { /* writes down whether the console may sleep now */
+		FILE *state = fopen("sdmc:/3ds/neo3ds/recv_state.txt", "w");
+		if (state) {
+			fprintf(state, "sleep=%d\n", aptIsSleepAllowed());
+			fclose(state);
+		}
+	}
 	return c == 'A' ? KEY_A : c == 'B' ? KEY_B : c == 'Y' ? KEY_Y : c == 'D' ? KEY_DOWN : 0;
 }
 #endif
@@ -200,7 +226,7 @@ static void draw_progress(u64 got, u64 total, u32 bytes_per_second) {
 
 /* True to go on, false when the player cancelled with B or the system is closing the app. */
 static bool still_wanted(void) {
-	if (!aptMainLoop()) return false;
+	if (!aptMainLoop() || interrupted) return false;
 	hidScanInput();
 	return !(RECEIVE_KEYS_DOWN() & KEY_B);
 }
@@ -266,6 +292,23 @@ static bool install(const char *part, const char *final) {
 
 /* ---- the download ---- */
 
+/* The console's Wi-Fi connection (0: none), for the reason of a failure. */
+static u32 wifi_status(void) {
+	u32 status = 0;
+	if (R_SUCCEEDED(acInit())) {
+		ACU_GetWifiStatus(&status);
+		acExit();
+	}
+	return status;
+}
+
+/* The reason of a failure to get on the network, with the code for a report. */
+static void network_failed(const char *what, unsigned long code) {
+	const u32 wifi = wifi_status();
+	if (wifi) snprintf(reason, sizeof reason, "%s (error %lX)", what, code);
+	else snprintf(reason, sizeof reason, "Not connected to Wi-Fi: turn it on and try again. (error %lX)", code);
+}
+
 static bool wait_socket(int sock, short events, int ms) {
 	struct pollfd p = {.fd = sock, .events = events};
 	return poll(&p, 1, ms) > 0;
@@ -288,7 +331,7 @@ static DlResult net_connect(int sock, const Target *t) {
 		if (error != EINPROGRESS && error != EALREADY && error != EWOULDBLOCK) break;
 		wait_socket(sock, POLLOUT, 16);
 	}
-	snprintf(reason, sizeof reason, "Can't reach the PC: same Wi-Fi? Firewall? (error %d)", error);
+	network_failed("Can't reach the PC: same Wi-Fi? Firewall?", error);
 	return DL_FAILED;
 }
 
@@ -431,6 +474,14 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 				got += r;
 				last_data = osGetTime();
 				if (fill == CHUNK || got == length) {
+#ifdef NEO3DS_RECV_TEST
+					if (test_write_fails) {
+						test_write_fails = false;
+						*got_out = got;
+						set_reason("Can't write to the SD card.%s", "");
+						return DL_FAILED;
+					}
+#endif
 					if (fwrite(buf, 1, fill, out) != (size_t)fill) {
 						*got_out = got;
 						set_reason("Can't write to the SD card.%s", "");
@@ -474,16 +525,6 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 	return DL_OK;
 }
 
-/* The console's Wi-Fi connection (0: none), for the reason of a failure. */
-static u32 wifi_status(void) {
-	u32 status = 0;
-	if (R_SUCCEEDED(acInit())) {
-		ACU_GetWifiStatus(&status);
-		acExit();
-	}
-	return status;
-}
-
 /* Connection to .part file. The socket service is up only for this. */
 static DlResult download(const Target *t, const char *part, u64 *got) {
 	DlResult result = DL_FAILED;
@@ -499,12 +540,12 @@ static DlResult download(const Target *t, const char *part, u64 *got) {
 	}
 	const Result soc_result = socInit(soc, SOC_BYTES);
 	if (R_FAILED(soc_result)) {
-		snprintf(reason, sizeof reason, "Can't start the network (%08lX, Wi-Fi %lu).", (unsigned long)soc_result, (unsigned long)wifi_status());
+		network_failed("Can't start the network.", (unsigned long)soc_result);
 		goto done;
 	}
 	soc_up = true;
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		snprintf(reason, sizeof reason, "No network: is the Wi-Fi on? (error %d, Wi-Fi %lu)", errno, (unsigned long)wifi_status());
+		network_failed("Can't start the network.", errno);
 		goto done;
 	}
 	const int size = SOCK_BUFFER;
@@ -572,6 +613,11 @@ done:
 static void log_attempt(const char *name, const char *what, u64 bytes) {
 	mkdir("sdmc:/3ds", 0777);
 	mkdir("sdmc:/3ds/neo3ds", 0777);
+	struct stat st;
+	if (stat(LOG_FILE, &st) == 0 && st.st_size >= LOG_MAX) {
+		remove(LOG_OLD);
+		rename(LOG_FILE, LOG_OLD);
+	}
 	FILE *f = fopen(LOG_FILE, "a");
 	if (!f) return;
 	char when[32] = "";
@@ -622,7 +668,42 @@ static bool get_url(char *url, size_t size) {
 	return r == QR_FOUND;
 }
 
-bool receive_run(void) {
+void receive_recover(void) {
+	char (*found)[NAME_MAX_BYTES + 16] = malloc(RECOVER_MAX * sizeof *found);
+	if (!found) return;
+	/* Listed first: the folder is not changed while it is being read. */
+	int n = 0;
+	DIR *d = opendir(LAUNCHER_GAMES_DIR);
+	if (d) {
+		struct dirent *e;
+		while (n < RECOVER_MAX && (e = readdir(d))) {
+			const size_t len = strlen(e->d_name);
+			if (len >= sizeof found[0]) continue;
+			if ((len > 12 && !strcasecmp(e->d_name + len - 12, ".neo3ds.part")) ||
+			    (len > 11 && !strcasecmp(e->d_name + len - 11, ".neo3ds.bak")))
+				strcpy(found[n++], e->d_name);
+		}
+		closedir(d);
+	}
+	for (int i = 0; i < n; i++) {
+		char path[PATH_BYTES + 32], final[PATH_BYTES + 32];
+		snprintf(path, sizeof path, LAUNCHER_GAMES_DIR "/%s", found[i]);
+		const size_t len = strlen(path);
+		if (!strcasecmp(path + len - 5, ".part")) { /* never a whole, checked file */
+			remove(path);
+			continue;
+		}
+		/* .bak: the old game. With a game of that name, the new one had taken its place;
+		 * without, the old one goes back. */
+		struct stat st;
+		snprintf(final, sizeof final, "%.*s", (int)(len - 4), path);
+		if (stat(final, &st) == 0) remove(path);
+		else rename(path, final);
+	}
+	free(found);
+}
+
+static bool receive_once(void) {
 	static Target t;
 	char url[512], part[PATH_BYTES + 8], final[PATH_BYTES];
 	reason[0] = 0;
@@ -652,13 +733,24 @@ bool receive_run(void) {
 	draw_top(t.name);
 	draw_frame(t.name, "B: cancel");
 	u64 got = 0;
+	/* No sleeping through a transfer: closing the lid would end it. */
+	const bool sleep_allowed = aptIsSleepAllowed();
+	aptSetSleepAllowed(false);
 	const DlResult r = download(&t, part, &got);
+	const bool installed = r == DL_OK && install(part, final);
+	aptSetSleepAllowed(sleep_allowed);
 	if (r == DL_CANCELLED) {
+		if (interrupted) {
+			set_reason("%s", "The HOME menu opened during the transfer.");
+			log_attempt(t.name, "interrupted", got);
+			show_message(t.name, "The game was not saved.", "The HOME menu opened during the transfer. Press Y to try again.", t.name);
+			return false;
+		}
 		set_reason("%s", "cancelled");
 		log_attempt(t.name, "cancelled", got);
 		return false;
 	}
-	if (r == DL_OK && install(part, final)) {
+	if (installed) {
 		reason[0] = 0;
 		log_attempt(t.name, "saved", got);
 		show_message(t.name, "Saved. It is in the list now.", "", t.name);
@@ -668,4 +760,13 @@ bool receive_run(void) {
 	log_attempt(t.name, "failed", got);
 	show_message(t.name, "The game was not saved.", reason, t.name);
 	return false;
+}
+
+bool receive_run(void) {
+	aptHookCookie cookie;
+	interrupted = false;
+	aptHook(&cookie, on_apt, NULL);
+	const bool saved = receive_once();
+	aptUnhook(&cookie);
+	return saved;
 }
