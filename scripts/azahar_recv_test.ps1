@@ -27,6 +27,8 @@ $log = Join-Path $cfg "receive.log"
 $azahar = Join-Path $root "tools/azahar/azahar-windows-msvc-2126.2/azahar.exe"
 $py = (Get-Command py).Source
 $server = Join-Path $root "scripts/recv_test_server.py"
+$urlFile = Join-Path $cfg "recv_url.txt"
+$freeFile = Join-Path $cfg "recv_free.txt"
 
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
@@ -71,7 +73,7 @@ function LastLog {
 
 function WaitLog([int] $before, [int] $seconds) {
     for ($i = 0; $i -lt $seconds * 2; $i++) {
-        if ((Test-Path $log) -and (Get-Content $log).Count -gt $before) { return $true }
+        if ((LogCount) -gt $before) { return $true }
         Start-Sleep -Milliseconds 500
     }
     return $false
@@ -120,23 +122,19 @@ $badUrls = @(
 $ini = Join-Path $env:APPDATA "Azahar/config/qt-config.ini"
 $iniBackup = [IO.File]::ReadAllText($ini)
 $pydeps = Join-Path $out "pydeps"
+function StopAzahar { Stop-Process -Name azahar -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
+function LaunchAzahar { Start-Process $azahar -ArgumentList "`"$cxi`"" }
+function StartAzahar { LaunchAzahar; Start-Sleep -Seconds 8 }
+function Restart { StopAzahar; StartAzahar }
 function StartWithPicture([string] $picture) {
-    Stop-Process -Name azahar -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
+    StopAzahar
     $text = $iniBackup
     $text = $text -replace "(?m)^camera_outer_right_name\\default=.*$", "camera_outer_right_name\default=false"
     $text = $text -replace "(?m)^camera_outer_right_name=.*$", "camera_outer_right_name=image"
     $text = $text -replace "(?m)^camera_outer_right_config\\default=.*$", "camera_outer_right_config\default=false"
     $text = $text -replace "(?m)^camera_outer_right_config=.*$", ("camera_outer_right_config=" + ($picture -replace "\\", "/"))
     [IO.File]::WriteAllText($ini, $text)
-    Start-Process $azahar -ArgumentList "`"$cxi`""
-    Start-Sleep -Seconds 8
-}
-function Restart {
-    Stop-Process -Name azahar -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
-    Start-Process $azahar -ArgumentList "`"$cxi`""
-    Start-Sleep -Seconds 8
+    StartAzahar
 }
 function Report([string] $name, [bool] $ok, [string] $note) {
     $script:results += "$name : $(if ($ok) { 'PASS' } else { 'FAIL' }) $note | $(LastLog)"
@@ -149,12 +147,12 @@ function SleepState {
     for ($i = 0; $i -lt 20 -and -not (Test-Path $file); $i++) { Start-Sleep -Milliseconds 100 }
     if (Test-Path $file) { (Get-Content $file) -join "" } else { "(no state)" }
 }
-function StartServer([string] $name, [string[]] $more = @()) {
-    $urlFile = Join-Path $cfg "recv_url.txt"
-    $a = @("-I", $server, $Pack, "--name", $name, "--url-file", $urlFile) + $more
-    $script:srv = Start-Process $py -ArgumentList $a -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-last.log")
+function RunServer([string[]] $arguments, [string] $logName = "last") {
+    $a = @("-I", "-u", $server) + $arguments
+    $script:srv = Start-Process $py -ArgumentList $a -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-$logName.log")
     Start-Sleep -Seconds 1
 }
+function StartServer([string] $name, [string[]] $more = @()) { RunServer (@($Pack, "--name", $name, "--url-file", $urlFile) + $more) }
 function ListState {
     $file = Join-Path $cfg "recv_list.txt"
     if (Test-Path $file) { (Get-Content $file -Raw).Trim() } else { "(no state)" }
@@ -167,22 +165,15 @@ function GoToGame([string] $name) {
     }
     return $false
 }
-function StartServerFile([string] $file) {
-    $urlFile = Join-Path $cfg "recv_url.txt"
-    $a = @("-I", $server, $file, "--name", "recvtest.neo3ds", "--url-file", $urlFile)
-    $script:srv = Start-Process $py -ArgumentList $a -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-last.log")
-    Start-Sleep -Seconds 1
-}
+function StartServerFile([string] $file) { RunServer @($file, "--name", "recvtest.neo3ds", "--url-file", $urlFile) }
 function LogCount { if (Test-Path $log) { (Get-Content $log).Count } else { 0 } }
 # Batches: files named recvb1.neo3ds, recvb2.neo3ds...
 function BatchFile([int] $i) { Join-Path $games "recvb$i.neo3ds" }
 function CleanBatch { 1..6 | ForEach-Object { $f = BatchFile $_; Remove-Item $f, "$f.part", "$f.bak" -ErrorAction SilentlyContinue } }
-function StartBatch([string[]] $scenarios, [string] $urlFile = (Join-Path $cfg "recv_url.txt")) {
+function StartBatch([string[]] $scenarios, [string] $urls = $urlFile) {
     $list = @()
     for ($i = 0; $i -lt $scenarios.Count; $i++) { $list += "recvb$($i + 1).neo3ds:$($scenarios[$i])" }
-    $a = @("-I", "-u", $server, $Pack, "--url-file", $urlFile, "--batch") + $list
-    $script:srv = Start-Process $py -ArgumentList $a -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-last.log")
-    Start-Sleep -Seconds 1
+    RunServer (@($Pack, "--url-file", $urls, "--batch") + $list)
 }
 function StopServer { Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300 }
 function WaitLine([string] $pattern, [int] $before, [int] $seconds) {
@@ -226,7 +217,7 @@ try {
                 Report "$s-$bad" ($done -and -not (Test-Path $target) -and -not (Test-Path "$target.part")) ""
                 StopServer
             }
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "badopen") {
@@ -240,8 +231,7 @@ try {
             Start-Sleep -Seconds 4
             Shot $s
             Report $s ($found -and [bool](Get-Process azahar -ErrorAction SilentlyContinue)) "see the $s screenshot"
-            Stop-Process -Name azahar -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
+            StopAzahar
             Remove-Item $bad -ErrorAction SilentlyContinue
             Restart
             continue
@@ -264,7 +254,7 @@ try {
             Report $s ($done -and $was -match "^tab=1 sel=kof98\.neo3ds favs=1 " -and $now -match "^tab=1 sel=kof98\.neo3ds favs=1 ") "was: $was now: $now"
             Press $KeyLeft
             StopServer
-            Remove-Item $target, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $target, $urlFile -ErrorAction SilentlyContinue
             Restart
             continue
         }
@@ -286,9 +276,8 @@ try {
             $now = ListState
             Report $s ($found -and $done -and $now -match "(?i)sel=recvcase\.neo3ds") "now: $now"
             StopServer
-            Stop-Process -Name azahar -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
-            Remove-Item $lower, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            StopAzahar
+            Remove-Item $lower, $urlFile -ErrorAction SilentlyContinue
             Restart
             continue
         }
@@ -311,7 +300,7 @@ try {
             $clean = -not ((@(Get-Content $log) | Select-Object -Skip $before) -match "interrupted")
             Report $s ($done -and $clean) ""
             StopServer
-            Remove-Item $target, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $target, $urlFile -ErrorAction SilentlyContinue
             Restart # the list still has the file just removed
             continue
         }
@@ -353,13 +342,13 @@ try {
             Report $s ($done -and $files -and $thirdOk -and (NoBatchLeftovers)) "files=$files third-requested=$third"
             StopServer
             CleanBatch
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -in "b-404", "b-nospace") {
             # Refused before any file is asked for
             CleanBatch
-            if ($s -eq "b-nospace") { [IO.File]::WriteAllText((Join-Path $cfg "recv_free.txt"), "15`n") }
+            if ($s -eq "b-nospace") { [IO.File]::WriteAllText($freeFile, "15`n") }
             StartBatch $(if ($s -eq "b-404") { "ok", "404", "ok" } else { "ok", "ok" })
             $before = LogCount
             Press $KeyY
@@ -370,7 +359,7 @@ try {
             $none = -not (Get-ChildItem $games -Filter "recvb*")
             Report $s ($done -and $none -and -not ((ServerLog) -match "GET ")) "no file, no GET"
             StopServer
-            Remove-Item (Join-Path $cfg "recv_url.txt"), (Join-Path $cfg "recv_free.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile, $freeFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "b-cancel") {
@@ -385,7 +374,7 @@ try {
             $none = -not (Get-ChildItem $games -Filter "recvb*")
             Report $s ($none -and -not ((ServerLog) -match "GET ") -and (LogCount) -eq $before) "nothing fetched"
             StopServer
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "b-home") {
@@ -396,7 +385,7 @@ try {
             Press $KeyY
             Start-Sleep -Seconds 2
             Press $KeyA
-            WaitLine " saved " $before 60 | Out-Null
+            $first = WaitLine " saved " $before 60
             Start-Sleep -Seconds 3
             Press $KeyHome
             $done = WaitLine " summary " $before 15
@@ -405,10 +394,10 @@ try {
             Press $KeyA
             Start-Sleep -Seconds 1
             $state = SleepState
-            Report $s ($done -and (GoodFile 1) -and -not (Test-Path (BatchFile 2)) -and -not (Test-Path (BatchFile 3)) -and (NoBatchLeftovers) -and $state -eq "sleep=1") "after=$state"
+            Report $s ($first -and $done -and (GoodFile 1) -and -not (Test-Path (BatchFile 2)) -and -not (Test-Path (BatchFile 3)) -and (NoBatchLeftovers) -and $state -eq "sleep=1") "after=$state"
             StopServer
             CleanBatch
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "b-bad") {
@@ -424,23 +413,23 @@ try {
             }
             foreach ($k in $lists.Keys) {
                 $before = LogCount
-                [IO.File]::WriteAllText((Join-Path $cfg "recv_url.txt"), $lists[$k])
+                [IO.File]::WriteAllText($urlFile, $lists[$k])
                 Press $KeyY
                 $done = WaitLine " refused " $before 5
                 Press $KeyA
                 Report "b-bad-$k" $done ""
             }
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "cam-six") {
             # Six addresses in one code, read by the camera
             CleanBatch
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
-            $urlFile = Join-Path $out "url.txt"
-            StartBatch ("ok", "ok", "ok", "ok", "ok", "ok") $urlFile
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
+            $camUrls = Join-Path $out "url.txt"
+            StartBatch ("ok", "ok", "ok", "ok", "ok", "ok") $camUrls
             $picture = Join-Path $out "$s.png"
-            MakeQr ([IO.File]::ReadAllText($urlFile).TrimEnd("`n")) $picture "6" # 3 pixels a module on the camera
+            MakeQr ([IO.File]::ReadAllText($camUrls).TrimEnd("`n")) $picture "6" # 3 pixels a module on the camera
             StartWithPicture $picture
             $before = LogCount
             Press $KeyY
@@ -510,7 +499,7 @@ try {
             Press $KeyA
             $after = SleepState
             $clean = -not (Test-Path "$target.part") -and -not (Test-Path $target)
-            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
+            StopServer
             StartServer "recvtest.neo3ds"
             $before = LogCount
             Press $KeyY
@@ -519,13 +508,13 @@ try {
             Press $KeyA
             $saved = $again -and (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash
             Report $s ($stopped -and $partSeen -and $clean -and $saved -and $idle -eq "sleep=1" -and $during -eq "sleep=0" -and $after -eq "sleep=1") "idle=$idle during=$during after=$after clean=$clean retried=$saved"
-            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
-            Remove-Item $target, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            StopServer
+            Remove-Item $target, $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "home-cam") {
             # HOME during the scan goes back to the list and the camera starts again afterwards
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
             $picture = Join-Path $out "$s.png"
             MakeQr "--blank" $picture
             StartWithPicture $picture
@@ -559,13 +548,13 @@ try {
             Press $KeyA
             $old = (Test-Path $target) -and (Get-Content $target) -eq "the old game"
             Report $s ($done -and $old -and -not (Test-Path "$target.part") -and -not (Test-Path "$target.bak") -and (LastLog) -match "failed") "old file kept=$old"
-            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
-            Remove-Item $target, (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            StopServer
+            Remove-Item $target, $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "noserver") {
             StartServer "recvtest.neo3ds"
-            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
+            StopServer
             Start-Sleep -Seconds 1
             $before = LogCount
             Press $KeyY
@@ -574,12 +563,11 @@ try {
             Shot $s
             Press $KeyA
             Report $s ($done -and (LastLog) -match "failed" -and (LastLog) -match "error") ""
-            Remove-Item (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "recover") {
-            Stop-Process -Name azahar -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
+            StopAzahar
             $part = Join-Path $games "recvcut.neo3ds.part"
             $backBak = Join-Path $games "recvback.neo3ds.bak"
             $backFinal = Join-Path $games "recvback.neo3ds"
@@ -589,45 +577,42 @@ try {
             Copy-Item $Pack $backBak
             Copy-Item $Pack $newFinal
             [IO.File]::WriteAllText($newBak, "the old game")
-            Start-Process $azahar -ArgumentList "`"$cxi`""
+            LaunchAzahar
             for ($i = 0; $i -lt 40 -and ((Test-Path $part) -or (Test-Path $backBak) -or (Test-Path $newBak)); $i++) { Start-Sleep -Milliseconds 500 }
             Start-Sleep -Seconds 1
             Shot $s
             $ok = -not (Test-Path $part) -and -not (Test-Path $backBak) -and (Test-Path $backFinal) -and (Test-Path $newFinal) -and -not (Test-Path $newBak)
             Report $s $ok "part removed, old game back, stale backup removed"
-            Stop-Process -Name azahar -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
+            StopAzahar
             Remove-Item $part, $backBak, $backFinal, $newFinal, $newBak -ErrorAction SilentlyContinue
-            Start-Process $azahar -ArgumentList "`"$cxi`""
-            Start-Sleep -Seconds 8
+            StartAzahar
             continue
         }
         if ($s -eq "logcap") {
             # An attempt at a full log starts a new one; the old one is kept once
             [IO.File]::WriteAllText($log, ("x" * 79 + "`n") * 500)
             [IO.File]::WriteAllText("$log.old", "the older log`n")
-            [IO.File]::WriteAllText((Join-Path $cfg "recv_url.txt"), "http://127.0.0.1:80/x/a.neo3ds`n")
+            [IO.File]::WriteAllText($urlFile, "http://127.0.0.1:80/x/a.neo3ds`n")
             Press $KeyY
             Start-Sleep -Seconds 2
             Press $KeyA
             $newSize = (Get-Item $log).Length
             $oldSize = (Get-Item "$log.old").Length
             Report $s ($newSize -lt 1000 -and $oldSize -eq 40000) "new=$newSize old=$oldSize"
-            Remove-Item "$log.old", (Join-Path $cfg "recv_url.txt") -ErrorAction SilentlyContinue
+            Remove-Item "$log.old", $urlFile -ErrorAction SilentlyContinue
             continue
         }
         if ($s -like "cam-*") {
             # The camera path: a fixed port so the picture can be made first
-            Remove-Item (Join-Path $cfg "recv_url.txt"), $target -ErrorAction SilentlyContinue
-            $urlFile = Join-Path $out "url.txt"
-            $srv = Start-Process $py -ArgumentList @("-I", $server, $Pack, "--name", "recvtest.neo3ds", "--port", "50123", "--url-file", "`"$urlFile`"") -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-$s.log")
-            Start-Sleep -Seconds 1
+            Remove-Item $urlFile, $target -ErrorAction SilentlyContinue
+            $camUrls = Join-Path $out "url.txt"
+            RunServer @($Pack, "--name", "recvtest.neo3ds", "--port", "50123", "--url-file", "`"$camUrls`"") $s
             $picture = Join-Path $out "$s.png"
-            if ($s -eq "cam-ok") { MakeQr (Get-Content $urlFile) $picture }
+            if ($s -eq "cam-ok") { MakeQr (Get-Content $camUrls) $picture }
             if ($s -eq "cam-wrong") { MakeQr "http://192.0.2.1:80/0123456789abcdef/game.cia" $picture }
             if ($s -eq "cam-none") { MakeQr "--blank" $picture }
             StartWithPicture $picture
-            $before = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
+            $before = LogCount
             Press $KeyY
             if ($s -eq "cam-ok") {
                 $finished = WaitLog $before 120
@@ -637,11 +622,11 @@ try {
                 Start-Sleep -Seconds 1
                 Shot "$s-list"
                 $ok = $finished -and (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash
-                $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) | $(LastLog)"
+                Report $s $ok ""
             } else {
                 Start-Sleep -Seconds 4
                 Shot "$s-scanning"
-                $still = (Get-Content $log -ErrorAction SilentlyContinue).Count -eq $before
+                $still = (LogCount) -eq $before
                 Press $KeyB # leaves the camera
                 Start-Sleep -Seconds 1
                 Shot "$s-back"
@@ -652,56 +637,47 @@ try {
                 Start-Sleep -Seconds 1
                 Shot "$s-list"
                 $ok = $still -and -not (Test-Path $target) -and (Get-Process azahar -ErrorAction SilentlyContinue)
-                $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) stayed on the camera, left, came back"
+                Report $s $ok "stayed on the camera, left, came back"
             }
-            $results[-1]
-            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
+            StopServer
             continue
         }
         if ($s -eq "badurl") {
             foreach ($u in $badUrls) {
-                $before = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
-                [IO.File]::WriteAllText((Join-Path $cfg "recv_url.txt"), "$u`n")
+                $before = LogCount
+                [IO.File]::WriteAllText($urlFile, "$u`n")
                 Press $KeyY
                 $finished = WaitLog $before 5
                 Shot $s
                 Press $KeyA
                 $ok = $finished -and (LastLog) -match " refused "
-                $results += "badurl $($u.Substring(0, [Math]::Min(44, $u.Length))) : $(if ($ok) { 'PASS' } else { 'FAIL' }) | $(LastLog)"
-                $results[-1]
+                Report "badurl $($u.Substring(0, [Math]::Min(44, $u.Length)))" $ok ""
             }
             continue
         }
         if ($s -eq "spacename") {
             $spaced = Join-Path $games "recv test.neo3ds"
-            $urlFile = Join-Path $cfg "recv_url.txt"
-            $srv = Start-Process $py -ArgumentList @("-I", $server, $Pack, "--name", "`"recv test.neo3ds`"", "--url-file", $urlFile) -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-$s.log")
-            Start-Sleep -Seconds 1
-            $before = (Get-Content $log).Count
+            RunServer @($Pack, "--name", "`"recv test.neo3ds`"", "--url-file", $urlFile) $s
+            $before = LogCount
             Press $KeyY
             $finished = WaitLog $before 120
             Start-Sleep -Seconds 1
             Press $KeyA
             $ok = $finished -and (Test-Path $spaced) -and (Get-FileHash $spaced).Hash -eq $hash
-            $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) | $(LastLog)"
-            $results[-1]
-            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
+            Report $s $ok ""
+            StopServer
             Remove-Item $spaced -ErrorAction SilentlyContinue
             continue
         }
         if ($s -eq "empty") {
             # no game folder at all: the first game comes over the network
-            Stop-Process -Name azahar -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
+            StopAzahar
             Rename-Item $games "games.keep"
             $moved = $true
-            Start-Process $azahar -ArgumentList "`"$cxi`""
-            Start-Sleep -Seconds 8
+            StartAzahar
             Shot "$s-before"
-            $urlFile = Join-Path $cfg "recv_url.txt"
-            $srv = Start-Process $py -ArgumentList @("-I", $server, $Pack, "--name", "recvtest.neo3ds", "--url-file", $urlFile) -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-$s.log")
-            Start-Sleep -Seconds 1
-            $before = (Get-Content $log).Count
+            RunServer @($Pack, "--name", "recvtest.neo3ds", "--url-file", $urlFile) $s
+            $before = LogCount
             Press $KeyY
             $finished = WaitLog $before 120
             Start-Sleep -Seconds 1
@@ -709,11 +685,9 @@ try {
             Start-Sleep -Seconds 1
             Shot "$s-after"
             $ok = $finished -and (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash
-            $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) | $(LastLog)"
-            $results[-1]
-            Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
-            Stop-Process -Name azahar -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
+            Report $s $ok ""
+            StopServer
+            StopAzahar
             Remove-Item -Recurse -Force $games
             Rename-Item (Join-Path (Split-Path $games) "games.keep") "games"
             $moved = $false
@@ -721,16 +695,14 @@ try {
         }
         $mode = $s
         $slow = 0
-        if ($s -eq "nospace") { $mode = "ok"; [IO.File]::WriteAllText((Join-Path $cfg "recv_free.txt"), "5`n") }
+        if ($s -eq "nospace") { $mode = "ok"; [IO.File]::WriteAllText($freeFile, "5`n") }
         if ($s -like "replace-*") { $mode = "ok" }
         if ($s -eq "cancel") { $mode = "ok"; $slow = 256 }
-        $urlFile = Join-Path $cfg "recv_url.txt"
-        $serverArgs = @("-I", $server, $Pack, "--scenario", $mode, "--name", "recvtest.neo3ds", "--url-file", $urlFile)
+        $serverArgs = @($Pack, "--scenario", $mode, "--name", "recvtest.neo3ds", "--url-file", $urlFile)
         if ($slow) { $serverArgs += @("--slow-kbps", "$slow") }
         if ($s -notin "ok", "replace-no", "replace-yes", "cancel") { Remove-Item $target -ErrorAction SilentlyContinue }
-        $srv = Start-Process $py -ArgumentList $serverArgs -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $out "server-$s.log")
-        Start-Sleep -Seconds 1
-        $before = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
+        RunServer $serverArgs $s
+        $before = LogCount
 
         if ($s -eq "cancel") { Remove-Item $target -ErrorAction SilentlyContinue }
         $listBefore = ""
@@ -746,17 +718,17 @@ try {
             Shot $s
             Press $KeyB
             Start-Sleep -Seconds 1
-            $ok = (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash -and (Get-Content $log).Count -eq $before
-            $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) no download, old file kept"
+            $ok = (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash -and (LogCount) -eq $before
+            Report $s $ok "no download, old file kept"
         } elseif ($s -eq "cancel") {
             Start-Sleep -Seconds 4
             Shot "$s-running"
             $partSeen = Test-Path "$target.part"
             Press $KeyB
-            WaitLog $before 10 | Out-Null
+            $stopped = WaitLog $before 10
             Start-Sleep -Seconds 1
-            $ok = $partSeen -and -not (Test-Path "$target.part") -and -not (Test-Path $target)
-            $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) part seen=$partSeen, then removed | $(LastLog)"
+            $ok = $stopped -and $partSeen -and -not (Test-Path "$target.part") -and -not (Test-Path $target)
+            Report $s $ok "part seen=$partSeen, then removed"
         } else {
             if ($s -eq "replace-yes") { Start-Sleep -Seconds 1; Shot "$s-ask"; Press $KeyA }
             $finished = WaitLog $before 120
@@ -772,25 +744,20 @@ try {
             $ok = $finished -and ($saved -eq $want) -and ($exists -eq $want) -and -not $part -and -not $bak
             if ($s -eq "ok") { # same tab, cursor and favorites; one more game
                 $now = ListState
-                $wanted = $listBefore -replace "count=(\d+)", { "count=$([int]$_.Groups[1].Value + 1)" }
-                if ($PSVersionTable.PSVersion.Major -lt 6) {
-                    $n = [int]([regex]::Match($listBefore, "count=(\d+)").Groups[1].Value) + 1
-                    $wanted = $listBefore -replace "count=\d+", "count=$n"
-                }
+                $n = [int]([regex]::Match($listBefore, "count=(\d+)").Groups[1].Value) + 1
+                $wanted = $listBefore -replace "count=\d+", "count=$n"
                 if ($now -ne $wanted) { $ok = $false; "list: wanted '$wanted', got '$now'" }
             }
-            $results += "$s : $(if ($ok) { 'PASS' } else { 'FAIL' }) saved=$saved part=$part bak=$bak | $(LastLog)"
+            Report $s $ok "saved=$saved part=$part bak=$bak"
         }
         Shot "$s-list"
-        Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
-        Remove-Item (Join-Path $cfg "recv_free.txt") -ErrorAction SilentlyContinue
-        $results[-1]
+        StopServer
+        Remove-Item $freeFile -ErrorAction SilentlyContinue
     }
 } finally {
     if ($srv) { Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue }
     $results | Set-Content (Join-Path $out "results.txt")
-    Stop-Process -Name azahar -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
+    StopAzahar
     [IO.File]::WriteAllText($ini, $iniBackup)
     CleanBatch
     Remove-Item (Join-Path $cfg "snaps/sonicwi3.bin") -ErrorAction SilentlyContinue
@@ -798,7 +765,7 @@ try {
         Remove-Item -Recurse -Force $games -ErrorAction SilentlyContinue
         Rename-Item (Join-Path (Split-Path $games) "games.keep") "games"
     }
-    Remove-Item $target, "$target.part", "$target.bak", (Join-Path $cfg "recv_url.txt"), (Join-Path $cfg "recv_free.txt"), (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), "$log.old" -ErrorAction SilentlyContinue
+    Remove-Item $target, "$target.part", "$target.bak", $urlFile, $freeFile, (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), "$log.old" -ErrorAction SilentlyContinue
     foreach ($left in "recvcut.neo3ds.part", "recvback.neo3ds", "recvback.neo3ds.bak", "recvnew.neo3ds", "recvnew.neo3ds.bak", "recvbad.neo3ds", "recvcase.neo3ds", "recv test.neo3ds") {
         Remove-Item -LiteralPath (Join-Path $games $left) -ErrorAction SilentlyContinue
     }
