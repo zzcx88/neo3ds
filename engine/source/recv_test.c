@@ -1,5 +1,5 @@
 // See recv_test.h. The test's files are in SD_DATA_DIR: it writes recv_key.txt, recv_url.txt and
-// recv_free.txt, and reads recv_list.txt and recv_state.txt.
+// recv_free.txt, and reads recv_list.txt, recv_state.txt and recv_cluster.txt.
 #ifdef NEO3DS_RECV_TEST
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,13 +43,23 @@ bool recv_test_write_fails(void) {
 	return fails;
 }
 
-/* The file holds the MB to pretend. */
-void recv_test_free_space(u64 *available) {
+/* The file holds the space to pretend: MB, or bytes when the number ends in b. The cluster size is
+ * written down, for a test of the exact limit. */
+void recv_test_free_space(u64 *available, u64 cluster) {
 	FILE *f = fopen(SD_DATA_DIR "/recv_free.txt", "r");
 	if (!f) return;
-	char s[16] = "";
-	if (fgets(s, sizeof s, f)) *available = (u64)atoi(s) << 20;
+	char s[32] = "";
+	if (fgets(s, sizeof s, f)) {
+		char *end;
+		const u64 value = strtoull(s, &end, 10);
+		*available = *end == 'b' ? value : value << 20;
+	}
 	fclose(f);
+	f = fopen(SD_DATA_DIR "/recv_cluster.txt", "w");
+	if (f) {
+		fprintf(f, "%llu\n", (unsigned long long)cluster);
+		fclose(f);
+	}
 }
 
 bool recv_test_url(char *url, size_t size) {

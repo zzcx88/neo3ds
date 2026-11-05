@@ -18,6 +18,8 @@ static int hex_value(int c) {
 static bool name_ok(const char *s) {
 	const size_t n = strlen(s);
 	if (n > NAME_MAX_BYTES || !sd_has_suffix(s, PACK_SUFFIX)) return false;
+	const char last = s[sd_pack_base(s) - 1];
+	if (last == ' ' || last == '.') return false;
 	for (const char *c = s; *c; c++)
 		if ((u8)*c < 32 || *c == 127 || strchr("/\\:*?\"<>|", *c)) return false;
 	return true;

@@ -86,7 +86,7 @@ scripts/azahar_bench.sh
 런처 수신 화면 (#256):
 
 ```sh
-powershell -File scripts/azahar_recv_test.ps1 -Pack <파일.neo3ds> [-Converter <변환기 폴더, 기본 dist/converter>] [-Scenarios ok,404,cam-ok,...] [-SkipBuild]
+powershell -File scripts/azahar_launcher_test.ps1 -Pack <파일.neo3ds> [-Converter <변환기 폴더, 기본 dist/converter>] [-Scenarios ok,404,cam-ok,...] [-SkipBuild]
 ```
 
 `NEO3DS_RECV_TEST`로 런처를 빌드(`engine/engine_recv.elf`)한다. 이 빌드는 Azahar SD 폴더의 `3ds/neo3ds/recv_url.txt`가 있으면 카메라 대신 그 주소를 쓰고, `recv_key.txt`의 글자를 버튼으로 받으므로 창 포커스가 필요 없다. `scripts/recv_test_server.py`가 정상·오류 응답을 내고, `cam-*` 시나리오는 `scripts/recv_test_qr.py`로 만든 QR 그림을 Azahar 정지 이미지 카메라에 건다(pip으로 `qrcode`를 `out/recvtest/pydeps`에 받음). 결과는 `out/recvtest/results.txt`와 스크린샷이고, `badurl`·`b-bad`·`badpack`은 경우마다 한 줄씩 내므로 결과 줄 수가 시나리오 수보다 많다. 끝나면 중단됐더라도 테스트 파일을 지우고 `launcher.txt`·`receive.log`·`qt-config.ini`를 되돌린다. 프로세스가 강제 종료되면 설정 복사본 `out/recvtest/settings-copy`와 게임 폴더 `games.keep`이 남고, 다음 실행이 시작할 때 이것으로 되돌린다.
@@ -117,12 +117,12 @@ powershell -File scripts/azahar_recv_test.ps1 -Pack <파일.neo3ds> [-Converter 
 | 테스트 | 하는 일 | 못 하는 일 |
 |---|---|---|
 | `azahar_test.sh` | 엔진을 빌드하고 게임 하나를 단독 CXI로 실행한다 | 판정이 없어 화면을 눈으로 본다. 런처는 실행하지 않는다 |
-| `azahar_recv_test.ps1` | 런처 시나리오를 실행하고 자동 판정한다. 실기에서 만들기 어려운 오류 경로(404, 깨진 파일, 쓰기 실패, 공간 부족)를 포함한다 | 터치 버튼, LCD, 실제 카메라, 실제 성능 |
+| `azahar_launcher_test.ps1` | 런처 시나리오를 실행하고 자동 판정한다. 실기에서 만들기 어려운 오류 경로(404, 깨진 파일, 쓰기 실패, 공간 부족)를 포함한다 | 터치 버튼, LCD, 실제 카메라, 실제 성능 |
 | 실기 | 최종 판단이다 | 드문 오류 경로를 다 보기 어렵다 |
 
 | 상황 | 돌릴 것 |
 |---|---|
-| 기능 추가 | 그 기능의 시나리오를 `azahar_recv_test.ps1`에 함께 추가한다 |
+| 기능 추가 | 그 기능의 시나리오를 `azahar_launcher_test.ps1`에 함께 추가한다 |
 | 실기 있음, 일반 작업 | 빌드와 새 시나리오만 돌리고 바로 실기로 간다. 공용 코드(`ui.c`, `main.c`, `sdfiles.c`)를 고쳤으면 영향받는 기능을 실기 확인 목록에 넣는다 |
 | 실기 있음, 큰 작업 후 | 요청이 있을 때 전체 시나리오를 돌리고 실기로 간다 |
 | 실기 없음, 엔진 변경 | `azahar_test.sh`와 전체 시나리오를 돌린다. 터치, 프레임 루프, 카메라, 성능에 영향이 있으면 PR 본문에 `실기 확인 필요`라고 적고, 실기 결과가 나온 뒤에 머지한다 |
@@ -230,7 +230,7 @@ KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 7페�
 태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가 3종 패키지를 만들고
 GitHub Release에 올린다 (#55에서 복원, #102에서 GUI 동봉).
 
-0. `azahar_recv_test.ps1` 전체 시나리오와 실기를 확인한다 (§4 "무엇을 언제 돌리나")
+0. `azahar_launcher_test.ps1` 전체 시나리오와 실기를 확인한다 (§4 "무엇을 언제 돌리나")
 1. `site/releases.json` 맨 위에 릴리스 항목(버전·날짜·KO/EN 불릿)을 추가하고
    `python3 scripts/gen_site_changelog.py`와 `python3 scripts/gen_changelog.py`를 실행 — `<Version>` 범프와 **같은 커밋**에 넣는다.
    JSON이 `<Version>`보다 뒤처지거나 루트 `CHANGELOG.md`가 낡으면 `site_gate.sh`가 실패해 Pages 배포가 막힌다 (§7.1)

@@ -65,8 +65,7 @@ static DlResult fetch(const Item *item, const char *part, u64 *got) {
 		goto done;
 	}
 	if (!recv_space_ok(length, 1)) goto done;
-	mkdir("sdmc:/neo3ds", 0777);
-	mkdir(LAUNCHER_GAMES_DIR, 0777);
+	if (!recv_make_game_folders()) goto done;
 	if (!(out = fopen(part, "wb"))) {
 		recv_set_reason("Can't create the file on the SD card.");
 		goto done;

@@ -50,8 +50,18 @@ bool recv_free_space(u64 *available, u64 *cluster) {
 	if (statvfs("sdmc:/", &v)) return false;
 	*cluster = v.f_bsize ? v.f_bsize : 1;
 	*available = (u64)v.f_bavail * *cluster;
-	recv_test_free_space(available);
+	recv_test_free_space(available, *cluster);
 	return true;
+}
+
+/* Asks for the folder itself afterwards: mkdir also fails on one that is already there. */
+bool recv_make_game_folders(void) {
+	mkdir("sdmc:/neo3ds", 0777);
+	mkdir(LAUNCHER_GAMES_DIR, 0777);
+	struct stat st;
+	if (stat(LAUNCHER_GAMES_DIR, &st) == 0 && S_ISDIR(st.st_mode)) return true;
+	recv_set_reason("Can't make the game folder on the SD card.");
+	return false;
 }
 
 /* Room for these bytes in this many files, checked before a byte is written. */
