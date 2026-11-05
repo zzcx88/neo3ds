@@ -16,6 +16,8 @@ bash scripts/build_engine.sh
 
 - `main.c` — 진입점, 프레임 루프
 - `loader.c` / `launcher.c` — 롬 로딩, 게임 선택 런처
+- `receive.c` / `qrscan.c` — 런처 수신 화면, 카메라 QR 스캔
+- `snapshot.c` — 런처 목록의 게임 스냅샷
 - `audio.c` / `keys.c` / `ui.c` — 사운드, 입력, 화면 UI
 - `save.c` / `savestate.c` — SRAM 저장, 세이브스테이트
 - `neo_glue.c` — gngeo 코어와 3DS 계층 사이 접착 코드
@@ -23,3 +25,4 @@ bash scripts/build_engine.sh
 - `neo/cyclone/` · `neo/drz80/` — 68000 / Z80 CPU 코어 (ARM 어셈블리)
 - `neo/ym2610/` — YM2610 사운드 코어
 - `zstd/` · `lz4/` — 롬 압축 해제 / `compat/` — gngeo용 SDL 호환 헤더
+- `quirc/` — QR 디코더 (ISC, `THIRD_PARTY_NOTICES.md` 참조)
