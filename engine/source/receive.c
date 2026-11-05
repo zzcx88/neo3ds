@@ -25,6 +25,7 @@
 
 #include "launcher.h"
 #include "loader.h"
+#include "qrscan.h"
 #include "receive.h"
 #include "ui.h"
 
@@ -58,6 +59,22 @@ static char reason[96];    /* why a download failed, for the screen and the log 
 static int http_status;
 
 static void set_reason(const char *fmt, const char *arg) { snprintf(reason, sizeof reason, fmt, arg); }
+
+#ifdef NEO3DS_RECV_TEST
+/* A letter in a file, a press of that button; the file is removed. Looked at 10 times a second. */
+u32 receive_test_keys(void) {
+	static u64 next;
+	const u64 now = osGetTime();
+	if (now < next) return 0;
+	next = now + 100;
+	FILE *f = fopen("sdmc:/3ds/neo3ds/recv_key.txt", "r");
+	if (!f) return 0;
+	const int c = fgetc(f);
+	fclose(f);
+	remove("sdmc:/3ds/neo3ds/recv_key.txt");
+	return c == 'A' ? KEY_A : c == 'B' ? KEY_B : c == 'Y' ? KEY_Y : c == 'D' ? KEY_DOWN : 0;
+}
+#endif
 
 /* ---- the address in the QR code ---- */
 
@@ -122,7 +139,7 @@ static const char *parse_url(const char *url, Target *t) {
 		c += 3;
 	}
 	t->name[n] = 0;
-	if (!name_ok(t->name)) return "This QR code is not for a .neo3ds game file.";
+	if (!name_ok(t->name)) return "This code is not for a .neo3ds file.";
 
 	t->ip = ip;
 	t->port = port;
@@ -185,14 +202,14 @@ static void draw_progress(u64 got, u64 total, u32 bytes_per_second) {
 static bool still_wanted(void) {
 	if (!aptMainLoop()) return false;
 	hidScanInput();
-	return !(hidKeysDown() & KEY_B);
+	return !(RECEIVE_KEYS_DOWN() & KEY_B);
 }
 
 /* Waits for A (true) or B (false). */
 static bool wait_answer(void) {
 	while (aptMainLoop()) {
 		hidScanInput();
-		const u32 down = hidKeysDown();
+		const u32 down = RECEIVE_KEYS_DOWN();
 		if (down & KEY_A) return true;
 		if (down & KEY_B) return false;
 		gspWaitForVBlank();
@@ -254,28 +271,24 @@ static bool wait_socket(int sock, short events, int ms) {
 	return poll(&p, 1, ms) > 0;
 }
 
-/* Non-blocking connect, for at most CONNECT_MS. */
+/* Non-blocking connect, for at most CONNECT_MS. Asks by connecting again: on the console, SO_ERROR
+ * after a poll reports a failure for a connection that went through. */
 static DlResult net_connect(int sock, const Target *t) {
 	struct sockaddr_in a;
 	memset(&a, 0, sizeof a);
 	a.sin_family = AF_INET;
 	a.sin_port = htons(t->port);
 	a.sin_addr.s_addr = htonl(t->ip);
-	if (connect(sock, (struct sockaddr *)&a, sizeof a) == 0) return DL_OK;
-	if (errno != EINPROGRESS && errno != EWOULDBLOCK && errno != EALREADY) {
-		set_reason("Can't reach the PC. Is the Wi-Fi on?%s", "");
-		return DL_FAILED;
-	}
 	const u64 end = osGetTime() + CONNECT_MS;
+	int error = 0;
 	while (osGetTime() < end) {
 		if (!still_wanted()) return DL_CANCELLED;
-		if (!wait_socket(sock, POLLOUT, 16)) continue;
-		int error = 0;
-		socklen_t n = sizeof error;
-		if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &n) == 0 && error == 0) return DL_OK;
-		break;
+		if (connect(sock, (struct sockaddr *)&a, sizeof a) == 0 || errno == EISCONN) return DL_OK;
+		error = errno;
+		if (error != EINPROGRESS && error != EALREADY && error != EWOULDBLOCK) break;
+		wait_socket(sock, POLLOUT, 16);
 	}
-	set_reason("Can't reach the PC: same Wi-Fi? Firewall?%s", "");
+	snprintf(reason, sizeof reason, "Can't reach the PC: same Wi-Fi? Firewall? (error %d)", error);
 	return DL_FAILED;
 }
 
@@ -461,6 +474,16 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 	return DL_OK;
 }
 
+/* The console's Wi-Fi connection (0: none), for the reason of a failure. */
+static u32 wifi_status(void) {
+	u32 status = 0;
+	if (R_SUCCEEDED(acInit())) {
+		ACU_GetWifiStatus(&status);
+		acExit();
+	}
+	return status;
+}
+
 /* Connection to .part file. The socket service is up only for this. */
 static DlResult download(const Target *t, const char *part, u64 *got) {
 	DlResult result = DL_FAILED;
@@ -474,13 +497,14 @@ static DlResult download(const Target *t, const char *part, u64 *got) {
 		set_reason("Out of memory.%s", "");
 		goto done;
 	}
-	if (R_FAILED(socInit(soc, SOC_BYTES))) {
-		set_reason("Can't start the network.%s", "");
+	const Result soc_result = socInit(soc, SOC_BYTES);
+	if (R_FAILED(soc_result)) {
+		snprintf(reason, sizeof reason, "Can't start the network (%08lX, Wi-Fi %lu).", (unsigned long)soc_result, (unsigned long)wifi_status());
 		goto done;
 	}
 	soc_up = true;
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		set_reason("Can't start the network.%s", "");
+		snprintf(reason, sizeof reason, "No network: is the Wi-Fi on? (error %d, Wi-Fi %lu)", errno, (unsigned long)wifi_status());
 		goto done;
 	}
 	const int size = SOCK_BUFFER;
@@ -560,33 +584,50 @@ static void log_attempt(const char *name, const char *what, u64 bytes) {
 
 /* ---- the screen ---- */
 
+static Target target;
+
+/* For the scanner: a code only counts if it can be downloaded. */
+static const char *check_code(const char *text) { return parse_url(text, &target); }
+
+static void scan_status(const char *s) {
+	ui_fill(0, 70, 320, 60, UI_BG);
+	line_text(80, s, UI_ACCENT);
+	line_text(100, "Show the code of a .neo3ds file.", UI_DIM);
+	ui_flush();
+}
+
+/* The address, from a QR code. False when the player left. */
+static bool get_url(char *url, size_t size) {
 #ifdef NEO3DS_RECV_TEST
-/* Azahar test: the address comes from a file instead of a QR code. */
-static bool get_url(char *url, size_t size) {
+	/* Azahar test: the address can come from a file instead */
 	FILE *f = fopen("sdmc:/3ds/neo3ds/recv_url.txt", "r");
-	if (!f) return false;
-	const bool ok = fgets(url, size, f) != NULL;
-	fclose(f);
-	if (ok) url[strcspn(url, "\r\n")] = 0;
-	return ok;
-}
-#else
-static bool get_url(char *url, size_t size) {
-	(void)url;
-	(void)size;
-	return false;
-}
+	if (f) {
+		const bool ok = fgets(url, size, f) != NULL;
+		fclose(f);
+		if (ok) url[strcspn(url, "\r\n")] = 0;
+		return ok;
+	}
 #endif
+	draw_frame(NULL, "B: back to the list");
+	line_text(40, "Point the outer camera at the QR code", UI_TEXT);
+	line_text(52, "the converter shows on the PC.", UI_DIM);
+	ui_flush();
+	const QrResult r = qr_scan(url, size, check_code, scan_status);
+	if (r == QR_NO_CAMERA) {
+		reason[0] = 0;
+		set_reason("%s", "The camera could not be started.");
+		log_attempt("-", "failed", 0);
+		show_message(NULL, "Can't receive.", reason, "");
+	}
+	return r == QR_FOUND;
+}
 
 bool receive_run(void) {
 	static Target t;
 	char url[512], part[PATH_BYTES + 8], final[PATH_BYTES];
 	reason[0] = 0;
 	http_status = 0;
-	if (!get_url(url, sizeof url)) {
-		show_message(NULL, "No address to receive from.", "", "");
-		return false;
-	}
+	if (!get_url(url, sizeof url)) return false;
 	const char *bad = parse_url(url, &t);
 	if (bad) {
 		set_reason("%s", bad);
