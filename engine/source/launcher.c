@@ -40,7 +40,7 @@ enum { TAB_ALL_X = 116, TAB_FAV_X = 180, TAB_W = 60 }; /* right of the logo */
 #else
 #define HAS_RECEIVE 0
 #endif
-static const UiRect receive_button = {240, 4, 78, 18}; /* in the header, right of the tabs */
+static const UiRect receive_button = {274, 4, 44, 18}; /* in the header, right of the tabs */
 
 static int by_title(const void *a, const void *b) { return strcasecmp(((const Game *)a)->title, ((const Game *)b)->title); }
 
@@ -135,7 +135,7 @@ static void draw_top(void) {
 }
 
 static void draw_receive_button(void) {
-	if (HAS_RECEIVE) ui_button(receive_button, "Y:Receive", UI_PANEL, UI_TEXT);
+	if (HAS_RECEIVE) ui_button(receive_button, "Y:QR", UI_PANEL, UI_TEXT);
 }
 
 /* The tabs in the header: the one shown on the panel color, the other in the header's */
