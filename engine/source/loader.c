@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "loader.h"
 #include "emu.h"
@@ -98,6 +99,63 @@ bool loader_peek_pack(const char *path, const char *name, char *out, size_t size
 		}
 	fclose(f);
 	return found;
+}
+
+const char *loader_check_pack(const char *path, u64 length) {
+	static const char *const required[] = {"p.bin", "s.bin", "m1.bin", "v.bin", "lo.bin", "c.idx", "c.pak"};
+	static const char *const not_game = "This is not a neo3ds game file.";
+	static PackEntry e[PACK_MAX_ENTRIES];
+	struct {
+		char magic[8];
+		Uint32 version, count;
+	} h;
+	struct {
+		char magic[4];
+		Uint32 version, nb_tiles, block_size, nb_blocks;
+	} s;
+	struct stat st;
+	if (stat(path, &st) || (u64)st.st_size != length) return "The saved file has the wrong size.";
+	FILE *f = fopen(path, "rb");
+	if (!f) return not_game;
+	const char *wrong = not_game;
+	if (fread(&h, sizeof h, 1, f) != 1 || memcmp(h.magic, PACK_MAGIC, 8)) goto done;
+	if (h.version != PACK_VERSION) {
+		wrong = "Made by another converter version.";
+		goto done;
+	}
+	if (h.count < 1 || h.count > PACK_MAX_ENTRIES || fread(e, sizeof e[0], h.count, f) != h.count) goto done;
+
+	const u64 data_start = sizeof h + (u64)h.count * sizeof e[0];
+	const PackEntry *idx = NULL, *pak = NULL;
+	unsigned found = 0, bios = 0;
+	for (Uint32 i = 0; i < h.count; i++) {
+		if (!memchr(e[i].name, 0, sizeof e[i].name)) goto done;
+		const u64 start = e[i].offset, end = start + e[i].size;
+		if (start < data_start || end > length) goto done;
+		for (Uint32 j = 0; j < i; j++) {
+			if (!strcmp(e[i].name, e[j].name)) goto done;
+			if (e[i].size && e[j].size && start < (u64)e[j].offset + e[j].size && e[j].offset < end) goto done;
+		}
+		for (size_t r = 0; r < sizeof required / sizeof required[0]; r++)
+			if (!strcmp(e[i].name, required[r])) found++;
+		if (!strcmp(e[i].name, "bios_aes.bin") || !strcmp(e[i].name, "bios_mvs.bin")) bios++;
+		if (!strcmp(e[i].name, "c.idx")) idx = &e[i];
+		if (!strcmp(e[i].name, "c.pak")) pak = &e[i];
+	}
+	if (found != sizeof required / sizeof required[0] || !bios) goto done;
+
+	/* The sprite index, as load_sprites reads it: header, block offsets, usage. */
+	if (idx->size < sizeof s || fseek(f, idx->offset, SEEK_SET) || fread(&s, sizeof s, 1, f) != 1) goto done;
+	if (memcmp(s.magic, "NEOC", 4) || (s.version != SPR_CODEC_LZ4 && s.version != SPR_CODEC_ZSTD)) goto done;
+	if (!s.block_size || !s.nb_blocks) goto done;
+	if (sizeof s + ((u64)s.nb_blocks + 1) * 4 + (u64)(s.nb_tiles >> 4) * 4 > idx->size) goto done;
+	Uint32 last;
+	if (fseek(f, idx->offset + sizeof s + (u64)s.nb_blocks * 4, SEEK_SET) || fread(&last, sizeof last, 1, f) != 1) goto done;
+	if (last > pak->size) goto done;
+	wrong = NULL;
+done:
+	fclose(f);
+	return wrong;
 }
 
 bool loader_standalone(void) {

@@ -1,7 +1,8 @@
 // The game list of the launcher CIA: the .neo3ds files in sdmc:/neo3ds/games/, picked on the bottom
 // screen with the D-pad and A or by touch (a tap selects, a tap on the selected game starts it).
 // Two tabs, All and Favorites (D-pad left/right or a tap on the tab); SELECT or a tap on the star
-// at the left of a row adds the game to the favorites or takes it out.
+// at the left of a row adds the game to the favorites or takes it out. Y opens the receive screen
+// (receive.c), for now in test builds only: it gets its address from a QR code in the next step.
 #include <3ds.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -12,9 +13,10 @@
 
 #include "launcher.h"
 #include "loader.h"
+#include "receive.h"
 #include "ui.h"
 
-#define GAMES_DIR "sdmc:/neo3ds/games"
+#define GAMES_DIR LAUNCHER_GAMES_DIR
 /* The favorites (by .neo3ds file name) and the tab, kept across games: going back to the list
  * starts the launcher again. Lines "tab=0|1" and "fav=<file name>". */
 #define CONFIG_FILE "sdmc:/3ds/neo3ds/launcher.txt"
@@ -33,6 +35,12 @@ static int tab; /* 0 All, 1 Favorites */
 
 enum { LIST_Y = 32, ROW_H = 22, ROWS = 8, STAR_W = 24 };
 enum { TAB_ALL_X = 116, TAB_FAV_X = 180, TAB_W = 60 }; /* right of the logo */
+#ifdef NEO3DS_RECV_TEST
+#define HAS_RECEIVE 1
+#else
+#define HAS_RECEIVE 0
+#endif
+static const UiRect receive_button = {240, 4, 78, 18}; /* in the header, right of the tabs */
 
 static int by_title(const void *a, const void *b) { return strcasecmp(((const Game *)a)->title, ((const Game *)b)->title); }
 
@@ -112,36 +120,22 @@ static void build_view(int keep) {
 	if (top > nview - ROWS) top = nview > ROWS ? nview - ROWS : 0;
 }
 
-/* The top screen: the logo and the selected game's name. The framebuffer is rotated like the
- * bottom one, 240 pixels per column. */
-static void top_text(u16 *fb, int x, int y, const char *s, u16 color, int scale) {
-	const ConsoleFont *font = &consoleGetDefault()->font;
-	for (; *s; s++, x += 8 * scale) {
-		const int c = (u8)*s - font->asciiOffset;
-		if (c < 0 || c >= font->numChars) continue;
-		const u8 *g = font->gfx + c * 8;
-		for (int row = 0; row < 8; row++)
-			for (int bit = 0; bit < 8; bit++)
-				if (g[row] & (0x80 >> bit))
-					for (int sy = 0; sy < scale; sy++)
-						for (int sx = 0; sx < scale; sx++) {
-							const int px = x + bit * scale + sx, py = y + row * scale + sy;
-							if (px >= 0 && px < 400 && py >= 0 && py < 240) fb[px * 240 + 239 - py] = color;
-						}
-	}
-}
-
+/* The top screen: the logo and the selected game's name. */
 static void draw_top(void) {
 	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
 	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
-	top_text(fb, (400 - 6 * 8 * 4) / 2, 70, "neo3ds", UI_HEADER, 4);
+	ui_top_text(fb, (400 - 6 * 8 * 4) / 2, 70, "neo3ds", UI_HEADER, 4);
 	if (nview) {
 		const char *t = games[view[sel]].title;
 		const int scale = strlen(t) * 16 <= 384 ? 2 : 1;
-		top_text(fb, (400 - (int)strlen(t) * 8 * scale) / 2, 140, t, UI_TEXT, scale);
+		ui_top_text(fb, (400 - (int)strlen(t) * 8 * scale) / 2, 140, t, UI_TEXT, scale);
 	}
-	top_text(fb, (400 - 29 * 8) / 2, 210, "Nintendo 3DS Neo Geo emulator", UI_DIM, 1);
+	ui_top_text(fb, (400 - 29 * 8) / 2, 210, "Nintendo 3DS Neo Geo emulator", UI_DIM, 1);
 	gfxFlushBuffers();
+}
+
+static void draw_receive_button(void) {
+	if (HAS_RECEIVE) ui_button(receive_button, "Y:Receive", UI_PANEL, UI_TEXT);
 }
 
 /* The tabs in the header: the one shown on the panel color, the other in the header's */
@@ -153,6 +147,7 @@ static void draw_tabs(void) {
 	ui_text(TAB_ALL_X + (TAB_W - ui_text_width(s, 1)) / 2, 12, s, tab ? UI_DIM : UI_TEXT, 1);
 	snprintf(s, sizeof s, "Fav %d", favorites());
 	ui_text(TAB_FAV_X + (TAB_W - ui_text_width(s, 1)) / 2, 12, s, tab ? UI_TEXT : UI_DIM, 1);
+	draw_receive_button();
 }
 
 static void draw_list(void) {
@@ -197,6 +192,11 @@ static void draw_all(void) {
 			".neo3ds files to the SD card in", "/neo3ds/games/",
 		};
 		for (int i = 0; i < 6; i++) ui_text(8, 50 + i * 14, help[i], i ? UI_DIM : UI_TEXT, 1);
+		if (HAS_RECEIVE) {
+			ui_text(8, 50 + 7 * 14, "Or press Y to get one from the PC", UI_DIM, 1);
+			ui_text(8, 50 + 8 * 14, "over the Wi-Fi.", UI_DIM, 1);
+			draw_receive_button();
+		}
 	}
 	ui_flush();
 	draw_top();
@@ -236,6 +236,29 @@ static void toggle_fav(int v) {
 	draw_top();
 }
 
+/* The list again after a game came in: favorites, tab and cursor stay. */
+static void read_list_again(void) {
+	char keep[sizeof games[0].file] = "";
+	if (nview) snprintf(keep, sizeof keep, "%s", games[view[sel]].file);
+	free(games);
+	free(view);
+	games = NULL;
+	view = NULL;
+	count = 0;
+	nview = 0;
+	scan();
+	load_config();
+	int at = 0;
+	for (int i = 0; i < count; i++)
+		if (!strcmp(games[i].file, keep)) at = i;
+	build_view(at);
+}
+
+static void open_receive(void) {
+	if (receive_run()) read_list_again();
+	draw_all();
+}
+
 bool launcher_pick(char *path, size_t size) {
 	gfxSetDoubleBuffering(GFX_TOP, false);
 	scan();
@@ -246,6 +269,14 @@ bool launcher_pick(char *path, size_t size) {
 	while (aptMainLoop()) {
 		hidScanInput();
 		const u32 down = hidKeysDown(), rep = hidKeysDownRepeat();
+		if (HAS_RECEIVE) {
+			touchPosition t;
+			hidTouchRead(&t);
+			if ((down & KEY_Y) || ((down & KEY_TOUCH) && ui_hit(receive_button, t.px, t.py))) {
+				open_receive();
+				continue;
+			}
+		}
 		if (count) {
 			bool start = false;
 			if (down & KEY_LEFT) show_tab(0);

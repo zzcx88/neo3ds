@@ -2,6 +2,7 @@ roms/
 tools/
 third_party/
 engine/build/
+engine/build_recv/
 engine/*.elf
 engine/*.3dsx
 engine/*.smdh
