@@ -3,8 +3,9 @@
 answers wrongly on purpose.
 
 usage: py scripts/recv_test_server.py <file> [--scenario NAME] [--name NAME] [--port N] [--slow-kbps N]
+       py scripts/recv_test_server.py <file> --batch NAME:SCENARIO [NAME:SCENARIO ...]
 
-Prints the URL to give the launcher. Each request is logged with its status and the bytes sent.
+Prints the URL(s) to give the launcher, one a line. Each request is logged with its status and bytes.
 """
 import argparse
 import os
@@ -12,7 +13,7 @@ import socket
 import urllib.parse
 
 TOKEN = "0123456789abcdef"
-SCENARIOS = ("ok", "404", "405", "short", "corrupt", "nolength", "chunked", "redirect", "twolengths", "huge", "truncheader")
+SCENARIOS = ("ok", "slow", "headdiff", "404", "405", "short", "corrupt", "nolength", "chunked", "redirect", "twolengths", "huge", "truncheader")
 
 
 def lan_address():
@@ -55,14 +56,25 @@ def send_file(conn, path, limit, slow_kbps, corrupt=False):
     return sent
 
 
-def serve(conn, path, expected, scenario, slow_kbps):
+def serve(conn, path, targets, slow_kbps):
     lines = read_request(conn)
     parts = lines[0].split(" ")
-    if len(parts) < 2 or parts[1] != expected:
+    if len(parts) < 2 or parts[1] not in targets:
         conn.sendall(head("404 Not Found", 0))
         return "404 wrong path", 0
     method = parts[0]
+    name, scenario = targets[parts[1]]
+    status, sent = answer(conn, path, method, scenario, slow_kbps)
+    return f"{method} {name} {scenario}: {status}", sent
+
+
+def answer(conn, path, method, scenario, slow_kbps):
     size = os.path.getsize(path)
+    if scenario == "slow":
+        slow_kbps = slow_kbps or 256
+    if scenario == "headdiff" and method == "GET":
+        conn.sendall(head("200 OK", size + 1))
+        return "200 another length", 0
     if scenario == "404":
         conn.sendall(head("404 Not Found", 0))
         return "404", 0
@@ -102,17 +114,18 @@ def main():
     ap.add_argument("--name", help="file name in the URL (default: the file's)")
     ap.add_argument("--port", type=int, default=0)
     ap.add_argument("--slow-kbps", type=int, default=0)
-    ap.add_argument("--url-file", help="also write the URL to this file")
+    ap.add_argument("--url-file", help="also write the URL(s) to this file")
+    ap.add_argument("--batch", nargs="+", metavar="NAME:SCENARIO", help="several files in one list")
     args = ap.parse_args()
 
     address = lan_address()
-    name = args.name or os.path.basename(args.file)
-    expected = f"/{TOKEN}/{urllib.parse.quote(name, safe='')}"
+    wanted = [tuple(b.rsplit(":", 1)) for b in args.batch] if args.batch else [(args.name or os.path.basename(args.file), args.scenario)]
+    targets = {f"/{TOKEN}/{urllib.parse.quote(n, safe='')}": (n, sc) for n, sc in wanted}
     with socket.socket() as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind((address, args.port))
         listener.listen()
-        url = f"http://{address}:{listener.getsockname()[1]}{expected}"
+        url = "\n".join(f"http://{address}:{listener.getsockname()[1]}{p}" for p in targets)
         print(url, flush=True)
         if args.url_file:
             with open(args.url_file, "w", encoding="ascii", newline="\n") as f:
@@ -121,10 +134,10 @@ def main():
             conn, peer = listener.accept()
             with conn:
                 try:
-                    status, sent = serve(conn, args.file, expected, args.scenario, args.slow_kbps)
-                    print(f"{peer[0]} {args.scenario}: {status}, {sent} bytes sent", flush=True)
+                    status, sent = serve(conn, args.file, targets, args.slow_kbps)
+                    print(f"{peer[0]} {status}, {sent} bytes sent", flush=True)
                 except OSError as e:
-                    print(f"{peer[0]} {args.scenario}: dropped ({e})", flush=True)
+                    print(f"{peer[0]} dropped ({e})", flush=True)
 
 
 if __name__ == "__main__":

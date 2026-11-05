@@ -1,8 +1,12 @@
 // The launcher's receive screen: downloads a .neo3ds file from the PC (LanSender in the converter)
 // into the game folder, so a game gets to the 3DS without taking the SD card out.
 //
-// The file is written as <name>.part, checked as a game file, and only then takes its final name:
-// the list never shows half a file, and a failed download leaves the old game in place.
+// A QR code holds 1 to 6 addresses, one a line. All are checked first, then the PC is asked their
+// sizes, and with more than one file (or one that replaces a game) the player confirms.
+//
+// Each file is written as <name>.part, checked as a game file, and only then takes its final name:
+// the list never shows half a file, and a failed download leaves the old game in place. A bad game
+// file is skipped; a network or SD card failure or B ends the batch, keeping the files already saved.
 //
 // The HTTP client is what LanSender needs and no more: GET, a 200 with one Content-Length, no
 // chunks, redirects or compression. Sockets are non-blocking so B works at any moment.
@@ -57,7 +61,18 @@ typedef struct {
 	char name[NAME_MAX_BYTES + 1];  /* the last path segment, decoded */
 } Target;
 
-typedef enum { DL_OK, DL_CANCELLED, DL_FAILED } DlResult;
+typedef enum { DL_OK, DL_CANCELLED, DL_FAILED, DL_BAD_FILE } DlResult;
+
+enum { MAX_ITEMS = 6 };
+typedef enum { ITEM_WAITING, ITEM_SAVED, ITEM_SKIPPED, ITEM_FAILED } ItemState;
+typedef struct {
+	Target t;
+	u64 length;
+	bool replacing;
+	ItemState state;
+} Item;
+static Item items[MAX_ITEMS];
+static int item_count;
 
 static char reason[96];    /* why a download failed, for the screen and the log */
 static int http_status;
@@ -175,6 +190,31 @@ static const char *parse_url(const char *url, Target *t) {
 	return NULL;
 }
 
+/* The whole text of a code: every line must be good before anything is fetched. */
+static const char *parse_list(const char *text, Item *out, int *count) {
+	static const char *const bad = "This QR code is not a PC address.";
+	char line[sizeof out[0].t.path + 32];
+	int n = 0;
+	for (const char *p = text;;) {
+		const char *end = strchr(p, '\n');
+		const size_t len = end ? (size_t)(end - p) : strlen(p);
+		if (n == MAX_ITEMS) return "This code has too many files.";
+		if (!len || len >= sizeof line) return bad;
+		memcpy(line, p, len);
+		line[len] = 0;
+		const char *why = parse_url(line, &out[n].t);
+		if (why) return why;
+		if (n && (out[n].t.ip != out[0].t.ip || out[n].t.port != out[0].t.port)) return bad;
+		for (int j = 0; j < n; j++)
+			if (!strcasecmp(out[j].t.name, out[n].t.name)) return "This code has one file name twice.";
+		n++;
+		if (!end) break;
+		p = end + 1;
+	}
+	*count = n;
+	return NULL;
+}
+
 /* ---- the screens ---- */
 
 static void draw_top(const char *line) {
@@ -231,20 +271,21 @@ static bool still_wanted(void) {
 	return !(RECEIVE_KEYS_DOWN() & KEY_B);
 }
 
-/* Waits for A (true) or B (false). */
-static bool wait_answer(void) {
+/* Waits for A (true) or B (false). A question (not a message) also ends when the HOME menu opens. */
+static bool wait_answer(bool question) {
 	while (aptMainLoop()) {
 		hidScanInput();
 		const u32 down = RECEIVE_KEYS_DOWN();
 		if (down & KEY_A) return true;
-		if (down & KEY_B) return false;
+		if ((down & KEY_B) || (question && interrupted)) return false;
 		gspWaitForVBlank();
 	}
 	return false;
 }
 
+/* top_line NULL leaves the top screen as it is. */
 static void show_message(const char *name, const char *title, const char *detail, const char *top_line) {
-	draw_top(top_line);
+	if (top_line) draw_top(top_line);
 	draw_frame(name, "A/B: back to the list");
 	line_text(80, title, UI_TEXT);
 	/* Reasons run long: broken into lines at the spaces */
@@ -262,7 +303,7 @@ static void show_message(const char *name, const char *title, const char *detail
 		while (*detail == ' ') detail++;
 	}
 	ui_flush();
-	wait_answer();
+	wait_answer(false);
 }
 
 /* ---- the game file ---- */
@@ -431,24 +472,32 @@ static bool parse_head(char *head, u64 *length) {
 	return true;
 }
 
-static bool space_ok(u64 length) {
+static bool free_space(u64 *available, u64 *cluster) {
 	struct statvfs v;
-	if (statvfs("sdmc:/", &v)) {
-		set_reason("Can't read the SD card's free space.%s", "");
-		return false;
-	}
-	const u64 cluster = v.f_bsize ? v.f_bsize : 1;
-	const u64 needed = (length + cluster - 1) / cluster * cluster + cluster; /* + the folder entry */
-	u64 available = (u64)v.f_bavail * cluster;
+	if (statvfs("sdmc:/", &v)) return false;
+	*cluster = v.f_bsize ? v.f_bsize : 1;
+	*available = (u64)v.f_bavail * *cluster;
 #ifdef NEO3DS_RECV_TEST
 	/* Azahar always reports a large free space: the file holds the MB to pretend */
 	FILE *f = fopen("sdmc:/3ds/neo3ds/recv_free.txt", "r");
 	if (f) {
 		char s[16] = "";
-		if (fgets(s, sizeof s, f)) available = (u64)atoi(s) << 20;
+		if (fgets(s, sizeof s, f)) *available = (u64)atoi(s) << 20;
 		fclose(f);
 	}
 #endif
+	return true;
+}
+
+/* Room for these bytes in this many files, checked before a byte is written. */
+static bool space_ok(u64 bytes, int files) {
+	u64 available, cluster;
+	if (!free_space(&available, &cluster)) {
+		set_reason("Can't read the SD card's free space.%s", "");
+		return false;
+	}
+	/* Each file ends in a part of a cluster and may need one for its folder entry */
+	const u64 needed = bytes + (u64)files * 2 * cluster;
 	if (available >= needed) return true;
 	snprintf(reason, sizeof reason, "Not enough space on the SD card: needs %lu MB, %lu MB free.",
 		(unsigned long)(needed >> 20) + 1, (unsigned long)(available >> 20));
@@ -525,56 +574,94 @@ static DlResult read_body(int sock, FILE *out, char *buf, int fill, u64 length, 
 	return DL_OK;
 }
 
-/* Connection to .part file. The socket service is up only for this. */
-static DlResult download(const Target *t, const char *part, u64 *got) {
-	DlResult result = DL_FAILED;
-	int sock = -1;
-	FILE *out = NULL;
-	char *buf = malloc(CHUNK > HEAD_MAX ? CHUNK : HEAD_MAX);
-	u32 *soc = memalign(0x1000, SOC_BYTES);
-	bool soc_up = false;
-	*got = 0;
-	if (!buf || !soc) {
+/* The socket service and the buffer, up from the first question to the last file. */
+static char *net_buf;
+static u32 *net_soc;
+static bool net_up;
+
+static void net_close(void) {
+	if (net_up) socExit();
+	net_up = false;
+	free(net_soc);
+	free(net_buf);
+	net_soc = NULL;
+	net_buf = NULL;
+}
+
+static bool net_open(void) {
+	net_buf = malloc(CHUNK > HEAD_MAX ? CHUNK : HEAD_MAX);
+	net_soc = memalign(0x1000, SOC_BYTES);
+	if (!net_buf || !net_soc) {
 		set_reason("Out of memory.%s", "");
-		goto done;
+		net_close();
+		return false;
 	}
-	const Result soc_result = socInit(soc, SOC_BYTES);
-	if (R_FAILED(soc_result)) {
-		network_failed("Can't start the network.", (unsigned long)soc_result);
-		goto done;
+	const Result r = socInit(net_soc, SOC_BYTES);
+	if (R_FAILED(r)) {
+		network_failed("Can't start the network.", (unsigned long)r);
+		net_close();
+		return false;
 	}
-	soc_up = true;
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	net_up = true;
+	return true;
+}
+
+/* Connects and asks. With DL_OK *sock is open, *length the file's size, and *extra bytes of the
+ * body that came with the headers are at the start of net_buf. */
+static DlResult net_request(const Target *t, const char *method, int *sock, u64 *length, int *extra) {
+	*sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (*sock < 0) {
 		network_failed("Can't start the network.", errno);
-		goto done;
+		return DL_FAILED;
 	}
 	const int size = SOCK_BUFFER;
-	setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &size, sizeof size);
-	fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+	setsockopt(*sock, SOL_SOCKET, SO_RCVBUF, &size, sizeof size);
+	fcntl(*sock, F_SETFL, fcntl(*sock, F_GETFL, 0) | O_NONBLOCK);
 
-	draw_status("Connecting to the PC...");
-	if ((result = net_connect(sock, t)) != DL_OK) goto done;
-
-	char request[sizeof t->path + 128];
-	const int n = snprintf(request, sizeof request,
-		"GET %s HTTP/1.1\r\nHost: %s:%u\r\nUser-Agent: neo3ds\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n",
-		t->path, t->host, t->port);
-	if ((result = net_send(sock, request, n)) != DL_OK) goto done;
-
-	int head_end = 0, extra = 0;
-	if ((result = read_head(sock, buf, &head_end, &extra)) != DL_OK) goto done;
-	u64 length = 0;
-	result = DL_FAILED;
-	char saved = buf[head_end]; /* parse_head reads only up to the blank line */
-	buf[head_end] = 0;
-	if (!parse_head(buf, &length)) goto done;
-	buf[head_end] = saved;
-	if (!length || (u64)extra > length) {
+	DlResult result = net_connect(*sock, t);
+	if (result == DL_OK) {
+		char request[sizeof t->path + 128];
+		const int n = snprintf(request, sizeof request,
+			"%s %s HTTP/1.1\r\nHost: %s:%u\r\nUser-Agent: neo3ds\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n",
+			method, t->path, t->host, t->port);
+		result = net_send(*sock, request, n);
+	}
+	int head_end = 0;
+	if (result == DL_OK) result = read_head(*sock, net_buf, &head_end, extra);
+	if (result == DL_OK) {
+		const char saved = net_buf[head_end]; /* parse_head reads only up to the blank line */
+		net_buf[head_end] = 0;
+		if (!parse_head(net_buf, length)) result = DL_FAILED;
+		net_buf[head_end] = saved;
+	}
+	if (result == DL_OK && (!*length || (u64)*extra > *length)) {
 		set_reason("The PC sent no usable answer.%s", "");
+		result = DL_FAILED;
+	}
+	if (result != DL_OK) {
+		close(*sock);
+		*sock = -1;
+		return result;
+	}
+	memmove(net_buf, net_buf + head_end, *extra);
+	return DL_OK;
+}
+
+/* One file, from the question to a checked .part file. */
+static DlResult fetch(const Item *item, const char *part, u64 *got) {
+	int sock = -1, extra = 0;
+	u64 length = 0;
+	FILE *out = NULL;
+	*got = 0;
+	draw_status("Connecting to the PC...");
+	DlResult result = net_request(&item->t, "GET", &sock, &length, &extra);
+	if (result != DL_OK) goto done;
+	result = DL_FAILED;
+	if (length != item->length) {
+		set_reason("The file changed on the PC. Scan the code again.%s", "");
 		goto done;
 	}
-	if (!space_ok(length)) goto done;
-
+	if (!space_ok(length, 1)) goto done;
 	mkdir("sdmc:/neo3ds", 0777);
 	mkdir(LAUNCHER_GAMES_DIR, 0777);
 	if (!(out = fopen(part, "wb"))) {
@@ -582,8 +669,7 @@ static DlResult download(const Target *t, const char *part, u64 *got) {
 		goto done;
 	}
 	setvbuf(out, NULL, _IONBF, 0); /* whole chunks, no copy */
-	memmove(buf, buf + head_end, extra);
-	result = read_body(sock, out, buf, extra, length, got);
+	result = read_body(sock, out, net_buf, extra, length, got);
 	if (result == DL_OK) {
 		const int closed = fclose(out);
 		out = NULL;
@@ -595,16 +681,13 @@ static DlResult download(const Target *t, const char *part, u64 *got) {
 			const char *wrong = loader_check_pack(part, length);
 			if (wrong) {
 				set_reason("%s", wrong);
-				result = DL_FAILED;
+				result = DL_BAD_FILE;
 			}
 		}
 	}
 done:
 	if (out) fclose(out);
 	if (sock >= 0) close(sock);
-	if (soc_up) socExit();
-	free(soc);
-	free(buf);
 	if (result != DL_OK) remove(part);
 	return result;
 }
@@ -630,10 +713,11 @@ static void log_attempt(const char *name, const char *what, u64 bytes) {
 
 /* ---- the screen ---- */
 
-static Target target;
-
-/* For the scanner: a code only counts if it can be downloaded. */
-static const char *check_code(const char *text) { return parse_url(text, &target); }
+/* For the scanner: a code only counts if every file in it can be downloaded. */
+static const char *check_code(const char *text) {
+	static int n;
+	return parse_list(text, items, &n);
+}
 
 static void scan_status(const char *s) {
 	ui_fill(0, 70, 320, 60, UI_BG);
@@ -647,11 +731,12 @@ static bool get_url(char *url, size_t size) {
 #ifdef NEO3DS_RECV_TEST
 	/* Azahar test: the address can come from a file instead */
 	FILE *f = fopen("sdmc:/3ds/neo3ds/recv_url.txt", "r");
-	if (f) {
-		const bool ok = fgets(url, size, f) != NULL;
+	if (f) { /* the last line end is not part of it */
+		size_t n = fread(url, 1, size - 1, f);
 		fclose(f);
-		if (ok) url[strcspn(url, "\r\n")] = 0;
-		return ok;
+		if (n && url[n - 1] == '\n') n--;
+		url[n] = 0;
+		return n > 0;
 	}
 #endif
 	draw_frame(NULL, "B: back to the list");
@@ -703,63 +788,176 @@ void receive_recover(void) {
 	free(found);
 }
 
+/* The top screen with one row a file: its size before the start, what became of it after. */
+static void draw_items(const char *title, bool results) {
+	static const char *const states[] = {"-", "saved", "skipped", "failed"};
+	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
+	ui_top_text(fb, (400 - (int)strlen(title) * 16) / 2, 30, title, UI_TEXT, 2);
+	for (int i = 0; i < item_count; i++) {
+		const Item *it = &items[i];
+		const int y = 70 + i * 22;
+		char s[40];
+		snprintf(s, sizeof s, strlen(it->t.name) > 31 ? "%.28s..." : "%s", it->t.name);
+		for (char *c = s; *c; c++)
+			if ((u8)*c < 32 || (u8)*c > 126) *c = '?';
+		ui_top_text(fb, 12, y, s, UI_TEXT, 1);
+		if (results) {
+			ui_top_text(fb, 300, y, states[it->state], it->state == ITEM_SAVED ? UI_TEXT : UI_ACCENT, 1);
+		} else {
+			snprintf(s, sizeof s, "%.1fMB", it->length / (1024.0 * 1024.0));
+			ui_top_text(fb, 268, y, s, UI_DIM, 1);
+			if (it->replacing) ui_top_text(fb, 332, y, "replace", UI_ACCENT, 1);
+		}
+	}
+	gfxFlushBuffers();
+}
+
+/* Sizes and name clashes of all the files, and the player's word when there is something to say.
+ * False to stop, with a reason unless the player left. */
+static bool prepare(void) {
+	u64 total = 0;
+	bool ask = item_count > 1;
+	draw_top(item_count == 1 ? items[0].t.name : "");
+	draw_frame(item_count == 1 ? items[0].t.name : NULL, "B: cancel");
+	for (int i = 0; i < item_count; i++) {
+		char s[48];
+		snprintf(s, sizeof s, "Asking the PC about file %d of %d...", i + 1, item_count);
+		draw_status(s);
+		int sock = -1, extra = 0;
+		if (net_request(&items[i].t, "HEAD", &sock, &items[i].length, &extra) != DL_OK) return false;
+		close(sock);
+		total += items[i].length;
+		char final[PATH_BYTES];
+		struct stat st;
+		snprintf(final, sizeof final, LAUNCHER_GAMES_DIR "/%s", items[i].t.name);
+		items[i].replacing = stat(final, &st) == 0;
+		ask = ask || items[i].replacing;
+		items[i].state = ITEM_WAITING;
+	}
+	if (!space_ok(total, item_count)) return false;
+	if (!ask) return true;
+
+	/* Always asked when a game would be replaced, whatever the size: the same game with another
+	 * setting differs by a byte. */
+	char title[32], s[48];
+	snprintf(title, sizeof title, item_count == 1 ? "Replace this game?" : "Receive %d games?", item_count);
+	draw_items(title, false);
+	draw_frame(item_count == 1 ? items[0].t.name : NULL, "A: start   B: cancel");
+	u64 available = 0, cluster = 0;
+	free_space(&available, &cluster);
+	snprintf(s, sizeof s, "%.1f MB in all, %.1f MB free", total / (1024.0 * 1024.0), available / (1024.0 * 1024.0));
+	line_text(80, s, UI_TEXT);
+	if (item_count == 1) line_text(100, "This game is already on the SD card.", UI_DIM);
+	ui_flush();
+	return wait_answer(true);
+}
+
+/* The files in turn. Returns how many were saved; *stop holds why the rest were not tried. */
+static int fetch_all(DlResult *stop, u64 *bytes) {
+	static char part[PATH_BYTES + 8], final[PATH_BYTES];
+	int saved = 0;
+	*stop = DL_OK;
+	/* No sleeping through a transfer: it would end it. */
+	const bool sleep_allowed = aptIsSleepAllowed();
+	aptSetSleepAllowed(false);
+	for (int i = 0; i < item_count; i++) {
+		Item *it = &items[i];
+		snprintf(final, sizeof final, LAUNCHER_GAMES_DIR "/%s", it->t.name);
+		snprintf(part, sizeof part, "%s.part", final);
+		draw_top(it->t.name);
+		draw_frame(it->t.name, "B: cancel");
+		if (item_count > 1) {
+			char s[32];
+			snprintf(s, sizeof s, "File %d of %d", i + 1, item_count);
+			line_text(52, s, UI_DIM);
+		}
+		u64 got = 0;
+		reason[0] = 0;
+		DlResult r = fetch(it, part, &got);
+		if (r == DL_OK && !install(part, final)) r = DL_FAILED;
+		*bytes += got;
+		if (r == DL_OK) {
+			it->state = ITEM_SAVED;
+			saved++;
+			reason[0] = 0;
+			log_attempt(it->t.name, "saved", got);
+			continue;
+		}
+		remove(part);
+		if (r == DL_BAD_FILE) { /* the others may be good */
+			it->state = ITEM_SKIPPED;
+			log_attempt(it->t.name, "skipped", got);
+			continue;
+		}
+		*stop = r;
+		if (r == DL_CANCELLED) {
+			set_reason("%s", interrupted ? "The HOME menu opened during the transfer." : "cancelled");
+			log_attempt(it->t.name, interrupted ? "interrupted" : "cancelled", got);
+		} else {
+			it->state = ITEM_FAILED;
+			log_attempt(it->t.name, "failed", got);
+		}
+		break;
+	}
+	aptSetSleepAllowed(sleep_allowed);
+	return saved;
+}
+
 static bool receive_once(void) {
-	static Target t;
-	char url[512], part[PATH_BYTES + 8], final[PATH_BYTES];
+	static char url[1024];
 	reason[0] = 0;
 	http_status = 0;
 	if (!get_url(url, sizeof url)) return false;
-	const char *bad = parse_url(url, &t);
+	const char *bad = parse_list(url, items, &item_count);
 	if (bad) {
 		set_reason("%s", bad);
 		log_attempt("-", "refused", 0);
 		show_message(NULL, "Can't receive this.", bad, "");
 		return false;
 	}
-	snprintf(final, sizeof final, LAUNCHER_GAMES_DIR "/%s", t.name);
-	snprintf(part, sizeof part, "%s.part", final);
-
-	/* Always asked, whatever the size: the same game with another setting differs by a byte. */
-	struct stat st;
-	if (stat(final, &st) == 0) {
-		draw_top(t.name);
-		draw_frame(t.name, "A: replace it   B: keep the old one");
-		line_text(80, "This game is already on the SD card.", UI_TEXT);
-		line_text(100, "Replace it with the one from the PC?", UI_DIM);
-		ui_flush();
-		if (!wait_answer()) return false;
-	}
-
-	draw_top(t.name);
-	draw_frame(t.name, "B: cancel");
-	u64 got = 0;
-	/* No sleeping through a transfer: closing the lid would end it. */
-	const bool sleep_allowed = aptIsSleepAllowed();
-	aptSetSleepAllowed(false);
-	const DlResult r = download(&t, part, &got);
-	const bool installed = r == DL_OK && install(part, final);
-	aptSetSleepAllowed(sleep_allowed);
-	if (r == DL_CANCELLED) {
-		if (interrupted) {
-			set_reason("%s", "The HOME menu opened during the transfer.");
-			log_attempt(t.name, "interrupted", got);
-			show_message(t.name, "The game was not saved.", "The HOME menu opened during the transfer. Press Y to try again.", t.name);
-			return false;
-		}
-		set_reason("%s", "cancelled");
-		log_attempt(t.name, "cancelled", got);
+	const char *only = item_count == 1 ? items[0].t.name : NULL;
+	reason[0] = 0;
+	if (!net_open()) {
+		log_attempt(only ? only : "-", "failed", 0);
+		show_message(only, "The game was not saved.", reason, only ? only : "");
 		return false;
 	}
-	if (installed) {
-		reason[0] = 0;
-		log_attempt(t.name, "saved", got);
-		show_message(t.name, "Saved. It is in the list now.", "", t.name);
-		return true;
+	if (!prepare()) {
+		net_close();
+		if (reason[0]) { /* otherwise the player left */
+			log_attempt(only ? only : "-", "failed", 0);
+			show_message(only, "The game was not saved.", reason, only ? only : "");
+		}
+		return false;
 	}
-	remove(part);
-	log_attempt(t.name, "failed", got);
-	show_message(t.name, "The game was not saved.", reason, t.name);
-	return false;
+	DlResult stop;
+	u64 bytes = 0;
+	const int saved = fetch_all(&stop, &bytes);
+	net_close();
+
+	if (item_count == 1) {
+		if (saved) show_message(only, "Saved. It is in the list now.", "", only);
+		else if (stop == DL_CANCELLED && interrupted)
+			show_message(only, "The game was not saved.", "The HOME menu opened during the transfer. Press Y to try again.", only);
+		else if (stop != DL_CANCELLED) show_message(only, "The game was not saved.", reason, only);
+		return saved > 0;
+	}
+
+	int skipped = 0;
+	for (int i = 0; i < item_count; i++) skipped += items[i].state == ITEM_SKIPPED;
+	char title[40], detail[144];
+	const bool cancelled = stop == DL_CANCELLED && !interrupted;
+	if (stop != DL_OK && !cancelled) snprintf(detail, sizeof detail, "Stopped: %s", reason);
+	else if (cancelled) snprintf(detail, sizeof detail, "Cancelled.");
+	else if (skipped) snprintf(detail, sizeof detail, "%d skipped: not neo3ds game files.", skipped);
+	else detail[0] = 0;
+	snprintf(reason, sizeof reason, "saved=%d skipped=%d of %d", saved, skipped, item_count);
+	log_attempt("batch", "summary", bytes);
+	snprintf(title, sizeof title, "Saved %d of %d games.", saved, item_count);
+	draw_items("Received", true);
+	show_message(NULL, title, detail, NULL);
+	return saved > 0;
 }
 
 bool receive_run(void) {
