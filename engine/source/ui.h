@@ -30,9 +30,9 @@ void ui_flush(void); /* writes the framebuffer back from the cache for the displ
 void ui_top_text(u16 *top_fb, int x, int y, const char *s, u16 color, int scale); /* the same, on the 400x240 top screen */
 
 /* The main screen */
-typedef enum { UI_NONE, UI_KEYCONFIG, UI_DIAG, UI_SYSTEM, UI_RESTART, UI_STATE_SAVE, UI_STATE_LOAD, UI_GAME_LIST } UiAction;
+typedef enum { UI_NONE, UI_KEYCONFIG, UI_DIAG, UI_SYSTEM, UI_RESTART, UI_STATE_SAVE, UI_STATE_LOAD, UI_GAME_LIST, UI_SNAPSHOT } UiAction;
 void ui_main_init(double load_secs, bool sound);
-void ui_set_launcher(void);      /* started from the launcher: a [Game list] button goes back */
+void ui_set_launcher(void);      /* started from the launcher: [Snapshot] and [Game list] buttons */
 void ui_main_draw(void);
 void ui_status(const char *msg); /* a one-line message at the bottom (NULL restores the default) */
 void ui_fps(double fps);         /* once a second */

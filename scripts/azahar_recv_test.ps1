@@ -12,7 +12,7 @@
 param(
     [Parameter(Mandatory)] [string] $Pack,
     [string] $Converter = "out/conv141",
-    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six"),
+    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six", "snap"),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = "Stop"
@@ -335,6 +335,41 @@ try {
             CleanBatch
             continue
         }
+        if ($s -eq "snap") {
+            # Pictures for the list: the first game in it, on leaving, by hand, and kept
+            $snaps = Join-Path $cfg "snaps"
+            $first = Join-Path $snaps "sonicwi3.bin"
+            Remove-Item $first -ErrorAction SilentlyContinue
+            Restart
+            Shot "$s-none"
+            Press $KeyA
+            Start-Sleep -Seconds 25
+            Press "L" # Azahar does not start a CXI again by itself: the list comes from a restart
+            Start-Sleep -Seconds 3
+            Restart
+            Shot "$s-auto"
+            $auto = (Test-Path $first) -and (Get-Item $first).Length -eq 192008
+            $autoHash = if (Test-Path $first) { (Get-FileHash $first).Hash } else { "" }
+            Press $KeyDown
+            Start-Sleep -Seconds 1
+            Shot "$s-other"
+            Restart
+            Press $KeyA
+            Start-Sleep -Seconds 15
+            Press "P"
+            Start-Sleep -Seconds 3
+            Shot "$s-game"
+            $manualHash = if (Test-Path $first) { (Get-FileHash $first).Hash } else { "" }
+            Start-Sleep -Seconds 5
+            Press "L"
+            Start-Sleep -Seconds 3
+            Restart
+            Shot "$s-manual"
+            $kept = (Test-Path $first) -and (Get-FileHash $first).Hash -eq $manualHash
+            Report $s ($auto -and $manualHash -ne $autoHash -and $kept) "auto=$auto manual-kept=$kept"
+            Remove-Item $first -ErrorAction SilentlyContinue
+            continue
+        }
         if ($s -eq "home") {
             # A transfer stopped by the HOME menu: nothing left, sleep back, and it works again
             Remove-Item $target, "$target.part" -ErrorAction SilentlyContinue
@@ -618,6 +653,7 @@ try {
     Start-Sleep -Seconds 2
     [IO.File]::WriteAllText($ini, $iniBackup)
     CleanBatch
+    Remove-Item (Join-Path $cfg "snaps/sonicwi3.bin") -ErrorAction SilentlyContinue
     if ($moved) {
         Remove-Item -Recurse -Force $games -ErrorAction SilentlyContinue
         Rename-Item (Join-Path (Split-Path $games) "games.keep") "games"

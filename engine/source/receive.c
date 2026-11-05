@@ -113,7 +113,8 @@ u32 receive_test_keys(void) {
 			fclose(state);
 		}
 	}
-	return c == 'A' ? KEY_A : c == 'B' ? KEY_B : c == 'Y' ? KEY_Y : c == 'D' ? KEY_DOWN : 0;
+	/* L and P: leave a running game for the list, take a snapshot (main.c) */
+	return c == 'A' ? KEY_A : c == 'B' ? KEY_B : c == 'Y' ? KEY_Y : c == 'D' ? KEY_DOWN : c == 'L' ? KEY_ZL : c == 'P' ? KEY_ZR : 0;
 }
 #endif
 

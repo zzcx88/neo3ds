@@ -80,19 +80,21 @@ void ui_flush(void) {
 
 /* ---- main screen ---- */
 
-enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, B_SERVICE, B_SLOT, B_SAVE, B_LOAD, B_LIST, B_OFF, NB };
+enum { B_KEYS, B_TURBO, B_SYSTEM, B_DIAG, B_RESTART, B_SERVICE, B_SLOT, B_SAVE, B_LOAD, B_LIST, B_OFF, B_SNAP, NB };
 static UiRect rects[NB] = {
 	{8, 44, 148, 30}, {164, 44, 148, 30}, {8, 80, 148, 30}, {164, 80, 148, 30}, {8, 116, 148, 26}, {164, 116, 148, 26},
 	{8, 148, 96, 26}, {112, 148, 96, 26}, {216, 148, 96, 26}, {0, 0, 0, 0}, /* B_LIST: launcher only */
 	{290, 3, 20, 20}, /* B_OFF: a small square in the header */
+	{0, 0, 0, 0}, /* B_SNAP: launcher only */
 };
-static bool launcher; /* the third row is then Reset / Service / Game list */
+static bool launcher; /* the third row is then Reset / Service / Snapshot / Game list */
 
 void ui_set_launcher(void) {
 	launcher = true;
-	rects[B_RESTART] = (UiRect){8, 116, 96, 26};
-	rects[B_SERVICE] = (UiRect){112, 116, 96, 26};
-	rects[B_LIST] = (UiRect){216, 116, 96, 26};
+	rects[B_RESTART] = (UiRect){8, 116, 84, 26};
+	rects[B_SERVICE] = (UiRect){94, 116, 70, 26};
+	rects[B_SNAP] = (UiRect){166, 116, 70, 26};
+	rects[B_LIST] = (UiRect){238, 116, 74, 26};
 }
 /* the test button is held while touched, and at least SERVICE_FRAMES so that a tap reaches the BIOS */
 enum { RESTART_FRAMES = 60, CONFIRM_FRAMES = 180, SERVICE_FRAMES = 15 };
@@ -139,14 +141,15 @@ static void button_label(int b, char *out, size_t n) {
 		break;
 	case B_DIAG: snprintf(out, n, "Diagnostics"); break;
 	case B_SERVICE:
-		if (launcher) snprintf(out, n, memory.mvs ? "Service" : "(MVS only)");
+		if (launcher) snprintf(out, n, memory.mvs ? "Service" : "MVS only");
 		else snprintf(out, n, memory.mvs ? "Service menu" : "Service: MVS only");
 		break;
 	case B_LIST: snprintf(out, n, list_confirm ? "Tap again" : "Game list"); break;
+	case B_SNAP: snprintf(out, n, "Snapshot"); break;
 	case B_SLOT: snprintf(out, n, "Slot %d", slot + 1); break;
 	case B_SAVE: snprintf(out, n, "Save"); break;
 	case B_LOAD: snprintf(out, n, load_confirm ? "Tap again" : "Load"); break;
-	default: snprintf(out, n, launcher ? "Hold: reset" : "Restart (hold)"); break;
+	default: snprintf(out, n, launcher ? "Hold:reset" : "Restart (hold)"); break;
 	}
 }
 
@@ -368,6 +371,7 @@ UiAction ui_main_update(void) {
 			break;
 		}
 		case B_SAVE: action = UI_STATE_SAVE; break;
+		case B_SNAP: action = UI_SNAPSHOT; break;
 		case B_OFF: set_backlight(false); break;
 		case B_LIST:
 			if (list_confirm) {
