@@ -49,7 +49,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 릴리스 패키징�
 ## 검증 게이트 · AI 작업 수칙
 
 - 엔진: `bash scripts/build_engine.sh` / 웹: `bash scripts/build_wasm.sh` / `site/`: `node --check` + 태그 균형 + i18n 누락 0 / `scripts/`: `bash -n`·`py_compile` / C#(exe): `dotnet build -c Release`
-- 엔진 동작 변경 시 `scripts/azahar_test.sh` 통과 후 커밋
+- 엔진 동작 변경 시 `docs/build.md` §4 "무엇을 언제 돌리나" 기준으로 검증 후 커밋. 실기가 없으면 `scripts/azahar_test.sh`와 `scripts/azahar_recv_test.ps1` 전체를 돌리고, 터치·프레임 루프·카메라·성능에 영향이 있으면 PR에 `실기 확인 필요`를 적는다. `azahar_test.sh`는 실행 확인이며 런처를 검사하지 않는다
 - 커밋 전: 산출물·롬·바이오스 혼입 없음, 무관 파일 없음, 한·영 쌍 일치, 이슈 번호 참조
 - 금지: 바이너리 커밋, 롬/바이오스 저장, 실측 없는 성능 수치 기재
 - 도구 출력 접두사(`36:` 같은 줄번호)를 코드로 오인 금지 — 의심되면 `od -c`로 바이트 확인
