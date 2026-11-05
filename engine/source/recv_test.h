@@ -1,5 +1,5 @@
-// What the Azahar test of the receive screen (scripts/azahar_recv_test.ps1) adds to the engine, all of
-// it in recv_test.c and only with NEO3DS_RECV_TEST. In any other build these do nothing and leave no code.
+// What the Azahar test of the launcher (scripts/azahar_launcher_test.ps1) adds to the engine, all of it
+// in recv_test.c and only with NEO3DS_RECV_TEST. In any other build these do nothing and leave no code.
 //
 // Never on a real console: the button file is looked for on the SD card 10 times a second, and the
 // list writes its state at every cursor move, which costs frames.
@@ -14,7 +14,7 @@
 
 u32 recv_test_keys(void);                    /* a letter in a file: a press of that button */
 bool recv_test_write_fails(void);            /* the next SD card write is to fail */
-void recv_test_free_space(u64 *available);   /* Azahar always reports a large free space */
+void recv_test_free_space(u64 *available, u64 cluster); /* Azahar always reports a large free space */
 bool recv_test_url(char *url, size_t size);  /* True when the address comes from a file, not a QR code */
 void recv_test_list_state(int tab, const char *selected, int favorites, int count); /* what the list shows */
 void recv_test_decode_count(int codes);      /* the camera's last decode, for the line it shows */
@@ -25,7 +25,7 @@ void recv_test_show_decode(u64 ms);
 
 static inline u32 recv_test_keys(void) { return 0; }
 static inline bool recv_test_write_fails(void) { return false; }
-static inline void recv_test_free_space(u64 *available) { (void)available; }
+static inline void recv_test_free_space(u64 *available, u64 cluster) { (void)available; (void)cluster; }
 static inline bool recv_test_url(char *url, size_t size) { (void)url; (void)size; return false; }
 static inline void recv_test_list_state(int tab, const char *selected, int favorites, int count) {
 	(void)tab; (void)selected; (void)favorites; (void)count;

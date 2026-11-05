@@ -58,6 +58,7 @@ DlResult recv_read_body(int sock, FILE *out, int extra, u64 length, u64 *got);
 bool recv_install(const char *part, const char *final);
 bool recv_free_space(u64 *available, u64 *cluster);
 bool recv_space_ok(u64 bytes, int files);
+bool recv_make_game_folders(void);
 void recv_log(const char *name, const char *what, u64 bytes);
 
 /* ---- receive_screen.c ---- */

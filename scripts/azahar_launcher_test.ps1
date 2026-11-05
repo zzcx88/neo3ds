@@ -1,18 +1,19 @@
-# Azahar test of the launcher's receive screen (issue #256): builds the launcher with
-# NEO3DS_RECV_TEST (the address comes from sdmc:/3ds/neo3ds/recv_url.txt instead of a QR code),
-# serves a game file with scripts/recv_test_server.py and presses the buttons in Azahar.
+# Azahar test of the launcher, its receive screen above all: builds the launcher with NEO3DS_RECV_TEST
+# (the address comes from sdmc:/3ds/neo3ds/recv_url.txt instead of a QR code), serves a game file with
+# scripts/recv_test_server.py and presses the buttons in Azahar. A new launcher feature adds its
+# scenarios here. What to run and when: docs/build.md section 4.
 #
 # The cam-* scenarios use Azahar's still image camera (its config is put back) and need pip for the
 # qrcode package.
 #
-# usage: pwsh scripts/azahar_recv_test.ps1 -Pack <file.neo3ds> [-Converter <folder with Neo3dsConverter.exe>]
+# usage: pwsh scripts/azahar_launcher_test.ps1 -Pack <file.neo3ds> [-Converter <folder with Neo3dsConverter.exe>]
 #        [-Scenarios ok,404,...] [-SkipBuild]
 # Results: out/recvtest/results.txt and one screenshot per scenario. The test file goes in Azahar's
 # SD card folder as recvtest.neo3ds and is deleted at the end; launcher.txt is put back.
 param(
     [Parameter(Mandatory)] [string] $Pack,
     [string] $Converter = "dist/converter",
-    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six", "snap", "badpack", "badopen", "keep", "case", "home-ask"),
+    [string[]] $Scenarios = @("badurl", "404", "405", "redirect", "nolength", "chunked", "twolengths", "truncheader", "huge", "nospace", "short", "corrupt", "ok", "replace-no", "replace-yes", "cancel", "spacename", "empty", "cam-ok", "cam-wrong", "cam-none", "home", "home-cam", "badwrite", "noserver", "recover", "logcap", "b-ok3", "b-six", "b-corrupt", "b-short", "b-404", "b-headdiff", "b-cancel", "b-home", "b-replace", "b-nospace", "b-bad", "cam-six", "snap", "badpack", "badopen", "keep", "case", "home-ask", "recover-many", "recover-fail", "logcap-fail", "space-edge", "badfolder"),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = "Stop"
@@ -136,19 +137,25 @@ if (Test-Path $log) { $logBackup = [IO.File]::ReadAllBytes($log) }
 
 $results = @()
 $hash = (Get-FileHash $Pack).Hash
+# The address and the words its refusal must use: each must fail on its own rule, not an earlier one
+$tok = "0123456789abcdef"
+$notAddress = "not a PC address"; $notGame = "not for a \.neo3ds file"
 $badUrls = @(
-    "https://192.0.2.1:80/x/a.neo3ds",        # not http
-    "http://example.com:80/x/a.neo3ds",       # not IPv4 numbers
-    "http://192.0.2.1/x/a.neo3ds",            # no port
-    "http://127.0.0.1:80/x/a.neo3ds",         # this 3DS
-    "http://224.0.0.1:80/x/a.neo3ds",         # multicast
-    "http://0.0.0.0:80/x/a.neo3ds",           # no one
-    "http://192.0.2.1:80/x/a.cia",            # not a game file
-    "http://192.0.2.1:80/x/..%2Fa.neo3ds",    # a folder in the name
-    "http://192.0.2.1:80/x/a%00.neo3ds",      # NUL
-    "http://192.0.2.1:80/x/a%2.neo3ds",       # bad escape
-    "http://192.0.2.1:80/x/a%3A.neo3ds",      # a character FAT refuses
-    "http://192.0.2.1:80/x/$('a' * 100).neo3ds" # 107 bytes: .part would not fit
+    @("https://192.0.2.1:80/$tok/a.neo3ds", $notAddress),        # not http
+    @("http://example.com:80/$tok/a.neo3ds", $notAddress),       # not IPv4 numbers
+    @("http://192.0.2.1/$tok/a.neo3ds", $notAddress),            # no port
+    @("http://127.0.0.1:80/$tok/a.neo3ds", $notAddress),         # this 3DS
+    @("http://224.0.0.1:80/$tok/a.neo3ds", $notAddress),         # multicast
+    @("http://0.0.0.0:80/$tok/a.neo3ds", $notAddress),           # no one
+    @("http://192.0.2.1:80/x/a.neo3ds", $notAddress),            # not the sender's path
+    @("http://192.0.2.1:80/$tok/a.cia", $notGame),               # not a game file
+    @("http://192.0.2.1:80/$tok/..%2Fa.neo3ds", $notGame),       # a folder in the name
+    @("http://192.0.2.1:80/$tok/a%00.neo3ds", $notAddress),      # NUL
+    @("http://192.0.2.1:80/$tok/a%2.neo3ds", $notAddress),       # bad escape
+    @("http://192.0.2.1:80/$tok/a%3A.neo3ds", $notGame),         # a character FAT refuses
+    @("http://192.0.2.1:80/$tok/a%20.neo3ds", $notGame),         # a space before the extension
+    @("http://192.0.2.1:80/$tok/a..neo3ds", $notGame),           # a dot before the extension
+    @("http://192.0.2.1:80/$tok/$('a' * 100).neo3ds", "too long") # 107 bytes: .part would not fit
 )
 # Azahar's still image camera reads one picture, chosen in its config, when the game starts.
 $iniBackup = [IO.File]::ReadAllText($ini)
@@ -197,6 +204,11 @@ function GoToGame([string] $name) {
     return $false
 }
 function StartServerFile([string] $file) { RunServer @($file, "--name", "recvtest.neo3ds", "--url-file", $urlFile) }
+# A name that can't be removed or replaced. Azahar's remove deletes an empty folder: this one holds a file.
+function BlockName([string] $path) {
+    New-Item -ItemType Directory -Force $path | Out-Null
+    [IO.File]::WriteAllText((Join-Path $path "keep.txt"), "in the way")
+}
 function LogCount { if (Test-Path $log) { (Get-Content $log).Count } else { 0 } }
 # Batches: files named recvb1.neo3ds, recvb2.neo3ds...
 function BatchFile([int] $i) { Join-Path $games "recvb$i.neo3ds" }
@@ -619,6 +631,124 @@ try {
             StartAzahar
             continue
         }
+        if ($s -eq "recover-many") {
+            # More leftovers than one pass takes: one start deals with them all
+            StopAzahar
+            1..20 | ForEach-Object {
+                [IO.File]::WriteAllText((Join-Path $games "recvm$_.neo3ds.part"), "half a file")
+                [IO.File]::WriteAllText((Join-Path $games "recvn$_.neo3ds.bak"), "the old game")
+            }
+            LaunchAzahar
+            for ($i = 0; $i -lt 60 -and @(Get-ChildItem $games -Filter "recv[mn]*.part").Count + @(Get-ChildItem $games -Filter "recvn*.bak").Count; $i++) { Start-Sleep -Milliseconds 500 }
+            Start-Sleep -Seconds 1
+            $parts = @(Get-ChildItem $games -Filter "recvm*").Count
+            $baks = @(Get-ChildItem $games -Filter "recvn*.bak").Count
+            $back = @(Get-ChildItem $games -Filter "recvn*.neo3ds").Count
+            Report $s ($parts -eq 0 -and $baks -eq 0 -and $back -eq 20) "part=$parts bak=$baks back=$back"
+            StopAzahar
+            Remove-Item (Join-Path $games "recvm*"), (Join-Path $games "recvn*") -ErrorAction SilentlyContinue
+            StartAzahar
+            continue
+        }
+        if ($s -eq "recover-fail") {
+            # A leftover that can't be removed is logged, and the launcher starts
+            StopAzahar
+            $dir = Join-Path $games "recvdir.neo3ds.part"
+            BlockName $dir
+            $before = LogCount
+            LaunchAzahar
+            $logged = WaitLine "failed recvdir\.neo3ds\.part" $before 20
+            Start-Sleep -Seconds 6
+            Shot $s
+            Report $s ($logged -and [bool](Get-Process azahar -ErrorAction SilentlyContinue) -and (Test-Path $dir)) "logged=$logged"
+            StopAzahar
+            Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
+            StartAzahar
+            continue
+        }
+        if ($s -eq "logcap-fail") {
+            # A full log that can't take the old name still starts again
+            $old = "$log.old"
+            Remove-Item $old -ErrorAction SilentlyContinue
+            BlockName $old
+            [IO.File]::WriteAllText($log, ("x" * 79 + "`n") * 500)
+            [IO.File]::WriteAllText($urlFile, "http://127.0.0.1:80/x/a.neo3ds`n")
+            Press $KeyY
+            Start-Sleep -Seconds 2
+            Press $KeyA
+            $newSize = (Get-Item $log).Length
+            Report $s ($newSize -lt 1000 -and (Test-Path $old -PathType Container)) "new=$newSize"
+            Remove-Item -Recurse -Force $old -ErrorAction SilentlyContinue
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
+            continue
+        }
+        if ($s -eq "space-edge") {
+            # No game folders yet: one byte short of the room asked for is refused before any GET; exactly that room works
+            StopAzahar
+            Rename-Item $games "games.keep"
+            $moved = $true
+            StartAzahar
+            StartServer "recvtest.neo3ds"
+            [IO.File]::WriteAllText($freeFile, "1`n") # refused: it also writes the cluster size down
+            $before = LogCount
+            Press $KeyY
+            $first = WaitLine " failed " $before 20
+            Start-Sleep -Seconds 1
+            Press $KeyA
+            Start-Sleep -Seconds 1
+            $cluster = [int64](Get-Content (Join-Path $cfg "recv_cluster.txt"))
+            # As recv_space_ok: the file's last part and its folder entry, and the two folders
+            $needed = (Get-Item $Pack).Length + 4 * $cluster
+            [IO.File]::WriteAllText($freeFile, "$($needed - 1)b`n")
+            $before = LogCount
+            Press $KeyY
+            $short = WaitLine " failed " $before 20
+            Start-Sleep -Seconds 1
+            Shot "$s-short"
+            Press $KeyA
+            Start-Sleep -Seconds 1
+            $noGet = -not ((ServerLog) -match "GET ")
+            [IO.File]::WriteAllText($freeFile, "${needed}b`n")
+            $before = LogCount
+            Press $KeyY
+            $done = WaitLine " saved " $before 60
+            Start-Sleep -Seconds 1
+            Press $KeyA
+            $saved = (Test-Path $target) -and (Get-FileHash $target).Hash -eq $hash
+            Report $s ($first -and $short -and $noGet -and $done -and $saved) "cluster=$cluster short=$short no-get=$noGet saved=$saved"
+            StopServer
+            StopAzahar
+            Remove-Item -Recurse -Force $games
+            Rename-Item $gamesKept "games"
+            $moved = $false
+            Remove-Item $freeFile, $urlFile, (Join-Path $cfg "recv_cluster.txt") -ErrorAction SilentlyContinue
+            StartAzahar
+            continue
+        }
+        if ($s -eq "badfolder") {
+            # The game folder can't be made (a file has its name): said so, and nothing is written
+            StopAzahar
+            Rename-Item $games "games.keep"
+            $moved = $true
+            [IO.File]::WriteAllText($games, "not a folder")
+            StartAzahar
+            StartServer "recvtest.neo3ds"
+            $before = LogCount
+            Press $KeyY
+            $done = WaitLine " failed " $before 30
+            Start-Sleep -Seconds 1
+            Shot $s
+            Press $KeyA
+            Report $s ($done -and (LastLog) -match "game folder") ""
+            StopServer
+            StopAzahar
+            Remove-Item -Force $games
+            Rename-Item $gamesKept "games"
+            $moved = $false
+            Remove-Item $urlFile -ErrorAction SilentlyContinue
+            StartAzahar
+            continue
+        }
         if ($s -eq "logcap") {
             # An attempt at a full log starts a new one; the old one is kept once
             [IO.File]::WriteAllText($log, ("x" * 79 + "`n") * 500)
@@ -674,15 +804,16 @@ try {
             continue
         }
         if ($s -eq "badurl") {
-            foreach ($u in $badUrls) {
+            foreach ($bad in $badUrls) {
+                $u = $bad[0]
                 $before = LogCount
                 [IO.File]::WriteAllText($urlFile, "$u`n")
                 Press $KeyY
                 $finished = WaitLog $before 5
                 Shot $s
                 Press $KeyA
-                $ok = $finished -and (LastLog) -match " refused "
-                Report "badurl $($u.Substring(0, [Math]::Min(44, $u.Length)))" $ok ""
+                $ok = $finished -and (LastLog) -match " refused " -and (LastLog) -match $bad[1]
+                Report "badurl $($u.Substring(0, [Math]::Min(60, $u.Length)))" $ok ""
             }
             continue
         }
@@ -796,7 +927,10 @@ try {
         Remove-Item -Recurse -Force $games -ErrorAction SilentlyContinue
         Rename-Item $gamesKept "games"
     }
-    Remove-Item $target, "$target.part", "$target.bak", $urlFile, $freeFile, (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), "$log.old" -ErrorAction SilentlyContinue
+    Remove-Item $target, "$target.part", "$target.bak", $urlFile, $freeFile, (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), (Join-Path $cfg "recv_cluster.txt") -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force "$log.old" -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $games "recvm*"), (Join-Path $games "recvn*") -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force (Join-Path $games "recvdir.neo3ds.part") -ErrorAction SilentlyContinue
     foreach ($left in "recvcut.neo3ds.part", "recvback.neo3ds", "recvback.neo3ds.bak", "recvnew.neo3ds", "recvnew.neo3ds.bak", "recvbad.neo3ds", "recvcase.neo3ds", "recv test.neo3ds") {
         Remove-Item -LiteralPath (Join-Path $games $left) -ErrorAction SilentlyContinue
     }
