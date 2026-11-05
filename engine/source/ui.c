@@ -29,11 +29,10 @@ void ui_fill(int x, int y, int w, int h, u16 color) {
 
 int ui_text_width(const char *s, int scale) { return (int)strlen(s) * 8 * scale; }
 
-void ui_text(int x, int y, const char *s, u16 color, int scale) {
+static void draw_text(u16 *p, int screen_w, int x, int y, const char *s, u16 color, int scale) {
 	const ConsoleFont *font = &consoleGetDefault()->font;
-	u16 *p = fb();
 	for (; *s; s++, x += 8 * scale) {
-		int c = (u8)*s - font->asciiOffset;
+		const int c = (u8)*s - font->asciiOffset;
 		if (c < 0 || c >= font->numChars) continue;
 		const u8 *g = font->gfx + c * 8;
 		for (int row = 0; row < 8; row++)
@@ -42,27 +41,46 @@ void ui_text(int x, int y, const char *s, u16 color, int scale) {
 				for (int sy = 0; sy < scale; sy++)
 					for (int sx = 0; sx < scale; sx++) {
 						const int px = x + bit * scale + sx, py = y + row * scale + sy;
-						if (px >= 0 && px < 320 && py >= 0 && py < 240) p[px * 240 + 239 - py] = color;
+						if (px >= 0 && px < screen_w && py >= 0 && py < 240) UI_PIXEL(p, px, py) = color;
 					}
 			}
 	}
 }
 
+void ui_text(int x, int y, const char *s, u16 color, int scale) { draw_text(fb(), 320, x, y, s, color, scale); }
+
 void ui_top_text(u16 *top_fb, int x, int y, const char *s, u16 color, int scale) {
-	const ConsoleFont *font = &consoleGetDefault()->font;
-	for (; *s; s++, x += 8 * scale) {
-		const int c = (u8)*s - font->asciiOffset;
-		if (c < 0 || c >= font->numChars) continue;
-		const u8 *g = font->gfx + c * 8;
-		for (int row = 0; row < 8; row++)
-			for (int bit = 0; bit < 8; bit++)
-				if (g[row] & (0x80 >> bit))
-					for (int sy = 0; sy < scale; sy++)
-						for (int sx = 0; sx < scale; sx++) {
-							const int px = x + bit * scale + sx, py = y + row * scale + sy;
-							if (px >= 0 && px < 400 && py >= 0 && py < 240) top_fb[px * 240 + 239 - py] = color;
-						}
-	}
+	draw_text(top_fb, 400, x, y, s, color, scale);
+}
+
+void ui_top_center(u16 *top_fb, int y, const char *s, u16 color, int scale) {
+	ui_top_text(top_fb, (400 - ui_text_width(s, scale)) / 2, y, s, color, scale);
+}
+
+void ui_top_clear(u16 *top_fb) {
+	for (int i = 0; i < 400 * 240; i++) top_fb[i] = UI_BG;
+}
+
+void ui_top_logo(u16 *top_fb) {
+	ui_top_clear(top_fb);
+	ui_top_center(top_fb, 70, "neo3ds", UI_HEADER, 4);
+}
+
+void ui_header(const char *label) {
+	ui_fill(0, 0, 320, 240, UI_BG);
+	ui_fill(0, 0, 320, 26, UI_HEADER);
+	ui_text(8, 5, "neo3ds", UI_TEXT, 2);
+	if (label) ui_text(8 + ui_text_width("neo3ds", 2) + 8, 12, label, UI_TEXT, 1); /* on the logo's baseline */
+}
+
+void ui_fit(char *out, size_t size, const char *s, int chars) {
+	if ((int)strlen(s) > chars) snprintf(out, size, "%.*s...", chars - 3, s);
+	else snprintf(out, size, "%s", s);
+}
+
+void ui_printable(char *s) {
+	for (; *s; s++)
+		if ((u8)*s < 32 || (u8)*s > 126) *s = '?';
 }
 
 void ui_button(UiRect r, const char *label, u16 bg, u16 fg) {
@@ -107,10 +125,8 @@ static char default_status[40];
 static void read_text(const char *name, char *out, size_t size) {
 	char buf[64];
 	if (!loader_read_text(name, buf, sizeof buf)) return;
-	snprintf(out, size, "%s", buf);
-	for (char *c = out; *c; c++)
-		if ((u8)*c < 32 || (u8)*c > 126) *c = '?';
-	if (strlen(buf) > size - 1 && size > 4) strcpy(out + size - 4, "...");
+	ui_fit(out, size, buf, (int)size - 1);
+	ui_printable(out);
 }
 static char status[40];
 static bool status_warn;
@@ -246,10 +262,7 @@ static void draw_keys(void) {
 }
 
 void ui_main_draw(void) {
-	ui_fill(0, 0, 320, 240, UI_BG);
-	ui_fill(0, 0, 320, 26, UI_HEADER);
-	ui_text(8, 5, "neo3ds", UI_TEXT, 2);
-	ui_text(8 + ui_text_width("neo3ds", 2) + 8, 12, version, UI_TEXT, 1); /* on the logo's baseline */
+	ui_header(version);
 	ui_text(8, 34, title, UI_TEXT, 1);
 	for (int b = 0; b < NB; b++)
 		if (rects[b].w) draw_button(b);

@@ -6,6 +6,7 @@
 
 #include <3ds.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define UI_RGB(r, g, b) (u16)((((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3))
 enum {
@@ -20,6 +21,10 @@ enum {
 
 typedef struct { s16 x, y, w, h; } UiRect;
 
+/* A pixel of either screen's framebuffer, x and y from the top left: the screens are stored rotated,
+ * as columns of 240 pixels from the bottom row up. */
+#define UI_PIXEL(fb, x, y) ((fb)[(x) * 240 + 239 - (y)])
+
 /* Drawing primitives (x 0..319, y 0..239 from the top left) */
 void ui_fill(int x, int y, int w, int h, u16 color);
 void ui_text(int x, int y, const char *s, u16 color, int scale); /* 8x8 font, scale 1 or 2 */
@@ -27,7 +32,17 @@ int ui_text_width(const char *s, int scale);
 void ui_button(UiRect r, const char *label, u16 bg, u16 fg);
 bool ui_hit(UiRect r, int x, int y);
 void ui_flush(void); /* writes the framebuffer back from the cache for the display */
-void ui_top_text(u16 *top_fb, int x, int y, const char *s, u16 color, int scale); /* the same, on the 400x240 top screen */
+void ui_header(const char *label); /* a clear screen with the header; label beside the logo, or NULL */
+
+/* The 400x240 top screen, in the framebuffer or a copy of it */
+void ui_top_text(u16 *top_fb, int x, int y, const char *s, u16 color, int scale);
+void ui_top_center(u16 *top_fb, int y, const char *s, u16 color, int scale);
+void ui_top_clear(u16 *top_fb);
+void ui_top_logo(u16 *top_fb); /* cleared, with the big logo */
+
+/* Text for the screen */
+void ui_fit(char *out, size_t size, const char *s, int chars); /* longer than chars: cut, ending in ... */
+void ui_printable(char *s);                                    /* what the font lacks becomes ? */
 
 /* The main screen */
 typedef enum { UI_NONE, UI_KEYCONFIG, UI_DIAG, UI_SYSTEM, UI_RESTART, UI_STATE_SAVE, UI_STATE_LOAD, UI_GAME_LIST, UI_SNAPSHOT } UiAction;

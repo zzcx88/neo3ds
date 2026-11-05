@@ -113,14 +113,14 @@ static void draw_preview(u16 *fb, const u8 *frame) {
 	const int x0 = TOP_X + (W - GUIDE) / 2, x1 = x0 + GUIDE - 1, y0 = (H - GUIDE) / 2, y1 = y0 + GUIDE - 1;
 	for (int i = 0; i < GUIDE_ARM; i++)
 		for (int t = 0; t < 2; t++) {
-			fb[(x0 + i) * 240 + 239 - (y0 + t)] = UI_ACCENT;
-			fb[(x1 - i) * 240 + 239 - (y0 + t)] = UI_ACCENT;
-			fb[(x0 + i) * 240 + 239 - (y1 - t)] = UI_ACCENT;
-			fb[(x1 - i) * 240 + 239 - (y1 - t)] = UI_ACCENT;
-			fb[(x0 + t) * 240 + 239 - (y0 + i)] = UI_ACCENT;
-			fb[(x1 - t) * 240 + 239 - (y0 + i)] = UI_ACCENT;
-			fb[(x0 + t) * 240 + 239 - (y1 - i)] = UI_ACCENT;
-			fb[(x1 - t) * 240 + 239 - (y1 - i)] = UI_ACCENT;
+			UI_PIXEL(fb, x0 + i, y0 + t) = UI_ACCENT;
+			UI_PIXEL(fb, x1 - i, y0 + t) = UI_ACCENT;
+			UI_PIXEL(fb, x0 + i, y1 - t) = UI_ACCENT;
+			UI_PIXEL(fb, x1 - i, y1 - t) = UI_ACCENT;
+			UI_PIXEL(fb, x0 + t, y0 + i) = UI_ACCENT;
+			UI_PIXEL(fb, x1 - t, y0 + i) = UI_ACCENT;
+			UI_PIXEL(fb, x0 + t, y1 - i) = UI_ACCENT;
+			UI_PIXEL(fb, x1 - t, y1 - i) = UI_ACCENT;
 		}
 	gfxFlushBuffers();
 }
@@ -193,7 +193,7 @@ QrResult qr_scan(char *out, size_t size, QrCheck check, void (*status)(const cha
 	if (!thread) goto done;
 
 	u16 *fb = (u16 *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
-	for (int i = 0; i < 400 * 240; i++) fb[i] = UI_BG;
+	ui_top_clear(fb);
 	u64 last_frame = osGetTime(), last_decode = 0;
 	u32 seen = 0;
 	const char *shown = NULL;

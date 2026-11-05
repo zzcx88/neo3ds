@@ -378,7 +378,6 @@ static void state_action(bool save, int slot) {
 	ui_status(msg);
 }
 
-/* The HOME menu or sleep may be followed by the console being switched off */
 /* The .neo3ds file started from the launcher ("" in a game's own CIA) */
 static char pack_path[160];
 
@@ -390,6 +389,7 @@ static bool take_snapshot(bool manual) {
 }
 
 static aptHookCookie apt_cookie;
+/* The HOME menu or sleep may be followed by the console being switched off */
 static void on_apt(APT_HookType type, void *param) {
 	(void)param;
 	if (type == APTHOOK_ONSUSPEND || type == APTHOOK_ONSLEEP) {

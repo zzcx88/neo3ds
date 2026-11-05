@@ -7,10 +7,9 @@
 #include <3ds.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #include "save.h"
-#include "loader.h"
+#include "sdfiles.h"
 #include "neo/memory.h"
 
 enum { CHECK_FRAMES = 300 };
@@ -22,17 +21,10 @@ static LightEvent wake, idle;
 static volatile bool quit;
 static int frames;
 
-static void file_path(char *out, size_t n) {
-	const u64 id = loader_game_id();
-	snprintf(out, n, "sdmc:/3ds/neo3ds/saves/%016llX.sram", (unsigned long long)id);
-}
-
 static void write_file(const Uint8 *data) {
 	char path[64];
-	file_path(path, sizeof path);
-	mkdir("sdmc:/3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds/saves", 0777);
+	sd_game_file(path, sizeof path, "saves", ".sram");
+	sd_make_data_dir("saves");
 	FILE *f = fopen(path, "wb");
 	if (!f) return;
 	fwrite(data, sizeof memory.sram, 1, f);
@@ -51,7 +43,7 @@ static void writer(void *arg) {
 
 void save_load(void) {
 	char path[64];
-	file_path(path, sizeof path);
+	sd_game_file(path, sizeof path, "saves", ".sram");
 	FILE *f = fopen(path, "rb");
 	if (f) {
 		if (fread(memory.sram, sizeof memory.sram, 1, f) != 1) memset(memory.sram, 0, sizeof memory.sram);

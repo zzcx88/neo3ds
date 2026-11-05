@@ -93,6 +93,25 @@ powershell -File scripts/azahar_recv_test.ps1 -Pack <파일.neo3ds> [-Converter 
 
 `Y` 진입은 변환기가 `.neo3ds`를 보낼 수 있을 때까지 기본 빌드에서 꺼 둔다. 실기 시험은 `EXTRA_CFLAGS=-DNEO3DS_RECEIVE`로 빌드한다. `NEO3DS_RECV_TEST` 빌드를 실기에 쓰지 않는다: 버튼 파일을 초당 10번 SD에서 찾고 커서를 옮길 때마다 상태 파일을 써서 프레임이 떨어진다.
 
+엔진 시험용 빌드 플래그는 `EXTRA_CFLAGS=-D<플래그>`로 켠다. 값이 있는 것은 `-D<플래그>=<값>`이다. 모두 기본 빌드에서는 꺼져 있다.
+
+| 플래그 | 용도 |
+|---|---|
+| `NEO3DS_RECEIVE` | 런처의 `Y` 수신 진입. 시험 훅 없음, 실기 시험용 |
+| `NEO3DS_RECV_TEST` | 위 + Azahar 수신 시험 훅. 실기 금지 |
+| `NEO3DS_AUTOPICK` | 런처에서 2초 뒤 첫 게임 시작 |
+| `NEO3DS_AUTOPLAY` | 정해진 프레임에 동전·시작을 넣고 공격하며 오른쪽으로 이동 |
+| `NEO3DS_DIAG_START` | Diagnostics 화면으로 시작 |
+| `NEO3DS_KEYCONFIG_AT=<프레임>` | 그 프레임에 키 설정 화면 열기 |
+| `NEO3DS_KEYCONFIG_ROW=<행>` | 키 설정의 시작 커서 행 |
+| `NEO3DS_SERVICE_AT=<프레임>` | 그 프레임부터 15프레임 동안 MVS 테스트 버튼 |
+| `NEO3DS_STATE_TEST` | 1500프레임에 저장, 1800에 불러오기, 2100에 상태 해시 비교 → `sdmc:/neo3ds/statetest.txt` |
+| `NEO3DS_BENCH` | L+R: 현재 프레임을 확대 행 신·구 코드로 30번씩 그려 시간 표시 |
+| `NEO3DS_VDUMP` | L+R: 비디오 상태 저장 → `sdmc:/neo3ds/vdump_<번호>.bin` |
+| `NEO3DS_AUTODUMP=<주기>` | 그 프레임 주기마다 같은 덤프 |
+| `NEO3DS_YMLOG=<프레임>` | 그 프레임에 사운드 로그 저장 → `sdmc:/neo3ds/ymlog.txt` (MAME 비교용) |
+| `NEO3DS_CORE_LOG` | gngeo 코어 진단 출력 |
+
 ## 5. 실기 테스트
 
 1. 만든 `.cia`를 SD 카드에 복사하거나, 오프라인 변환기(Windows GUI·Linux·macOS)의 **[3DS로 보내기]** 로 같은 공유기에 보낸다

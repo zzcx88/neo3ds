@@ -7,10 +7,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #include "keys.h"
 #include "loader.h"
+#include "sdfiles.h"
 #include "ui.h"
 
 enum { NBUTTONS = 10 };
@@ -50,11 +50,6 @@ typedef struct {
 	u8 screen; /* 0 = 1:1, 1 = full screen */
 } KeyFile;
 
-static void file_path(char *out, size_t n) {
-	const u64 id = loader_game_id();
-	snprintf(out, n, "sdmc:/3ds/neo3ds/keys/%016llX.bin", (unsigned long long)id);
-}
-
 static int turbo_index(void) {
 	for (int i = 0; i < TURBO_BUTTONS; i++)
 		if (keys_turbo == buttons[i].key) return i + 1;
@@ -67,7 +62,7 @@ void keys_load(void) {
 	keys_full_screen = false;
 	bios = 0;
 	char path[64];
-	file_path(path, sizeof path);
+	sd_game_file(path, sizeof path, "keys", ".bin");
 	FILE *f = fopen(path, "rb");
 	if (!f) return;
 	KeyFile k = {{0}};
@@ -83,11 +78,9 @@ void keys_load(void) {
 }
 
 bool keys_save(void) {
-	mkdir("sdmc:/3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds", 0777);
-	mkdir("sdmc:/3ds/neo3ds/keys", 0777);
+	sd_make_data_dir("keys");
 	char path[64];
-	file_path(path, sizeof path);
+	sd_game_file(path, sizeof path, "keys", ".bin");
 	FILE *f = fopen(path, "wb");
 	if (!f) return false;
 	KeyFile k = {{'N', 'K', 'E', 'Y'}, 2, (u8)turbo_index(), {0}, bios, keys_full_screen};
