@@ -96,6 +96,38 @@ if (-not $SkipBuild) {
 $cxi = Join-Path $out "neo3ds-launcher.cxi"
 if (-not (Test-Path $cxi)) { throw "no $cxi" }
 
+# A killed run runs no finally. What it changed is put back first, so its test values don't become
+# this run's originals: the copy on the disk stays until a run has restored them.
+$ini = Join-Path $env:APPDATA "Azahar/config/qt-config.ini"
+$settings = @{ "launcher.txt" = "$cfg/launcher.txt"; "receive.log" = $log; "qt-config.ini" = $ini }
+$settingsCopy = Join-Path $out "settings-copy"
+$gamesKept = Join-Path (Split-Path $games) "games.keep"
+if ((Test-Path $settingsCopy) -or (Test-Path $gamesKept)) {
+    Stop-Process -Name azahar -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+}
+if (Test-Path $gamesKept) {
+    if (Test-Path $games) { Remove-Item -Recurse -Force $games }
+    Rename-Item $gamesKept "games"
+    "The game folder of a run cut short was put back."
+}
+if (Test-Path $settingsCopy) {
+    foreach ($name in $settings.Keys) {
+        $saved = Join-Path $settingsCopy $name
+        if (Test-Path $saved) { Copy-Item $saved $settings[$name] -Force }
+        else { Remove-Item $settings[$name] -ErrorAction SilentlyContinue } # it did not exist
+    }
+    "The settings of a run cut short were put back."
+} else {
+    $making = "$settingsCopy.new"
+    if (Test-Path $making) { Remove-Item -Recurse -Force $making }
+    New-Item -ItemType Directory $making | Out-Null
+    foreach ($name in $settings.Keys) {
+        if (Test-Path $settings[$name]) { Copy-Item $settings[$name] (Join-Path $making $name) }
+    }
+    Rename-Item $making "settings-copy" # whole or not at all
+}
+
 New-Item -ItemType Directory -Force $games, $cfg | Out-Null
 $configBackup = $null
 if (Test-Path "$cfg/launcher.txt") { $configBackup = Get-Content -Raw "$cfg/launcher.txt" }
@@ -119,7 +151,6 @@ $badUrls = @(
     "http://192.0.2.1:80/x/$('a' * 100).neo3ds" # 107 bytes: .part would not fit
 )
 # Azahar's still image camera reads one picture, chosen in its config, when the game starts.
-$ini = Join-Path $env:APPDATA "Azahar/config/qt-config.ini"
 $iniBackup = [IO.File]::ReadAllText($ini)
 $pydeps = Join-Path $out "pydeps"
 function StopAzahar { Stop-Process -Name azahar -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
@@ -689,7 +720,7 @@ try {
             StopServer
             StopAzahar
             Remove-Item -Recurse -Force $games
-            Rename-Item (Join-Path (Split-Path $games) "games.keep") "games"
+            Rename-Item $gamesKept "games"
             $moved = $false
             continue
         }
@@ -763,7 +794,7 @@ try {
     Remove-Item (Join-Path $cfg "snaps/sonicwi3.bin") -ErrorAction SilentlyContinue
     if ($moved) {
         Remove-Item -Recurse -Force $games -ErrorAction SilentlyContinue
-        Rename-Item (Join-Path (Split-Path $games) "games.keep") "games"
+        Rename-Item $gamesKept "games"
     }
     Remove-Item $target, "$target.part", "$target.bak", $urlFile, $freeFile, (Join-Path $cfg "recv_state.txt"), (Join-Path $cfg "recv_list.txt"), (Join-Path $cfg "recv_key.txt"), "$log.old" -ErrorAction SilentlyContinue
     foreach ($left in "recvcut.neo3ds.part", "recvback.neo3ds", "recvback.neo3ds.bak", "recvnew.neo3ds", "recvnew.neo3ds.bak", "recvbad.neo3ds", "recvcase.neo3ds", "recv test.neo3ds") {
@@ -773,4 +804,5 @@ try {
     else { Remove-Item $log -ErrorAction SilentlyContinue }
     if ($null -ne $configBackup) { [IO.File]::WriteAllText("$cfg/launcher.txt", $configBackup) }
     else { Remove-Item "$cfg/launcher.txt" -ErrorAction SilentlyContinue }
+    Remove-Item -Recurse -Force $settingsCopy -ErrorAction SilentlyContinue # all put back
 }
