@@ -83,6 +83,14 @@ scripts/azahar_bench.sh
 
 어트랙트 데모와 대전 진입 스크린샷을 `$TEMP/claude/s/`에 저장한다 (`demo.png`, `fight.png`). 벤치 스크립트는 `roms/kof98.zip` 고정 → `out/kof98.cxi`로 실행한다.
 
+런처 수신 화면 (#256):
+
+```sh
+powershell -File scripts/azahar_recv_test.ps1 -Pack <파일.neo3ds> [-Converter <변환기 폴더>] [-Scenarios ok,404,...] [-SkipBuild]
+```
+
+`NEO3DS_RECV_TEST`로 런처를 빌드(`engine/engine_recv.elf`)해 QR 대신 `sdmc:/3ds/neo3ds/recv_url.txt`에서 주소를 읽고, `scripts/recv_test_server.py`가 정상·오류 응답을 낸다. Azahar 창에 키를 직접 누르므로 실행 중에는 키보드를 쓰지 않는다. 결과는 `out/recvtest/results.txt`와 시나리오별 스크린샷. Azahar SD 폴더의 테스트 파일은 끝나면 지우고 `launcher.txt`는 되돌린다.
+
 ## 5. 실기 테스트
 
 1. 만든 `.cia`를 SD 카드에 복사하거나, 오프라인 변환기(Windows GUI·Linux·macOS)의 **[3DS로 보내기]** 로 같은 공유기에 보낸다

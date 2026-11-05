@@ -27,6 +27,7 @@ int ui_text_width(const char *s, int scale);
 void ui_button(UiRect r, const char *label, u16 bg, u16 fg);
 bool ui_hit(UiRect r, int x, int y);
 void ui_flush(void); /* writes the framebuffer back from the cache for the display */
+void ui_top_text(u16 *top_fb, int x, int y, const char *s, u16 color, int scale); /* the same, on the 400x240 top screen */
 
 /* The main screen */
 typedef enum { UI_NONE, UI_KEYCONFIG, UI_DIAG, UI_SYSTEM, UI_RESTART, UI_STATE_SAVE, UI_STATE_LOAD, UI_GAME_LIST } UiAction;

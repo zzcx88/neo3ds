@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define LAUNCHER_GAMES_DIR "sdmc:/neo3ds/games"
+
 /* Shows the list until a game is picked (its .neo3ds path in path) or the app is closed (false). */
 bool launcher_pick(char *path, size_t size);
 

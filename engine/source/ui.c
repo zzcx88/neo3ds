@@ -48,6 +48,23 @@ void ui_text(int x, int y, const char *s, u16 color, int scale) {
 	}
 }
 
+void ui_top_text(u16 *top_fb, int x, int y, const char *s, u16 color, int scale) {
+	const ConsoleFont *font = &consoleGetDefault()->font;
+	for (; *s; s++, x += 8 * scale) {
+		const int c = (u8)*s - font->asciiOffset;
+		if (c < 0 || c >= font->numChars) continue;
+		const u8 *g = font->gfx + c * 8;
+		for (int row = 0; row < 8; row++)
+			for (int bit = 0; bit < 8; bit++)
+				if (g[row] & (0x80 >> bit))
+					for (int sy = 0; sy < scale; sy++)
+						for (int sx = 0; sx < scale; sx++) {
+							const int px = x + bit * scale + sx, py = y + row * scale + sy;
+							if (px >= 0 && px < 400 && py >= 0 && py < 240) top_fb[px * 240 + 239 - py] = color;
+						}
+	}
+}
+
 void ui_button(UiRect r, const char *label, u16 bg, u16 fg) {
 	ui_fill(r.x, r.y, r.w, r.h, bg);
 	ui_fill(r.x, r.y, r.w, 1, UI_DIM); /* thin top edge */

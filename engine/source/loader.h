@@ -19,6 +19,9 @@ bool loader_read_text(const char *name, char *out, size_t size);
 // The game's title ID, also in the launcher: keys, backup RAM and save states are kept under it.
 u64 loader_game_id(void);
 const char *loader_error(void);
+// The structure of a whole .neo3ds file of length bytes, before it joins the list (receive.c):
+// NULL when the loader can rely on it, else what is wrong. The data itself is not checked.
+const char *loader_check_pack(const char *path, u64 length);
 // The packed BIOSes: mvs = 0 home console (AES), 1 arcade board (MVS).
 bool loader_has_bios(int mvs);
 int loader_default_bios(void);
