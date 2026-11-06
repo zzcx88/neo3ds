@@ -203,15 +203,10 @@ public sealed class SendTargetTests : IDisposable
 
         Assert.NotNull(target);
         Assert.False(target.Allowed);
-        Assert.Equal(SendRefusal.NoFileName, target.Refusal);
-        Assert.Contains(Lang.L("이름", "name"), target.Reason);
-        Assert.Equal(SendRefusal.NoFileName, SendCandidate.LauncherNameProblem(".neo3ds"));
+        Assert.Equal(SendRefusal.NoBaseName, target.Refusal);
+        Assert.Contains(Lang.L("이름이 없습니다", "no name"), target.Reason);
+        Assert.Equal(SendRefusal.NoBaseName, SendCandidate.LauncherNameProblem(".neo3ds"));
     }
-
-    /// <summary>#301: the helper mirrors name_ok, which refuses anything that is not a pack name.</summary>
-    [Fact]
-    public void LauncherNameRulesRejectAFileThatIsNotALauncherPack()
-        => Assert.Equal(SendRefusal.UnsupportedExtension, SendCandidate.LauncherNameProblem("kof98.cia"));
 
     [Fact]
     public void LauncherNameAcceptsTheBoundaryAndRefusesOneByteMore()

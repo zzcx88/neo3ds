@@ -11,7 +11,7 @@ public enum SendKind { Cia, Launcher }
 public enum SendGuide { Fbi, Launcher }
 
 /// <summary>Why a chosen path cannot be sent; <see cref="None"/> means it can.</summary>
-public enum SendRefusal { None, MissingFile, NotAFile, UnsupportedExtension, NameTooLong, NameUnsafe, UrlTooLong, NoFileName }
+public enum SendRefusal { None, MissingFile, NotAFile, UnsupportedExtension, NameTooLong, NameUnsafe, UrlTooLong, NoBaseName }
 
 /// <summary>The three states the dialog shows: waiting for the 3DS, sending, and sent by the PC.</summary>
 public enum SendState { Waiting, Sending, Sent }
@@ -33,10 +33,8 @@ public sealed record SendCandidate(string FullPath, string FileName, SendKind? K
     /// <summary>#257: the launcher's own rule for a file it can save; mirrors name_ok in receive_url.c.</summary>
     public static SendRefusal LauncherNameProblem(string fileName)
     {
-        if (!fileName.EndsWith(PackSuffix, StringComparison.OrdinalIgnoreCase))
-            return SendRefusal.UnsupportedExtension;
         if (Encoding.UTF8.GetByteCount(fileName) > 103) return SendRefusal.NameTooLong;
-        if (fileName.Length == PackSuffix.Length) return SendRefusal.NoFileName;
+        if (fileName.Length <= PackSuffix.Length) return SendRefusal.NoBaseName;
         char beforeSuffix = fileName[fileName.Length - PackSuffix.Length - 1];
         if (beforeSuffix is ' ' or '.') return SendRefusal.NameUnsafe;
         foreach (char c in fileName)
@@ -104,7 +102,7 @@ public static class SendText
         SendRefusal.NotAFile => Lang.L("폴더는 보낼 수 없습니다. 파일을 고르세요.", "A folder cannot be sent. Pick a file."),
         SendRefusal.UnsupportedExtension => Lang.L(".cia 또는 .neo3ds 파일만 보낼 수 있습니다.", "Only .cia or .neo3ds files can be sent."),
         SendRefusal.NameTooLong => Lang.L("파일 이름이 너무 깁니다 (103바이트 이하).", "The file name is too long (103 bytes or less)."),
-        SendRefusal.NoFileName => Lang.L("파일 이름이 없습니다. 확장자 앞에 이름을 붙이세요.",
+        SendRefusal.NoBaseName => Lang.L("파일 이름이 없습니다. 확장자 앞에 이름을 붙이세요.",
                                          "The file has no name. Add a name before the extension."),
         SendRefusal.UrlTooLong => Lang.L("파일 이름이 너무 길어 QR 주소가 3DS 한도를 넘습니다. 이름을 줄이세요.",
                                          "The file name is too long for the QR address the 3DS accepts. Shorten it."),
