@@ -138,6 +138,21 @@ public sealed class LanSenderTests : IDisposable
         Assert.Equal(File.ReadAllBytes(path), await fetch);
     }
 
+    /// <summary>#255: the dialog shows "sending" from the moment the 3DS asks, not before.</summary>
+    [Fact]
+    public async Task StartedFiresOnceWhenThe3dsAsksForTheFile()
+    {
+        string path = MakeFile("kof98.cia", 4096);
+        using var sender = LanSender.Start(path, "127.0.0.1");
+        int started = 0;
+        sender.Started += () => Interlocked.Increment(ref started);
+        Assert.Equal(0, Volatile.Read(ref started));
+
+        await Http.GetByteArrayAsync(sender.Url, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, Volatile.Read(ref started));
+    }
+
     [Fact]
     public void QrPngIsOnePixelPerModule()
     {

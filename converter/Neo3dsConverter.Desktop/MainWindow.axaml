@@ -67,7 +67,7 @@
       <Button x:Name="LauncherButton" Content="런처 CIA 만들기 (한 번만 설치)" HorizontalAlignment="Stretch"
               HorizontalContentAlignment="Center" Padding="8"/>
       <Button x:Name="SendButton" Content="3DS로 보내기 (QR)" HorizontalAlignment="Stretch"
-              HorizontalContentAlignment="Center" Padding="8" IsEnabled="False"/>
+              HorizontalContentAlignment="Center" Padding="8"/>
       <TextBlock x:Name="LabelLog" Text="로그"/>
       <TextBox x:Name="LogBox" Height="160" IsReadOnly="True" AcceptsReturn="True"
                TextWrapping="Wrap" VerticalAlignment="Stretch"/>

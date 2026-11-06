@@ -57,6 +57,9 @@ public sealed class LanSender : IDisposable
     /// <summary>Raised after a client received the whole file (on a worker thread).</summary>
     public event Action? Downloaded;
 
+    /// <summary>Raised when a client with the right path asked for the file and the body starts (worker thread).</summary>
+    public event Action? Started;
+
     /// <summary>
     /// Starts serving <paramref name="filePath"/>. <paramref name="address"/> is the IPv4 address
     /// the 3DS uses to reach this PC; when null the first LAN address with a gateway is picked.
@@ -207,6 +210,7 @@ public sealed class LanSender : IDisposable
             await WriteHeadersAsync(stream, input.Length, ct);
             if (method == "GET")
             {
+                Started?.Invoke();
                 await input.CopyToAsync(stream, BufferSize, ct);
                 await stream.FlushAsync(ct);
                 Downloaded?.Invoke();

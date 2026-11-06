@@ -1,59 +1,70 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
 namespace Neo3dsConverter.Desktop;
 
-/// <summary>A CIA this session built; the launcher CIA is labelled so it is not mistaken for a game.</summary>
-internal sealed record BuiltCia(string Path, bool Launcher);
-
 /// <summary>
-/// #236: the QR window for "send to 3DS". It owns the <see cref="LanSender"/>, so closing the
-/// window (or disposing the dialog) stops the server and frees the port.
+/// #255: the one window for "send to 3DS". A session CIA is listed, and a file can be dropped or
+/// picked; the PC judgement decides the QR, the wording and the refusal. Closing it stops the server.
 /// </summary>
 internal sealed class SendDialog : IDisposable
 {
     readonly Window window;
+    readonly ListBox targets;
     readonly Image qr = new() { Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center };
     readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, FontWeight = FontWeight.Bold };
     readonly TextBlock info = new() { TextWrapping = TextWrapping.Wrap };
+    readonly TextBlock steps;
+    readonly TextBlock notes;
     readonly TextBox url = new() { IsReadOnly = true };
     readonly ComboBox addressBox;
     readonly IReadOnlyList<LanAddress> addresses;
-    readonly BuiltCia target;
+    readonly IReadOnlyList<SessionCia> session;
+    SendCandidate? target;
     LanSender? sender;
 
-    public SendDialog(BuiltCia target, IReadOnlyList<LanAddress> addresses)
+    public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
     {
-        this.target = target;
+        this.session = session;
         this.addresses = addresses;
+        RenderOptions.SetBitmapInterpolationMode(qr, BitmapInterpolationMode.None);
+
+        targets = new ListBox
+        {
+            ItemsSource = session.Select(c => SendCandidate.Resolve(c.Path, session)?.DisplayName ?? Path.GetFileName(c.Path)).ToArray(),
+            IsVisible = session.Count > 0,
+            Height = Math.Min(120, Math.Max(44, session.Count * 30)),
+        };
+        var pick = new Button
+        {
+            Content = Lang.L("파일 선택", "Pick file"),
+            Padding = new Avalonia.Thickness(16, 4),
+        };
+        pick.Click += async (_, _) => await PickFile();
+        var dropHint = new TextBlock
+        {
+            Text = Lang.L("여기에 .cia 파일을 끌어다 놓아도 됩니다.", "You can also drop a .cia file here."),
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         addressBox = new ComboBox
         {
             ItemsSource = addresses.Select(a => a.ToString()).ToArray(),
             SelectedIndex = 0,
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
-        RenderOptions.SetBitmapInterpolationMode(qr, BitmapInterpolationMode.None);
-
         var hint = new TextBlock
         {
             Text = Lang.L("3DS와 같은 공유기에 연결된 주소를 고르세요.", "Pick the address on the network the 3DS shares."),
             TextWrapping = TextWrapping.Wrap,
         };
-        var steps = new TextBlock
-        {
-            Text = Lang.L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다.",
-                          "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only."),
-            TextWrapping = TextWrapping.Wrap,
-        };
-        var notes = new TextBlock
-        {
-            Text = Lang.L("• 방화벽이 물으면 허용하세요. 차단하면 FBI 다운로드가 실패합니다.\n• VPN이 켜져 있으면 위 주소에서 실제 Wi-Fi/LAN 주소를 고르세요. VPN 주소로는 3DS가 접속하지 못합니다.\n• SD 카드 공간이 부족하면 FBI 설치가 실패합니다.",
-                          "• Allow it when the firewall asks; blocking it makes the FBI download fail.\n• With a VPN on, pick the real Wi-Fi/LAN address above; the 3DS cannot reach a VPN address.\n• FBI fails to install if the SD card lacks free space."),
-            TextWrapping = TextWrapping.Wrap,
-        };
+        steps = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        notes = new TextBlock { TextWrapping = TextWrapping.Wrap };
         var close = new Button
         {
             Content = Lang.L("닫기", "Close"),
@@ -63,7 +74,7 @@ internal sealed class SendDialog : IDisposable
         window = new Window
         {
             Title = Lang.L("3DS로 보내기", "Send to 3DS"),
-            Width = 460,
+            Width = 480,
             SizeToContent = SizeToContent.Height,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -71,39 +82,118 @@ internal sealed class SendDialog : IDisposable
             {
                 Margin = new Avalonia.Thickness(16),
                 Spacing = 10,
-                Children = { qr, status, info, addressBox, hint, url, steps, notes, close },
+                Children =
+                {
+                    targets,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 10,
+                        Children = { pick, dropHint },
+                    },
+                    qr,
+                    status,
+                    info,
+                    addressBox,
+                    hint,
+                    url,
+                    steps,
+                    notes,
+                    close,
+                },
             },
         };
+        DragDrop.SetAllowDrop(window, true);
+        window.AddHandler(DragDrop.DropEvent, OnDrop);
         close.Click += (_, _) => window.Close();
-        addressBox.SelectionChanged += (_, _) => { if (addressBox.SelectedIndex >= 0) Connect(addressBox.SelectedIndex); };
+        addressBox.SelectionChanged += (_, _) =>
+        {
+            if (addressBox.SelectedIndex >= 0 && target is { Allowed: true }) Connect(addressBox.SelectedIndex);
+        };
+        targets.SelectionChanged += (_, _) =>
+        {
+            if (targets.SelectedIndex >= 0 && targets.SelectedIndex < session.Count) Choose(session[targets.SelectedIndex].Path);
+        };
         window.Closed += (_, _) => Stop();
-        Connect(0);
+
+        SetGuide(SendGuide.Fbi);
+        if (session.Count > 0) targets.SelectedIndex = 0;
+        else status.Text = Lang.L("보낼 .cia 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia file or drop one here.");
     }
 
     public Window Window => window;
 
-    /// <summary>The running server, or null after a failed start or after the dialog closed.</summary>
+    /// <summary>The running server, or null after a failed start, a refused file, or after the window closed.</summary>
     public LanSender? Sender => sender;
 
     public string? Url => sender?.Url;
 
     internal string StatusText => status.Text ?? "";
     internal string InfoText => info.Text ?? "";
+    internal SendCandidate? Target => target;
 
     public Task ShowAsync(Window owner) => window.ShowDialog(owner);
+
+    /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
+    internal void Choose(string path)
+    {
+        var candidate = SendCandidate.Resolve(path, session);
+        if (candidate == null) return;
+        target = candidate;
+        SetGuide(candidate.Guide);
+        if (!candidate.Allowed)
+        {
+            Stop();
+            ClearQr();
+            info.Text = candidate.DisplayName;
+            url.Text = "";
+            status.Text = candidate.Reason;
+            return;
+        }
+        Connect(addressBox.SelectedIndex < 0 ? 0 : addressBox.SelectedIndex);
+    }
+
+    async Task PickFile()
+    {
+        var type = new FilePickerFileType(Lang.L(".cia 파일", ".cia file")) { Patterns = ["*.cia"] };
+        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Lang.L("보낼 .cia 파일", "CIA to send"),
+            AllowMultiple = false,
+            FileTypeFilter = [type],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is string path) Choose(path);
+    }
+
+    void OnDrop(object? sender, DragEventArgs e)
+    {
+        string? path = e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().FirstOrDefault();
+        if (path != null) Choose(path);
+    }
+
+    void SetGuide(SendGuide guide)
+    {
+        steps.Text = SendText.Steps(guide);
+        notes.Text = SendText.Notes(guide);
+    }
 
     void Connect(int index)
     {
         Stop();
+        if (target is not { Allowed: true } t || index < 0 || index >= addresses.Count) return;
+        SendGuide guide = t.Guide;
         try
         {
-            var s = LanSender.Start(target.Path, addresses[index].Address);
+            var s = LanSender.Start(t.FullPath, addresses[index].Address);
+            s.Started += () => Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(sender, s)) status.Text = SendText.Status(SendState.Sending, guide);
+            });
             s.Downloaded += () => Dispatcher.UIThread.Post(() =>
             {
-                if (ReferenceEquals(sender, s))
-                    status.Text = Lang.L("전송 완료 — FBI가 설치를 계속합니다.", "Sent — FBI continues with the install.");
+                if (ReferenceEquals(sender, s)) status.Text = SendText.Status(SendState.Sent, guide);
             });
-            (qr.Source as IDisposable)?.Dispose();
+            ClearQr();
             var png = new Bitmap(new MemoryStream(QrCode.Png(s.Url)));
             int scale = Math.Max(1, 240 / png.PixelSize.Width);
             sender = s;
@@ -111,17 +201,22 @@ internal sealed class SendDialog : IDisposable
             qr.Width = png.PixelSize.Width * scale;
             qr.Height = png.PixelSize.Height * scale;
             url.Text = s.Url;
-            info.Text = $"{s.FileName} · {MainWindow.Size(s.Length)}";
-            status.Text = Lang.L("3DS의 FBI에서 QR을 스캔하세요.", "Scan the QR code in FBI on the 3DS.");
+            info.Text = $"{s.FileName} · {SendText.Size(s.Length)}";
+            status.Text = SendText.Status(SendState.Waiting, guide);
         }
         catch (Exception ex)
         {
             Stop();
-            (qr.Source as IDisposable)?.Dispose();
-            qr.Source = null;
+            ClearQr();
             info.Text = url.Text = "";
             status.Text = Lang.L("전송 실패: ", "Send failed: ") + ex.Message;
         }
+    }
+
+    void ClearQr()
+    {
+        (qr.Source as IDisposable)?.Dispose();
+        qr.Source = null;
     }
 
     void Stop()
@@ -130,5 +225,9 @@ internal sealed class SendDialog : IDisposable
         sender = null;
     }
 
-    public void Dispose() => Stop();
+    public void Dispose()
+    {
+        Stop();
+        ClearQr();
+    }
 }

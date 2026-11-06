@@ -217,9 +217,9 @@ public class MainWindowTests
         Assert.Contains("/neo3ds/games/", MainWindow.DoneMessage(pack: true, "/tmp/game.neo3ds"));
     }
 
-    /// <summary>#236: only CIAs built this session are send targets, and a deleted file drops out.</summary>
+    /// <summary>#255: builds are remembered, deleted files drop out, and the dialog opens without any build.</summary>
     [AvaloniaFact]
-    public void SendTargets_KeepOnlyExistingCias()
+    public void SendTargets_KeepOnlyExistingSessionCias()
     {
         string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tmp);
@@ -236,14 +236,16 @@ public class MainWindowTests
             window.Show();
             window.AddBuilt(pack, launcher: false);
             Assert.Empty(window.SendTargets());
-            Assert.False(window.FindControl<Button>("SendButton")!.IsEnabled);
+            Assert.True(window.FindControl<Button>("SendButton")!.IsEnabled, "the dialog opens before anything is built");
 
             window.AddBuilt(cia, launcher: false);
             window.AddBuilt(launcher, launcher: true);
-            Assert.Equal(2, window.SendTargets().Count);
-            Assert.True(window.FindControl<Button>("SendButton")!.IsEnabled);
-            Assert.Contains(Lang.L("런처", "Launcher"), MainWindow.SendLabel(window.SendTargets().Single(t => t.Launcher)));
-            Assert.Contains("kof98.cia", MainWindow.SendLabel(window.SendTargets().Single(t => !t.Launcher)));
+            var targets = window.SendTargets();
+            Assert.Equal(2, targets.Count);
+            Assert.Contains(Lang.L("런처", "Launcher"),
+                SendCandidate.Resolve(targets.Single(t => t.Launcher).Path, targets)!.DisplayName);
+            Assert.Equal("kof98.cia",
+                SendCandidate.Resolve(targets.Single(t => !t.Launcher).Path, targets)!.DisplayName);
 
             File.Delete(cia);
             Assert.Single(window.SendTargets());
@@ -261,9 +263,9 @@ public class MainWindowTests
     [Fact]
     public void SizeFormatsKilobytesAndMegabytes()
     {
-        Assert.Equal("400 KB", MainWindow.Size(400 * 1024));
-        Assert.Equal("45.0 MB", MainWindow.Size(45L * 1024 * 1024));
-        Assert.Equal("1 KB", MainWindow.Size(1));
+        Assert.Equal("400 KB", SendText.Size(400 * 1024));
+        Assert.Equal("45.0 MB", SendText.Size(45L * 1024 * 1024));
+        Assert.Equal("1 KB", SendText.Size(1));
     }
 
     /// <summary>#236: the dialog's server really serves the built bytes, and closing it stops serving.</summary>
@@ -283,7 +285,7 @@ public class MainWindowTests
 
             var window = new MainWindow();
             window.Show();
-            using var dialog = new SendDialog(new BuiltCia(cia, Launcher: false), addresses);
+            using var dialog = new SendDialog([new SessionCia(cia, Launcher: false)], addresses);
 
             Assert.NotNull(dialog.Sender);
             Assert.StartsWith("http://", dialog.Url);
@@ -317,6 +319,86 @@ public class MainWindowTests
             Assert.True(failed, "the server must stop when the dialog closes");
 
             window.Close();
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#255: a refused file shows why and starts nothing; a CIA afterwards serves normally.</summary>
+    [AvaloniaFact]
+    public void SendDialog_RefusesWhatThe3dsCannotUseAndStartsOnACia()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-refuse-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string cia = Path.Combine(tmp, "kof98.cia");
+            string zip = Path.Combine(tmp, "kof98.zip");
+            File.WriteAllBytes(cia, new byte[1024]);
+            File.WriteAllBytes(zip, new byte[1024]);
+
+            using var dialog = new SendDialog([], addresses);
+            Assert.Null(dialog.Sender);
+            Assert.Equal(Lang.L("보낼 .cia 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia file or drop one here."), dialog.StatusText);
+
+            dialog.Choose(zip);
+            Assert.Null(dialog.Sender);
+            Assert.Equal(SendRefusal.UnsupportedExtension, dialog.Target!.Refusal);
+            Assert.NotEmpty(dialog.StatusText);
+            Assert.DoesNotContain(Lang.L("3DS 대기", "Waiting for the 3DS"), dialog.StatusText);
+
+            dialog.Choose(cia);
+            Assert.NotNull(dialog.Sender);
+            Assert.StartsWith("http://", dialog.Url);
+            Assert.Contains("kof98.cia", dialog.InfoText);
+
+            dialog.Choose(Path.Combine(tmp, "gone.cia"));
+            Assert.Null(dialog.Sender);
+            Assert.Equal(SendRefusal.MissingFile, dialog.Target!.Refusal);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#255: picking another file stops the server that served the previous one.</summary>
+    [AvaloniaFact]
+    public void SendDialog_StopsThePreviousServerWhenTheFileChanges()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-switch-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string one = Path.Combine(tmp, "one.cia");
+            string two = Path.Combine(tmp, "two.cia");
+            File.WriteAllBytes(one, new byte[2048]);
+            File.WriteAllBytes(two, new byte[4096]);
+
+            using var dialog = new SendDialog([], addresses);
+            dialog.Choose(one);
+            string first = dialog.Url!;
+            Assert.Contains("one.cia", first);
+
+            dialog.Choose(two);
+            string second = dialog.Url!;
+            Assert.Contains("two.cia", second);
+            Assert.NotEqual(first, second);
+
+            bool failed = false;
+            var after = Task.Run(async () =>
+            {
+                try { await new HttpClient().GetByteArrayAsync(first); }
+                catch { failed = true; }
+            });
+            PumpUntilVisible(() => after.IsCompleted, 5000);
+            Assert.True(failed, "the previous server must stop when another file is chosen");
         }
         finally
         {
