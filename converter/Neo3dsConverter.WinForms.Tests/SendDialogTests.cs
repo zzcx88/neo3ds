@@ -148,6 +148,72 @@ public sealed class SendDialogTests
         }
     }
 
+    /// <summary>#309: retrying a too-large batch on a shorter address restores the scan guide.</summary>
+    [Fact]
+    public void RestoresTheGuideWhenARetryFitsTheQr()
+    {
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try { RunRetryGuide(); }
+            catch (Exception ex) { error = ex; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (error != null) ExceptionDispatchInfo.Capture(error).Throw();
+    }
+
+    static void RunRetryGuide()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "neo3ds-winforms-retry-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            string[] packs = Enumerable.Range(0, 6)
+                .Select(i =>
+                {
+                    string path = Path.Combine(root, new string((char)('a' + i), 14) + ".neo3ds");
+                    File.WriteAllBytes(path, new byte[1024]);
+                    return path;
+                }).ToArray();
+
+            // Both spellings bind to loopback; the long one pushes six packs past version 12.
+            using var dialog = new SendDialog([], [
+                new LanAddress("127.000.000.001", "long loopback"),
+                new LanAddress("127.0.0.1", "loopback"),
+            ]);
+            dialog.ChooseMany(packs);
+
+            Assert.Null(dialog.Sender);
+            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
+            Assert.Equal("", dialog.StepsText);
+            Assert.Equal("", dialog.NotesText);
+
+            dialog.SelectAddress(1);
+
+            Assert.NotNull(dialog.Sender);
+            Assert.True(dialog.Batch!.Allowed);
+            Assert.Equal(6, dialog.Batch.Items.Count);
+            Assert.NotEmpty(dialog.StepsText);
+            Assert.NotEmpty(dialog.NotesText);
+            Assert.Contains("6", dialog.StepsText);
+            Assert.StartsWith(Lang.L("3DS 대기", "Waiting for the 3DS"), dialog.StatusText);
+
+            dialog.SelectAddress(0);
+
+            Assert.Null(dialog.Sender);
+            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
+            Assert.Equal("", dialog.StepsText);
+            Assert.Equal("", dialog.NotesText);
+            Assert.Contains(dialog.Batch.AllowedCount.ToString(), dialog.StatusText);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     static void AssertStopped(string url)
     {
         bool failed = false;
