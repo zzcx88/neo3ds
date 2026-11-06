@@ -101,7 +101,32 @@ public sealed class SendSessionTests : IDisposable
         session.SetSelection(paths);
 
         Assert.Null(session.Sender);
-        Assert.Contains("6", session.Snapshot.Reason);
+        var refused = Assert.IsType<SendBatchResult.Refused>(
+            Assert.IsType<SendSelectionResult.Batch>(session.Selection).Result);
+        Assert.IsType<BatchRefusal.TooManyFiles>(refused.Refusal);
+        Assert.Contains("최대 6개", session.Snapshot.Reason);
+    }
+
+    /// <summary>#310-indirect: when the first six already fail (mixed, duplicate, bad file), the
+    /// honest refusal shows with the whole selection, not a bare count cap.</summary>
+    [Fact]
+    public void OverCapMixedPrefixAnnouncesTheMixedReason()
+    {
+        string[] paths =
+        [
+            Make("one.cia"), Make("two.cia"), Make("three.cia"),
+            Make("four.cia"), Make("five.cia"), Make("six.neo3ds"), Make("seven.cia"),
+        ];
+        using var session = new SendSession([], "127.0.0.1");
+
+        session.SetSelection(paths);
+
+        Assert.Null(session.Sender);
+        Assert.Equal(7, session.Snapshot.Items.Count);
+        var refused = Assert.IsType<SendBatchResult.Refused>(
+            Assert.IsType<SendSelectionResult.Batch>(session.Selection).Result);
+        Assert.IsType<BatchRefusal.MixedKinds>(refused.Refusal);
+        Assert.Contains(Lang.L("두 번", "two batches"), session.Snapshot.Reason);
     }
 
     [Fact]
@@ -116,6 +141,52 @@ public sealed class SendSessionTests : IDisposable
         Assert.Single(snapshot.Items);
         Assert.Equal("kof98.zip", snapshot.Items[0].DisplayName);
         Assert.Contains(Lang.L(".cia 또는 .neo3ds", "Only .cia or .neo3ds"), snapshot.Reason);
+    }
+
+    /// <summary>#310: seven files are not announced as six when the QR only fits fewer.</summary>
+    [Fact]
+    public void SevenLongNameFilesReportTheQrAllowedCount()
+    {
+        string[] packs = Enumerable.Range(0, 7)
+            .Select(i => Make(new string((char)('a' + i), 96) + ".neo3ds"))
+            .ToArray();
+        using var session = new SendSession([], "127.0.0.1");
+
+        session.SetSelection(packs);
+
+        var snapshot = session.Snapshot;
+        Assert.Null(session.Sender);
+        Assert.Equal(7, snapshot.Items.Count);
+        var refused = Assert.IsType<SendBatchResult.Refused>(
+            Assert.IsType<SendSelectionResult.Batch>(session.Selection).Result);
+        var tooLarge = Assert.IsType<BatchRefusal.QrTooLarge>(refused.Refusal);
+        Assert.True(tooLarge.AllowedCount < 6);
+        Assert.Contains($"{tooLarge.AllowedCount}개까지", snapshot.Reason);
+    }
+
+    /// <summary>#310: six files that fit are served, not refused.</summary>
+    [Fact]
+    public async Task SixPackFilesServeEndToEnd()
+    {
+        string[] packs = Enumerable.Range(0, 6)
+            .Select(i => Make("pack" + i + ".neo3ds", 512 + i))
+            .ToArray();
+        using var session = new SendSession([], "127.0.0.1");
+
+        session.SetSelection(packs);
+
+        var snapshot = session.Snapshot;
+        Assert.NotNull(session.Sender);
+        Assert.True(snapshot.IsBatch);
+        Assert.Equal("", snapshot.Reason);
+        string[] lines = snapshot.QrText!.Split('\n');
+        Assert.Equal(6, lines.Length);
+        foreach (var (url, path) in lines.Zip(packs))
+        {
+            Assert.Equal(File.ReadAllBytes(path),
+                await Http.GetByteArrayAsync(url, TestContext.Current.CancellationToken));
+        }
+        WaitFor(session, s => s.Overall == SendState.Sent);
     }
 
     [Fact]
