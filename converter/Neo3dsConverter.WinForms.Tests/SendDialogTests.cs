@@ -35,9 +35,9 @@ public sealed class SendDialogTests
                 [new SessionCia(cia, Launcher: false)],
                 [new LanAddress("127.0.0.1", "test")]);
 
-            Assert.Equal(1, dialog.Targets.Items.Count);
-            Assert.Equal(0, dialog.Targets.SelectedIndex);
-            Assert.Contains("kof98.cia", dialog.Targets.Items[0]!.ToString());
+            Assert.Single(dialog.TargetLabels);
+            Assert.Equal(0, dialog.SelectedTarget);
+            Assert.Equal("kof98.cia", dialog.TargetLabels[0]);
         }
         finally
         {

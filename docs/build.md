@@ -29,9 +29,11 @@ bash scripts/build_engine.sh
 
 ```sh
 dotnet build -c Release converter/Neo3dsConverter
+dotnet test converter/Neo3dsConverter.WinForms.Tests -c Release
 ```
 
 - 산출물: `converter/Neo3dsConverter/bin/Release/net10.0-windows/` — exe + `tools\` (`engine.elf`, `neo3ds.rsf`, `makerom.exe`, `bannertool.exe`)
+- WinForms 테스트는 Windows에서만 실행한다 (Linux·macOS는 `net10.0-windows` 실행 불가)
 - exe와 `tools\` 폴더는 항상 같이 둔다
 - 버전: `converter/Directory.Build.props`의 `<Version>`이 단일 출처 (웹용 `version.js`는 `build_wasm.sh`가 생성, git 제외)
 
@@ -44,7 +46,7 @@ dotnet test converter/Neo3dsConverter.Core.Tests -c Release
 ```
 
 - 산출물: `converter/Neo3dsConverter.Desktop/bin/Release/net10.0/neo3ds-converter` — 인자 없으면 창, 인자를 주면 명령줄
-- 테스트도 같은 전제(`engine/engine.elf` + `tools/`)에서 빌드된다. CI는 3개 OS에서 같은 명령을 돌린다.
+- 테스트도 같은 전제(`engine/engine.elf` + `tools/`)에서 빌드된다. CI는 3개 OS에서 Core·Desktop 테스트를, Windows에서는 WinForms 테스트도 돌린다.
 
 ## 3. CIA 만들기 (수동 확인)
 
@@ -261,7 +263,7 @@ Linux·macOS 도구는 CI가 `scripts/build_unix_tools.sh`로 소스에서 빌�
 
 릴리스 롤백: 깨진 Release는 GitHub에서 삭제 후 `<Version>`을 올린 새 태그로 다시 낸다. 기존 태그를 덮어쓰지 않는다.
 
-Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌드 + Headless 테스트 + Core 테스트(도구 실행 권한) + no-ROM 스모크가 자동 실행된다. Windows는 WinForms 빌드를 더하고, 모든 OS에서 SkiaSharp 4.153.1 통일을 검사한다.
+Desktop CI (`.github/workflows/desktop.yml`): `converter/**` 변경 시 3 OS 빌드 + Headless 테스트 + Core 테스트(도구 실행 권한) + no-ROM 스모크가 자동 실행된다. Windows는 WinForms 빌드와 테스트를 더하고, 모든 OS에서 SkiaSharp 4.153.1 통일을 검사한다.
 
 수동 실행: Actions → Release → Run workflow (드라이런, Release 미생성. 3종 산출물은 Artifacts로 받음).
 로컬 패키징: `pwsh scripts/package_release.ps1 -Runtimes win-x64 -WithLauncher`

@@ -55,6 +55,7 @@ dotnet build -c Release converter/Neo3dsConverter.Desktop
 # C# 테스트 (같은 전제)
 dotnet test converter/Neo3dsConverter.Desktop.Tests -c Release
 dotnet test converter/Neo3dsConverter.Core.Tests -c Release
+dotnet test converter/Neo3dsConverter.WinForms.Tests -c Release   # Windows 전용
 
 # 웹 변환기 모듈 테스트 (roms/가 없으면 ROM 의존 테스트는 SKIP)
 node site/vendor/conv/conv.test.mjs
