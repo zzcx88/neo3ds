@@ -148,12 +148,12 @@ public sealed class SendSession : IDisposable
         sender = null;
     }
 
-    /// <summary>True while the selection is serving, was refused for QR size, or failed to start.</summary>
+    /// <summary>True while the selection is serving, was refused for size, or failed to start.</summary>
     bool NeedsRetry =>
         sender != null || startError != null ||
         selection is SendSelectionResult.Batch
         {
-            Result: SendBatchResult.Refused { Refusal: BatchRefusal.QrTooLarge },
+            Result: SendBatchResult.Refused { Refusal: BatchRefusal.QrTooLarge or BatchRefusal.TooManyFiles },
         };
 
     void TryStart()
@@ -166,9 +166,10 @@ public sealed class SendSession : IDisposable
                 {
                     var single = LanSender.Prepare(
                         [new LanFile(candidate.FullPath, candidate.FileName)], address);
-                    single.Start();
                     sender = single;
                     Attach(single);
+                    try { single.Start(); }
+                    catch { StopServer(); throw; }
                     break;
                 }
                 case SendSelectionResult.Batch { Result: SendBatchResult.Ready { Batch: var batch } }:
@@ -179,8 +180,21 @@ public sealed class SendSession : IDisposable
                 {
                     Result: SendBatchResult.Refused { Items: var items, Refusal: BatchRefusal.QrTooLarge },
                 }:
-                    if (SendBatch.Check(items) is SendBatchResult.Ready { Batch: var batchRetry })
+                    if (items.Count > SendBatch.MaxFiles)
+                    {
+                        StartPrefix(items);
+                    }
+                    else if (SendBatch.Check(items) is SendBatchResult.Ready { Batch: var batchRetry })
+                    {
                         StartBatchServer(batchRetry);
+                    }
+                    break;
+                // More than six chosen files: the same measure decides how many actually fit.
+                case SendSelectionResult.Batch
+                {
+                    Result: SendBatchResult.Refused { Items: var tooMany, Refusal: BatchRefusal.TooManyFiles },
+                }:
+                    StartPrefix(tooMany);
                     break;
             }
         }
@@ -201,10 +215,46 @@ public sealed class SendSession : IDisposable
             selection = new SendSelectionResult.Batch(refused);
             return;
         }
-        prepared.Start();
         sender = prepared;
-        selection = new SendSelectionResult.Batch(new SendBatchResult.Ready(batch));
         Attach(prepared);
+        try { prepared.Start(); }
+        catch { StopServer(); throw; }
+        selection = new SendSelectionResult.Batch(new SendBatchResult.Ready(batch));
+    }
+
+    /// <summary>
+    /// #310: an over-cap selection measures only the first six against the real port. If those do
+    /// not fit, the batch is refused with the prefix count; if they fit, the six-file cap still
+    /// refuses without starting a server.
+    /// </summary>
+    void StartPrefix(IReadOnlyList<SendCandidate> items)
+    {
+        var first = items.Take(SendBatch.MaxFiles).ToArray();
+        var prefix = SendBatch.Check(first);
+        if (prefix is not SendBatchResult.Ready { Batch: var batch })
+        {
+            // The prefix itself is refused (mixed kinds, a duplicate name, or a bad file):
+            // announce that reason with the full selection, not the six-file cap.
+            selection = new SendSelectionResult.Batch(new SendBatchResult.Refused(items,
+                ((SendBatchResult.Refused)prefix).Refusal));
+            return;
+        }
+        var prepared = LanSender.Prepare(batch.LanFiles(), address);
+        try
+        {
+            if (batch.WithQr(prepared.Items.Select(i => i.Url).ToArray())
+                is SendBatchResult.Refused refused)
+            {
+                selection = new SendSelectionResult.Batch(new SendBatchResult.Refused(items, refused.Refusal));
+                return;
+            }
+        }
+        finally
+        {
+            prepared.Dispose();
+        }
+        selection = new SendSelectionResult.Batch(new SendBatchResult.Refused(items,
+            new BatchRefusal.TooManyFiles(SendBatch.MaxFiles)));
     }
 
     void Attach(LanSender s)
