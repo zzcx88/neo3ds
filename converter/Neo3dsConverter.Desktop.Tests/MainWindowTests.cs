@@ -531,6 +531,46 @@ public class MainWindowTests
         }
     }
 
+    /// <summary>#300: a failed QR must stop the server it just started, not leave the port listening.</summary>
+    [AvaloniaFact]
+    public void SendDialog_StopsTheServerWhenQrGenerationFails()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-qr-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string cia = Path.Combine(tmp, "kof98.cia");
+            File.WriteAllBytes(cia, new byte[1024]);
+
+            string? url = null;
+            using var dialog = new SendDialog([], addresses, u =>
+            {
+                url = u;
+                throw new InvalidOperationException("qr failed");
+            });
+
+            dialog.Choose(cia);
+
+            Assert.Null(dialog.Sender);
+            Assert.Contains(Lang.L("전송 실패", "Send failed"), dialog.StatusText);
+            Assert.NotNull(url);
+            bool answered = false;
+            var probe = Task.Run(async () =>
+            {
+                try { await new HttpClient().GetByteArrayAsync(url); answered = true; }
+                catch { /* expected: the server is gone */ }
+            });
+            PumpUntilVisible(() => probe.IsCompleted, 5000);
+            Assert.False(answered, "the server started for the failed QR is still serving");
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     /// <summary>Pumps the dispatcher; the send dialog must not be closed by the test pump.</summary>
     static void PumpUntilVisible(Func<bool> done, int timeoutMs)
     {

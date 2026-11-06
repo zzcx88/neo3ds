@@ -192,6 +192,7 @@ public sealed class SendDialog : Form
         try
         {
             var s = LanSender.Start(t.FullPath, addresses[index].Address);
+            sender = s;
             s.Started += () => OnUi(() =>
             {
                 if (ReferenceEquals(sender, s)) status.Text = SendText.Status(SendState.Sending, guide);
@@ -202,7 +203,6 @@ public sealed class SendDialog : Form
             });
             ClearQr();
             qr.Image = ScaleQr(QrCode.Png(s.Url), 240);
-            sender = s;
             url.Text = s.Url;
             info.Text = $"{s.FileName} · {SendText.Size(s.Length)}";
             status.Text = SendText.Status(SendState.Waiting, guide);

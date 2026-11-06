@@ -25,14 +25,20 @@ internal sealed class SendDialog : IDisposable
     readonly ComboBox addressBox;
     readonly IReadOnlyList<LanAddress> addresses;
     readonly List<SessionCia> session;
+    readonly Func<string, byte[]> qrPng;
     SendCandidate? target;
     LanSender? sender;
     bool syncing;
 
     public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
+        : this(session, addresses, QrCode.Png) { }
+
+    internal SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses,
+        Func<string, byte[]> qrPng)
     {
         this.session = [.. session];
         this.addresses = addresses;
+        this.qrPng = qrPng;
         RenderOptions.SetBitmapInterpolationMode(qr, BitmapInterpolationMode.None);
 
         targets = new ListBox
@@ -227,6 +233,7 @@ internal sealed class SendDialog : IDisposable
         try
         {
             var s = LanSender.Start(t.FullPath, addresses[index].Address);
+            sender = s;
             s.Started += () => Dispatcher.UIThread.Post(() =>
             {
                 if (ReferenceEquals(sender, s)) status.Text = SendText.Status(SendState.Sending, guide);
@@ -236,9 +243,8 @@ internal sealed class SendDialog : IDisposable
                 if (ReferenceEquals(sender, s)) status.Text = SendText.Status(SendState.Sent, guide);
             });
             ClearQr();
-            var png = new Bitmap(new MemoryStream(QrCode.Png(s.Url)));
+            var png = new Bitmap(new MemoryStream(qrPng(s.Url)));
             int scale = Math.Max(1, 240 / png.PixelSize.Width);
-            sender = s;
             qr.Source = png;
             qr.Width = png.PixelSize.Width * scale;
             qr.Height = png.PixelSize.Height * scale;
