@@ -48,7 +48,7 @@ internal sealed class SendDialog : IDisposable
         pick.Click += async (_, _) => await PickFile();
         var dropHint = new TextBlock
         {
-            Text = Lang.L("여기에 .cia 파일을 끌어다 놓아도 됩니다.", "You can also drop a .cia file here."),
+            Text = Lang.L("여기에 .cia 또는 .neo3ds 파일을 끌어다 놓아도 됩니다.", "You can also drop a .cia or .neo3ds file here."),
             TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center,
         };
@@ -118,7 +118,7 @@ internal sealed class SendDialog : IDisposable
 
         SetGuide(SendGuide.Fbi);
         if (session.Count > 0) targets.SelectedIndex = 0;
-        else status.Text = Lang.L("보낼 .cia 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia file or drop one here.");
+        else status.Text = Lang.L("보낼 .cia 또는 .neo3ds 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia or .neo3ds file, or drop one here.");
     }
 
     public Window Window => window;
@@ -155,10 +155,10 @@ internal sealed class SendDialog : IDisposable
 
     async Task PickFile()
     {
-        var type = new FilePickerFileType(Lang.L(".cia 파일", ".cia file")) { Patterns = ["*.cia"] };
+        var type = new FilePickerFileType(Lang.L(".cia · .neo3ds 파일", ".cia · .neo3ds file")) { Patterns = ["*.cia", "*.neo3ds"] };
         var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = Lang.L("보낼 .cia 파일", "CIA to send"),
+            Title = Lang.L("보낼 파일", "File to send"),
             AllowMultiple = false,
             FileTypeFilter = [type],
         });

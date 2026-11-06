@@ -343,7 +343,7 @@ public class MainWindowTests
 
             using var dialog = new SendDialog([], addresses);
             Assert.Null(dialog.Sender);
-            Assert.Equal(Lang.L("보낼 .cia 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia file or drop one here."), dialog.StatusText);
+            Assert.Equal(Lang.L("보낼 .cia 또는 .neo3ds 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia or .neo3ds file, or drop one here."), dialog.StatusText);
 
             dialog.Choose(zip);
             Assert.Null(dialog.Sender);
@@ -399,6 +399,36 @@ public class MainWindowTests
             });
             PumpUntilVisible(() => after.IsCompleted, 5000);
             Assert.True(failed, "the previous server must stop when another file is chosen");
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#257: a .neo3ds is served with the launcher's Y guidance, not FBI's.</summary>
+    [AvaloniaFact]
+    public void SendDialog_ServesALauncherFileAndGuidesToTheLauncher()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-pack-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string pack = Path.Combine(tmp, "kof98.neo3ds");
+            File.WriteAllBytes(pack, new byte[4096]);
+
+            using var dialog = new SendDialog([], addresses);
+            dialog.Choose(pack);
+
+            Assert.NotNull(dialog.Sender);
+            Assert.EndsWith(".neo3ds", dialog.Url);
+            Assert.Contains("kof98.neo3ds", dialog.InfoText);
+            Assert.Contains("4 KB", dialog.InfoText);
+            Assert.Equal(SendGuide.Launcher, dialog.Target!.Guide);
+            Assert.Equal(SendText.Status(SendState.Waiting, SendGuide.Launcher), dialog.StatusText);
+            Assert.StartsWith(Lang.L("3DS 대기", "Waiting for the 3DS"), dialog.StatusText);
         }
         finally
         {
