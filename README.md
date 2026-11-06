@@ -1,6 +1,6 @@
 # neo3ds - NeoGeo emulator for Nintendo 3DS
 
-**Neo Geo games at full speed on the original (Old) 3DS.** Convert your MAME romsets in the browser, copy them to the SD card, and play from a game list.
+**Neo Geo games at full speed on the original (Old) 3DS.** Convert your MAME romsets in the browser, put them on the SD card or send them over Wi-Fi, and play from a game list.
 
 [Project page](https://zzcx88.github.io/neo3ds/) · [**Web converter**](https://zzcx88.github.io/neo3ds/convert.html) · [Releases](https://github.com/zzcx88/neo3ds/releases/latest) · [Compatibility list](https://zzcx88.github.io/neo3ds/compat.html) · [한국어](README.ko.md)
 
@@ -14,7 +14,7 @@
 - **Starts and quits instantly.** Everything fits in the 3DS's default 64 MB memory mode, so the system never reloads when a game starts or exits.
 - **Nothing to install on the PC.** The web converter runs in your browser and your ROMs never leave it. Offline converters for Windows, Linux and macOS are there if you want one.
 - **Plain MAME romsets.** 242 of the 282 MAME Neo Geo romsets convert, including the encrypted later games (KOF99-2003, Garou, Metal Slug 3-5, SVC Chaos), which are decrypted during conversion.
-- **One launcher, update once.** Install the launcher app, drop `.neo3ds` game files on the SD card, and update by reinstalling only the launcher. Or build one CIA per game with its own HOME menu icon.
+- **One launcher, update once.** Install the launcher app, add `.neo3ds` game files by SD card or Wi-Fi, and update by reinstalling only the launcher. Or build one CIA per game with its own HOME menu icon.
 - **Made for a handheld.** Quick save, per-game key config with button combos, turbo, full screen, a bottom-screen backlight switch and the arcade BIOS service menu, all from touch buttons on the bottom screen.
 
 **New in 1.5**: send games over Wi-Fi. Press **Y** in the launcher and scan the QR code from **Send to 3DS** in the offline converter; one QR holds up to six files. The converter sends CIAs to FBI the same way, and the launcher list shows a picture of the game. 1.4: games on the arcade (MVS) BIOS start in a few seconds. [Changelog](https://zzcx88.github.io/neo3ds/changelog.html)
@@ -24,7 +24,7 @@
 1. **Prepare the 3DS**: [Luma3DS](https://github.com/LumaTeam/Luma3DS) custom firmware, a CIA installer such as [FBI](https://github.com/lifehackerhansol/FBI), and `/3ds/dspfirm.cdc` on the SD card for sound (dump it once with DSP1).
 2. **Get the launcher**: scan the launcher CIA QR on the [download page](https://zzcx88.github.io/neo3ds/download.html), or install it from the SD card. You do this once; updates use the same QR.
 3. **Convert your games**: drop your MAME romset zips together with `neogeo.zip` (BIOS) and build **launcher files** (`.neo3ds`).
-4. **Play**: copy the `.neo3ds` files to `/neo3ds/games/` on the SD card and start the launcher.
+4. **Play**: copy the `.neo3ds` files to `/neo3ds/games/` on the SD card and start the launcher. With the offline converter you can [send them over Wi-Fi](#get-games-over-wi-fi) instead.
 
 You need MAME romset zips of games you own, plus `neogeo.zip`. No ROMs are included here. A romset whose file names or chip CRCs differ from MAME's does not convert.
 
@@ -36,7 +36,7 @@ Works in Chrome, Edge, Firefox and Safari. Converting KOF '98 took about 7 secon
 
 1. Open the [web converter](https://zzcx88.github.io/neo3ds/convert.html) and drop the game zip(s) with `neogeo.zip`. Keep the MAME file names (`kof99.zip`, `mslug3.zip`...). For merged sets, drop the parent zip too.
 2. With several zips, a list shows what was recognized and why anything can't be converted (unknown romset, missing chips, missing `neogeo.zip`, unsupported cart). Only convertible games are converted; one failure does not stop the rest.
-3. Pick the output: **Launcher file** (`.neo3ds`), **CIA** (one HOME menu app per game) or **Launcher CIA** (the launcher app itself).
+3. Pick the output: **Launcher file** (`.neo3ds`) or **CIA** (one HOME menu app per game). The launcher app itself is on the [download page](https://zzcx88.github.io/neo3ds/download.html).
 4. Change **System** or **Region** if you like:
    - **System** is the BIOS the game starts on. Automatic picks the home (AES) BIOS; arcade (MVS) is only for games changed for arcade boards. It can be switched on the 3DS too.
    - **Region** is the console region the game sees (Europe/Asia by default). **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug.
@@ -61,7 +61,7 @@ The same converter as a program on your PC, with a window and a command line. It
 2. Drop game zips on the window (keep `neogeo.zip` in the same folder) or open them with the browse button.
 3. When the romset shows as recognized, change the title, system, region, icon or banner if you like; the preview shows the HOME menu art.
 4. Build a **CIA**, a **launcher file** or the **launcher CIA**. Windows saves next to the zip; Linux and macOS save to `~/Downloads`.
-5. To install without the SD card, build a CIA and press **Send to 3DS**, then scan the QR code in FBI (Remote Install). A **launcher file** (`.neo3ds`) is sent the same way: press **Send to 3DS**, pick or drop the file, then press **Y (QR)** in the launcher and scan it. The PC and 3DS must be on the same router: allow the converter through the firewall, and with a VPN on pick the real LAN address. The 3DS connects to 2.4 GHz Wi-Fi only.
+5. To install without the SD card, build a CIA and press **Send to 3DS**, then scan the QR code in FBI (Remote Install). A **launcher file** (`.neo3ds`) is sent the same way: press **Send to 3DS**, pick or drop the file, then press **Y (QR)** in the launcher and scan it. Pick 2 to 6 CIAs or 2 to 6 launcher files to send them with one QR code; the two kinds cannot be mixed. Files made in the web converter can be sent too. The PC and 3DS must be on the same router: allow the converter through the firewall, and with a VPN on pick the real LAN address. The 3DS connects to 2.4 GHz Wi-Fi only.
 
 The language button switches between Korean and English.
 
@@ -102,11 +102,18 @@ There is a [3DS manual](https://zzcx88.github.io/neo3ds/manual.html) with screen
 
 ### Launcher
 
-<img src="docs/images/launcher.png" width="400" alt="Launcher game list with the All and Fav tabs">
+<img src="docs/images/launcher.png" width="400" alt="Launcher game list with a picture of the selected game on the top screen">
 
 - Pick a game with Up/Down (L/R for a page) or by touch; start it with **A** or a **double tap**.
 - **Favorites**: **SELECT** or a tap on the `*` at the left of a game adds or removes it. Left/Right or a tap on the tabs switches between **All** and **Fav**.
 - In a game, tap **[Game list]** on the bottom screen twice to go back.
+- The top screen shows a picture of the game under the cursor. Leaving a game saves its last screen as the picture; **Snapshot** on the bottom screen saves the current scene instead and keeps it.
+
+#### Get games over Wi-Fi
+
+<img src="docs/images/receive.png" width="400" alt="Receive screen waiting for a QR code">
+
+Press **Y** or tap **Y:QR**, then point the outer camera at the QR code from **Send to 3DS** in the [offline converter](#offline-converter-optional). One QR holds up to six files; with two or more, the launcher shows their names, sizes and the free space first. The PC and the 3DS must be on the same router, and the 3DS is 2.4 GHz Wi-Fi only. The web converter cannot send, so use the offline converter even for files made on the web.
 
 **Updating only takes the launcher.** The engine lives in the launcher, so the `.neo3ds` files you already made run on a new version as they are. Per-game CIAs carry their own engine and have to be converted again. Key configs and backup RAM carry over; quick saves from another version can't be loaded.
 
@@ -138,6 +145,7 @@ These are the defaults; [Key config](#key-config) changes them per game. The bot
 | **Restart** | Hold until the yellow bar fills. Like switching the console off and on (cartridge saves are kept) |
 | **Service** | Opens the MVS BIOS service menu (difficulty, credits, hardware tests). MVS only |
 | **Slot / Save / Load** | Quick save: pick slot 1-3, save, load (tap twice) |
+| **Snapshot** | From the launcher only: saves the current scene as the game's picture in the list |
 | **Game list** | From the launcher only: tap twice to go back to the list |
 | **⏻** | Turns the bottom screen's backlight off; touch anywhere to turn it back on (that touch presses nothing) |
 
@@ -200,6 +208,7 @@ The [compatibility list](https://zzcx88.github.io/neo3ds/compat.html) shows all 
 | Aero Fighters 3 | `sonicwi3` | Playable |
 | Neo Turf Masters | `turfmast` | Full speed; the water shows from 1.3.0 |
 | Neo Drift Out | `neodrift` | Full speed; stage starts and curves draw correctly from 1.3.0 |
+| Spin Master | `spinmast` | Plays fine; graphics correct from 1.5.0 |
 | The King of Fighters 2003 | `kof2003` | 60 fps (user report) |
 | Garou: Mark of the Wolves | `garou` | 60 fps (user report) |
 | Metal Slug 4 | `mslug4` | Plays fine (user report) |

@@ -68,6 +68,7 @@ VERIFIED = {
     'mslug5': ('실기 확인 · 풀 스피드', 'verified · full speed'),
     'turfmast': ('실기 확인 · 풀 스피드 · 1.3.0부터 물 표시', 'verified · full speed · water shows from 1.3.0'),
     'neodrift': ('실기 확인 · 풀 스피드 · 1.3.0부터 스테이지 시작·커브 정상', 'verified · full speed · stage starts and curves correct from 1.3.0'),
+    'spinmast': ('실기 확인 · 1.5.0부터 그래픽 정상', 'verified · graphics correct from 1.5.0'),
     'kof2003': ('60fps · 유저 제보', '60 fps · user reported'),
     'garou': ('60fps · 유저 제보', '60 fps · user reported'),
     'mslug4': ('정상 · 유저 제보', 'plays fine · user reported'),
