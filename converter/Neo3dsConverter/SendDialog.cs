@@ -4,9 +4,9 @@ using static Neo3dsConverter.Lang;
 namespace Neo3dsConverter;
 
 /// <summary>
-/// #255/#264: the Windows Forms twin of the Avalonia send window. Both call
-/// <see cref="SendCandidate.Resolve"/>, <see cref="SendBatch"/> and <see cref="SendText"/>, so the
-/// kind, the refusal and the wording cannot drift apart. Closing the window stops the server.
+/// #255/#264/#313: the Windows Forms twin of the Avalonia send window. Both hand the picked paths
+/// to the shared <see cref="SendSession"/>, so the kind, the refusal, the QR and the wording
+/// cannot drift apart. Closing the window stops the server.
 /// </summary>
 public sealed class SendDialog : Form
 {
@@ -15,6 +15,7 @@ public sealed class SendDialog : Form
 
     readonly IReadOnlyList<LanAddress> addresses;
     readonly List<SessionCia> session;
+    readonly SendSession send;
     readonly ListBox targets;
     readonly ListBox batchList = new()
     {
@@ -31,16 +32,15 @@ public sealed class SendDialog : Form
     readonly TextBox url = new() { ReadOnly = true, Width = 420, Multiline = true, Height = 24, ScrollBars = ScrollBars.Vertical, Margin = new Padding(0, 0, 0, 6) };
     readonly Label steps = new() { AutoSize = true, MaximumSize = new Size(420, 0), Margin = new Padding(0, 0, 0, 6) };
     readonly Label notes = new() { AutoSize = true, MaximumSize = new Size(420, 0), Margin = new Padding(0, 0, 0, 10) };
-    readonly Dictionary<string, SendState> batchStates = new(StringComparer.OrdinalIgnoreCase);
-    SendCandidate? target;
-    SendBatch? batch;
-    LanSender? sender;
+    string? shownQr;
     bool syncing;
 
     public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
     {
         this.session = [.. session];
         this.addresses = addresses;
+        send = new SendSession(session, addresses.Count > 0 ? addresses[0].Address : null);
+        send.Changed += () => OnUi(ApplySnapshot);
         targets = new ListBox
         {
             Width = 420,
@@ -97,26 +97,20 @@ public sealed class SendDialog : Form
         close.Click += (_, _) => Close();
         addressBox.SelectedIndexChanged += (_, _) =>
         {
-            if (addressBox.SelectedIndex < 0) return;
-            if (batch is { Allowed: true }) ConnectBatch(addressBox.SelectedIndex);
-            else if (batch is { Refusal: SendRefusal.QrTooLarge }) RetryBatch(addressBox.SelectedIndex);
-            else if (target is { Allowed: true }) Connect(addressBox.SelectedIndex);
+            if (addressBox.SelectedIndex < 0 || addressBox.SelectedIndex >= addresses.Count) return;
+            send.SetAddress(addresses[addressBox.SelectedIndex].Address);
+            ApplySnapshot();
         };
         targets.SelectedIndexChanged += (_, _) =>
         {
-            if (syncing) return;
-            var paths = SelectedPaths();
-            if (paths.Count == 0) ClearAll();
-            else if (paths.Count == 1) Choose(paths[0]);
-            else ChooseMany(paths);
+            if (!syncing) Select(SelectedPaths());
         };
         DragEnter += (_, e) => e.Effect = e.Data?.GetDataPresent(DataFormats.FileDrop) == true ? DragDropEffects.Copy : DragDropEffects.None;
         DragDrop += (_, e) => DroppedFiles(e.Data);
-        FormClosed += (_, _) => { ClearQr(); Stop(); };
+        FormClosed += (_, _) => { ClearQr(); send.Dispose(); };
 
-        SetGuide(SendGuide.Fbi);
-        if (session.Count > 0) Choose(session[0].Path);
-        else status.Text = EmptyHint;
+        if (session.Count > 0) Select([session[0].Path]);
+        else ApplySnapshot();
     }
 
     /// <summary>#299: the labels and selection the Windows test project checks.</summary>
@@ -125,15 +119,15 @@ public sealed class SendDialog : Form
     internal int SelectedCount => targets.SelectedItems.Count;
     internal int SessionCount => session.Count;
     internal void SelectAddress(int index) => addressBox.SelectedIndex = index;
-    internal SendCandidate? Target => target;
-    internal SendBatch? Batch => batch;
+    internal SendCandidate? Target => (send.Selection as SendSelectionResult.Single)?.Candidate;
+    internal SendBatchResult? BatchResult => (send.Selection as SendSelectionResult.Batch)?.Result;
     internal string[] BatchRows => batchList.Items.Cast<object>().Select(i => i.ToString() ?? "").ToArray();
     internal string StatusText => status.Text;
     internal string InfoText => info.Text;
     internal string StepsText => steps.Text;
     internal string NotesText => notes.Text;
-    internal LanSender? Sender => sender;
-    internal string? QrText => sender?.QrText;
+    internal LanSender? Sender => send.Sender;
+    internal string? QrText => send.Snapshot.QrText;
 
     void RebuildSessionRows()
     {
@@ -149,14 +143,69 @@ public sealed class SendDialog : Form
         return selected.Select(r => r.Cia.Path).ToArray();
     }
 
-    /// <summary>Highlights the paths that are session rows; files from elsewhere clear the list.</summary>
-    void SetSelection(IReadOnlyList<string> paths)
+    void Select(IReadOnlyList<string> paths)
     {
-        syncing = true;
-        try { SetSelectionCore(paths); }
-        finally { syncing = false; }
+        send.SetSelection(paths);
+        ApplySnapshot();
     }
 
+    /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
+    void Choose(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        Select([path]);
+    }
+
+    /// <summary>#264: judges and serves 2 to 6 files as one QR; a refusal starts no server.</summary>
+    internal void ChooseMany(IReadOnlyList<string> paths) => Select(paths);
+
+    void ApplySnapshot()
+    {
+        RenderQr(send.Snapshot.QrText, send.Snapshot.IsBatch);
+        var s = send.Snapshot;
+        SyncSelection(s);
+        if (s.Empty)
+        {
+            status.Text = EmptyHint;
+            info.Text = url.Text = steps.Text = notes.Text = "";
+            HideBatchRows();
+            return;
+        }
+        if (s.Reason == "") SetGuide(s.Guide, s.IsBatch ? s.Items.Count : 1);
+        else { steps.Text = notes.Text = ""; }
+        if (s.StartError != null)
+        {
+            info.Text = url.Text = "";
+            status.Text = L("전송 실패: ", "Send failed: ") + s.StartError;
+        }
+        else if (s.Reason != "")
+        {
+            info.Text = s.IsBatch ? SendText.BatchInfo(s.Items.Count, s.TotalLength) : s.Items[0].DisplayName;
+            url.Text = "";
+            status.Text = s.Reason;
+        }
+        else
+        {
+            info.Text = s.IsBatch ? SendText.BatchInfo(s.Items.Count, s.TotalLength)
+                : $"{s.Items[0].FileName} · {SendText.Size(s.Items[0].Length)}";
+            url.Height = s.IsBatch ? Math.Min(96, Math.Max(24, s.Items.Count * 16)) : 24;
+            url.Text = s.QrText ?? "";
+            status.Text = s.IsBatch ? SendText.BatchStatus(s.Guide, s.Overall, s.Items.Count, s.Sent)
+                : SendText.Status(s.Overall, s.Guide);
+        }
+        if (s.IsBatch) ShowBatchRows(s.Items);
+        else HideBatchRows();
+    }
+
+    void SyncSelection(SendSnapshot snapshot)
+    {
+        bool wasSyncing = syncing;
+        syncing = true;
+        try { SetSelectionCore(snapshot.Items.Select(i => i.FullPath).ToArray()); }
+        finally { syncing = wasSyncing; }
+    }
+
+    /// <summary>Highlights the paths that are session rows; files from elsewhere clear the list.</summary>
     void SetSelectionCore(IReadOnlyList<string> paths)
     {
         var wanted = new HashSet<string>(paths.Select(SafeFullPath), StringComparer.OrdinalIgnoreCase);
@@ -175,73 +224,17 @@ public sealed class SendDialog : Form
     /// <summary>#306: a CIA built while the window is open joins the list; the served batch keeps its QR.</summary>
     internal void RefreshSession(IReadOnlyList<SessionCia> cias)
     {
-        var selected = batch?.Items.Select(i => i.FullPath).ToArray()
-            ?? (target is { } t ? new[] { t.FullPath } : []);
         session.Clear();
         session.AddRange(cias);
+        send.SetSessionCias(cias);
+        bool wasSyncing = syncing;
         syncing = true;
         try
         {
             RebuildSessionRows();
-            SetSelectionCore(selected);
+            ApplySnapshot();
         }
-        finally
-        {
-            syncing = false;
-        }
-    }
-
-    /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
-    void Choose(string path)
-    {
-        var candidate = SendCandidate.Resolve(path, session);
-        if (candidate == null) return;
-        target = candidate;
-        batch = null;
-        batchStates.Clear();
-        HideBatchRows();
-        SetSelection([candidate.FullPath]);
-        SetGuide(candidate.Guide);
-        if (!candidate.Allowed)
-        {
-            Stop();
-            ClearQr();
-            steps.Text = notes.Text = "";
-            info.Text = candidate.DisplayName;
-            url.Text = "";
-            status.Text = candidate.Reason;
-            return;
-        }
-        Connect(addressBox.SelectedIndex < 0 ? 0 : addressBox.SelectedIndex);
-    }
-
-    /// <summary>#264: judges and serves 2 to 6 files as one QR; a refusal starts no server.</summary>
-    internal void ChooseMany(IReadOnlyList<string> paths)
-    {
-        var chosen = paths.Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
-        if (chosen.Length == 0) { ClearAll(); return; }
-        if (chosen.Length == 1) { Choose(chosen[0]); return; }
-
-        var resolved = SendBatch.Resolve(chosen, session);
-        if (resolved == null) { ClearAll(); return; }
-        target = null;
-        batch = resolved;
-        batchStates.Clear();
-        foreach (var item in resolved.Items) batchStates[item.FullPath] = SendState.Waiting;
-        SetSelection(chosen);
-        SetGuide(resolved.Guide, resolved.Items.Count);
-        ShowBatchRows();
-        info.Text = SendText.BatchInfo(resolved.Items.Count, resolved.TotalLength);
-        if (!resolved.Allowed)
-        {
-            Stop();
-            ClearQr();
-            steps.Text = notes.Text = "";
-            url.Text = "";
-            status.Text = resolved.Reason;
-            return;
-        }
-        ConnectBatch(addressBox.SelectedIndex < 0 ? 0 : addressBox.SelectedIndex);
+        finally { syncing = wasSyncing; }
     }
 
     void SetGuide(SendGuide guide, int count = 1)
@@ -259,146 +252,45 @@ public sealed class SendDialog : Form
             Multiselect = true,
         };
         if (pick.ShowDialog(this) != DialogResult.OK) return;
-        if (pick.FileNames.Length == 1) Choose(pick.FileNames[0]);
-        else if (pick.FileNames.Length > 1) ChooseMany(pick.FileNames);
+        if (pick.FileNames.Length > 0) Select(pick.FileNames);
     }
 
     void DroppedFiles(IDataObject? data)
     {
         if (data?.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
-        if (files.Length == 1) Choose(files[0]);
-        else ChooseMany(files);
+        Select(files);
     }
 
-    void Connect(int index)
+    void RenderQr(string? text, bool batch)
     {
-        Stop();
-        if (target is not { Allowed: true } t || index < 0 || index >= addresses.Count) return;
-        SendGuide guide = t.Guide;
+        if (text == shownQr) return;
+        shownQr = text;
+        ClearQr();
+        if (text == null) return;
         try
         {
-            var s = LanSender.Start(t.FullPath, addresses[index].Address);
-            sender = s;
-            s.Started += () => OnUi(() =>
-            {
-                if (ReferenceEquals(sender, s)) status.Text = SendText.Status(SendState.Sending, guide);
-            });
-            s.Downloaded += () => OnUi(() =>
-            {
-                if (ReferenceEquals(sender, s)) status.Text = SendText.Status(SendState.Sent, guide);
-            });
-            ClearQr();
-            qr.Image = ScaleQr(QrCode.Png(s.Url), 240);
-            url.Height = 24;
-            url.Text = s.Url;
-            info.Text = $"{s.FileName} · {SendText.Size(s.Length)}";
-            status.Text = SendText.Status(SendState.Waiting, guide);
+            qr.Image = ScaleQr(batch ? QrCode.BatchPng(text) : QrCode.Png(text), 240);
         }
         catch (Exception ex)
         {
-            Stop();
-            ClearQr();
-            info.Text = url.Text = "";
-            status.Text = L("전송 실패: ", "Send failed: ") + ex.Message;
+            shownQr = null;
+            send.ReportStartFailure(ex.Message);
         }
     }
 
-    /// <summary>#264: one listener, one token, one QR. The capacity check uses the real port and token.</summary>
-    void ConnectBatch(int index)
+    void ShowBatchRows(IReadOnlyList<SendItem> items)
     {
-        Stop();
-        if (batch is not { Allowed: true } b || index < 0 || index >= addresses.Count) return;
-        try
-        {
-            var files = b.Items.Select((item, i) => new LanFile(item.FullPath,
-                b.Kind == SendKind.Cia ? i.ToString() : item.FileName)).ToArray();
-            var s = LanSender.StartBatch(files, addresses[index].Address);
-            sender = s;
-            var sized = b.WithQr(s.Items.Select(i => i.Url).ToArray());
-            batch = sized;
-            if (!sized.Allowed)
-            {
-                s.Dispose();
-                sender = null;
-                ClearQr();
-                steps.Text = notes.Text = "";
-                url.Text = "";
-                info.Text = SendText.BatchInfo(sized.Items.Count, sized.TotalLength);
-                status.Text = sized.Reason;
-                ShowBatchRows();
-                return;
-            }
-
-            s.ItemStarted += item => OnBatchItem(s, item, SendState.Sending);
-            s.ItemDownloaded += item => OnBatchItem(s, item, SendState.Sent);
-            SetGuide(sized.Guide, sized.Items.Count);
-            ClearQr();
-            qr.Image = ScaleQr(QrCode.BatchPng(s.QrText), 240);
-            url.Height = Math.Min(96, Math.Max(24, sized.Items.Count * 16));
-            url.Text = s.QrText;
-            info.Text = SendText.BatchInfo(sized.Items.Count, sized.TotalLength);
-            status.Text = SendText.BatchStatus(sized.Guide, SendState.Waiting, sized.Items.Count, 0);
-            foreach (var item in sized.Items) batchStates[item.FullPath] = SendState.Waiting;
-            ShowBatchRows();
-        }
-        catch (Exception ex)
-        {
-            Stop();
-            ClearQr();
-            info.Text = url.Text = "";
-            status.Text = L("전송 실패: ", "Send failed: ") + ex.Message;
-        }
-    }
-
-    /// <summary>#264: a new address changes the port, so a batch refused for size gets one more try.</summary>
-    void RetryBatch(int index)
-    {
-        if (batch is not { Refusal: SendRefusal.QrTooLarge } b || index < 0 || index >= addresses.Count) return;
-        batch = b with { Refusal = SendRefusal.None, AllowedCount = b.Items.Count, Reason = "" };
-        ConnectBatch(index);
-    }
-
-    void OnBatchItem(LanSender s, LanItem item, SendState state)
-    {
-        OnUi(() =>
-        {
-            if (!ReferenceEquals(sender, s) || batch is not { } b) return;
-            batchStates[item.Path] = state;
-            int sent = b.Items.Count(i => batchStates.GetValueOrDefault(i.FullPath, SendState.Waiting) == SendState.Sent);
-            bool active = b.Items.Any(i => batchStates.GetValueOrDefault(i.FullPath, SendState.Waiting) is SendState.Sending or SendState.Sent);
-            SendState overall = sent == b.Items.Count ? SendState.Sent : active ? SendState.Sending : SendState.Waiting;
-            status.Text = SendText.BatchStatus(b.Guide, overall, b.Items.Count, sent);
-            ShowBatchRows();
-        });
-    }
-
-    void ShowBatchRows()
-    {
-        if (batch is not { } b) { HideBatchRows(); return; }
         batchList.Items.Clear();
-        batchList.Items.AddRange(b.Items.Select(i =>
-            (object)SendText.ItemLine(batchStates.GetValueOrDefault(i.FullPath, SendState.Waiting), i.DisplayName, i.Length)).ToArray());
+        batchList.Items.AddRange(items.Select(i =>
+            (object)SendText.ItemLine(i.State, i.DisplayName, i.Length)).ToArray());
         batchList.Visible = true;
-        batchList.Height = Math.Min(130, Math.Max(44, b.Items.Count * 22));
+        batchList.Height = Math.Min(130, Math.Max(44, items.Count * 22));
     }
 
     void HideBatchRows()
     {
         batchList.Items.Clear();
         batchList.Visible = false;
-    }
-
-    void ClearAll()
-    {
-        Stop();
-        ClearQr();
-        target = null;
-        batch = null;
-        batchStates.Clear();
-        HideBatchRows();
-        info.Text = url.Text = steps.Text = notes.Text = "";
-        status.Text = EmptyHint;
-        SetSelection([]);
     }
 
     void OnUi(Action action)
@@ -427,15 +319,9 @@ public sealed class SendDialog : Form
         image?.Dispose();
     }
 
-    void Stop()
-    {
-        sender?.Dispose();
-        sender = null;
-    }
-
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { ClearQr(); Stop(); }
+        if (disposing) { ClearQr(); send.Dispose(); }
         base.Dispose(disposing);
     }
 }

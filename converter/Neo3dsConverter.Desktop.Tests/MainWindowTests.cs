@@ -347,7 +347,7 @@ public class MainWindowTests
 
             dialog.Choose(zip);
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.UnsupportedExtension, dialog.Target!.Refusal);
+            Assert.Equal(FileRefusal.UnsupportedExtension, dialog.Target!.Refusal);
             Assert.NotEmpty(dialog.StatusText);
             Assert.DoesNotContain(Lang.L("3DS 대기", "Waiting for the 3DS"), dialog.StatusText);
 
@@ -358,7 +358,7 @@ public class MainWindowTests
 
             dialog.Choose(Path.Combine(tmp, "gone.cia"));
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.MissingFile, dialog.Target!.Refusal);
+            Assert.Equal(FileRefusal.MissingFile, dialog.Target!.Refusal);
         }
         finally
         {
@@ -554,8 +554,8 @@ public class MainWindowTests
             dialog.ChooseMany([one, two]);
 
             Assert.NotNull(dialog.Sender);
-            Assert.Equal(SendKind.Cia, dialog.Batch!.Kind);
-            Assert.True(dialog.Batch.Allowed);
+            var ready = Assert.IsType<SendBatchResult.Ready>(dialog.BatchResult);
+            Assert.Equal(SendKind.Cia, ready.Batch.Kind);
             Assert.Equal(2, dialog.BatchRows.Length);
             Assert.Contains("\n", dialog.QrText);
             Assert.Contains("2", dialog.InfoText);
@@ -618,7 +618,8 @@ public class MainWindowTests
 
             Assert.Equal(2, dialog.SelectedCount);
             Assert.NotNull(dialog.Sender);
-            Assert.Equal(SendKind.Cia, dialog.Batch!.Kind);
+            var ready = Assert.IsType<SendBatchResult.Ready>(dialog.BatchResult);
+            Assert.Equal(SendKind.Cia, ready.Batch.Kind);
             Assert.Equal(2, dialog.BatchRows.Length);
             Assert.NotEqual(first, dialog.Url);
             dialog.Window.Close();
@@ -652,12 +653,14 @@ public class MainWindowTests
 
             dialog.ChooseMany([cia, pack]);
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.MixedKinds, dialog.Batch!.Refusal);
+            var mixed = Assert.IsType<SendBatchResult.Refused>(dialog.BatchResult);
+            Assert.IsType<BatchRefusal.MixedKinds>(mixed.Refusal);
             Assert.Contains(Lang.L("두 번", "two batches"), dialog.StatusText);
 
             dialog.ChooseMany([cia, duplicate]);
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.DuplicateName, dialog.Batch!.Refusal);
+            var dup = Assert.IsType<SendBatchResult.Refused>(dialog.BatchResult);
+            Assert.IsType<BatchRefusal.DuplicateName>(dup.Refusal);
             Assert.Contains("kof98.cia", dialog.StatusText, StringComparison.OrdinalIgnoreCase);
         }
         finally
@@ -688,9 +691,10 @@ public class MainWindowTests
             dialog.ChooseMany(packs);
 
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
-            Assert.InRange(dialog.Batch.AllowedCount, 1, 5);
-            Assert.Contains(dialog.Batch.AllowedCount.ToString(), dialog.StatusText);
+            var tooLarge = Assert.IsType<BatchRefusal.QrTooLarge>(
+                Assert.IsType<SendBatchResult.Refused>(dialog.BatchResult).Refusal);
+            Assert.InRange(tooLarge.AllowedCount, 1, 5);
+            Assert.Contains(tooLarge.AllowedCount.ToString(), dialog.StatusText);
             Assert.Equal(6, dialog.BatchRows.Length);
         }
         finally
@@ -726,15 +730,16 @@ public class MainWindowTests
             dialog.ChooseMany(packs);
 
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
+            var tooLarge = Assert.IsType<BatchRefusal.QrTooLarge>(
+                Assert.IsType<SendBatchResult.Refused>(dialog.BatchResult).Refusal);
             Assert.Equal("", dialog.StepsText);
             Assert.Equal("", dialog.NotesText);
 
             dialog.SelectAddress(1);
 
             Assert.NotNull(dialog.Sender);
-            Assert.True(dialog.Batch!.Allowed);
-            Assert.Equal(6, dialog.Batch.Items.Count);
+            var ready = Assert.IsType<SendBatchResult.Ready>(dialog.BatchResult);
+            Assert.Equal(6, ready.Batch.Items.Count);
             Assert.NotEmpty(dialog.StepsText);
             Assert.NotEmpty(dialog.NotesText);
             Assert.Contains("6", dialog.StepsText);
@@ -743,10 +748,11 @@ public class MainWindowTests
             dialog.SelectAddress(0);
 
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
+            var tooLarge2 = Assert.IsType<BatchRefusal.QrTooLarge>(
+                Assert.IsType<SendBatchResult.Refused>(dialog.BatchResult).Refusal);
             Assert.Equal("", dialog.StepsText);
             Assert.Equal("", dialog.NotesText);
-            Assert.Contains(dialog.Batch.AllowedCount.ToString(), dialog.StatusText);
+            Assert.Contains(tooLarge2.AllowedCount.ToString(), dialog.StatusText);
         }
         finally
         {

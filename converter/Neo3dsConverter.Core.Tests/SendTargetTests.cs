@@ -71,7 +71,7 @@ public sealed class SendTargetTests : IDisposable
 
         Assert.NotNull(target);
         Assert.False(target.Allowed);
-        Assert.Equal(SendRefusal.MissingFile, target.Refusal);
+        Assert.Equal(FileRefusal.MissingFile, target.Refusal);
         Assert.NotEmpty(target.Reason);
     }
 
@@ -85,7 +85,7 @@ public sealed class SendTargetTests : IDisposable
 
         Assert.NotNull(target);
         Assert.False(target.Allowed);
-        Assert.Equal(SendRefusal.NotAFile, target.Refusal);
+        Assert.Equal(FileRefusal.NotAFile, target.Refusal);
         Assert.NotEmpty(target.Reason);
     }
 
@@ -96,7 +96,7 @@ public sealed class SendTargetTests : IDisposable
 
         Assert.NotNull(target);
         Assert.False(target.Allowed);
-        Assert.Equal(SendRefusal.UnsupportedExtension, target.Refusal);
+        Assert.Equal(FileRefusal.UnsupportedExtension, target.Refusal);
         Assert.NotEmpty(target.Reason);
     }
 
@@ -180,7 +180,7 @@ public sealed class SendTargetTests : IDisposable
 
         Assert.NotNull(target);
         Assert.False(target.Allowed);
-        Assert.Equal(SendRefusal.NameTooLong, target.Refusal);
+        Assert.Equal(FileRefusal.NameTooLong, target.Refusal);
         Assert.Equal(SendGuide.Launcher, target.Guide);
     }
 
@@ -193,7 +193,7 @@ public sealed class SendTargetTests : IDisposable
     [InlineData("game .neo3ds")]
     [InlineData("game..neo3ds")]
     public void LauncherNameRulesMatchThe3ds(string name)
-        => Assert.Equal(SendRefusal.NameUnsafe, SendCandidate.LauncherNameProblem(name));
+        => Assert.Equal(FileRefusal.NameUnsafe, SendCandidate.LauncherNameProblem(name));
 
     /// <summary>#301: a pack with no base name is refused for that reason, not for bad characters.</summary>
     [Fact]
@@ -203,29 +203,29 @@ public sealed class SendTargetTests : IDisposable
 
         Assert.NotNull(target);
         Assert.False(target.Allowed);
-        Assert.Equal(SendRefusal.NoFileName, target.Refusal);
+        Assert.Equal(FileRefusal.NoFileName, target.Refusal);
         Assert.Contains(Lang.L("이름", "name"), target.Reason);
-        Assert.Equal(SendRefusal.NoFileName, SendCandidate.LauncherNameProblem(".neo3ds"));
+        Assert.Equal(FileRefusal.NoFileName, SendCandidate.LauncherNameProblem(".neo3ds"));
     }
 
     /// <summary>#301: the helper mirrors name_ok, which refuses anything that is not a pack name.</summary>
     [Fact]
     public void LauncherNameRulesRejectAFileThatIsNotALauncherPack()
-        => Assert.Equal(SendRefusal.UnsupportedExtension, SendCandidate.LauncherNameProblem("kof98.cia"));
+        => Assert.Equal(FileRefusal.UnsupportedExtension, SendCandidate.LauncherNameProblem("kof98.cia"));
 
     [Fact]
     public void LauncherNameAcceptsTheBoundaryAndRefusesOneByteMore()
     {
-        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem("kof98.neo3ds"));
-        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem(new string('a', 96) + ".neo3ds"));
-        Assert.Equal(SendRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('a', 97) + ".neo3ds"));
+        Assert.Equal(FileRefusal.None, SendCandidate.LauncherNameProblem("kof98.neo3ds"));
+        Assert.Equal(FileRefusal.None, SendCandidate.LauncherNameProblem(new string('a', 96) + ".neo3ds"));
+        Assert.Equal(FileRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('a', 97) + ".neo3ds"));
     }
 
     [Fact]
     public void LauncherNameCountsUtf8Bytes()
     {
-        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem("게임.neo3ds"));
-        Assert.Equal(SendRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('가', 33) + ".neo3ds"));
+        Assert.Equal(FileRefusal.None, SendCandidate.LauncherNameProblem("게임.neo3ds"));
+        Assert.Equal(FileRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('가', 33) + ".neo3ds"));
     }
 
     /// <summary>#257: the raw URL path must fit the launcher's 256-byte buffer, not just the decoded name.</summary>
@@ -236,7 +236,7 @@ public sealed class SendTargetTests : IDisposable
         string overflows = new string('가', 26) + ".neo3ds";
         Assert.True(System.Text.Encoding.UTF8.GetByteCount(overflows) <= 103);
 
-        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem(fits));
-        Assert.Equal(SendRefusal.UrlTooLong, SendCandidate.LauncherNameProblem(overflows));
+        Assert.Equal(FileRefusal.None, SendCandidate.LauncherNameProblem(fits));
+        Assert.Equal(FileRefusal.UrlTooLong, SendCandidate.LauncherNameProblem(overflows));
     }
 }

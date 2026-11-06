@@ -34,18 +34,23 @@ public sealed class LanSender : IDisposable
     const int BufferSize = 64 * 1024;
     static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
 
-    readonly TcpListener listener;
+    const int Prepared = 0;
+    const int Listening = 1;
+    const int DisposedState = 2;
+
+    readonly Socket socket;
+    readonly object stateGate = new();
     readonly CancellationTokenSource stop = new();
-    readonly Task loop;
     readonly IReadOnlyList<LanItem> items;
     readonly Dictionary<string, LanItem> byRoute;
-    int disposed;
+    Task? loop;
+    int state;
 
-    LanSender(IReadOnlyList<LanFile> files, TcpListener listener, string address, string token)
+    LanSender(IReadOnlyList<LanFile> files, Socket socket, string address, string token)
     {
-        this.listener = listener;
+        this.socket = socket;
         Address = address;
-        Port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        Port = ((IPEndPoint)socket.LocalEndPoint!).Port;
         var served = new List<LanItem>(files.Count);
         foreach (var file in files)
         {
@@ -57,7 +62,6 @@ public sealed class LanSender : IDisposable
         }
         items = served;
         byRoute = served.ToDictionary(i => i.Route, StringComparer.Ordinal);
-        loop = Task.Run(() => AcceptAsync(stop.Token));
     }
 
     /// <summary>Every served file, in the order the 3DS should fetch them.</summary>
@@ -66,27 +70,16 @@ public sealed class LanSender : IDisposable
     /// <summary>The newline-separated URL list for one batch QR (no trailing newline).</summary>
     public string QrText => string.Join("\n", items.Select(i => i.Url));
 
-    /// <summary>The first URL; for a single file this is the whole QR text.</summary>
-    public string Url => items[0].Url;
-
-    public string FileName => items[0].FileName;
     public string Address { get; }
     public int Port { get; }
-    public long Length => items[0].Length;
 
-    /// <summary>False once the listener stopped; a dialog reopened for it must start a new sender.</summary>
-    public bool IsRunning => Volatile.Read(ref disposed) == 0;
+    /// <summary>True only while listening; a prepared but not started sender holds its port silently.</summary>
+    public bool IsRunning => Volatile.Read(ref state) == Listening;
 
     /// <summary>Raised after a client received the whole file (on a worker thread).</summary>
-    public event Action? Downloaded;
-
-    /// <summary>Raised when a client with the right path asked for the file and the body starts (worker thread).</summary>
-    public event Action? Started;
-
-    /// <summary>#264: the item-specific twin of <see cref="Downloaded"/>.</summary>
     public event Action<LanItem>? ItemDownloaded;
 
-    /// <summary>#264: the item-specific twin of <see cref="Started"/>.</summary>
+    /// <summary>Raised when a client with the right path asked for the file and the body starts (worker thread).</summary>
     public event Action<LanItem>? ItemStarted;
 
     /// <summary>
@@ -102,7 +95,20 @@ public sealed class LanSender : IDisposable
     /// </summary>
     public static LanSender StartBatch(IReadOnlyList<LanFile> files, string? address = null)
     {
+        var sender = Prepare(files, address);
+        sender.Start();
+        return sender;
+    }
+
+    /// <summary>
+    /// #313: binds the socket and builds the token and URLs, but listens for nothing yet. The
+    /// caller measures a QR against the real port and starts it only when the batch fits.
+    /// </summary>
+    public static LanSender Prepare(IReadOnlyList<LanFile> files, string? address = null)
+    {
         if (files.Count == 0) throw new ArgumentException("At least one file is required.", nameof(files));
+        if (files.Count > SendBatch.MaxFiles)
+            throw new ArgumentException($"At most {SendBatch.MaxFiles} files can be sent at once.", nameof(files));
         var routes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in files)
         {
@@ -116,18 +122,31 @@ public sealed class LanSender : IDisposable
         address ??= FindLanAddress() ?? throw new InvalidOperationException("No LAN IPv4 address found.");
         if (!IPAddress.TryParse(address, out IPAddress? bound) || bound.AddressFamily != AddressFamily.InterNetwork)
             throw new ArgumentException($"Not an IPv4 address: {address}", nameof(address));
-        var listener = new TcpListener(bound, 0);
-        listener.Start();
+        var socket = new Socket(bound.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
         try
         {
+            socket.Bind(new IPEndPoint(bound, 0));
             string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
             return new LanSender(files.Select(f => new LanFile(Path.GetFullPath(f.Path), f.RouteName)).ToArray(),
-                listener, address, token);
+                socket, address, token);
         }
         catch
         {
-            listener.Stop();
+            socket.Close();
             throw;
+        }
+    }
+
+    /// <summary>Listens for connections; an already started or disposed sender cannot start again.</summary>
+    public void Start()
+    {
+        lock (stateGate)
+        {
+            if (state != Prepared)
+                throw new InvalidOperationException("The sender was already started or disposed.");
+            socket.Listen(8);
+            state = Listening;
+            loop = Task.Run(() => AcceptAsync(stop.Token));
         }
     }
 
@@ -192,8 +211,8 @@ public sealed class LanSender : IDisposable
     {
         while (!ct.IsCancellationRequested)
         {
-            TcpClient client;
-            try { client = await listener.AcceptTcpClientAsync(ct); }
+            Socket client;
+            try { client = await socket.AcceptAsync(ct); }
             catch (OperationCanceledException) { break; }
             catch (ObjectDisposedException) { break; }
             catch (SocketException) { break; }
@@ -205,18 +224,17 @@ public sealed class LanSender : IDisposable
     /// One connection per task: a client that connects and sends nothing must not block the 3DS
     /// behind it for the whole request timeout. Failures drop that client only.
     /// </summary>
-    async Task ServeAsync(TcpClient client, CancellationToken ct)
+    async Task ServeAsync(Socket client, CancellationToken ct)
     {
-        using (client)
+        using (var stream = new NetworkStream(client, ownsSocket: true))
         {
-            try { await HandleAsync(client, ct); }
+            try { await HandleAsync(stream, ct); }
             catch (Exception) { /* dropped client: the 3DS retries */ }
         }
     }
 
-    async Task HandleAsync(TcpClient client, CancellationToken ct)
+    async Task HandleAsync(NetworkStream stream, CancellationToken ct)
     {
-        NetworkStream stream = client.GetStream();
         using var readCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         readCts.CancelAfter(RequestTimeout);
         string? line = await ReadRequestAsync(stream, readCts.Token);
@@ -257,11 +275,9 @@ public sealed class LanSender : IDisposable
             await WriteHeadersAsync(stream, input.Length, ct);
             if (method == "GET")
             {
-                Started?.Invoke();
                 ItemStarted?.Invoke(item);
                 await input.CopyToAsync(stream, BufferSize, ct);
                 await stream.FlushAsync(ct);
-                Downloaded?.Invoke();
                 ItemDownloaded?.Invoke(item);
                 return;
             }
@@ -337,11 +353,20 @@ public sealed class LanSender : IDisposable
 
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+        bool wait;
+        lock (stateGate)
+        {
+            if (state == DisposedState) return;
+            wait = state == Listening;
+            state = DisposedState;
+        }
         stop.Cancel();
-        listener.Stop();
-        try { loop.Wait(TimeSpan.FromSeconds(2)); }
-        catch (AggregateException) { }
+        try { socket.Close(); } catch { }
+        if (wait)
+        {
+            try { loop?.Wait(TimeSpan.FromSeconds(2)); }
+            catch (AggregateException) { }
+        }
         // The token source stays undisposed: per-connection tasks may still hold its token.
     }
 }
