@@ -85,6 +85,7 @@ extern int raster_from; /* that line for writes now; 0 until an IRQ2 this frame 
 void video_raster_reset(void);
 void video_raster_irq(int line);
 void video_raster_write(Uint32 addr, Uint16 old, Uint16 val);
+void video_raster_tiles(void); /* before a change to the sprite tiles (SCB1) after an IRQ2 */
 /* Tile-based renderer: 16 bands of 14 of the 224 visible lines, drawn in a band buffer of 320
  * columns of VIDEO_BAND_STRIDE pixels (see video.c). */
 #define VIDEO_BANDS 16

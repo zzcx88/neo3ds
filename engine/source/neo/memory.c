@@ -641,9 +641,14 @@ void mem68k_store_video_word(Uint32 addr, Uint16 data) {
         break;
     case 0x2:
         //core_log("Store %04x to video %08x @pc=%08x\n",data,vptr<<1,cpu_68k_getpc());
-        /* neo3ds: sprite positions changed after an IRQ2 in the visible lines (raster effects) */
-        if (raster_from && memory.vid.vptr - 0x8000u < 0x600u)
-            video_raster_write(memory.vid.vptr, READ_WORD(&memory.vid.ram[memory.vid.vptr << 1]), data);
+        /* neo3ds: sprites changed after an IRQ2 in the visible lines (raster effects) */
+        if (raster_from) {
+            const Uint16 old = READ_WORD(&memory.vid.ram[memory.vid.vptr << 1]);
+            if (memory.vid.vptr - 0x8000u < 0x600u)
+                video_raster_write(memory.vid.vptr, old, data);
+            else if (memory.vid.vptr < 0x7000u && old != data)
+                video_raster_tiles();
+        }
         WRITE_WORD(&memory.vid.ram[memory.vid.vptr << 1], data);
         memory.vid.vptr = (memory.vid.vptr & 0x8000) + ((memory.vid.vptr
                                                          + memory.vid.modulo) & 0x7fff);
