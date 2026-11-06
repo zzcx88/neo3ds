@@ -12,10 +12,20 @@ public sealed record LanAddress(string Address, string Name)
     public override string ToString() => $"{Address} · {Name}";
 }
 
+/// <summary>#264: one file in a batch and the last URL segment the 3DS asks for.</summary>
+public sealed record LanFile(string Path, string RouteName);
+
+/// <summary>#264: a served file as the 3DS sees it. The batch event carries this so the dialog can mark one row.</summary>
+public sealed record LanItem(string Path, string FileName, string Route, long Length, string Url)
+{
+    public override string ToString() => FileName;
+}
+
 /// <summary>
-/// Serves one built CIA to a 3DS on the same network (#235). FBI's Remote Install scans a QR code
-/// holding <see cref="Url"/>, downloads the file, and installs it, so the SD card stays in the console.
-/// Local network only: the path carries a random 64-bit token and the listener stops with the dialog.
+/// Serves built CIAs or launcher packs to a 3DS on the same network (#235, #264). FBI's Remote
+/// Install scans a QR code holding the URL list, downloads each file, and installs it, so the SD
+/// card stays in the console. Local network only: every path carries one random 64-bit token and
+/// the listener stops with the dialog.
 /// </summary>
 public sealed class LanSender : IDisposable
 {
@@ -27,29 +37,42 @@ public sealed class LanSender : IDisposable
     readonly TcpListener listener;
     readonly CancellationTokenSource stop = new();
     readonly Task loop;
-    readonly string file;
-    readonly string expectedPath;
+    readonly IReadOnlyList<LanItem> items;
+    readonly Dictionary<string, LanItem> byRoute;
     int disposed;
 
-    LanSender(string file, TcpListener listener, string address, string token)
+    LanSender(IReadOnlyList<LanFile> files, TcpListener listener, string address, string token)
     {
-        this.file = file;
         this.listener = listener;
-        FileName = Path.GetFileName(file);
-        Length = new FileInfo(file).Length;
         Address = address;
         Port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        expectedPath = "/" + token + "/" + Uri.EscapeDataString(FileName);
-        Url = $"http://{address}:{Port}{expectedPath}";
+        var served = new List<LanItem>(files.Count);
+        foreach (var file in files)
+        {
+            string full = Path.GetFullPath(file.Path);
+            string name = Path.GetFileName(full);
+            string route = "/" + token + "/" + Uri.EscapeDataString(file.RouteName);
+            served.Add(new LanItem(full, name, route, new FileInfo(full).Length,
+                $"http://{address}:{Port}{route}"));
+        }
+        items = served;
+        byRoute = served.ToDictionary(i => i.Route, StringComparer.Ordinal);
         loop = Task.Run(() => AcceptAsync(stop.Token));
     }
 
-    /// <summary>The URL to put in the QR code.</summary>
-    public string Url { get; }
-    public string FileName { get; }
+    /// <summary>Every served file, in the order the 3DS should fetch them.</summary>
+    public IReadOnlyList<LanItem> Items => items;
+
+    /// <summary>The newline-separated URL list for one batch QR (no trailing newline).</summary>
+    public string QrText => string.Join("\n", items.Select(i => i.Url));
+
+    /// <summary>The first URL; for a single file this is the whole QR text.</summary>
+    public string Url => items[0].Url;
+
+    public string FileName => items[0].FileName;
     public string Address { get; }
     public int Port { get; }
-    public long Length { get; }
+    public long Length => items[0].Length;
 
     /// <summary>False once the listener stopped; a dialog reopened for it must start a new sender.</summary>
     public bool IsRunning => Volatile.Read(ref disposed) == 0;
@@ -60,13 +83,36 @@ public sealed class LanSender : IDisposable
     /// <summary>Raised when a client with the right path asked for the file and the body starts (worker thread).</summary>
     public event Action? Started;
 
+    /// <summary>#264: the item-specific twin of <see cref="Downloaded"/>.</summary>
+    public event Action<LanItem>? ItemDownloaded;
+
+    /// <summary>#264: the item-specific twin of <see cref="Started"/>.</summary>
+    public event Action<LanItem>? ItemStarted;
+
     /// <summary>
     /// Starts serving <paramref name="filePath"/>. <paramref name="address"/> is the IPv4 address
     /// the 3DS uses to reach this PC; when null the first LAN address with a gateway is picked.
     /// </summary>
-    public static LanSender Start(string filePath, string? address = null)
+    public static LanSender Start(string filePath, string? address = null) =>
+        StartBatch([new LanFile(filePath, Path.GetFileName(filePath))], address);
+
+    /// <summary>
+    /// #264: serves every file from one listener and one token. <see cref="LanFile.RouteName"/> is
+    /// the last URL segment before escaping: a short index for a CIA batch, the file name for packs.
+    /// </summary>
+    public static LanSender StartBatch(IReadOnlyList<LanFile> files, string? address = null)
     {
-        if (!File.Exists(filePath)) throw new FileNotFoundException("File to send not found.", filePath);
+        if (files.Count == 0) throw new ArgumentException("At least one file is required.", nameof(files));
+        var routes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in files)
+        {
+            if (string.IsNullOrWhiteSpace(file.RouteName))
+                throw new ArgumentException("A route name is required.", nameof(files));
+            if (!routes.Add(file.RouteName))
+                throw new ArgumentException($"Duplicate route name: {file.RouteName}", nameof(files));
+            if (!File.Exists(file.Path)) throw new FileNotFoundException("File to send not found.", file.Path);
+        }
+
         address ??= FindLanAddress() ?? throw new InvalidOperationException("No LAN IPv4 address found.");
         if (!IPAddress.TryParse(address, out IPAddress? bound) || bound.AddressFamily != AddressFamily.InterNetwork)
             throw new ArgumentException($"Not an IPv4 address: {address}", nameof(address));
@@ -75,7 +121,8 @@ public sealed class LanSender : IDisposable
         try
         {
             string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
-            return new LanSender(Path.GetFullPath(filePath), listener, address, token);
+            return new LanSender(files.Select(f => new LanFile(Path.GetFullPath(f.Path), f.RouteName)).ToArray(),
+                listener, address, token);
         }
         catch
         {
@@ -187,7 +234,7 @@ public sealed class LanSender : IDisposable
             await WriteStatusAsync(stream, "405 Method Not Allowed", ct);
             return;
         }
-        if (!string.Equals(TargetPath(parts[1]), expectedPath, StringComparison.Ordinal))
+        if (!byRoute.TryGetValue(TargetPath(parts[1]), out LanItem? item))
         {
             await WriteStatusAsync(stream, "404 Not Found", ct);
             return;
@@ -196,7 +243,7 @@ public sealed class LanSender : IDisposable
         FileStream? input = null;
         try
         {
-            input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read,
+            input = new FileStream(item.Path, FileMode.Open, FileAccess.Read, FileShare.Read,
                 BufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -211,9 +258,11 @@ public sealed class LanSender : IDisposable
             if (method == "GET")
             {
                 Started?.Invoke();
+                ItemStarted?.Invoke(item);
                 await input.CopyToAsync(stream, BufferSize, ct);
                 await stream.FlushAsync(ct);
                 Downloaded?.Invoke();
+                ItemDownloaded?.Invoke(item);
                 return;
             }
             await stream.FlushAsync(ct);
