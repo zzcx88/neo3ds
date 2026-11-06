@@ -275,6 +275,44 @@ public sealed class LanSenderTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// #312: six launcher packs keep their encoded file names in the URL path, and all six bodies
+    /// arrive from the one batch listener.
+    /// </summary>
+    [Fact]
+    public async Task ServesSixLauncherPacksByTheirEncodedNamesInOneBatch()
+    {
+        string[] names =
+        [
+            "게임.neo3ds",
+            "game two.neo3ds",
+            "game three.neo3ds",
+            "game four.neo3ds",
+            "game five.neo3ds",
+            "game six.neo3ds",
+        ];
+        string[] paths = names.Select((name, i) => MakeFile(name, 512 + i)).ToArray();
+        var batch = SendBatch.Resolve(paths, []);
+        Assert.NotNull(batch);
+        using var sender = LanSender.StartBatch(
+            batch.Items.Select(i => new LanFile(i.FullPath, i.FileName)).ToArray(), "127.0.0.1");
+        var sized = batch.WithQr(sender.Items.Select(i => i.Url).ToArray());
+
+        Assert.True(sized.Allowed);
+        Assert.Equal(6, sized.AllowedCount);
+        Assert.Equal(6, sender.QrText.Split('\n').Length);
+
+        for (int i = 0; i < sender.Items.Count; i++)
+        {
+            byte[] expected = File.ReadAllBytes(sender.Items[i].Path);
+            byte[] actual = await Http.GetByteArrayAsync(sender.Items[i].Url, TestContext.Current.CancellationToken);
+            string route = new Uri(sender.Items[i].Url).AbsolutePath
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)[1];
+            Assert.Equal(expected, actual);
+            Assert.Equal(names[i], Uri.UnescapeDataString(route));
+        }
+    }
+
     [Fact]
     public void BatchRejectsADuplicateRouteName()
     {

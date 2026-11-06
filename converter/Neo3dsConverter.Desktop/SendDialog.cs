@@ -162,6 +162,7 @@ internal sealed class SendDialog : IDisposable
     internal int SelectedSession => targets.SelectedIndex;
     internal int SelectedCount => targets.SelectedItems?.Count ?? 0;
     internal int SessionCount => session.Count;
+    internal void SelectAddress(int index) => addressBox.SelectedIndex = index;
     internal SendCandidate? Target => target;
     internal SendBatch? Batch => batch;
     internal string[] BatchRows => batchList.ItemsSource?.Cast<string>().ToArray() ?? [];

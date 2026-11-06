@@ -124,6 +124,7 @@ public sealed class SendDialog : Form
     internal int SelectedTarget => targets.SelectedIndex;
     internal int SelectedCount => targets.SelectedItems.Count;
     internal int SessionCount => session.Count;
+    internal void SelectAddress(int index) => addressBox.SelectedIndex = index;
     internal SendCandidate? Target => target;
     internal SendBatch? Batch => batch;
     internal string[] BatchRows => batchList.Items.Cast<object>().Select(i => i.ToString() ?? "").ToArray();

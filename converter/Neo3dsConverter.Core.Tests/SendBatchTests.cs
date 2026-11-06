@@ -1,3 +1,4 @@
+using System.Text;
 using Neo3dsConverter;
 using QRCoder;
 using Xunit;
@@ -183,13 +184,23 @@ public sealed class SendBatchTests : IDisposable
         Assert.True(QrCode.BatchModules(text) <= QrCode.BatchMaxModules);
     }
 
-    /// <summary>#264: the 47/60/73-byte URL cases from the issue's capacity contract.</summary>
+    /// <summary>
+    /// #264/#312: the 47/60/73-byte URL cases, measured through the same QRCoder mixed-mode
+    /// encoder the product uses. Five 73-byte URLs are 369 bytes with newlines — above the
+    /// version-12-L byte-mode table (367 bytes) — but their real modules fit; six do not.
+    /// </summary>
     [Fact]
-    public void CapacityBoundariesFollowTheVersion12Limit()
+    public void CapacityBoundariesFollowTheActualQrEncoding()
     {
         Assert.Equal(6, QrCode.BatchAllowedCount(UrlsOfLength(47, 6)));
         Assert.Equal(6, QrCode.BatchAllowedCount(UrlsOfLength(60, 6)));
         Assert.Equal(5, QrCode.BatchAllowedCount(UrlsOfLength(73, 6)));
+
+        string five = string.Join("\n", UrlsOfLength(73, 5));
+        string six = string.Join("\n", UrlsOfLength(73, 6));
+        Assert.True(Encoding.UTF8.GetByteCount(five) > 367);
+        Assert.True(QrCode.BatchModules(five) <= QrCode.BatchMaxModules);
+        Assert.True(QrCode.BatchModules(six) > QrCode.BatchMaxModules);
     }
 
     static string[] UrlsOfLength(int length, int count)
