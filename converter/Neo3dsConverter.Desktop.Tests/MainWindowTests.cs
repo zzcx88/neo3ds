@@ -436,6 +436,47 @@ public class MainWindowTests
         }
     }
 
+    /// <summary>#255: the list highlight names the file the QR serves, and a refusal shows no scan steps.</summary>
+    [AvaloniaFact]
+    public void SendDialog_TracksTheFileTheQrServes()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-track-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string built = Path.Combine(tmp, "built.cia");
+            string pack = Path.Combine(tmp, "kof98.neo3ds");
+            string zip = Path.Combine(tmp, "kof98.zip");
+            File.WriteAllBytes(built, new byte[1024]);
+            File.WriteAllBytes(pack, new byte[1024]);
+            File.WriteAllBytes(zip, new byte[1024]);
+
+            using var dialog = new SendDialog([new SessionCia(built, Launcher: false)], addresses);
+            Assert.Equal(0, dialog.SelectedSession);
+            Assert.NotEmpty(dialog.StepsText);
+
+            dialog.Choose(pack);
+            Assert.Equal(-1, dialog.SelectedSession);
+            Assert.Contains(Lang.L("런처", "launcher"), dialog.StatusText);
+
+            dialog.Choose(zip);
+            Assert.Equal(-1, dialog.SelectedSession);
+            Assert.Equal("", dialog.StepsText);
+            Assert.Equal("", dialog.NotesText);
+
+            dialog.Choose(built);
+            Assert.Equal(0, dialog.SelectedSession);
+            Assert.NotEmpty(dialog.StepsText);
+            Assert.NotEmpty(dialog.NotesText);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     /// <summary>Pumps the dispatcher; the send dialog must not be closed by the test pump.</summary>
     static void PumpUntilVisible(Func<bool> done, int timeoutMs)
     {

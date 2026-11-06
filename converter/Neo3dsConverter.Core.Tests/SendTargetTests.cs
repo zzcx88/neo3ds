@@ -133,6 +133,20 @@ public sealed class SendTargetTests : IDisposable
         Assert.Equal("kof98.neo3ds", target.DisplayName);
     }
 
+    /// <summary>#257: a path with folders is judged on the file name only.</summary>
+    [Fact]
+    public void FileNameComesFromTheLastPathSegment()
+    {
+        string nested = Make(Path.Combine("games", "kof98.neo3ds"));
+
+        var target = SendCandidate.Resolve(nested, []);
+
+        Assert.NotNull(target);
+        Assert.True(target.Allowed);
+        Assert.Equal("kof98.neo3ds", target.FileName);
+        Assert.Equal("kof98.neo3ds", target.DisplayName);
+    }
+
     [Fact]
     public void LauncherExtensionIsCaseInsensitive()
     {
