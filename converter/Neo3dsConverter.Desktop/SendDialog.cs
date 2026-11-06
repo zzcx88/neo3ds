@@ -27,6 +27,7 @@ internal sealed class SendDialog : IDisposable
     readonly IReadOnlyList<SessionCia> session;
     SendCandidate? target;
     LanSender? sender;
+    bool syncing;
 
     public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
     {
@@ -112,7 +113,8 @@ internal sealed class SendDialog : IDisposable
         };
         targets.SelectionChanged += (_, _) =>
         {
-            if (targets.SelectedIndex >= 0 && targets.SelectedIndex < session.Count) Choose(session[targets.SelectedIndex].Path);
+            if (!syncing && targets.SelectedIndex >= 0 && targets.SelectedIndex < session.Count)
+                Choose(session[targets.SelectedIndex].Path);
         };
         window.Closed += (_, _) => Stop();
 
@@ -130,6 +132,9 @@ internal sealed class SendDialog : IDisposable
 
     internal string StatusText => status.Text ?? "";
     internal string InfoText => info.Text ?? "";
+    internal string StepsText => steps.Text ?? "";
+    internal string NotesText => notes.Text ?? "";
+    internal int SelectedSession => targets.SelectedIndex;
     internal SendCandidate? Target => target;
 
     public Task ShowAsync(Window owner) => window.ShowDialog(owner);
@@ -140,17 +145,35 @@ internal sealed class SendDialog : IDisposable
         var candidate = SendCandidate.Resolve(path, session);
         if (candidate == null) return;
         target = candidate;
+        SelectInList(candidate);
         SetGuide(candidate.Guide);
         if (!candidate.Allowed)
         {
             Stop();
             ClearQr();
+            steps.Text = notes.Text = "";
             info.Text = candidate.DisplayName;
             url.Text = "";
             status.Text = candidate.Reason;
             return;
         }
         Connect(addressBox.SelectedIndex < 0 ? 0 : addressBox.SelectedIndex);
+    }
+
+    /// <summary>Highlights the session row that matches; a file from elsewhere clears the highlight.</summary>
+    void SelectInList(SendCandidate candidate)
+    {
+        int index = -1;
+        for (int i = 0; i < session.Count; i++)
+            if (string.Equals(Path.GetFullPath(session[i].Path), candidate.FullPath, StringComparison.OrdinalIgnoreCase))
+            {
+                index = i;
+                break;
+            }
+        if (index == targets.SelectedIndex) return;
+        syncing = true;
+        try { targets.SelectedIndex = index; }
+        finally { syncing = false; }
     }
 
     async Task PickFile()

@@ -23,6 +23,7 @@ public sealed class SendDialog : Form
     readonly Label notes = new() { AutoSize = true, MaximumSize = new Size(420, 0), Margin = new Padding(0, 0, 0, 10) };
     SendCandidate? target;
     LanSender? sender;
+    bool syncing;
 
     public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
     {
@@ -85,7 +86,8 @@ public sealed class SendDialog : Form
         };
         targets.SelectedIndexChanged += (_, _) =>
         {
-            if (targets.SelectedIndex >= 0 && targets.SelectedIndex < session.Count) Choose(session[targets.SelectedIndex].Path);
+            if (!syncing && targets.SelectedIndex >= 0 && targets.SelectedIndex < session.Count)
+                Choose(session[targets.SelectedIndex].Path);
         };
         DragEnter += (_, e) => e.Effect = e.Data?.GetDataPresent(DataFormats.FileDrop) == true ? DragDropEffects.Copy : DragDropEffects.None;
         DragDrop += (_, e) => DroppedFile(e.Data);
@@ -102,17 +104,35 @@ public sealed class SendDialog : Form
         var candidate = SendCandidate.Resolve(path, session);
         if (candidate == null) return;
         target = candidate;
+        SelectInList(candidate);
         SetGuide(candidate.Guide);
         if (!candidate.Allowed)
         {
             Stop();
             ClearQr();
+            steps.Text = notes.Text = "";
             info.Text = candidate.DisplayName;
             url.Text = "";
             status.Text = candidate.Reason;
             return;
         }
         Connect(addressBox.SelectedIndex < 0 ? 0 : addressBox.SelectedIndex);
+    }
+
+    /// <summary>Highlights the session row that matches; a file from elsewhere clears the highlight.</summary>
+    void SelectInList(SendCandidate candidate)
+    {
+        int index = -1;
+        for (int i = 0; i < session.Count; i++)
+            if (string.Equals(Path.GetFullPath(session[i].Path), candidate.FullPath, StringComparison.OrdinalIgnoreCase))
+            {
+                index = i;
+                break;
+            }
+        if (index == targets.SelectedIndex) return;
+        syncing = true;
+        try { targets.SelectedIndex = index; }
+        finally { syncing = false; }
     }
 
     void SetGuide(SendGuide guide)
@@ -126,7 +146,7 @@ public sealed class SendDialog : Form
         using var pick = new OpenFileDialog
         {
             Title = L("보낼 파일", "File to send"),
-            Filter = L("CIA · 런처 파일 (*.cia;*.neo3ds)|*.cia;*.neo3ds", "CIA or launcher file (*.cia;*.neo3ds)|*.cia;*.neo3ds"),
+            Filter = L(".cia · .neo3ds 파일 (*.cia;*.neo3ds)|*.cia;*.neo3ds", ".cia · .neo3ds file (*.cia;*.neo3ds)|*.cia;*.neo3ds"),
             Multiselect = false,
         };
         if (pick.ShowDialog(this) == DialogResult.OK) Choose(pick.FileName);
