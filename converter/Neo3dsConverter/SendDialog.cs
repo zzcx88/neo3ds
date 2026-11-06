@@ -10,8 +10,8 @@ namespace Neo3dsConverter;
 /// </summary>
 public sealed class SendDialog : Form
 {
-    readonly IReadOnlyList<SessionCia> session;
     readonly IReadOnlyList<LanAddress> addresses;
+    readonly List<SessionCia> session;
     readonly ListBox targets;
     readonly PictureBox qr = new() { Size = new Size(240, 240), SizeMode = PictureBoxSizeMode.Zoom, Margin = new Padding(0, 0, 0, 8) };
     readonly Label status = new() { AutoSize = true, Margin = new Padding(0, 0, 0, 4), Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold) };
@@ -27,7 +27,7 @@ public sealed class SendDialog : Form
 
     public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
     {
-        this.session = session;
+        this.session = [.. session];
         this.addresses = addresses;
         targets = new ListBox
         {
@@ -98,6 +98,33 @@ public sealed class SendDialog : Form
         else status.Text = L("보낼 .cia 또는 .neo3ds 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia or .neo3ds file, or drop one here.");
     }
 
+    /// <summary>#306: a CIA built while the window is open joins the list; the served file keeps its QR.</summary>
+    internal void RefreshSession(IReadOnlyList<SessionCia> cias)
+    {
+        session.Clear();
+        session.AddRange(cias);
+        syncing = true;
+        try
+        {
+            targets.Items.Clear();
+            targets.Items.AddRange(session.Select(c => (object)(SendCandidate.Resolve(c.Path, session)?.DisplayName ?? Path.GetFileName(c.Path))).ToArray());
+            targets.Visible = session.Count > 0;
+            targets.Height = Math.Min(110, Math.Max(44, session.Count * 24));
+            targets.SelectedIndex = target == null ? -1 : IndexOf(target.FullPath);
+        }
+        finally
+        {
+            syncing = false;
+        }
+    }
+
+    int IndexOf(string fullPath)
+    {
+        for (int i = 0; i < session.Count; i++)
+            if (string.Equals(Path.GetFullPath(session[i].Path), fullPath, StringComparison.OrdinalIgnoreCase)) return i;
+        return -1;
+    }
+
     /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
     void Choose(string path)
     {
@@ -122,13 +149,7 @@ public sealed class SendDialog : Form
     /// <summary>Highlights the session row that matches; a file from elsewhere clears the highlight.</summary>
     void SelectInList(SendCandidate candidate)
     {
-        int index = -1;
-        for (int i = 0; i < session.Count; i++)
-            if (string.Equals(Path.GetFullPath(session[i].Path), candidate.FullPath, StringComparison.OrdinalIgnoreCase))
-            {
-                index = i;
-                break;
-            }
+        int index = IndexOf(candidate.FullPath);
         if (index == targets.SelectedIndex) return;
         syncing = true;
         try { targets.SelectedIndex = index; }

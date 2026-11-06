@@ -24,14 +24,14 @@ internal sealed class SendDialog : IDisposable
     readonly TextBox url = new() { IsReadOnly = true };
     readonly ComboBox addressBox;
     readonly IReadOnlyList<LanAddress> addresses;
-    readonly IReadOnlyList<SessionCia> session;
+    readonly List<SessionCia> session;
     SendCandidate? target;
     LanSender? sender;
     bool syncing;
 
     public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
     {
-        this.session = session;
+        this.session = [.. session];
         this.addresses = addresses;
         RenderOptions.SetBitmapInterpolationMode(qr, BitmapInterpolationMode.None);
 
@@ -135,9 +135,34 @@ internal sealed class SendDialog : IDisposable
     internal string StepsText => steps.Text ?? "";
     internal string NotesText => notes.Text ?? "";
     internal int SelectedSession => targets.SelectedIndex;
+    internal int SessionCount => session.Count;
     internal SendCandidate? Target => target;
 
-    public Task ShowAsync(Window owner) => window.ShowDialog(owner);
+    /// <summary>#306: a CIA built while the window is open joins the list; the served file keeps its QR.</summary>
+    internal void RefreshSession(IReadOnlyList<SessionCia> cias)
+    {
+        session.Clear();
+        session.AddRange(cias);
+        syncing = true;
+        try
+        {
+            targets.ItemsSource = session.Select(c => SendCandidate.Resolve(c.Path, session)?.DisplayName ?? Path.GetFileName(c.Path)).ToArray();
+            targets.IsVisible = session.Count > 0;
+            targets.Height = Math.Min(120, Math.Max(44, session.Count * 30));
+            targets.SelectedIndex = target == null ? -1 : IndexOf(target.FullPath);
+        }
+        finally
+        {
+            syncing = false;
+        }
+    }
+
+    int IndexOf(string fullPath)
+    {
+        for (int i = 0; i < session.Count; i++)
+            if (string.Equals(Path.GetFullPath(session[i].Path), fullPath, StringComparison.OrdinalIgnoreCase)) return i;
+        return -1;
+    }
 
     /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
     internal void Choose(string path)
@@ -163,13 +188,7 @@ internal sealed class SendDialog : IDisposable
     /// <summary>Highlights the session row that matches; a file from elsewhere clears the highlight.</summary>
     void SelectInList(SendCandidate candidate)
     {
-        int index = -1;
-        for (int i = 0; i < session.Count; i++)
-            if (string.Equals(Path.GetFullPath(session[i].Path), candidate.FullPath, StringComparison.OrdinalIgnoreCase))
-            {
-                index = i;
-                break;
-            }
+        int index = IndexOf(candidate.FullPath);
         if (index == targets.SelectedIndex) return;
         syncing = true;
         try { targets.SelectedIndex = index; }
