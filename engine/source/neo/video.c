@@ -757,7 +757,15 @@ static void add_run(int sprite, int first, int last, int y, int x, int zoom_x, i
  * Masters shifts the water and the hills a little every two lines. As MAME, which draws the lines
  * above at every IRQ2, a write shows from the line of the last IRQ2 before it. The emulator logs
  * the SCB2-SCB4 writes (sprite zoom, y, x) after the first IRQ2 in a frame; the snapshot keeps the
- * frame's end, and prepare_sprites draws the sprite chains the log touches segment by segment. */
+ * frame's end, and prepare_sprites draws the sprite chains the log touches segment by segment.
+ * Spin Master takes an IRQ2 at line 232 and starts rebuilding its sprites there, tiles (SCB1)
+ * included, so the lines above need the tiles from before it too, or they show old positions with
+ * new tiles. One copy is enough: the first tile change after an IRQ2 in the frame saves SCB1, the
+ * lines above it use that, and the lines from it use the frame's end. */
+#define SCB1_BYTES 0xe000
+static Uint8 scb1_before[2][SCB1_BYTES] __attribute__((aligned(32))); /* core 1 draws from the other */
+static int scb1_back, scb1_line, snap_scb1_line;
+static const Uint16 *snap_scb1;
 #define RASTER_WRITES 2048
 typedef struct {
 	Uint16 line, addr, old, val;
@@ -769,6 +777,13 @@ int raster_from;
 void video_raster_reset(void) {
 	raster_from = 0;
 	nraster = 0;
+	scb1_line = 0;
+}
+
+void video_raster_tiles(void) {
+	if (scb1_line || raster_from <= FIRST_LINE) return; /* saved, or no line above it */
+	memcpy(scb1_before[scb1_back], memory.vid.ram, SCB1_BYTES);
+	scb1_line = raster_from;
 }
 
 /* An IRQ2 before line (counted from VBlank, 0..264, as neo_run_frame's current_line) */
@@ -924,6 +939,12 @@ void video_snapshot(void) {
 	snap_irq2control = memory.vid.irq2control;
 	snap_nraster = nraster;
 	if (nraster <= RASTER_WRITES) memcpy(snap_raster, raster_log, nraster * sizeof *raster_log);
+	snap_scb1_line = scb1_line;
+	if (scb1_line) {
+		snap_scb1 = (const Uint16 *) scb1_before[scb1_back];
+		scb1_back ^= 1;
+		scb1_line = 0;
+	}
 	snap_fix = current_fix;
 	snap_fix_usage = fix_usage;
 }
@@ -1010,9 +1031,15 @@ void video_band(int band, Uint16 *buf, Uint16 *fb, int full) {
 	fill_band(buf, EDGE, 320 - EDGE, snap_pal[4095]); /* backdrop color */
 	for (i = 0; i < nruns; i++) {
 		const SpriteRun *r = &runs[i];
-		if (r->first < last && r->last > first)
-			draw_sprite_lines(cv, r->sprite, r->first > first ? r->first : first, r->last < last ? r->last : last,
-					r->y, r->x, r->zoom_x, r->zoom_y, r->size, vram);
+		if (r->first < last && r->last > first) {
+			const int a = r->first > first ? r->first : first, b = r->last < last ? r->last : last;
+			if (a < snap_scb1_line)
+				draw_sprite_lines(cv, r->sprite, a, b < snap_scb1_line ? b : snap_scb1_line,
+						r->y, r->x, r->zoom_x, r->zoom_y, r->size, snap_scb1);
+			if (b > snap_scb1_line)
+				draw_sprite_lines(cv, r->sprite, a > snap_scb1_line ? a : snap_scb1_line, b,
+						r->y, r->x, r->zoom_x, r->zoom_y, r->size, vram);
+		}
 	}
 	draw_fix_band(cv, first, last);
 	if (full) band_out_full(buf, fb, band);
