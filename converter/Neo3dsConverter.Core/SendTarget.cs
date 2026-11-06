@@ -80,6 +80,10 @@ public static class SendText
         : Lang.L("• 방화벽이 물으면 허용하세요. 차단하면 FBI 다운로드가 실패합니다.\n• VPN이 켜져 있으면 위 주소에서 실제 Wi-Fi/LAN 주소를 고르세요. VPN 주소로는 3DS가 접속하지 못합니다.\n• SD 카드 공간이 부족하면 FBI 설치가 실패합니다.",
                  "• Allow it when the firewall asks; blocking it makes the FBI download fail.\n• With a VPN on, pick the real Wi-Fi/LAN address above; the 3DS cannot reach a VPN address.\n• FBI fails to install if the SD card lacks free space.");
 
+    /// <summary>#299: the row label both windows show for a CIA this session built.</summary>
+    public static string SessionLabel(SessionCia cia) =>
+        (cia.Launcher ? Lang.L("런처", "Launcher") + " · " : "") + Path.GetFileName(cia.Path);
+
     public static string Status(SendState state, SendGuide guide) => state switch
     {
         SendState.Waiting => guide == SendGuide.Launcher

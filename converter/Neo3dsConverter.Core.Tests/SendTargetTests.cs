@@ -228,6 +228,16 @@ public sealed class SendTargetTests : IDisposable
         Assert.Equal(SendRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('가', 33) + ".neo3ds"));
     }
 
+    /// <summary>#299: both windows show the same label for a session CIA.</summary>
+    [Fact]
+    public void SessionLabelMarksTheLauncherAndKeepsTheFileName()
+    {
+        Assert.Equal("kof98.cia",
+            SendText.SessionLabel(new SessionCia(Path.Combine(root, "kof98.cia"), Launcher: false)));
+        Assert.Equal(Lang.L("런처", "Launcher") + " · neo3ds-launcher.cia",
+            SendText.SessionLabel(new SessionCia(Path.Combine(root, "neo3ds-launcher.cia"), Launcher: true)));
+    }
+
     /// <summary>#257: the raw URL path must fit the launcher's 256-byte buffer, not just the decoded name.</summary>
     [Fact]
     public void LauncherNameThatOverflowsTheUrlPathIsRefused()

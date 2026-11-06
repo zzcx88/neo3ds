@@ -37,7 +37,7 @@ internal sealed class SendDialog : IDisposable
 
         targets = new ListBox
         {
-            ItemsSource = session.Select(c => SendCandidate.Resolve(c.Path, session)?.DisplayName ?? Path.GetFileName(c.Path)).ToArray(),
+            ItemsSource = session.Select(SendText.SessionLabel).ToArray(),
             IsVisible = session.Count > 0,
             Height = Math.Min(120, Math.Max(44, session.Count * 30)),
         };

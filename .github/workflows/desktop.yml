@@ -51,6 +51,9 @@ jobs:
       - name: Build WinForms (Windows only)
         if: matrix.runtime == 'win-x64'
         run: dotnet build converter/Neo3dsConverter -c Release
+      - name: WinForms tests (Windows only)
+        if: matrix.runtime == 'win-x64'
+        run: dotnet test converter/Neo3dsConverter.WinForms.Tests -c Release
       - name: Headless tests
         run: dotnet test converter/Neo3dsConverter.Desktop.Tests -c Release
       - name: Core tests (tool execution on read-only media)

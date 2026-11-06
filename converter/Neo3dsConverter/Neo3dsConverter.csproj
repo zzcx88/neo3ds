@@ -30,4 +30,8 @@
     <ProjectReference Include="../Neo3dsConverter.Core/Neo3dsConverter.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Neo3dsConverter.WinForms.Tests" />
+  </ItemGroup>
+
 </Project>
