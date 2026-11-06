@@ -477,6 +477,60 @@ public class MainWindowTests
         }
     }
 
+    /// <summary>#306: one modeless send window; a build made while it is open joins its list without changing the QR.</summary>
+    [AvaloniaFact]
+    public void SendWindowIsReusedAndTakesBuildsWhileOpen()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-modeless-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string one = Path.Combine(tmp, "one.cia");
+            string two = Path.Combine(tmp, "two.cia");
+            File.WriteAllBytes(one, new byte[2048]);
+            File.WriteAllBytes(two, new byte[4096]);
+
+            var window = new MainWindow();
+            window.Show();
+            var dialog = window.OpenSendDialog(addresses);
+            Assert.Same(dialog, window.OpenSendDialog(addresses));
+            Assert.Equal(0, dialog.SessionCount);
+            Assert.Null(dialog.Sender);
+
+            window.AddBuilt(one, launcher: false);
+            Assert.Equal(1, dialog.SessionCount);
+            Assert.Null(dialog.Sender);
+
+            dialog.Choose(one);
+            string url = dialog.Url!;
+            Assert.NotNull(dialog.Sender);
+
+            window.AddBuilt(two, launcher: false);
+            Assert.Equal(2, dialog.SessionCount);
+            Assert.Equal(url, dialog.Url);
+            Assert.Equal(0, dialog.SelectedSession);
+
+            dialog.Window.Close();
+            PumpUntilVisible(() => dialog.Sender == null, 2000);
+            Assert.Null(dialog.Sender);
+
+            var again = window.OpenSendDialog(addresses);
+            Assert.NotSame(dialog, again);
+            Assert.Equal(2, again.SessionCount);
+            Assert.NotNull(again.Sender);
+
+            window.Close();
+            PumpUntilVisible(() => again.Sender == null, 2000);
+            Assert.Null(again.Sender);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     /// <summary>Pumps the dispatcher; the send dialog must not be closed by the test pump.</summary>
     static void PumpUntilVisible(Func<bool> done, int timeoutMs)
     {

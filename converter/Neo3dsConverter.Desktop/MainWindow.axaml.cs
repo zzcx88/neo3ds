@@ -14,6 +14,8 @@ public partial class MainWindow : Window
     readonly List<CiaJob> batch = new();
     /// <summary>#255: CIAs built in this session, in build order; the dialog lists them first.</summary>
     readonly List<SessionCia> built = new();
+    /// <summary>#306: the one send window, modeless so the converter stays usable while it serves.</summary>
+    SendDialog? sendDialog;
     bool busy;
 
 
@@ -38,6 +40,7 @@ public partial class MainWindow : Window
         TitleBox.TextChanged += (_, _) => RefreshPreview();
         DragDrop.SetAllowDrop(DropZone, true);
         DropZone.AddHandler(DragDrop.DropEvent, OnDrop);
+        Closed += (_, _) => sendDialog?.Window.Close();
         Log(Lang.L("MAME 네오지오 롬셋 zip을 끌어다 놓거나 [롬 zip 열기]를 누르세요.", "Drop MAME Neo Geo romset zips here or press [Open]."));
         Log(Lang.L("MAME 롬셋 zip만 지원합니다. MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.",
                    "Only MAME romset zips are supported. A romset whose names or chip CRCs differ from MAME's does not convert."));
@@ -429,6 +432,7 @@ public partial class MainWindow : Window
         built.RemoveAll(b => string.Equals(b.Path, path, StringComparison.OrdinalIgnoreCase));
         built.Add(new SessionCia(Path.GetFullPath(path), launcher));
         RefreshSendButton();
+        sendDialog?.RefreshSession(SendTargets());
     }
 
     /// <summary>#255: the dialog can be opened before anything is built, so it is only off while busy.</summary>
@@ -446,9 +450,28 @@ public partial class MainWindow : Window
             return;
         }
 
-        using var dialog = new SendDialog(SendTargets(), addresses);
-        await dialog.ShowAsync(this);
-        Log(Lang.L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
+        OpenSendDialog(addresses);
+    }
+
+    /// <summary>#306: one modeless window; pressing the button again brings it forward instead of stacking servers.</summary>
+    internal SendDialog OpenSendDialog(IReadOnlyList<LanAddress> addresses)
+    {
+        if (sendDialog != null)
+        {
+            sendDialog.Window.Activate();
+            return sendDialog;
+        }
+
+        var dialog = new SendDialog(SendTargets(), addresses);
+        sendDialog = dialog;
+        dialog.Window.Closed += (_, _) =>
+        {
+            sendDialog = null;
+            dialog.Dispose();
+            Log(Lang.L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
+        };
+        dialog.Window.Show(this);
+        return dialog;
     }
 
     async Task ShowDialog(string title, string message)

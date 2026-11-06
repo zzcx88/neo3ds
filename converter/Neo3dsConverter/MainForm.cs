@@ -29,6 +29,8 @@ public sealed class MainForm : Form
     CiaJob? job;
     /// <summary>#255: CIAs built this session; the dialog lists them first.</summary>
     readonly List<SessionCia> built = new();
+    /// <summary>#306: the one send window, modeless so the converter stays usable while it serves.</summary>
+    SendDialog? sendDialog;
     /// <summary>The zips picked together (two or more); empty when one game is picked.</summary>
     readonly List<CiaJob> batch = new();
     Control? iconButtons, bannerButtons;
@@ -119,6 +121,7 @@ public sealed class MainForm : Form
 
         DragEnter += (_, e) => e.Effect = DroppedZips(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
         DragDrop += (_, e) => LoadRoms(DroppedZips(e));
+        FormClosing += (_, _) => sendDialog?.Close();
 
         Log(L("MAME 네오지오 롬셋 zip(예: kof98.zip)을 이 창에 끌어다 놓거나 [찾아보기]를 누르세요.", "Drop a MAME Neo Geo romset zip (e.g. kof98.zip) on this window or press [Browse...]."));
         Log(L("MAME 롬셋 zip만 지원합니다. MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.", "Only MAME romset zips are supported. A romset whose names or chip CRCs differ from MAME's does not convert."));
@@ -304,6 +307,7 @@ public sealed class MainForm : Form
         built.RemoveAll(b => string.Equals(b.Path, path, StringComparison.OrdinalIgnoreCase));
         built.Add(new SessionCia(Path.GetFullPath(path), launcher));
         RefreshSend();
+        sendDialog?.RefreshSession(SendTargets());
     }
 
     /// <summary>#255: the dialog opens before anything is built, so the button is only off while busy.</summary>
@@ -431,6 +435,11 @@ public sealed class MainForm : Form
     /// <summary>#255: one window for the session's CIAs and a dropped or picked file.</summary>
     void SendTo3ds()
     {
+        if (sendDialog is { IsDisposed: false })
+        {
+            sendDialog.Activate();
+            return;
+        }
         var addresses = LanSender.LanAddresses();
         if (addresses.Count == 0)
         {
@@ -439,9 +448,14 @@ public sealed class MainForm : Form
                 L("3DS로 보내기", "Send to 3DS"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
-        using var dlg = new SendDialog(SendTargets(), addresses);
-        dlg.ShowDialog(this);
-        Log(L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
+        var dlg = new SendDialog(SendTargets(), addresses);
+        sendDialog = dlg;
+        dlg.FormClosed += (_, _) =>
+        {
+            sendDialog = null;
+            Log(L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
+        };
+        dlg.Show(this);
     }
 
     void Log(string msg) => logBox.AppendText(msg + Environment.NewLine);
