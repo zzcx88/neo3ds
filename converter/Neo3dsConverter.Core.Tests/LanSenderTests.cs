@@ -154,6 +154,141 @@ public sealed class LanSenderTests : IDisposable
     }
 
     [Fact]
+    public async Task ServesEveryFileInOneBatchAtItsOwnUrl()
+    {
+        string one = MakeFile("kof98.cia", 2048);
+        string two = MakeFile("nam1975.cia", 4096);
+        byte[] first = File.ReadAllBytes(one);
+        byte[] second = File.ReadAllBytes(two);
+        using var sender = LanSender.StartBatch(
+        [
+            new LanFile(one, "0"),
+            new LanFile(two, "1"),
+        ], "127.0.0.1");
+
+        byte[] actualFirst = await Http.GetByteArrayAsync(sender.Items[0].Url, TestContext.Current.CancellationToken);
+        byte[] actualSecond = await Http.GetByteArrayAsync(sender.Items[1].Url, TestContext.Current.CancellationToken);
+
+        Assert.Equal(first, actualFirst);
+        Assert.Equal(second, actualSecond);
+        Assert.Equal(2, sender.Items.Count);
+        Assert.Equal("0", new Uri(sender.Items[0].Url).AbsolutePath.Split('/')[2]);
+        Assert.Equal("1", new Uri(sender.Items[1].Url).AbsolutePath.Split('/')[2]);
+    }
+
+    [Fact]
+    public async Task BatchUrlsShareOneOriginAndToken()
+    {
+        string one = MakeFile("kof98.cia", 64);
+        string two = MakeFile("nam1975.cia", 64);
+        using var sender = LanSender.StartBatch(
+        [
+            new LanFile(one, "kof98.cia"),
+            new LanFile(two, "nam1975.cia"),
+        ], "127.0.0.1");
+
+        var first = new Uri(sender.Items[0].Url);
+        var second = new Uri(sender.Items[1].Url);
+        string[] firstParts = first.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        string[] secondParts = second.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.Equal(first.Host, second.Host);
+        Assert.Equal(first.Port, second.Port);
+        Assert.Equal(firstParts[0], secondParts[0]);
+        Assert.Equal(16, firstParts[0].Length);
+        Assert.Equal("kof98.cia", Uri.UnescapeDataString(firstParts[1]));
+        Assert.Equal("nam1975.cia", Uri.UnescapeDataString(secondParts[1]));
+        Assert.Equal(sender.Items[0].Url + "\n" + sender.Items[1].Url, sender.QrText);
+    }
+
+    [Fact]
+    public async Task BatchRejectsAPathThatIsNotInTheMap()
+    {
+        string one = MakeFile("kof98.cia", 64);
+        string two = MakeFile("nam1975.cia", 64);
+        using var sender = LanSender.StartBatch(
+        [
+            new LanFile(one, "0"),
+            new LanFile(two, "1"),
+        ], "127.0.0.1");
+        var wrong = new UriBuilder(sender.Items[0].Url) { Path = "/" + new Uri(sender.Items[0].Url).AbsolutePath.Split('/')[1] + "/2" }.Uri;
+
+        using var response = await Http.GetAsync(wrong, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BatchRaisesItemDownloadedWithThatFile()
+    {
+        string one = MakeFile("kof98.cia", 64);
+        string two = MakeFile("nam1975.cia", 128);
+        using var sender = LanSender.StartBatch(
+        [
+            new LanFile(one, "0"),
+            new LanFile(two, "1"),
+        ], "127.0.0.1");
+        var done = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        sender.ItemDownloaded += item => done.TrySetResult(item.FileName);
+
+        await Http.GetByteArrayAsync(sender.Items[1].Url, TestContext.Current.CancellationToken);
+
+        Assert.Equal("nam1975.cia", await done.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task BatchAnswersHeadForEveryItem()
+    {
+        string one = MakeFile("kof98.cia", 2048);
+        string two = MakeFile("nam1975.cia", 4096);
+        using var sender = LanSender.StartBatch(
+        [
+            new LanFile(one, "0"),
+            new LanFile(two, "1"),
+        ], "127.0.0.1");
+
+        foreach (var item in sender.Items)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Head, item.Url);
+            using var response = await Http.SendAsync(request, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(item.Length, response.Content.Headers.ContentLength);
+            Assert.Empty(await response.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
+        }
+    }
+
+    [Fact]
+    public async Task ServesAllSixFilesInOneBatch()
+    {
+        string[] paths = Enumerable.Range(0, 6)
+            .Select(i => MakeFile($"game{i}.cia", 512 + i))
+            .ToArray();
+        using var sender = LanSender.StartBatch(
+            paths.Select((path, i) => new LanFile(path, i.ToString())).ToArray(), "127.0.0.1");
+
+        Assert.Equal(6, sender.Items.Count);
+        foreach (var item in sender.Items)
+        {
+            byte[] expected = File.ReadAllBytes(item.Path);
+            byte[] actual = await Http.GetByteArrayAsync(item.Url, TestContext.Current.CancellationToken);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    public void BatchRejectsADuplicateRouteName()
+    {
+        string one = MakeFile("kof98.cia", 64);
+        string two = MakeFile("nam1975.cia", 64);
+
+        Assert.Throws<ArgumentException>(() => LanSender.StartBatch(
+        [
+            new LanFile(one, "0"),
+            new LanFile(two, "0"),
+        ], "127.0.0.1"));
+    }
+
+    [Fact]
     public void QrPngIsOnePixelPerModule()
     {
         const string url = "http://192.168.0.9:1234/0123456789abcdef/kof98.cia";

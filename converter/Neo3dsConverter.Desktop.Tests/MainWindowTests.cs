@@ -531,6 +531,214 @@ public class MainWindowTests
         }
     }
 
+    /// <summary>#264: two CIAs are served from one token and one QR, with a row per file.</summary>
+    [AvaloniaFact]
+    public void SendDialog_ServesABatchOfCiasAndMarksEachFile()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-batch-live-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string one = Path.Combine(tmp, "kof98.cia");
+            string two = Path.Combine(tmp, "nam1975.cia");
+            byte[] first = new byte[2048];
+            byte[] second = new byte[4096];
+            new Random(11).NextBytes(first);
+            new Random(12).NextBytes(second);
+            File.WriteAllBytes(one, first);
+            File.WriteAllBytes(two, second);
+
+            using var dialog = new SendDialog([], addresses);
+            dialog.ChooseMany([one, two]);
+
+            Assert.NotNull(dialog.Sender);
+            Assert.Equal(SendKind.Cia, dialog.Batch!.Kind);
+            Assert.True(dialog.Batch.Allowed);
+            Assert.Equal(2, dialog.BatchRows.Length);
+            Assert.Contains("\n", dialog.QrText);
+            Assert.Contains("2", dialog.InfoText);
+            Assert.Null(dialog.Target);
+
+            byte[]? gotFirst = null;
+            byte[]? gotSecond = null;
+            Exception? error = null;
+            var fetch = Task.Run(async () =>
+            {
+                try
+                {
+                    using var http = new HttpClient();
+                    gotFirst = await http.GetByteArrayAsync(dialog.Sender!.Items[0].Url);
+                    gotSecond = await http.GetByteArrayAsync(dialog.Sender!.Items[1].Url);
+                }
+                catch (Exception ex) { error = ex; }
+            });
+            PumpUntilVisible(() => fetch.IsCompleted, 10000);
+
+            Assert.Null(error);
+            Assert.Equal(first, gotFirst);
+            Assert.Equal(second, gotSecond);
+            PumpUntilVisible(() => dialog.StatusText.Contains(Lang.L("전송 완료", "Sent")), 3000);
+            Assert.Contains(Lang.L("전송 완료", "Sent"), dialog.StatusText);
+            Assert.All(dialog.BatchRows, row => Assert.Contains(Lang.L("보냄", "Sent"), row));
+
+            dialog.Dispose();
+            Assert.Null(dialog.Sender);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#264: multi-selecting two session CIAs makes one batch and stops the first server.</summary>
+    [AvaloniaFact]
+    public void SendDialog_BatchesTheSessionCiasSelectedInTheList()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-batch-session-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string one = Path.Combine(tmp, "kof98.cia");
+            string two = Path.Combine(tmp, "nam1975.cia");
+            File.WriteAllBytes(one, new byte[2048]);
+            File.WriteAllBytes(two, new byte[4096]);
+
+            using var dialog = new SendDialog([new SessionCia(one, false), new SessionCia(two, false)], addresses);
+            dialog.Window.Show();
+            string first = dialog.Url!;
+            var list = dialog.Window.GetVisualDescendants().OfType<ListBox>()
+                .Single(l => l.SelectionMode == SelectionMode.Multiple);
+            var rows = list.ItemsSource!.Cast<SendSessionRow>().ToArray();
+
+            list.SelectedItems = new List<object> { rows[0], rows[1] };
+
+            Assert.Equal(2, dialog.SelectedCount);
+            Assert.NotNull(dialog.Sender);
+            Assert.Equal(SendKind.Cia, dialog.Batch!.Kind);
+            Assert.Equal(2, dialog.BatchRows.Length);
+            Assert.NotEqual(first, dialog.Url);
+            dialog.Window.Close();
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#264: a mixed selection and a duplicate base name start no server.</summary>
+    [AvaloniaFact]
+    public void SendDialog_RefusesMixedAndDuplicateBatchesBeforeStartingAServer()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-batch-refuse-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string cia = Path.Combine(tmp, "kof98.cia");
+            string pack = Path.Combine(tmp, "nam1975.neo3ds");
+            string other = Path.Combine(tmp, "other");
+            Directory.CreateDirectory(other);
+            string duplicate = Path.Combine(other, "KOF98.cia");
+            File.WriteAllBytes(cia, new byte[1024]);
+            File.WriteAllBytes(pack, new byte[1024]);
+            File.WriteAllBytes(duplicate, new byte[1024]);
+
+            using var dialog = new SendDialog([], addresses);
+
+            dialog.ChooseMany([cia, pack]);
+            Assert.Null(dialog.Sender);
+            Assert.Equal(SendRefusal.MixedKinds, dialog.Batch!.Refusal);
+            Assert.Contains(Lang.L("두 번", "two batches"), dialog.StatusText);
+
+            dialog.ChooseMany([cia, duplicate]);
+            Assert.Null(dialog.Sender);
+            Assert.Equal(SendRefusal.DuplicateName, dialog.Batch!.Refusal);
+            Assert.Contains("kof98.cia", dialog.StatusText, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#264: six long pack names still fit the file rules but not one version-12 QR.</summary>
+    [AvaloniaFact]
+    public void SendDialog_ReportsTheAllowedCountWhenTheBatchQrWouldBeTooLarge()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-batch-qr-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string[] packs = Enumerable.Range(0, 6)
+                .Select(i =>
+                {
+                    string path = Path.Combine(tmp, new string((char)('a' + i), 96) + ".neo3ds");
+                    File.WriteAllBytes(path, new byte[1024]);
+                    return path;
+                }).ToArray();
+
+            using var dialog = new SendDialog([], addresses);
+            dialog.ChooseMany(packs);
+
+            Assert.Null(dialog.Sender);
+            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
+            Assert.InRange(dialog.Batch.AllowedCount, 1, 5);
+            Assert.Contains(dialog.Batch.AllowedCount.ToString(), dialog.StatusText);
+            Assert.Equal(6, dialog.BatchRows.Length);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#264: a new batch stops the previous server and its URLs.</summary>
+    [AvaloniaFact]
+    public void SendDialog_StopsThePreviousBatchServerWhenTheSelectionChanges()
+    {
+        var addresses = LanSender.LanAddresses();
+        if (addresses.Count == 0) Assert.Skip("no LAN IPv4 interface on this machine");
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-batch-switch-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string one = Path.Combine(tmp, "one.cia");
+            string two = Path.Combine(tmp, "two.cia");
+            string three = Path.Combine(tmp, "three.cia");
+            string four = Path.Combine(tmp, "four.cia");
+            foreach (string path in new[] { one, two, three, four })
+                File.WriteAllBytes(path, new byte[2048]);
+
+            using var dialog = new SendDialog([], addresses);
+            dialog.ChooseMany([one, two]);
+            string[] first = dialog.Sender!.Items.Select(i => i.Url).ToArray();
+
+            dialog.ChooseMany([three, four]);
+            string[] second = dialog.Sender!.Items.Select(i => i.Url).ToArray();
+
+            Assert.NotEqual(first[0], second[0]);
+            bool failed = false;
+            var after = Task.Run(async () =>
+            {
+                try { await new HttpClient().GetByteArrayAsync(first[0]); }
+                catch { failed = true; }
+            });
+            PumpUntilVisible(() => after.IsCompleted, 5000);
+            Assert.True(failed, "the previous batch server must stop when the selection changes");
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     /// <summary>#300: a failed QR must stop the server it just started, not leave the port listening.</summary>
     [AvaloniaFact]
     public void SendDialog_StopsTheServerWhenQrGenerationFails()
