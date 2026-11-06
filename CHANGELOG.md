@@ -9,6 +9,13 @@ assets: [GitHub releases](https://github.com/zzcx88/neo3ds/releases).
 
 Korean text for every release: [site/ko/changelog.html](site/ko/changelog.html).
 
+## [1.5.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.5.0) - 2026-11-06
+
+- **Get games over Wi-Fi in the launcher** — Press Y in the launcher and scan the QR code from the offline converter to get .neo3ds files without taking out the SD card. One QR holds up to six files; with two or more, the launcher shows their names, sizes and the free space first. The web converter cannot send, but the offline converter can send files made on the web. ([#254](https://github.com/zzcx88/neo3ds/issues/254) [#261](https://github.com/zzcx88/neo3ds/issues/261))
+- **Send to 3DS window in the converter** — The offline converter sends CIAs to FBI and .neo3ds files to the launcher by QR code. Pick files from this session or drop others, and send 2 to 6 of one kind in one QR code. The window can stay open while you keep converting. ([#235](https://github.com/zzcx88/neo3ds/issues/235) [#255](https://github.com/zzcx88/neo3ds/issues/255) [#257](https://github.com/zzcx88/neo3ds/issues/257) [#264](https://github.com/zzcx88/neo3ds/issues/264) [#306](https://github.com/zzcx88/neo3ds/issues/306))
+- **Game pictures in the launcher list** — The top screen shows a saved picture of the game under the cursor. ([#224](https://github.com/zzcx88/neo3ds/issues/224))
+- **Spin Master graphics glitches fixed** — Fixed misplaced graphics while scrolling and white rectangles when hit. In a game that rewrites its sprites near the end of a frame, the lines above were drawn with new tiles at the old positions. Installing the new launcher is enough. ([#318](https://github.com/zzcx88/neo3ds/issues/318))
+
 ## [1.4.1](https://github.com/zzcx88/neo3ds/releases/tag/v1.4.1) - 2026-10-31
 
 - **MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen** — Started on the arcade (MVS) BIOS, these games seemed to freeze on the green check screen for about a minute. In games where the BIOS runs some game code before the check, 1.4.0's fast start ended too early and each frame of the check screen took close to a second to draw. They now start within 2-3 s (measured in Azahar). Installing the new launcher is enough. ([#215](https://github.com/zzcx88/neo3ds/issues/215))

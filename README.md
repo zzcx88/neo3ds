@@ -17,7 +17,7 @@
 - **One launcher, update once.** Install the launcher app, drop `.neo3ds` game files on the SD card, and update by reinstalling only the launcher. Or build one CIA per game with its own HOME menu icon.
 - **Made for a handheld.** Quick save, per-game key config with button combos, turbo, full screen, a bottom-screen backlight switch and the arcade BIOS service menu, all from touch buttons on the bottom screen.
 
-**New in 1.4**: games on the arcade (MVS) BIOS start in a few seconds, skipping through the board check. 1.3: launcher favorites, mid-screen raster effects (Neo Turf Masters, Neo Drift Out), windowed converters for Linux and macOS. [Changelog](https://zzcx88.github.io/neo3ds/changelog.html)
+**New in 1.5**: send games over Wi-Fi. Press **Y** in the launcher and scan the QR code from **Send to 3DS** in the offline converter; one QR holds up to six files. The converter sends CIAs to FBI the same way, and the launcher list shows a picture of the game. 1.4: games on the arcade (MVS) BIOS start in a few seconds. [Changelog](https://zzcx88.github.io/neo3ds/changelog.html)
 
 ## Quick start
 

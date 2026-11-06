@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Changelog — every neo3ds release | neo3ds</title>
-<meta name="description" content="Every neo3ds release from 1.0.0 to 1.4.1, newest first: engine, launcher and converter features and fixes.">
+<meta name="description" content="Every neo3ds release from 1.0.0 to 1.5.0, newest first: engine, launcher and converter features and fixes.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/changelog.html">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="neo3ds changelog | neo3ds">
-<meta property="og:description" content="Every neo3ds release from 1.0.0 to 1.4.1, newest first: engine, launcher and converter features and fixes.">
+<meta property="og:description" content="Every neo3ds release from 1.0.0 to 1.5.0, newest first: engine, launcher and converter features and fixes.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/changelog.html">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:locale:alternate" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="neo3ds changelog | neo3ds">
-<meta name="twitter:description" content="Every release from 1.0.0 to 1.4.1, newest first.">
+<meta name="twitter:description" content="Every release from 1.0.0 to 1.5.0, newest first.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <script type="application/ld+json">
 {
@@ -67,10 +67,23 @@
   <div class="changelog-wrap">
     <h1>Changelog</h1>
     <ol class="rel-list">
-      <li class="rel is-latest" id="v1-4-1">
+      <li class="rel is-latest" id="v1-5-0">
+        <div class="rel-head">
+          <span class="rel-v">v1.5.0</span>
+          <span class="rel-latest">Latest</span>
+          <time class="rel-date" datetime="2026-11-06">2026-11-06</time>
+        </div>
+        <ul class="rel-items">
+            <li><b>Get games over Wi-Fi in the launcher</b>: Press Y in the launcher and scan the QR code from the offline converter to get .neo3ds files without taking out the SD card. One QR holds up to six files; with two or more, the launcher shows their names, sizes and the free space first. The web converter cannot send, but the offline converter can send files made on the web. (<a href="https://github.com/zzcx88/neo3ds/issues/254">#254</a> <a href="https://github.com/zzcx88/neo3ds/issues/261">#261</a>)</li>
+            <li><b>Send to 3DS window in the converter</b>: The offline converter sends CIAs to FBI and .neo3ds files to the launcher by QR code. Pick files from this session or drop others, and send 2 to 6 of one kind in one QR code. The window can stay open while you keep converting. (<a href="https://github.com/zzcx88/neo3ds/issues/235">#235</a> <a href="https://github.com/zzcx88/neo3ds/issues/255">#255</a> <a href="https://github.com/zzcx88/neo3ds/issues/257">#257</a> <a href="https://github.com/zzcx88/neo3ds/issues/264">#264</a> <a href="https://github.com/zzcx88/neo3ds/issues/306">#306</a>)</li>
+            <li><b>Game pictures in the launcher list</b>: The top screen shows a saved picture of the game under the cursor. (<a href="https://github.com/zzcx88/neo3ds/issues/224">#224</a>)</li>
+            <li><b>Spin Master graphics glitches fixed</b>: Fixed misplaced graphics while scrolling and white rectangles when hit. In a game that rewrites its sprites near the end of a frame, the lines above were drawn with new tiles at the old positions. Installing the new launcher is enough. (<a href="https://github.com/zzcx88/neo3ds/issues/318">#318</a>)</li>
+        </ul>
+        <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.5.0">GitHub release</a>
+      </li>
+      <li class="rel" id="v1-4-1">
         <div class="rel-head">
           <span class="rel-v">v1.4.1</span>
-          <span class="rel-latest">Latest</span>
           <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
         </div>
         <ul class="rel-items">

@@ -1,5 +1,51 @@
 [
   {
+    "version": "1.5.0",
+    "date": "2026-11-06",
+    "items": [
+      {
+        "t": {
+          "ko": "런처에서 Wi-Fi로 게임 받기",
+          "en": "Get games over Wi-Fi in the launcher"
+        },
+        "d": {
+          "ko": "런처에서 Y를 누르고 오프라인 변환기의 QR을 스캔하면 SD 카드를 빼지 않고 .neo3ds 파일을 받습니다. QR 하나에 최대 6개이고, 2개 이상이면 받기 전에 이름과 크기, 여유 공간을 보여 줍니다. 웹 변환기에는 이 기능이 없지만, 웹에서 만든 파일도 오프라인 변환기로 보낼 수 있습니다. (#254 #261)",
+          "en": "Press Y in the launcher and scan the QR code from the offline converter to get .neo3ds files without taking out the SD card. One QR holds up to six files; with two or more, the launcher shows their names, sizes and the free space first. The web converter cannot send, but the offline converter can send files made on the web. (#254 #261)"
+        }
+      },
+      {
+        "t": {
+          "ko": "변환기의 3DS 전송 창",
+          "en": "Send to 3DS window in the converter"
+        },
+        "d": {
+          "ko": "오프라인 변환기에서 CIA는 FBI로, .neo3ds는 런처로 QR 전송합니다. 이번에 만든 파일을 고르거나 다른 파일을 끌어다 놓을 수 있고, 같은 종류 2~6개를 QR 하나로 보냅니다. 창을 열어 둔 채 변환을 계속할 수 있습니다. (#235 #255 #257 #264 #306)",
+          "en": "The offline converter sends CIAs to FBI and .neo3ds files to the launcher by QR code. Pick files from this session or drop others, and send 2 to 6 of one kind in one QR code. The window can stay open while you keep converting. (#235 #255 #257 #264 #306)"
+        }
+      },
+      {
+        "t": {
+          "ko": "런처 목록에 게임 화면 표시",
+          "en": "Game pictures in the launcher list"
+        },
+        "d": {
+          "ko": "게임을 고르면 위 화면에 그 게임의 저장된 화면을 보여 줍니다. (#224)",
+          "en": "The top screen shows a saved picture of the game under the cursor. (#224)"
+        }
+      },
+      {
+        "t": {
+          "ko": "Spin Master 그래픽 깨짐 수정",
+          "en": "Spin Master graphics glitches fixed"
+        },
+        "d": {
+          "ko": "스크롤 때 그래픽이 어긋나고, 피격 때 흰 사각형이 보이던 문제를 고쳤습니다. 프레임 끝부분에 스프라이트를 고치는 게임의 위쪽 줄이 옛 위치에 새 그림으로 그려졌습니다. 런처만 새로 설치하면 됩니다. (#318)",
+          "en": "Fixed misplaced graphics while scrolling and white rectangles when hit. In a game that rewrites its sprites near the end of a frame, the lines above were drawn with new tiles at the old positions. Installing the new launcher is enough. (#318)"
+        }
+      }
+    ]
+  },
+  {
     "version": "1.4.1",
     "date": "2026-10-31",
     "items": [
