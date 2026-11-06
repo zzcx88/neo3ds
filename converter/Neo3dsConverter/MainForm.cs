@@ -419,7 +419,7 @@ public sealed class MainForm : Form
             Log(L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
             if (!pack) Log(L("[3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.", "Use [Send to 3DS], or copy them to the SD card and install them with FBI."));
             string msg = (pack ? L($"런처용 파일 {done.Count}개를 만들었습니다. SD카드의 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files are ready. Copy them to /neo3ds/games/ on the SD card.")
-                : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]에서 보낼 CIA를 고르세요.", $"{done.Count} CIAs are ready. Pick one in [Send to 3DS].")) + $"\n\n{outBox.Text}";
+                : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]에서 보낼 CIA를 고르세요.", $"{done.Count} CIAs are ready. Pick the CIAs to send in [Send to 3DS].")) + $"\n\n{outBox.Text}";
             if (failed.Count > 0) msg += "\n\n" + L("실패:", "Failed:") + "\n" + string.Join("\n", failed);
             MessageBox.Show(this, msg, L("완료", "Done"), MessageBoxButtons.OK, failed.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
         }
