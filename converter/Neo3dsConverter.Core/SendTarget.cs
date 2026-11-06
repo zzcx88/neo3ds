@@ -11,7 +11,7 @@ public enum SendKind { Cia, Launcher }
 public enum SendGuide { Fbi, Launcher }
 
 /// <summary>Why a chosen path cannot be sent; <see cref="None"/> means it can.</summary>
-public enum SendRefusal { None, MissingFile, NotAFile, UnsupportedExtension, NameTooLong, NameUnsafe }
+public enum SendRefusal { None, MissingFile, NotAFile, UnsupportedExtension, NameTooLong, NameUnsafe, UrlTooLong }
 
 /// <summary>The three states the dialog shows: waiting for the 3DS, sending, and sent by the PC.</summary>
 public enum SendState { Waiting, Sending, Sent }
@@ -39,6 +39,8 @@ public sealed record SendCandidate(string FullPath, string FileName, SendKind? K
         if (beforeSuffix is ' ' or '.') return SendRefusal.NameUnsafe;
         foreach (char c in fileName)
             if (c < 32 || c == 127 || "/\\:*?\"<>|".Contains(c)) return SendRefusal.NameUnsafe;
+        // The launcher keeps the raw URL path in 256 bytes: "/" + 16 hex token + "/" is 18 of them.
+        if (Uri.EscapeDataString(fileName).Length > 255 - 18) return SendRefusal.UrlTooLong;
         return SendRefusal.None;
     }
 
@@ -100,6 +102,8 @@ public static class SendText
         SendRefusal.NotAFile => Lang.L("폴더는 보낼 수 없습니다. 파일을 고르세요.", "A folder cannot be sent. Pick a file."),
         SendRefusal.UnsupportedExtension => Lang.L(".cia 또는 .neo3ds 파일만 보낼 수 있습니다.", "Only .cia or .neo3ds files can be sent."),
         SendRefusal.NameTooLong => Lang.L("파일 이름이 너무 깁니다 (103바이트 이하).", "The file name is too long (103 bytes or less)."),
+        SendRefusal.UrlTooLong => Lang.L("파일 이름이 너무 길어 QR 주소가 3DS 한도를 넘습니다. 이름을 줄이세요.",
+                                         "The file name is too long for the QR address the 3DS accepts. Shorten it."),
         SendRefusal.NameUnsafe => Lang.L("파일 이름에 3DS가 쓸 수 없는 문자가 있거나 끝이 점·공백입니다.",
                                          "The file name has characters the 3DS cannot store, or ends with a dot or space."),
         _ => "",

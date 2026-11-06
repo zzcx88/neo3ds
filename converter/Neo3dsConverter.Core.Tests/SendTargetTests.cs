@@ -196,4 +196,16 @@ public sealed class SendTargetTests : IDisposable
         Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem("게임.neo3ds"));
         Assert.Equal(SendRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('가', 33) + ".neo3ds"));
     }
+
+    /// <summary>#257: the raw URL path must fit the launcher's 256-byte buffer, not just the decoded name.</summary>
+    [Fact]
+    public void LauncherNameThatOverflowsTheUrlPathIsRefused()
+    {
+        string fits = new string('가', 25) + ".neo3ds";
+        string overflows = new string('가', 26) + ".neo3ds";
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(overflows) <= 103);
+
+        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem(fits));
+        Assert.Equal(SendRefusal.UrlTooLong, SendCandidate.LauncherNameProblem(overflows));
+    }
 }
