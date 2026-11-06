@@ -49,7 +49,7 @@ public sealed class SendDialog : Form
         var pick = new Button { Text = L("파일 선택", "Pick file"), AutoSize = true, Padding = new Padding(12, 2, 12, 2) };
         var dropHint = new Label
         {
-            Text = L("여기에 .cia 파일을 끌어다 놓아도 됩니다.", "You can also drop a .cia file here."),
+            Text = L("여기에 .cia 또는 .neo3ds 파일을 끌어다 놓아도 됩니다.", "You can also drop a .cia or .neo3ds file here."),
             AutoSize = true,
             MaximumSize = new Size(300, 0),
             Margin = new Padding(10, 6, 0, 0),
@@ -93,7 +93,7 @@ public sealed class SendDialog : Form
 
         SetGuide(SendGuide.Fbi);
         if (session.Count > 0) targets.SelectedIndex = 0;
-        else status.Text = L("보낼 .cia 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia file or drop one here.");
+        else status.Text = L("보낼 .cia 또는 .neo3ds 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia or .neo3ds file, or drop one here.");
     }
 
     /// <summary>The running server, or null after a failed start, a refused file, or after the window closed.</summary>
@@ -133,8 +133,8 @@ public sealed class SendDialog : Form
     {
         using var pick = new OpenFileDialog
         {
-            Title = L("보낼 .cia 파일", "CIA to send"),
-            Filter = L("CIA (*.cia)|*.cia", "CIA (*.cia)|*.cia"),
+            Title = L("보낼 파일", "File to send"),
+            Filter = L("CIA · 런처 파일 (*.cia;*.neo3ds)|*.cia;*.neo3ds", "CIA or launcher file (*.cia;*.neo3ds)|*.cia;*.neo3ds"),
             Multiselect = false,
         };
         if (pick.ShowDialog(this) == DialogResult.OK) Choose(pick.FileName);
