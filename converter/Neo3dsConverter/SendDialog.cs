@@ -23,6 +23,7 @@ public sealed class SendDialog : Form
     readonly Label notes = new() { AutoSize = true, MaximumSize = new Size(420, 0), Margin = new Padding(0, 0, 0, 10) };
     SendCandidate? target;
     LanSender? sender;
+    bool syncing;
 
     public SendDialog(IReadOnlyList<SessionCia> session, IReadOnlyList<LanAddress> addresses)
     {
@@ -49,7 +50,7 @@ public sealed class SendDialog : Form
         var pick = new Button { Text = L("파일 선택", "Pick file"), AutoSize = true, Padding = new Padding(12, 2, 12, 2) };
         var dropHint = new Label
         {
-            Text = L("여기에 .cia 파일을 끌어다 놓아도 됩니다.", "You can also drop a .cia file here."),
+            Text = L("여기에 .cia 또는 .neo3ds 파일을 끌어다 놓아도 됩니다.", "You can also drop a .cia or .neo3ds file here."),
             AutoSize = true,
             MaximumSize = new Size(300, 0),
             Margin = new Padding(10, 6, 0, 0),
@@ -85,7 +86,8 @@ public sealed class SendDialog : Form
         };
         targets.SelectedIndexChanged += (_, _) =>
         {
-            if (targets.SelectedIndex >= 0 && targets.SelectedIndex < session.Count) Choose(session[targets.SelectedIndex].Path);
+            if (!syncing && targets.SelectedIndex >= 0 && targets.SelectedIndex < session.Count)
+                Choose(session[targets.SelectedIndex].Path);
         };
         DragEnter += (_, e) => e.Effect = e.Data?.GetDataPresent(DataFormats.FileDrop) == true ? DragDropEffects.Copy : DragDropEffects.None;
         DragDrop += (_, e) => DroppedFile(e.Data);
@@ -93,34 +95,44 @@ public sealed class SendDialog : Form
 
         SetGuide(SendGuide.Fbi);
         if (session.Count > 0) targets.SelectedIndex = 0;
-        else status.Text = L("보낼 .cia 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia file or drop one here.");
+        else status.Text = L("보낼 .cia 또는 .neo3ds 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia or .neo3ds file, or drop one here.");
     }
 
-    /// <summary>The running server, or null after a failed start, a refused file, or after the window closed.</summary>
-    public LanSender? Sender => sender;
-
-    public string? Url => sender?.Url;
-
-    internal string StatusText => status.Text ?? "";
-    internal SendCandidate? Target => target;
-
     /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
-    internal void Choose(string path)
+    void Choose(string path)
     {
         var candidate = SendCandidate.Resolve(path, session);
         if (candidate == null) return;
         target = candidate;
+        SelectInList(candidate);
         SetGuide(candidate.Guide);
         if (!candidate.Allowed)
         {
             Stop();
             ClearQr();
+            steps.Text = notes.Text = "";
             info.Text = candidate.DisplayName;
             url.Text = "";
             status.Text = candidate.Reason;
             return;
         }
         Connect(addressBox.SelectedIndex < 0 ? 0 : addressBox.SelectedIndex);
+    }
+
+    /// <summary>Highlights the session row that matches; a file from elsewhere clears the highlight.</summary>
+    void SelectInList(SendCandidate candidate)
+    {
+        int index = -1;
+        for (int i = 0; i < session.Count; i++)
+            if (string.Equals(Path.GetFullPath(session[i].Path), candidate.FullPath, StringComparison.OrdinalIgnoreCase))
+            {
+                index = i;
+                break;
+            }
+        if (index == targets.SelectedIndex) return;
+        syncing = true;
+        try { targets.SelectedIndex = index; }
+        finally { syncing = false; }
     }
 
     void SetGuide(SendGuide guide)
@@ -133,8 +145,8 @@ public sealed class SendDialog : Form
     {
         using var pick = new OpenFileDialog
         {
-            Title = L("보낼 .cia 파일", "CIA to send"),
-            Filter = L("CIA (*.cia)|*.cia", "CIA (*.cia)|*.cia"),
+            Title = L("보낼 파일", "File to send"),
+            Filter = L(".cia · .neo3ds 파일 (*.cia;*.neo3ds)|*.cia;*.neo3ds", ".cia · .neo3ds file (*.cia;*.neo3ds)|*.cia;*.neo3ds"),
             Multiselect = false,
         };
         if (pick.ShowDialog(this) == DialogResult.OK) Choose(pick.FileName);

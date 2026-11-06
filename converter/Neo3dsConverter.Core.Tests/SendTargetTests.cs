@@ -114,5 +114,112 @@ public sealed class SendTargetTests : IDisposable
         Assert.StartsWith(Lang.L("3DS 대기", "Waiting for the 3DS"), SendText.Status(SendState.Waiting, SendGuide.Fbi));
         Assert.StartsWith(Lang.L("보내는 중", "Sending"), SendText.Status(SendState.Sending, SendGuide.Fbi));
         Assert.StartsWith(Lang.L("PC 전송 완료", "Sent by the PC"), SendText.Status(SendState.Sent, SendGuide.Fbi));
+        Assert.StartsWith(Lang.L("3DS 대기", "Waiting for the 3DS"), SendText.Status(SendState.Waiting, SendGuide.Launcher));
+        Assert.StartsWith(Lang.L("PC 전송 완료", "Sent by the PC"), SendText.Status(SendState.Sent, SendGuide.Launcher));
+    }
+
+    /// <summary>#257: a launcher file is served and the launcher's Y screen is the guide.</summary>
+    [Fact]
+    public void LauncherFileIsAllowedAndGuidedToTheLauncher()
+    {
+        string pack = Make("kof98.neo3ds");
+
+        var target = SendCandidate.Resolve(pack, []);
+
+        Assert.NotNull(target);
+        Assert.True(target.Allowed);
+        Assert.Equal(SendKind.Launcher, target.Kind);
+        Assert.Equal(SendGuide.Launcher, target.Guide);
+        Assert.Equal("kof98.neo3ds", target.DisplayName);
+    }
+
+    /// <summary>#257: a path with folders is judged on the file name only.</summary>
+    [Fact]
+    public void FileNameComesFromTheLastPathSegment()
+    {
+        string nested = Make(Path.Combine("games", "kof98.neo3ds"));
+
+        var target = SendCandidate.Resolve(nested, []);
+
+        Assert.NotNull(target);
+        Assert.True(target.Allowed);
+        Assert.Equal("kof98.neo3ds", target.FileName);
+        Assert.Equal("kof98.neo3ds", target.DisplayName);
+    }
+
+    [Fact]
+    public void LauncherExtensionIsCaseInsensitive()
+    {
+        var target = SendCandidate.Resolve(Make("KOF98.NEO3DS"), []);
+
+        Assert.NotNull(target);
+        Assert.True(target.Allowed);
+        Assert.Equal(SendKind.Launcher, target.Kind);
+    }
+
+    /// <summary>#257: the launcher's own limit is 103 bytes of decoded file name.</summary>
+    [Fact]
+    public void LauncherNameAtTheLimitIsAllowed()
+    {
+        string name = new string('a', 103 - ".neo3ds".Length) + ".neo3ds";
+        Assert.Equal(103, System.Text.Encoding.UTF8.GetByteCount(name));
+
+        var target = SendCandidate.Resolve(Make(name), []);
+
+        Assert.NotNull(target);
+        Assert.True(target.Allowed);
+    }
+
+    [Fact]
+    public void LauncherNameOverTheLimitIsRefused()
+    {
+        string name = new string('a', 104 - ".neo3ds".Length) + ".neo3ds";
+        Assert.Equal(104, System.Text.Encoding.UTF8.GetByteCount(name));
+
+        var target = SendCandidate.Resolve(Make(name), []);
+
+        Assert.NotNull(target);
+        Assert.False(target.Allowed);
+        Assert.Equal(SendRefusal.NameTooLong, target.Refusal);
+        Assert.Equal(SendGuide.Launcher, target.Guide);
+    }
+
+    /// <summary>#257: characters the launcher's SD naming rule rejects, checked before a server starts.</summary>
+    [Theory]
+    [InlineData("bad*name.neo3ds")]
+    [InlineData("bad?name.neo3ds")]
+    [InlineData("bad|name.neo3ds")]
+    [InlineData("bad\tname.neo3ds")]
+    [InlineData(".neo3ds")]
+    [InlineData("game .neo3ds")]
+    [InlineData("game..neo3ds")]
+    public void LauncherNameRulesMatchThe3ds(string name)
+        => Assert.Equal(SendRefusal.NameUnsafe, SendCandidate.LauncherNameProblem(name));
+
+    [Fact]
+    public void LauncherNameAcceptsTheBoundaryAndRefusesOneByteMore()
+    {
+        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem("kof98.neo3ds"));
+        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem(new string('a', 96) + ".neo3ds"));
+        Assert.Equal(SendRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('a', 97) + ".neo3ds"));
+    }
+
+    [Fact]
+    public void LauncherNameCountsUtf8Bytes()
+    {
+        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem("게임.neo3ds"));
+        Assert.Equal(SendRefusal.NameTooLong, SendCandidate.LauncherNameProblem(new string('가', 33) + ".neo3ds"));
+    }
+
+    /// <summary>#257: the raw URL path must fit the launcher's 256-byte buffer, not just the decoded name.</summary>
+    [Fact]
+    public void LauncherNameThatOverflowsTheUrlPathIsRefused()
+    {
+        string fits = new string('가', 25) + ".neo3ds";
+        string overflows = new string('가', 26) + ".neo3ds";
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(overflows) <= 103);
+
+        Assert.Equal(SendRefusal.None, SendCandidate.LauncherNameProblem(fits));
+        Assert.Equal(SendRefusal.UrlTooLong, SendCandidate.LauncherNameProblem(overflows));
     }
 }

@@ -1,8 +1,9 @@
+using System.Text;
+
 namespace Neo3dsConverter;
 
 /// <summary>A CIA this session built; the launcher CIA is labelled so it is not mistaken for a game.</summary>
 public sealed record SessionCia(string Path, bool Launcher);
-
 /// <summary>What the PC serves: an installable CIA (FBI) or a launcher game file.</summary>
 public enum SendKind { Cia, Launcher }
 
@@ -10,7 +11,7 @@ public enum SendKind { Cia, Launcher }
 public enum SendGuide { Fbi, Launcher }
 
 /// <summary>Why a chosen path cannot be sent; <see cref="None"/> means it can.</summary>
-public enum SendRefusal { None, MissingFile, NotAFile, UnsupportedExtension, NameTooLong, NameUnsafe }
+public enum SendRefusal { None, MissingFile, NotAFile, UnsupportedExtension, NameTooLong, NameUnsafe, UrlTooLong }
 
 /// <summary>The three states the dialog shows: waiting for the 3DS, sending, and sent by the PC.</summary>
 public enum SendState { Waiting, Sending, Sent }
@@ -29,6 +30,22 @@ public sealed record SendCandidate(string FullPath, string FileName, SendKind? K
 
     public string Reason => SendText.Refusal(Refusal, FileName);
 
+    /// <summary>#257: the launcher's own rule for a file it can save; mirrors name_ok in receive_url.c.</summary>
+    public static SendRefusal LauncherNameProblem(string fileName)
+    {
+        if (Encoding.UTF8.GetByteCount(fileName) > 103) return SendRefusal.NameTooLong;
+        if (fileName.Length <= PackSuffix.Length) return SendRefusal.NameUnsafe;
+        char beforeSuffix = fileName[fileName.Length - PackSuffix.Length - 1];
+        if (beforeSuffix is ' ' or '.') return SendRefusal.NameUnsafe;
+        foreach (char c in fileName)
+            if (c < 32 || c == 127 || "/\\:*?\"<>|".Contains(c)) return SendRefusal.NameUnsafe;
+        // The launcher keeps the raw URL path in 256 bytes: "/" + 16 hex token + "/" is 18 of them.
+        if (Uri.EscapeDataString(fileName).Length > 255 - 18) return SendRefusal.UrlTooLong;
+        return SendRefusal.None;
+    }
+
+    const string PackSuffix = ".neo3ds";
+
     /// <summary>The judgement for <paramref name="path"/>; null when nothing was chosen.</summary>
     public static SendCandidate? Resolve(string? path, IReadOnlyList<SessionCia> session)
     {
@@ -38,6 +55,8 @@ public sealed record SendCandidate(string FullPath, string FileName, SendKind? K
         bool launcher = session.Any(c => c.Launcher && string.Equals(Path.GetFullPath(c.Path), full, StringComparison.OrdinalIgnoreCase));
         if (Directory.Exists(full)) return new SendCandidate(full, name, null, launcher, SendRefusal.NotAFile);
         if (!File.Exists(full)) return new SendCandidate(full, name, null, launcher, SendRefusal.MissingFile);
+        if (name.EndsWith(PackSuffix, StringComparison.OrdinalIgnoreCase))
+            return new SendCandidate(full, name, SendKind.Launcher, launcher, LauncherNameProblem(name));
         if (!name.EndsWith(".cia", StringComparison.OrdinalIgnoreCase))
             return new SendCandidate(full, name, null, launcher, SendRefusal.UnsupportedExtension);
         return new SendCandidate(full, name, SendKind.Cia, launcher, SendRefusal.None);
@@ -81,8 +100,10 @@ public static class SendText
         SendRefusal.None => "",
         SendRefusal.MissingFile => Lang.L($"파일을 찾을 수 없습니다: {name}", $"File not found: {name}"),
         SendRefusal.NotAFile => Lang.L("폴더는 보낼 수 없습니다. 파일을 고르세요.", "A folder cannot be sent. Pick a file."),
-        SendRefusal.UnsupportedExtension => Lang.L(".cia 파일만 보낼 수 있습니다.", "Only .cia files can be sent."),
+        SendRefusal.UnsupportedExtension => Lang.L(".cia 또는 .neo3ds 파일만 보낼 수 있습니다.", "Only .cia or .neo3ds files can be sent."),
         SendRefusal.NameTooLong => Lang.L("파일 이름이 너무 깁니다 (103바이트 이하).", "The file name is too long (103 bytes or less)."),
+        SendRefusal.UrlTooLong => Lang.L("파일 이름이 너무 길어 QR 주소가 3DS 한도를 넘습니다. 이름을 줄이세요.",
+                                         "The file name is too long for the QR address the 3DS accepts. Shorten it."),
         SendRefusal.NameUnsafe => Lang.L("파일 이름에 3DS가 쓸 수 없는 문자가 있거나 끝이 점·공백입니다.",
                                          "The file name has characters the 3DS cannot store, or ends with a dot or space."),
         _ => "",
