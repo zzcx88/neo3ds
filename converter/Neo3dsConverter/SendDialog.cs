@@ -67,6 +67,8 @@ public sealed class SendDialog : Form
         var close = new Button { Text = L("닫기", "Close"), AutoSize = true, Padding = new Padding(20, 2, 20, 2) };
         addressBox.Items.AddRange(addresses.Select(a => (object)a.ToString()).ToArray());
         addressBox.SelectedIndex = 0;
+        targets.Items.AddRange(session.Select(c =>
+            (object)(SendCandidate.Resolve(c.Path, session)?.DisplayName ?? Path.GetFileName(c.Path))).ToArray());
 
         var panel = new FlowLayoutPanel
         {
@@ -124,6 +126,10 @@ public sealed class SendDialog : Form
             if (string.Equals(Path.GetFullPath(session[i].Path), fullPath, StringComparison.OrdinalIgnoreCase)) return i;
         return -1;
     }
+
+    /// <summary>#299: the labels and selection the Windows test project checks.</summary>
+    internal string[] TargetLabels => targets.Items.Cast<object>().Select(i => i.ToString() ?? "").ToArray();
+    internal int SelectedTarget => targets.SelectedIndex;
 
     /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
     void Choose(string path)
