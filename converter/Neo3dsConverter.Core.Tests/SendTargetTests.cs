@@ -190,11 +190,23 @@ public sealed class SendTargetTests : IDisposable
     [InlineData("bad?name.neo3ds")]
     [InlineData("bad|name.neo3ds")]
     [InlineData("bad\tname.neo3ds")]
-    [InlineData(".neo3ds")]
     [InlineData("game .neo3ds")]
     [InlineData("game..neo3ds")]
     public void LauncherNameRulesMatchThe3ds(string name)
         => Assert.Equal(SendRefusal.NameUnsafe, SendCandidate.LauncherNameProblem(name));
+
+    /// <summary>#301: a pack with no base name is refused for that reason, not for bad characters.</summary>
+    [Fact]
+    public void LauncherFileWithoutABaseNameSaysTheNameIsMissing()
+    {
+        var target = SendCandidate.Resolve(Make(".neo3ds"), []);
+
+        Assert.NotNull(target);
+        Assert.False(target.Allowed);
+        Assert.Equal(SendRefusal.NoBaseName, target.Refusal);
+        Assert.Contains(Lang.L("이름이 없습니다", "no name"), target.Reason);
+        Assert.Equal(SendRefusal.NoBaseName, SendCandidate.LauncherNameProblem(".neo3ds"));
+    }
 
     [Fact]
     public void LauncherNameAcceptsTheBoundaryAndRefusesOneByteMore()
