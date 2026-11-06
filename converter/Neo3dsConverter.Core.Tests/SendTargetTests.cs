@@ -190,11 +190,28 @@ public sealed class SendTargetTests : IDisposable
     [InlineData("bad?name.neo3ds")]
     [InlineData("bad|name.neo3ds")]
     [InlineData("bad\tname.neo3ds")]
-    [InlineData(".neo3ds")]
     [InlineData("game .neo3ds")]
     [InlineData("game..neo3ds")]
     public void LauncherNameRulesMatchThe3ds(string name)
         => Assert.Equal(SendRefusal.NameUnsafe, SendCandidate.LauncherNameProblem(name));
+
+    /// <summary>#301: a pack with no base name is refused for that reason, not for bad characters.</summary>
+    [Fact]
+    public void LauncherFileWithoutABaseNameSaysTheNameIsMissing()
+    {
+        var target = SendCandidate.Resolve(Make(".neo3ds"), []);
+
+        Assert.NotNull(target);
+        Assert.False(target.Allowed);
+        Assert.Equal(SendRefusal.NoFileName, target.Refusal);
+        Assert.Contains(Lang.L("이름", "name"), target.Reason);
+        Assert.Equal(SendRefusal.NoFileName, SendCandidate.LauncherNameProblem(".neo3ds"));
+    }
+
+    /// <summary>#301: the helper mirrors name_ok, which refuses anything that is not a pack name.</summary>
+    [Fact]
+    public void LauncherNameRulesRejectAFileThatIsNotALauncherPack()
+        => Assert.Equal(SendRefusal.UnsupportedExtension, SendCandidate.LauncherNameProblem("kof98.cia"));
 
     [Fact]
     public void LauncherNameAcceptsTheBoundaryAndRefusesOneByteMore()
