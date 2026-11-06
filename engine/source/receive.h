@@ -14,11 +14,4 @@ bool receive_interrupted(void);
 /* At the launcher's start: clears what a receive cut short by a crash or power loss left behind. */
 void receive_recover(void);
 
-/* The launcher's Y button and the receive screen: off until the converter can send .neo3ds files. */
-#if defined(NEO3DS_RECEIVE) || defined(NEO3DS_RECV_TEST)
-#define HAS_RECEIVE 1
-#else
-#define HAS_RECEIVE 0
-#endif
-
 #endif

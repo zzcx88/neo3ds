@@ -2,8 +2,7 @@
 // screen with the D-pad and A or by touch (a tap selects, a tap on the selected game starts it).
 // Two tabs, All and Favorites (D-pad left/right or a tap on the tab); SELECT or a tap on the star
 // at the left of a row adds the game to the favorites or takes it out. Y opens the receive screen
-// (receive.c), not built by default until the converter can send .neo3ds files (NEO3DS_RECEIVE).
-// The top screen shows a picture of the game under the cursor, if it has one (snapshot.c).
+// (receive.c). The top screen shows a picture of the game under the cursor, if it has one (snapshot.c).
 #include <3ds.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -198,7 +197,7 @@ static void draw_top(void) {
 }
 
 static void draw_receive_button(void) {
-	if (HAS_RECEIVE) ui_button(receive_button, "Y:QR", UI_PANEL, UI_TEXT);
+	ui_button(receive_button, "Y:QR", UI_PANEL, UI_TEXT);
 }
 
 /* The tabs in the header: the one shown on the panel color, the other in the header's */
@@ -252,11 +251,9 @@ static void draw_all(void) {
 			".neo3ds files to the SD card in", "/neo3ds/games/",
 		};
 		for (int i = 0; i < 6; i++) ui_text(8, 50 + i * 14, help[i], i ? UI_DIM : UI_TEXT, 1);
-		if (HAS_RECEIVE) {
-			ui_text(8, 50 + 7 * 14, "Or press Y to get one from the PC", UI_DIM, 1);
-			ui_text(8, 50 + 8 * 14, "over the Wi-Fi.", UI_DIM, 1);
-			draw_receive_button();
-		}
+		ui_text(8, 50 + 7 * 14, "Or press Y to get one from the PC", UI_DIM, 1);
+		ui_text(8, 50 + 8 * 14, "over the Wi-Fi.", UI_DIM, 1);
+		draw_receive_button();
 	}
 	ui_flush();
 	draw_top();
@@ -371,7 +368,7 @@ static void read_snapshots_when_idle(void) {
 bool launcher_pick(char *path, size_t size) {
 	gfxSetDoubleBuffering(GFX_TOP, false);
 	top_scratch = malloc(SNAPSHOT_BYTES);
-	if (HAS_RECEIVE) receive_recover();
+	receive_recover();
 	scan();
 	load_config();
 	build_view(0);
@@ -384,13 +381,11 @@ bool launcher_pick(char *path, size_t size) {
 			draw_top();
 		}
 		const u32 down = RECEIVE_KEYS_DOWN(), rep = hidKeysDownRepeat() | (down & KEY_DOWN);
-		if (HAS_RECEIVE) {
-			touchPosition t;
-			ui_touch_read(&t);
-			if ((down & KEY_Y) || ((down & KEY_TOUCH) && ui_hit(receive_button, t.px, t.py))) {
-				open_receive();
-				continue;
-			}
+		touchPosition t;
+		ui_touch_read(&t);
+		if ((down & KEY_Y) || ((down & KEY_TOUCH) && ui_hit(receive_button, t.px, t.py))) {
+			open_receive();
+			continue;
 		}
 		if (count) {
 			bool start = list_input(down, rep);

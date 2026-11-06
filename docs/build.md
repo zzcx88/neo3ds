@@ -93,14 +93,13 @@ powershell -File scripts/azahar_launcher_test.ps1 -Pack <파일.neo3ds> [-Conver
 
 `NEO3DS_RECV_TEST`로 런처를 빌드(`engine/engine_recv.elf`)한다. 이 빌드는 Azahar SD 폴더의 `3ds/neo3ds/recv_url.txt`가 있으면 카메라 대신 그 주소를 쓰고, `recv_key.txt`의 글자를 버튼으로 받으므로 창 포커스가 필요 없다. `scripts/recv_test_server.py`가 정상·오류 응답을 내고, `cam-*` 시나리오는 `scripts/recv_test_qr.py`로 만든 QR 그림을 Azahar 정지 이미지 카메라에 건다(pip으로 `qrcode`를 `out/recvtest/pydeps`에 받음). 결과는 `out/recvtest/results.txt`와 스크린샷이고, `badurl`·`b-bad`·`badpack`·`touch`는 경우마다 한 줄씩 내므로 결과 줄 수가 시나리오 수보다 많다. `touch`는 `recv_key.txt`로 좌표를 넣어 목록과 게임 화면을 조작하고, 엔진이 `recv_ui.txt`에 남긴 내용으로 판정한다. 끝나면 중단됐더라도 테스트 파일을 지우고 `launcher.txt`·`receive.log`·`qt-config.ini`와 `keys`·`states`·`saves`·`snaps` 폴더를 되돌린다. 프로세스가 강제 종료되면 복사본 `out/recvtest/settings-copy`와 게임 폴더 `games.keep`이 남고, 다음 실행이 시작할 때 이것으로 되돌린다.
 
-`Y` 진입은 변환기가 `.neo3ds`를 보낼 수 있을 때까지 기본 빌드에서 꺼 둔다. 실기 시험은 `EXTRA_CFLAGS=-DNEO3DS_RECEIVE`로 빌드한다. `NEO3DS_RECV_TEST` 빌드를 실기에 쓰지 않는다: 버튼 파일을 초당 10번 SD에서 찾고 커서를 옮길 때마다 상태 파일을 써서 프레임이 떨어진다.
+`Y` 수신은 기본 빌드에 들어 있으므로 실기 시험은 기본 빌드를 쓴다. `NEO3DS_RECV_TEST` 빌드를 실기에 쓰지 않는다: 버튼 파일을 초당 10번 SD에서 찾고 커서를 옮길 때마다 상태 파일을 써서 프레임이 떨어진다.
 
 엔진 시험용 빌드 플래그는 `EXTRA_CFLAGS=-D<플래그>`로 켠다. 값이 있는 것은 `-D<플래그>=<값>`이다. 모두 기본 빌드에서는 꺼져 있다.
 
 | 플래그 | 용도 |
 |---|---|
-| `NEO3DS_RECEIVE` | 런처의 `Y` 수신 진입. 시험 훅 없음, 실기 시험용 |
-| `NEO3DS_RECV_TEST` | 위 + Azahar 런처 시험 훅(버튼, 터치, 주소, 공간). 실기 금지 |
+| `NEO3DS_RECV_TEST` | Azahar 런처 시험 훅(버튼, 터치, 주소, 공간). 실기 금지 |
 | `NEO3DS_AUTOPICK` | 런처에서 2초 뒤 첫 게임 시작 |
 | `NEO3DS_AUTOPLAY` | 정해진 프레임에 동전·시작을 넣고 공격하며 오른쪽으로 이동 |
 | `NEO3DS_DIAG_START` | Diagnostics 화면으로 시작 |
