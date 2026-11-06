@@ -96,16 +96,8 @@ public sealed class SendDialog : Form
         else status.Text = L("보낼 .cia 또는 .neo3ds 파일을 고르거나 끌어다 놓으세요.", "Pick a .cia or .neo3ds file, or drop one here.");
     }
 
-    /// <summary>The running server, or null after a failed start, a refused file, or after the window closed.</summary>
-    public LanSender? Sender => sender;
-
-    public string? Url => sender?.Url;
-
-    internal string StatusText => status.Text ?? "";
-    internal SendCandidate? Target => target;
-
     /// <summary>Judges <paramref name="path"/> and serves it when it can be sent; a refusal stops the server.</summary>
-    internal void Choose(string path)
+    void Choose(string path)
     {
         var candidate = SendCandidate.Resolve(path, session);
         if (candidate == null) return;

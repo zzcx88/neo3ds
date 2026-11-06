@@ -11,7 +11,8 @@ https://github.com/zzcx88/neo3ds
    연결해 FBI → Remote Install → Scan QR Code로 스캔합니다. 방화벽이 물으면 허용하고, VPN이
    켜져 있으면 실제 LAN 주소를 고르세요. 3DS는 2.4GHz Wi-Fi만 됩니다.
 런처: neo3ds-launcher.cia를 한 번 설치하고, [런처용 파일 만들기]로 만든 .neo3ds 파일을 SD 카드 /neo3ds/games/에 넣으면
-      앱 하나에서 게임을 골라 실행합니다.
+      앱 하나에서 게임을 골라 실행합니다. SD 카드 없이 보내려면 [3DS로 보내기 (QR)]에서 .neo3ds를 고르거나 끌어다 놓고,
+      런처에서 Y(QR)로 스캔하세요.
 퀵세이브: 아래 화면 [Slot] [Save] [Load] 또는 SELECT+L(저장) / SELECT+R(불러오기).
 처음 실행 때 Windows가 "알 수 없는 게시자" 경고를 띄우면 [추가 정보] -> [실행].
 Linux·macOS: 인자 없이 실행하면 창이 뜨고(Linux는 ./neo3ds-converter, macOS는 neo3ds-converter.app),
@@ -37,7 +38,8 @@ Keep this folder (the converter program + the tools folder) together. The progra
    (Remote Install → Scan QR Code) with the PC and 3DS on the same router. Allow the firewall
    prompt; with a VPN on, pick the real LAN address. The 3DS is 2.4 GHz Wi-Fi only.
 Launcher: install neo3ds-launcher.cia once, then put the .neo3ds files made with [Launcher file] in /neo3ds/games/
-          on the SD card to pick games from one app.
+          on the SD card to pick games from one app. To send one without the SD card, pick or drop the .neo3ds in
+          [Send to 3DS (QR)] and scan it with Y (QR) in the launcher.
 Quick save: [Slot] [Save] [Load] on the bottom screen, or SELECT+L (save) / SELECT+R (load).
 If Windows shows an "unknown publisher" warning on first run, click [More info] -> [Run anyway].
 Linux, macOS: with no arguments the window opens (Linux: ./neo3ds-converter, macOS: neo3ds-converter.app);
