@@ -247,6 +247,7 @@ const EN = {
   'man.b.restart': 'Hold until the yellow bar fills. Like switching the console off and on (cartridge saves are kept)',
   'man.b.service': 'MVS BIOS service menu (difficulty, credits, hardware tests). MVS only',
   'man.b.slot': 'Quick save: pick slot 1-3, save, load (tap twice)',
+  'man.b.snapshot': "From the launcher only: saves the current scene as the game's picture in the list",
   'man.b.gamelist': 'From the launcher only: tap twice to go back to the list',
   'man.b.power': 'Turns the bottom screen\'s backlight off; touch anywhere to turn it back on (that touch presses nothing)',
   'man.keysH2': 'Key config',
