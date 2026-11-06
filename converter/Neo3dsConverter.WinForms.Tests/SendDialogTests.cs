@@ -76,8 +76,8 @@ public sealed class SendDialogTests
             dialog.ChooseMany([one, two]);
 
             Assert.NotNull(dialog.Sender);
-            Assert.Equal(SendKind.Cia, dialog.Batch!.Kind);
-            Assert.True(dialog.Batch.Allowed);
+            var ready = Assert.IsType<SendBatchResult.Ready>(dialog.BatchResult);
+            Assert.Equal(SendKind.Cia, ready.Batch.Kind);
             Assert.Equal(2, dialog.BatchRows.Length);
             Assert.Contains("\n", dialog.QrText);
             Assert.Contains("2", dialog.InfoText);
@@ -186,15 +186,16 @@ public sealed class SendDialogTests
             dialog.ChooseMany(packs);
 
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
+            var tooLarge = Assert.IsType<BatchRefusal.QrTooLarge>(
+                Assert.IsType<SendBatchResult.Refused>(dialog.BatchResult).Refusal);
             Assert.Equal("", dialog.StepsText);
             Assert.Equal("", dialog.NotesText);
 
             dialog.SelectAddress(1);
 
             Assert.NotNull(dialog.Sender);
-            Assert.True(dialog.Batch!.Allowed);
-            Assert.Equal(6, dialog.Batch.Items.Count);
+            var ready = Assert.IsType<SendBatchResult.Ready>(dialog.BatchResult);
+            Assert.Equal(6, ready.Batch.Items.Count);
             Assert.NotEmpty(dialog.StepsText);
             Assert.NotEmpty(dialog.NotesText);
             Assert.Contains("6", dialog.StepsText);
@@ -203,10 +204,11 @@ public sealed class SendDialogTests
             dialog.SelectAddress(0);
 
             Assert.Null(dialog.Sender);
-            Assert.Equal(SendRefusal.QrTooLarge, dialog.Batch!.Refusal);
+            var tooLarge2 = Assert.IsType<BatchRefusal.QrTooLarge>(
+                Assert.IsType<SendBatchResult.Refused>(dialog.BatchResult).Refusal);
             Assert.Equal("", dialog.StepsText);
             Assert.Equal("", dialog.NotesText);
-            Assert.Contains(dialog.Batch.AllowedCount.ToString(), dialog.StatusText);
+            Assert.Contains(tooLarge2.AllowedCount.ToString(), dialog.StatusText);
         }
         finally
         {

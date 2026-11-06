@@ -38,10 +38,10 @@ public sealed class LanSenderTests : IDisposable
         byte[] expected = File.ReadAllBytes(path);
         using var sender = LanSender.Start(path, "127.0.0.1");
 
-        byte[] actual = await Http.GetByteArrayAsync(sender.Url, TestContext.Current.CancellationToken);
+        byte[] actual = await Http.GetByteArrayAsync(sender.Items[0].Url, TestContext.Current.CancellationToken);
 
-        Assert.Equal(expected.Length, sender.Length);
-        Assert.EndsWith("/my%20game.cia", sender.Url);
+        Assert.Equal(expected.Length, sender.Items[0].Length);
+        Assert.EndsWith("/my%20game.cia", sender.Items[0].Url);
         Assert.Equal(expected, actual);
     }
 
@@ -50,7 +50,7 @@ public sealed class LanSenderTests : IDisposable
     {
         MakeFile("kof98.cia");
         using var sender = LanSender.Start(Path.Combine(root, "kof98.cia"), "127.0.0.1");
-        var wrong = new UriBuilder(sender.Url) { Path = "/kof98.cia" }.Uri;
+        var wrong = new UriBuilder(sender.Items[0].Url) { Path = "/kof98.cia" }.Uri;
 
         using var response = await Http.GetAsync(wrong, TestContext.Current.CancellationToken);
 
@@ -62,7 +62,7 @@ public sealed class LanSenderTests : IDisposable
     {
         string path = MakeFile("kof98.cia", 4096);
         using var sender = LanSender.Start(path, "127.0.0.1");
-        using var request = new HttpRequestMessage(HttpMethod.Head, sender.Url);
+        using var request = new HttpRequestMessage(HttpMethod.Head, sender.Items[0].Url);
 
         using var response = await Http.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -77,9 +77,9 @@ public sealed class LanSenderTests : IDisposable
         MakeFile("kof98.cia");
         using var sender = LanSender.Start(Path.Combine(root, "kof98.cia"), "127.0.0.1");
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        sender.Downloaded += () => done.TrySetResult();
+        sender.ItemDownloaded += item => done.TrySetResult();
 
-        await Http.GetByteArrayAsync(sender.Url, TestContext.Current.CancellationToken);
+        await Http.GetByteArrayAsync(sender.Items[0].Url, TestContext.Current.CancellationToken);
 
         await done.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
     }
@@ -89,7 +89,7 @@ public sealed class LanSenderTests : IDisposable
     {
         string path = MakeFile("kof98.cia", 1024);
         var sender = LanSender.Start(path, "127.0.0.1");
-        string url = sender.Url;
+        string url = sender.Items[0].Url;
 
         sender.Stop();
 
@@ -105,7 +105,7 @@ public sealed class LanSenderTests : IDisposable
         string path = MakeFile("kof98.cia", 512 * 1024);
         byte[] expected = File.ReadAllBytes(path);
         using var sender = LanSender.Start(path, "127.0.0.1");
-        var uri = new Uri(sender.Url);
+        var uri = new Uri(sender.Items[0].Url);
         using var client = new TcpClient();
         await client.ConnectAsync(IPAddress.Loopback, uri.Port, TestContext.Current.CancellationToken);
         NetworkStream stream = client.GetStream();
@@ -131,7 +131,7 @@ public sealed class LanSenderTests : IDisposable
         using var stalled = new TcpClient();
         await stalled.ConnectAsync(IPAddress.Loopback, sender.Port, TestContext.Current.CancellationToken);
 
-        var fetch = Http.GetByteArrayAsync(sender.Url, TestContext.Current.CancellationToken);
+        var fetch = Http.GetByteArrayAsync(sender.Items[0].Url, TestContext.Current.CancellationToken);
         var first = await Task.WhenAny(fetch, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
 
         Assert.Same(fetch, first);
@@ -145,10 +145,10 @@ public sealed class LanSenderTests : IDisposable
         string path = MakeFile("kof98.cia", 4096);
         using var sender = LanSender.Start(path, "127.0.0.1");
         int started = 0;
-        sender.Started += () => Interlocked.Increment(ref started);
+        sender.ItemStarted += _ => Interlocked.Increment(ref started);
         Assert.Equal(0, Volatile.Read(ref started));
 
-        await Http.GetByteArrayAsync(sender.Url, TestContext.Current.CancellationToken);
+        await Http.GetByteArrayAsync(sender.Items[0].Url, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, Volatile.Read(ref started));
     }
@@ -292,14 +292,12 @@ public sealed class LanSenderTests : IDisposable
             "game six.neo3ds",
         ];
         string[] paths = names.Select((name, i) => MakeFile(name, 512 + i)).ToArray();
-        var batch = SendBatch.Resolve(paths, []);
-        Assert.NotNull(batch);
-        using var sender = LanSender.StartBatch(
-            batch.Items.Select(i => new LanFile(i.FullPath, i.FileName)).ToArray(), "127.0.0.1");
-        var sized = batch.WithQr(sender.Items.Select(i => i.Url).ToArray());
+        var selection = Assert.IsType<SendSelectionResult.Batch>(SendSelection.Resolve(paths, []));
+        var batch = Assert.IsType<SendBatchResult.Ready>(selection.Result).Batch;
+        using var sender = LanSender.StartBatch(batch.LanFiles(), "127.0.0.1");
 
-        Assert.True(sized.Allowed);
-        Assert.Equal(6, sized.AllowedCount);
+        Assert.Equal(6, sender.Items.Count);
+        Assert.IsType<SendBatchResult.Ready>(batch.WithQr(sender.Items.Select(i => i.Url).ToArray()));
         Assert.Equal(6, sender.QrText.Split('\n').Length);
 
         for (int i = 0; i < sender.Items.Count; i++)
@@ -311,6 +309,54 @@ public sealed class LanSenderTests : IDisposable
             Assert.Equal(expected, actual);
             Assert.Equal(names[i], Uri.UnescapeDataString(route));
         }
+    }
+
+    /// <summary>#313: a prepared sender holds its port but accepts nothing until it starts.</summary>
+    [Fact]
+    public async Task PrepareDoesNotListenUntilStart()
+    {
+        string path = MakeFile("kof98.cia", 4096);
+        byte[] expected = File.ReadAllBytes(path);
+        using var sender = LanSender.Prepare([new LanFile(path, "kof98.cia")], "127.0.0.1");
+
+        Assert.False(sender.IsRunning);
+        using (var client = new TcpClient())
+            await Assert.ThrowsAnyAsync<Exception>(
+                () => client.ConnectAsync(IPAddress.Loopback, sender.Port, TestContext.Current.CancellationToken).AsTask());
+
+        sender.Start();
+
+        Assert.True(sender.IsRunning);
+        byte[] actual = await Http.GetByteArrayAsync(sender.Items[0].Url, TestContext.Current.CancellationToken);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void StartThrowsWhenAlreadyStartedOrDisposed()
+    {
+        using var started = LanSender.Prepare([new LanFile(MakeFile("kof98.cia", 16), "0")], "127.0.0.1");
+        started.Start();
+
+        Assert.Throws<InvalidOperationException>(started.Start);
+
+        started.Dispose();
+        Assert.False(started.IsRunning);
+
+        var disposed = LanSender.Prepare([new LanFile(MakeFile("nam1975.cia", 16), "0")], "127.0.0.1");
+        disposed.Dispose();
+        Assert.Throws<InvalidOperationException>(disposed.Start);
+    }
+
+    /// <summary>#313: the send boundary is enforced at the lowest layer too, not just in the dialog.</summary>
+    [Fact]
+    public void PrepareRejectsMoreThanSixFiles()
+    {
+        string[] paths = Enumerable.Range(0, 7)
+            .Select(i => MakeFile($"game{i}.cia", 64))
+            .ToArray();
+
+        Assert.Throws<ArgumentException>(() => LanSender.Prepare(
+            paths.Select((path, i) => new LanFile(path, i.ToString())).ToArray(), "127.0.0.1"));
     }
 
     [Fact]

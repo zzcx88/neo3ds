@@ -6,8 +6,9 @@ using Xunit;
 namespace Neo3dsConverter.Tests;
 
 /// <summary>
-/// #264: 2 to 6 files become one QR. The 3DS refuses a list it cannot parse, so the PC decides the
-/// kind, the duplicates, the refusal and the real number of files that fit before serving.
+/// #264/#313: selection resolves to a single file or to a batch of 2 to 6 files. The 3DS refuses
+/// a list it cannot parse, so the PC decides the kind, the duplicates, the refusal and the real
+/// number of files that fit before serving.
 /// </summary>
 public sealed class SendBatchTests : IDisposable
 {
@@ -29,19 +30,26 @@ public sealed class SendBatchTests : IDisposable
         return path;
     }
 
+    static SendBatch ReadyBatch(string[] paths) =>
+        Assert.IsType<SendBatchResult.Ready>(
+            Assert.IsType<SendSelectionResult.Batch>(SendSelection.Resolve(paths, [])).Result).Batch;
+
+    static SendBatchResult.Refused RefusedBatch(string[] paths) =>
+        Assert.IsType<SendBatchResult.Refused>(
+            Assert.IsType<SendSelectionResult.Batch>(SendSelection.Resolve(paths, [])).Result);
+
     [Fact]
     public void TwoCiasAreOneBatchGuidedToFbi()
     {
         string one = Make("kof98.cia", 2048);
         string two = Make("nam1975.cia", 4096);
 
-        var batch = SendBatch.Resolve([one, two], []);
+        var ready = ReadyBatch([one, two]);
+        var batch = ready;
 
-        Assert.NotNull(batch);
-        Assert.True(batch.Allowed);
+        Assert.Equal(2, batch.Items.Count);
         Assert.Equal(SendKind.Cia, batch.Kind);
         Assert.Equal(SendGuide.Fbi, batch.Guide);
-        Assert.Equal(2, batch.AllowedCount);
         Assert.Equal(6144, batch.TotalLength);
         Assert.Equal("kof98.cia", batch.Items[0].FileName);
     }
@@ -49,10 +57,8 @@ public sealed class SendBatchTests : IDisposable
     [Fact]
     public void TwoPacksAreOneBatchGuidedToTheLauncher()
     {
-        var batch = SendBatch.Resolve([Make("kof98.neo3ds"), Make("nam1975.neo3ds")], []);
+        var batch = ReadyBatch([Make("kof98.neo3ds"), Make("nam1975.neo3ds")]);
 
-        Assert.NotNull(batch);
-        Assert.True(batch.Allowed);
         Assert.Equal(SendKind.Launcher, batch.Kind);
         Assert.Equal(SendGuide.Launcher, batch.Guide);
     }
@@ -60,12 +66,10 @@ public sealed class SendBatchTests : IDisposable
     [Fact]
     public void MixedCiaAndPackIsRefusedWithTheTwoStepReason()
     {
-        var batch = SendBatch.Resolve([Make("kof98.cia"), Make("nam1975.neo3ds")], []);
+        var refused = RefusedBatch([Make("kof98.cia"), Make("nam1975.neo3ds")]);
 
-        Assert.NotNull(batch);
-        Assert.False(batch.Allowed);
-        Assert.Equal(SendRefusal.MixedKinds, batch.Refusal);
-        Assert.Contains(Lang.L("두 번", "two batches"), batch.Reason);
+        Assert.IsType<BatchRefusal.MixedKinds>(refused.Refusal);
+        Assert.Contains(Lang.L("두 번", "two batches"), refused.Refusal.Reason);
     }
 
     [Fact]
@@ -74,11 +78,11 @@ public sealed class SendBatchTests : IDisposable
         string one = Make("KOF98.cia", folder: "one");
         string two = Make("kof98.cia", folder: "two");
 
-        var batch = SendBatch.Resolve([one, two], []);
+        var refused = RefusedBatch([one, two]);
 
-        Assert.NotNull(batch);
-        Assert.Equal(SendRefusal.DuplicateName, batch.Refusal);
-        Assert.Contains("kof98.cia", batch.Reason, StringComparison.OrdinalIgnoreCase);
+        var duplicate = Assert.IsType<BatchRefusal.DuplicateName>(refused.Refusal);
+        Assert.Contains("kof98.cia", duplicate.Name, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("kof98.cia", refused.Refusal.Reason, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -86,41 +90,83 @@ public sealed class SendBatchTests : IDisposable
     {
         var paths = Enumerable.Range(0, 7).Select(i => Make($"game{i}.cia")).ToArray();
 
-        var batch = SendBatch.Resolve(paths, []);
+        var refused = RefusedBatch(paths);
 
-        Assert.NotNull(batch);
-        Assert.Equal(SendRefusal.TooManyFiles, batch.Refusal);
-        Assert.Contains("6", batch.Reason);
+        Assert.IsType<BatchRefusal.TooManyFiles>(refused.Refusal);
+        Assert.Contains("6", refused.Refusal.Reason);
     }
 
     [Fact]
     public void OneBadFileRefusesTheWholeBatchWithItsReason()
     {
-        var batch = SendBatch.Resolve([Make("kof98.cia"), Make("kof98.zip")], []);
+        var refused = RefusedBatch([Make("kof98.cia"), Make("kof98.zip")]);
 
-        Assert.NotNull(batch);
-        Assert.Equal(SendRefusal.UnsupportedExtension, batch.Refusal);
-        Assert.Contains("kof98.zip", batch.Reason);
-        Assert.Contains(Lang.L(".cia 또는 .neo3ds", "Only .cia or .neo3ds"), batch.Reason);
+        var file = Assert.IsType<BatchRefusal.File>(refused.Refusal);
+        Assert.Equal(FileRefusal.UnsupportedExtension, file.Candidate.Refusal);
+        Assert.Contains("kof98.zip", refused.Refusal.Reason);
+        Assert.Contains(Lang.L(".cia 또는 .neo3ds", "Only .cia or .neo3ds"), refused.Refusal.Reason);
     }
 
     [Fact]
     public void MissingFileAndFolderAreRefused()
     {
-        var missing = SendBatch.Resolve([Make("kof98.cia"), Path.Combine(root, "gone.cia")], []);
         string folder = Path.Combine(root, "games");
         Directory.CreateDirectory(folder);
-        var notAFile = SendBatch.Resolve([Make("kof98.cia"), folder], []);
 
-        Assert.Equal(SendRefusal.MissingFile, missing!.Refusal);
-        Assert.Equal(SendRefusal.NotAFile, notAFile!.Refusal);
+        var missing = RefusedBatch([Make("kof98.cia"), Path.Combine(root, "gone.cia")]);
+        var notAFile = RefusedBatch([Make("kof98.cia"), folder]);
+
+        Assert.Equal(FileRefusal.MissingFile,
+            Assert.IsType<BatchRefusal.File>(missing.Refusal).Candidate.Refusal);
+        Assert.Equal(FileRefusal.NotAFile,
+            Assert.IsType<BatchRefusal.File>(notAFile.Refusal).Candidate.Refusal);
     }
 
     [Fact]
-    public void NoSelectionHasNoBatch()
+    public void NoSelectionHasNoSelection()
     {
-        Assert.Null(SendBatch.Resolve([], []));
-        Assert.Null(SendBatch.Resolve(["  "], []));
+        Assert.Null(SendSelection.Resolve([], []));
+        Assert.Null(SendSelection.Resolve(["  "], []));
+    }
+
+    [Fact]
+    public void OneFileIsSingleNotBatch()
+    {
+        string path = Make(new string('a', 96) + ".neo3ds");
+
+        var single = Assert.IsType<SendSelectionResult.Single>(SendSelection.Resolve([path], []));
+
+        Assert.True(single.Candidate.Allowed);
+        Assert.Equal(SendKind.Launcher, single.Candidate.Kind);
+    }
+
+    /// <summary>#313: a batch cannot be built outside the 2 to 6 range.</summary>
+    [Fact]
+    public void BatchConstructionRefusesOneFile()
+    {
+        var candidate = SendCandidate.Resolve(Make("kof98.cia"), []);
+
+        Assert.Throws<ArgumentException>(() => SendBatch.Check([candidate!]));
+    }
+
+    [Fact]
+    public void BatchLanFilesUseIndexRoutesForCias()
+    {
+        var batch = ReadyBatch([Make("kof98.cia"), Make("nam1975.cia")]);
+
+        var files = batch.LanFiles();
+
+        Assert.Equal(["0", "1"], files.Select(f => f.RouteName).ToArray());
+    }
+
+    [Fact]
+    public void BatchLanFilesUseFileNamesForPacks()
+    {
+        var batch = ReadyBatch([Make("kof98.neo3ds"), Make("nam1975.neo3ds")]);
+
+        var files = batch.LanFiles();
+
+        Assert.Equal(["kof98.neo3ds", "nam1975.neo3ds"], files.Select(f => f.RouteName).ToArray());
     }
 
     [Fact]
@@ -129,43 +175,32 @@ public sealed class SendBatchTests : IDisposable
         string[] paths = Enumerable.Range(0, 6)
             .Select(i => Make(new string((char)('a' + i), 96) + ".neo3ds"))
             .ToArray();
-        var batch = SendBatch.Resolve(paths, []);
+        var batch = ReadyBatch(paths);
         string[] urls = paths.Select(p =>
             "http://192.168.0.10:52406/0123456789abcdef/" + Uri.EscapeDataString(Path.GetFileName(p))).ToArray();
 
-        var sized = batch!.WithQr(urls);
+        var sized = batch.WithQr(urls);
 
-        Assert.False(sized.Allowed);
-        Assert.Equal(SendRefusal.QrTooLarge, sized.Refusal);
-        Assert.InRange(sized.AllowedCount, 1, 5);
-        Assert.Equal(QrCode.BatchAllowedCount(urls), sized.AllowedCount);
-        Assert.Contains(sized.AllowedCount.ToString(), sized.Reason);
+        var refused = Assert.IsType<SendBatchResult.Refused>(sized);
+        var tooLarge = Assert.IsType<BatchRefusal.QrTooLarge>(refused.Refusal);
+        Assert.InRange(tooLarge.AllowedCount, 1, 5);
+        Assert.Equal(QrCode.BatchAllowedCount(urls), tooLarge.AllowedCount);
+        Assert.Contains(tooLarge.AllowedCount.ToString(), refused.Refusal.Reason);
     }
 
     [Fact]
     public void ShortBatchFitsAndKeepsEveryItem()
     {
-        var batch = SendBatch.Resolve([Make("kof98.cia"), Make("nam1975.cia")], []);
+        var batch = ReadyBatch([Make("kof98.cia"), Make("nam1975.cia")]);
         string[] urls =
         [
             "http://192.168.0.10:52406/0123456789abcdef/0",
             "http://192.168.0.10:52406/0123456789abcdef/1",
         ];
 
-        var sized = batch!.WithQr(urls);
+        var sized = batch.WithQr(urls);
 
-        Assert.True(sized.Allowed);
-        Assert.Equal(2, sized.AllowedCount);
-    }
-
-    [Fact]
-    public void SingleFileKeepsTheOldQrPathWithoutTheVersionLimit()
-    {
-        var batch = SendBatch.Resolve([Make(new string('a', 96) + ".neo3ds")], []);
-
-        var sized = batch!.WithQr(["http://192.168.0.10:52406/0123456789abcdef/" + new string('a', 300)]);
-
-        Assert.True(sized.Allowed);
+        Assert.IsType<SendBatchResult.Ready>(sized);
     }
 
     /// <summary>#264: batch QR uses ECC L, while the single QR still uses ECC M.</summary>
