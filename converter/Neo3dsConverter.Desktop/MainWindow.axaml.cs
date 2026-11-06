@@ -12,8 +12,8 @@ public partial class MainWindow : Window
 {
     CiaJob? job;
     readonly List<CiaJob> batch = new();
-    /// <summary>#236: CIAs built in this session, in build order; only these can be sent to the 3DS.</summary>
-    readonly List<BuiltCia> built = new();
+    /// <summary>#255: CIAs built in this session, in build order; the dialog lists them first.</summary>
+    readonly List<SessionCia> built = new();
     bool busy;
 
 
@@ -415,95 +415,27 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>#236: CIAs built this session that still exist; deleted files drop out of the list.</summary>
-    internal IReadOnlyList<BuiltCia> SendTargets()
+    /// <summary>#255: CIAs built this session that still exist; deleted files drop out of the list.</summary>
+    internal IReadOnlyList<SessionCia> SendTargets()
     {
         built.RemoveAll(b => !File.Exists(b.Path));
         return built;
     }
 
-    /// <summary>#236: remembers a successful build. Launcher CIAs are included; .neo3ds files never are.</summary>
+    /// <summary>#255: remembers a successful build. Launcher CIAs are included; .neo3ds files never are.</summary>
     internal void AddBuilt(string path, bool launcher)
     {
         if (!path.EndsWith(".cia", StringComparison.OrdinalIgnoreCase) || !File.Exists(path)) return;
         built.RemoveAll(b => string.Equals(b.Path, path, StringComparison.OrdinalIgnoreCase));
-        built.Add(new BuiltCia(Path.GetFullPath(path), launcher));
+        built.Add(new SessionCia(Path.GetFullPath(path), launcher));
         RefreshSendButton();
     }
 
-    void RefreshSendButton() => SendButton.IsEnabled = !busy && SendTargets().Count > 0;
+    /// <summary>#255: the dialog can be opened before anything is built, so it is only off while busy.</summary>
+    void RefreshSendButton() => SendButton.IsEnabled = !busy;
 
-    /// <summary>The launcher CIA is labelled "런처" so the list does not read like another game.</summary>
-    internal static string SendLabel(BuiltCia b) => b.Launcher
-        ? Lang.L("런처", "Launcher") + " · " + Path.GetFileName(b.Path)
-        : Path.GetFileName(b.Path);
-
-    internal static string Size(long bytes) => bytes >= 1048576
-        ? $"{bytes / 1048576.0:0.0} MB"
-        : $"{Math.Max(1, bytes / 1024)} KB";
-
-    /// <summary>#236: serve one of the session's CIAs over the LAN; no picker when only one was built.</summary>
+    /// <summary>#255: one window for the session's CIAs and a dropped or picked file.</summary>
     async Task SendAsync()
-    {
-        var targets = SendTargets();
-        if (targets.Count == 0) { RefreshSendButton(); return; }
-        BuiltCia? target = targets.Count == 1 ? targets[0] : await PickSendTarget(targets);
-        if (target == null || !File.Exists(target.Path)) return;
-        await ShowSendDialog(target);
-    }
-
-    async Task<BuiltCia?> PickSendTarget(IReadOnlyList<BuiltCia> targets)
-    {
-        var list = new ListBox
-        {
-            ItemsSource = targets.Select(SendLabel).ToArray(),
-            SelectedIndex = 0,
-            Height = 220,
-        };
-        var send = new Button { Content = Lang.L("보내기", "Send"), Padding = new Avalonia.Thickness(20, 4) };
-        var cancel = new Button { Content = Lang.L("취소", "Cancel"), Padding = new Avalonia.Thickness(20, 4) };
-        var dlg = new Window
-        {
-            Title = Lang.L("3DS로 보내기", "Send to 3DS"),
-            Width = 440,
-            SizeToContent = SizeToContent.Height,
-            CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Content = new StackPanel
-            {
-                Margin = new Avalonia.Thickness(16),
-                Spacing = 12,
-                Children =
-                {
-                    new TextBlock
-                    {
-                        Text = Lang.L("보낼 CIA를 선택하세요.", "Pick the CIA to send."),
-                        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                    },
-                    list,
-                    new StackPanel
-                    {
-                        Orientation = Avalonia.Layout.Orientation.Horizontal,
-                        Spacing = 8,
-                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
-                        Children = { cancel, send },
-                    },
-                },
-            },
-        };
-        BuiltCia? picked = null;
-        send.Click += (_, _) =>
-        {
-            if (list.SelectedIndex >= 0) picked = targets[list.SelectedIndex];
-            dlg.Close();
-        };
-        cancel.Click += (_, _) => dlg.Close();
-        await dlg.ShowDialog(this);
-        return picked;
-    }
-
-    /// <summary>The QR stays up while the server runs; closing the dialog stops it and frees the port.</summary>
-    async Task ShowSendDialog(BuiltCia target)
     {
         var addresses = LanSender.LanAddresses();
         if (addresses.Count == 0)
@@ -514,7 +446,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        using var dialog = new SendDialog(target, addresses);
+        using var dialog = new SendDialog(SendTargets(), addresses);
         await dialog.ShowAsync(this);
         Log(Lang.L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
     }

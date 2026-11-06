@@ -1,4 +1,3 @@
-using System.Drawing.Drawing2D;
 using static Neo3dsConverter.Lang;
 namespace Neo3dsConverter;
 
@@ -20,7 +19,7 @@ public sealed class MainForm : Form
     readonly Button buildButton = new() { Text = L("CIA 만들기", "Build CIA"), Dock = DockStyle.Fill, Height = 40, Enabled = false };
     readonly Button packButton = new() { Text = L("런처용 파일 만들기", "Launcher file"), Dock = DockStyle.Fill, Height = 40, Enabled = false };
     readonly Button launcherButton = new() { Text = L("런처 CIA 만들기 (게임 목록 앱, 한 번만 설치)", "Build the launcher CIA (game list app, install once)"), Dock = DockStyle.Fill, Height = 34 };
-    readonly Button sendButton = new() { Text = L("3DS로 보내기 (QR)", "Send to 3DS (QR)"), Dock = DockStyle.Fill, Height = 34, Enabled = false };
+    readonly Button sendButton = new() { Text = L("3DS로 보내기 (QR)", "Send to 3DS (QR)"), Dock = DockStyle.Fill, Height = 34 };
     readonly TextBox logBox = new()
     {
         Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill,
@@ -28,8 +27,8 @@ public sealed class MainForm : Form
     };
 
     CiaJob? job;
-    /// <summary>#237: CIAs built this session; only these can be sent to the 3DS.</summary>
-    readonly List<(string Path, bool Launcher)> built = new();
+    /// <summary>#255: CIAs built this session; the dialog lists them first.</summary>
+    readonly List<SessionCia> built = new();
     /// <summary>The zips picked together (two or more); empty when one game is picked.</summary>
     readonly List<CiaJob> batch = new();
     Control? iconButtons, bannerButtons;
@@ -291,31 +290,24 @@ public sealed class MainForm : Form
 
     void SetBuildEnabled(bool on) => buildButton.Enabled = packButton.Enabled = on;
 
-    /// <summary>#237: only CIAs built this session can be sent; gone files drop out of the list.</summary>
-    List<(string Path, bool Launcher)> SendTargets()
+    /// <summary>#255: CIAs built this session that still exist; gone files drop out of the list.</summary>
+    List<SessionCia> SendTargets()
     {
         built.RemoveAll(b => !File.Exists(b.Path));
         return built;
     }
 
-    /// <summary>#237: remembers a successful build. Launcher CIAs are included; .neo3ds files never are.</summary>
+    /// <summary>#255: remembers a successful build. Launcher CIAs are included; .neo3ds files never are.</summary>
     void AddBuilt(string path, bool launcher)
     {
         if (!path.EndsWith(".cia", StringComparison.OrdinalIgnoreCase) || !File.Exists(path)) return;
         built.RemoveAll(b => string.Equals(b.Path, path, StringComparison.OrdinalIgnoreCase));
-        built.Add((Path.GetFullPath(path), launcher));
+        built.Add(new SessionCia(Path.GetFullPath(path), launcher));
         RefreshSend();
     }
 
-    void RefreshSend() => sendButton.Enabled = !UseWaitCursor && SendTargets().Count > 0;
-
-    static string SendLabel((string Path, bool Launcher) b) => b.Launcher
-        ? L("런처", "Launcher") + " · " + Path.GetFileName(b.Path)
-        : Path.GetFileName(b.Path);
-
-    static string FileSize(long bytes) => bytes >= 1048576
-        ? $"{bytes / 1048576.0:0.0} MB"
-        : $"{Math.Max(1, bytes / 1024)} KB";
+    /// <summary>#255: the dialog opens before anything is built, so the button is only off while busy.</summary>
+    void RefreshSend() => sendButton.Enabled = !UseWaitCursor;
 
     static string Built(bool pack, string file) => pack
         ? L($"런처용 파일을 만들었습니다. SD카드의 /neo3ds/games/ 폴더에 복사하세요 (런처 CIA가 설치돼 있어야 합니다).\n\n{file}",
@@ -436,53 +428,8 @@ public sealed class MainForm : Form
         }
     }
 
-    /// <summary>#237: pick one of the session's CIAs (no picker when only one) and serve it by QR.</summary>
+    /// <summary>#255: one window for the session's CIAs and a dropped or picked file.</summary>
     void SendTo3ds()
-    {
-        var targets = SendTargets();
-        if (targets.Count == 0) { RefreshSend(); return; }
-        var target = targets.Count == 1 ? targets[0] : PickSendTarget(targets);
-        if (target == null || !File.Exists(target.Value.Path)) return;
-        ShowSendDialog(target.Value);
-    }
-
-    (string Path, bool Launcher)? PickSendTarget(IReadOnlyList<(string Path, bool Launcher)> targets)
-    {
-        using var dlg = new Form
-        {
-            Text = L("3DS로 보내기", "Send to 3DS"),
-            ClientSize = new Size(460, 300),
-            FormBorderStyle = FormBorderStyle.FixedDialog,
-            StartPosition = FormStartPosition.CenterParent,
-            MaximizeBox = false,
-            MinimizeBox = false,
-            ShowIcon = false,
-            Padding = new Padding(16),
-        };
-        var list = new ListBox { Dock = DockStyle.Fill };
-        list.Items.AddRange(targets.Select(t => (object)SendLabel(t)).ToArray());
-        list.SelectedIndex = 0;
-        var hint = new Label
-        {
-            Text = L("보낼 CIA를 선택하세요.", "Pick the CIA to send."),
-            Dock = DockStyle.Top,
-            Height = 28,
-        };
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, FlowDirection = FlowDirection.RightToLeft, Height = 42 };
-        var send = new Button { Text = L("보내기", "Send"), DialogResult = DialogResult.OK, Width = 96, Height = 30 };
-        var cancel = new Button { Text = L("취소", "Cancel"), DialogResult = DialogResult.Cancel, Width = 96, Height = 30 };
-        buttons.Controls.Add(cancel);
-        buttons.Controls.Add(send);
-        dlg.Controls.Add(list);
-        dlg.Controls.Add(buttons);
-        dlg.Controls.Add(hint);
-        dlg.AcceptButton = send;
-        dlg.CancelButton = cancel;
-        return dlg.ShowDialog(this) == DialogResult.OK && list.SelectedIndex >= 0 ? targets[list.SelectedIndex] : null;
-    }
-
-    /// <summary>The QR stays up while the server runs; closing the dialog stops it and frees the port.</summary>
-    void ShowSendDialog((string Path, bool Launcher) target)
     {
         var addresses = LanSender.LanAddresses();
         if (addresses.Count == 0)
@@ -492,128 +439,9 @@ public sealed class MainForm : Form
                 L("3DS로 보내기", "Send to 3DS"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
-
-        using var dlg = new Form
-        {
-            Text = L("3DS로 보내기", "Send to 3DS"),
-            ClientSize = new Size(480, 700),
-            FormBorderStyle = FormBorderStyle.FixedDialog,
-            StartPosition = FormStartPosition.CenterParent,
-            MaximizeBox = false,
-            MinimizeBox = false,
-            ShowIcon = false,
-            Padding = new Padding(16),
-        };
-        var panel = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
-            AutoScroll = true,
-        };
-        var qr = new PictureBox { Size = new Size(240, 240), SizeMode = PictureBoxSizeMode.Zoom, Margin = new Padding(0, 0, 0, 8) };
-        var status = new Label { AutoSize = true, Font = new Font(Font, FontStyle.Bold), Margin = new Padding(0, 0, 0, 4) };
-        var info = new Label { AutoSize = true, Margin = new Padding(0, 0, 0, 6) };
-        var addressBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 420, Margin = new Padding(0, 0, 0, 4) };
-        addressBox.Items.AddRange(addresses.Select(a => (object)a.ToString()).ToArray());
-        addressBox.SelectedIndex = 0;
-        var hint = new Label
-        {
-            Text = L("3DS와 같은 공유기에 연결된 주소를 고르세요.", "Pick the address on the network the 3DS shares."),
-            AutoSize = true,
-            MaximumSize = new Size(420, 0),
-            Margin = new Padding(0, 0, 0, 6),
-        };
-        var url = new TextBox { ReadOnly = true, Width = 420, Margin = new Padding(0, 0, 0, 6) };
-        var steps = new Label
-        {
-            Text = L("FBI → Remote Install → Scan QR Code\nPC와 3DS가 같은 네트워크(같은 공유기)에 있어야 합니다. 3DS는 2.4 GHz Wi-Fi만 됩니다.",
-                     "FBI → Remote Install → Scan QR Code\nThe PC and the 3DS must be on the same network (router). The 3DS is 2.4 GHz Wi-Fi only."),
-            AutoSize = true,
-            MaximumSize = new Size(420, 0),
-            Margin = new Padding(0, 0, 0, 6),
-        };
-        var notes = new Label
-        {
-            Text = L("• 방화벽이 물으면 허용하세요. 차단하면 FBI 다운로드가 실패합니다.\n• VPN이 켜져 있으면 위 주소에서 실제 Wi-Fi/LAN 주소를 고르세요. VPN 주소로는 3DS가 접속하지 못합니다.\n• SD 카드 공간이 부족하면 FBI 설치가 실패합니다.",
-                     "• Allow it when the firewall asks; blocking it makes the FBI download fail.\n• With a VPN on, pick the real Wi-Fi/LAN address above; the 3DS cannot reach a VPN address.\n• FBI fails to install if the SD card lacks free space."),
-            AutoSize = true,
-            MaximumSize = new Size(420, 0),
-            Margin = new Padding(0, 0, 0, 10),
-        };
-        var close = new Button { Text = L("닫기", "Close"), AutoSize = true, Padding = new Padding(20, 2, 20, 2) };
-
-        LanSender? sender = null;
-        void Stop()
-        {
-            sender?.Dispose();
-            sender = null;
-        }
-        void Connect(int index)
-        {
-            Stop();
-            try
-            {
-                var s = LanSender.Start(target.Path, addresses[index].Address);
-                s.Downloaded += () =>
-                {
-                    try
-                    {
-                        dlg.BeginInvoke(() =>
-                        {
-                            if (ReferenceEquals(sender, s) && !status.IsDisposed)
-                                status.Text = L("전송 완료 — FBI가 설치를 계속합니다.", "Sent — FBI continues with the install.");
-                        });
-                    }
-                    catch (InvalidOperationException) { /* dialog already closed */ }
-                };
-                sender = s;
-                var old = qr.Image;
-                qr.Image = ScaleQr(QrCode.Png(s.Url), 240);
-                old?.Dispose();
-                url.Text = s.Url;
-                info.Text = $"{s.FileName} · {FileSize(s.Length)}";
-                status.Text = L("3DS의 FBI에서 QR을 스캔하세요.", "Scan the QR code in FBI on the 3DS.");
-            }
-            catch (Exception e)
-            {
-                Stop();
-                var old = qr.Image;
-                qr.Image = null;
-                old?.Dispose();
-                info.Text = url.Text = "";
-                status.Text = L("전송 실패: ", "Send failed: ") + e.Message;
-            }
-        }
-        Connect(0);
-        addressBox.SelectedIndexChanged += (_, _) => { if (addressBox.SelectedIndex >= 0) Connect(addressBox.SelectedIndex); };
-        close.Click += (_, _) => dlg.Close();
-        dlg.FormClosed += (_, _) =>
-        {
-            var image = qr.Image;
-            qr.Image = null;
-            image?.Dispose();
-            Stop();
-        };
-
-        panel.Controls.AddRange(new Control[] { qr, status, info, addressBox, hint, url, steps, notes, close });
-        dlg.Controls.Add(panel);
-        Log(L("3DS로 보내기: ", "Sending to 3DS: ") + url.Text);
+        using var dlg = new SendDialog(SendTargets(), addresses);
         dlg.ShowDialog(this);
         Log(L("3DS 전송을 마쳤습니다.", "Stopped sending to the 3DS."));
-    }
-
-    /// <summary>Whole-number upscale with nearest-neighbour: QR modules stay crisp on screen.</summary>
-    static Bitmap ScaleQr(byte[] png, int target)
-    {
-        using var src = new Bitmap(new MemoryStream(png));
-        int scale = Math.Max(1, target / src.Width);
-        var bmp = new Bitmap(src.Width * scale, src.Height * scale);
-        using var g = Graphics.FromImage(bmp);
-        g.InterpolationMode = InterpolationMode.NearestNeighbor;
-        g.PixelOffsetMode = PixelOffsetMode.Half;
-        g.DrawImage(src, 0, 0, bmp.Width, bmp.Height);
-        return bmp;
     }
 
     void Log(string msg) => logBox.AppendText(msg + Environment.NewLine);
