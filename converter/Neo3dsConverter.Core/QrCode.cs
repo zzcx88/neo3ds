@@ -35,8 +35,10 @@ public static class QrCode
     }
 
     /// <summary>
-    /// #264: how many of <paramref name="urls"/>, in order, still fit one version-12 QR. The PC
+    /// #264/#312: how many of <paramref name="urls"/>, in order, still fit one version-12 QR. The PC
     /// reports this count instead of splitting a selection; 0 means even the first URL is too big.
+    /// The product renders and measures the same text with QRCoder, so this follows the encoder's
+    /// real output (its mixed numeric/alphanumeric/byte segments), not a 367-byte byte-mode table.
     /// </summary>
     public static int BatchAllowedCount(IReadOnlyList<string> urls)
     {

@@ -739,6 +739,117 @@ public class MainWindowTests
         }
     }
 
+    /// <summary>
+    /// #312: a batch follows a new address, the old listener stops, and closing the window stops
+    /// the listener that is still serving.
+    /// </summary>
+    [AvaloniaFact]
+    public void SendDialog_RestartsABatchOnAnotherAddressAndStopsItOnClose()
+    {
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-batch-address-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            string one = Path.Combine(tmp, "one.cia");
+            string two = Path.Combine(tmp, "two.cia");
+            byte[] firstBytes = new byte[2048];
+            byte[] secondBytes = new byte[4096];
+            new Random(21).NextBytes(firstBytes);
+            new Random(22).NextBytes(secondBytes);
+            File.WriteAllBytes(one, firstBytes);
+            File.WriteAllBytes(two, secondBytes);
+
+            // Both spellings bind to loopback, but the long one makes visibly longer URLs.
+            var addresses = new[]
+            {
+                new LanAddress("127.000.000.001", "long loopback"),
+                new LanAddress("127.0.0.1", "loopback"),
+            };
+            using var dialog = new SendDialog([], addresses);
+            dialog.Window.Show();
+            dialog.ChooseMany([one, two]);
+
+            Assert.NotNull(dialog.Sender);
+            string[] firstUrls = dialog.Sender!.Items.Select(i => i.Url).ToArray();
+            Assert.Contains("127.000.000.001", firstUrls[0]);
+
+            dialog.SelectAddress(1);
+
+            Assert.NotNull(dialog.Sender);
+            string[] secondUrls = dialog.Sender!.Items.Select(i => i.Url).ToArray();
+            Assert.Contains("127.0.0.1", secondUrls[0]);
+            Assert.NotEqual(firstUrls[0], secondUrls[0]);
+
+            bool oldStopped = false;
+            var oldFetch = Task.Run(async () =>
+            {
+                try { await new HttpClient().GetByteArrayAsync(firstUrls[0]); }
+                catch { oldStopped = true; }
+            });
+            PumpUntilVisible(() => oldFetch.IsCompleted, 5000);
+            Assert.True(oldStopped, "the previous address must stop serving the batch");
+
+            byte[]? served = null;
+            var newFetch = Task.Run(async () => served = await new HttpClient().GetByteArrayAsync(secondUrls[0]));
+            PumpUntilVisible(() => newFetch.IsCompleted, 5000);
+            Assert.Equal(firstBytes, served);
+
+            dialog.Window.Close();
+            PumpUntilVisible(() => dialog.Sender == null, 2000);
+            Assert.Null(dialog.Sender);
+
+            bool closedStopped = false;
+            var afterClose = Task.Run(async () =>
+            {
+                try { await new HttpClient().GetByteArrayAsync(secondUrls[0]); }
+                catch { closedStopped = true; }
+            });
+            PumpUntilVisible(() => afterClose.IsCompleted, 5000);
+            Assert.True(closedStopped, "closing the window must stop the batch server");
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>#312: the 16-hex token stays in the URL/QR, not in status, rows, steps, or the log.</summary>
+    [AvaloniaFact]
+    public void SendDialog_KeepsTheTokenOutOfStatusAndLogText()
+    {
+        string tmp = Path.Combine(Path.GetTempPath(), "neo3ds-send-batch-token-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        var window = new MainWindow();
+        window.Show();
+        try
+        {
+            string one = Path.Combine(tmp, "one.cia");
+            string two = Path.Combine(tmp, "two.cia");
+            File.WriteAllBytes(one, new byte[2048]);
+            File.WriteAllBytes(two, new byte[4096]);
+
+            var dialog = window.OpenSendDialog([new LanAddress("127.0.0.1", "loopback")]);
+            dialog.ChooseMany([one, two]);
+
+            Assert.NotNull(dialog.Url);
+            string token = new Uri(dialog.Url!).AbsolutePath
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)[0];
+            Assert.Equal(16, token.Length);
+            Assert.Contains(token, dialog.Url);
+            Assert.DoesNotContain(token, dialog.StatusText);
+            Assert.DoesNotContain(token, dialog.InfoText);
+            Assert.DoesNotContain(token, dialog.StepsText);
+            Assert.DoesNotContain(token, dialog.NotesText);
+            Assert.DoesNotContain(token, string.Join("\n", dialog.BatchRows));
+            Assert.DoesNotContain(token, window.FindControl<TextBox>("LogBox")!.Text ?? "");
+        }
+        finally
+        {
+            window.Close();
+            try { Directory.Delete(tmp, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     /// <summary>#300: a failed QR must stop the server it just started, not leave the port listening.</summary>
     [AvaloniaFact]
     public void SendDialog_StopsTheServerWhenQrGenerationFails()
