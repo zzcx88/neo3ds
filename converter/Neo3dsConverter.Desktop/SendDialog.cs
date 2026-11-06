@@ -366,6 +366,7 @@ internal sealed class SendDialog : IDisposable
 
             s.ItemStarted += item => OnBatchItem(s, item, SendState.Sending);
             s.ItemDownloaded += item => OnBatchItem(s, item, SendState.Sent);
+            SetGuide(sized.Guide, sized.Items.Count);
             ClearQr();
             var png = new Bitmap(new MemoryStream(batchQrPng(s.QrText)));
             int scale = Math.Max(1, 240 / png.PixelSize.Width);

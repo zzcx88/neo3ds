@@ -130,6 +130,8 @@ public sealed class SendDialog : Form
     internal string[] BatchRows => batchList.Items.Cast<object>().Select(i => i.ToString() ?? "").ToArray();
     internal string StatusText => status.Text;
     internal string InfoText => info.Text;
+    internal string StepsText => steps.Text;
+    internal string NotesText => notes.Text;
     internal LanSender? Sender => sender;
     internal string? QrText => sender?.QrText;
 
@@ -329,6 +331,7 @@ public sealed class SendDialog : Form
 
             s.ItemStarted += item => OnBatchItem(s, item, SendState.Sending);
             s.ItemDownloaded += item => OnBatchItem(s, item, SendState.Sent);
+            SetGuide(sized.Guide, sized.Items.Count);
             ClearQr();
             qr.Image = ScaleQr(QrCode.BatchPng(s.QrText), 240);
             url.Height = Math.Min(96, Math.Max(24, sized.Items.Count * 16));
