@@ -139,6 +139,19 @@ and adds fast paths:
   for each of the 16 zoom steps and both flips (`put_row_zoom_k`). A zoomed-out Samurai Shodown V
   Special frame went from 12.1 ms to 7.0 ms, enough for full speed.
 
+### Raster effects
+
+Hardware draws one line at a time, so a game can change sprites while the picture is being drawn.
+neo3ds draws a whole frame at once from a copy taken at the end of the frame, so it has to rebuild
+what each line saw. As in MAME, a write shows from the line of the last IRQ2 before it.
+
+- **Positions.** Writes to SCB2-SCB4 (zoom, y, x) after an IRQ2 are logged, and the sprite chains they
+  touch are drawn in segments. Neo Turf Masters' water and hills move this way.
+- **Tiles.** Spin Master takes an IRQ2 at line 232 and starts rebuilding its sprites there, tiles
+  included. With only positions rolled back, the lines above showed old positions with new tiles: body
+  parts in the wrong place and solid blocks. The first tile change after an IRQ2 now saves SCB1
+  (56 KB), and the lines above that IRQ2 draw from the copy. Games with no such write never copy.
+
 ## Frame pacing
 
 The main loop waited for the vblank with `gspWaitForVBlank()`, which always waits for the *next*
