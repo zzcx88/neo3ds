@@ -92,6 +92,9 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 /* ── 다운로드 페이지 (#242) ───────────────────────────────────────────── */
 .dl-list{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 8px}
 .device-col{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px}
+.hero-pause{font:400 11px/1 var(--pixel-sm);color:var(--dim);background:transparent;border:0;
+  cursor:pointer;padding:6px 2px;text-decoration:underline;text-underline-offset:3px}
+.hero-pause:hover{color:var(--gold)}
 
 /* ── 3DS 본체 목업 (위 360×216, 아래 288×194 — hero 축소, #52) ─────────── */
 .device{--u:min(1px,calc((100vw - 24px)/480));width:calc(480*var(--u));display:flex;flex-direction:column}
@@ -110,6 +113,7 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .screen-stack{position:relative}
 .screen-stack .hero-ph{position:absolute;inset:0;opacity:0;animation:heroRot 25s infinite}
 .screen-stack .hero-ph:first-child{position:relative;animation-delay:0s}
+.screen-stack.paused .hero-ph{animation-play-state:paused}
 .screen-stack .hero-ph:nth-child(2){animation-delay:-20s}
 .screen-stack .hero-ph:nth-child(3){animation-delay:-15s}
 .screen-stack .hero-ph:nth-child(4){animation-delay:-10s}
@@ -169,15 +173,18 @@ section[id]{scroll-margin-top:64px}
 .prep .tiny{margin:14px 0 0}
 
 /* ── 출력 선택 (게임 CIA / 런처) ─────────────────────────────────────── */
-.outputs{display:grid;gap:18px;margin-top:44px}
+.outputs-h{font-size:19px;font-family:var(--text);font-weight:600;margin:44px 0 14px}
+.outputs{display:grid;gap:18px;margin-top:18px}
+.out-alt{display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:16px 20px;border:1px solid var(--line);border-radius:4px;background:var(--panel-2)}
+.out-alt h3{font-size:18px;font-family:var(--text);font-weight:600;margin:0 0 4px}
+.out-alt p{margin:0;font-size:15px;color:#C9C9D2}
+.out-alt .btn{flex:none}
 .out-card{border:1px solid var(--line);border-radius:4px;padding:20px;background:var(--panel-2)}
 .out-card h3{font-size:18px;font-family:var(--text);font-weight:600;margin:0 0 8px}
 .out-card p{font-size:15px;color:#C9C9D2}
 .out-card .btn{margin-top:4px}
-.out-points{display:flex;flex-wrap:wrap;gap:4px 20px;margin:10px 0 0}
-.out-points li{position:relative;padding-left:14px;font-size:14.5px;color:#C9C9D2}
-.out-points li::before{content:"·";position:absolute;left:2px;color:var(--gold)}
-.out-card-cia .btn{margin-top:14px}
+.out-alt p,.out-card p,.pb-desc,.steps p{word-break:keep-all;overflow-wrap:anywhere}
 .out-card-launch{border-color:var(--gold)}
 .out-card-launch .kicker{margin:0 0 8px}
 .out-launch-body{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:20px;align-items:start;margin:14px 0 4px}
@@ -260,10 +267,9 @@ section[id]{scroll-margin-top:64px}
 /* ── 호환성 ─────────────────────────────────────────────────────────── */
 /* ── 시리즈 바로가기 (#198) — 홈에서 롱테일 페이지로 가는 내부 링크 ──────── */
 .series-h{font-size:19px;font-family:var(--text);font-weight:600;margin:22px 0 10px}
-.series-nav{display:flex;flex-wrap:wrap;gap:8px}
-.series-nav a{font-size:13.5px;line-height:1.2;color:#C9C9D2;padding:7px 11px;
-  border:1px solid var(--line);border-radius:3px;text-decoration:none}
-.series-nav a:hover{border-color:var(--gold);color:var(--gold)}
+.series-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;font-size:14px;line-height:1.6}
+.series-line a{color:#C9C9D2;text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:1px}
+.series-line a:hover{color:var(--gold);border-color:var(--gold)}
 
 .explorer{margin-top:30px}
 .ex-tools{display:flex;flex-wrap:wrap;gap:14px;align-items:center;border-top:1px solid var(--line);
@@ -318,7 +324,7 @@ section[id]{scroll-margin-top:64px}
 .caveat{margin-top:40px}
 .caveat h3{font-size:19px;font-family:var(--text);font-weight:600;margin-bottom:10px}
 .caveat ul{display:grid;gap:9px}
-.caveat li{font-size:15px;color:#C9C9D2;padding-left:16px;position:relative}
+.caveat li{font-size:15px;color:#C9C9D2;padding-left:16px;position:relative;max-width:var(--prose)}
 .caveat li::before{content:"·";position:absolute;left:4px;color:var(--gold)}
 
 /* ── FAQ / 법적 / 푸터 ─────────────────────────────────────────────── */
@@ -368,12 +374,16 @@ section[id]{scroll-margin-top:64px}
   .bar-nav a{flex:0 0 auto}
 }
 @media (max-width:760px){
+  /* 390px대에서 강제 줄바꿈이 "menu."만 남기므로 자연 줄바꿈 + 균형 분배로 둔다. */
+  .hero h1 br{display:none}
+  .hero h1{text-wrap:balance}
   .bar{gap:10px;padding:9px 12px}
   .bar-nav{gap:8px}
   .bar-end .btn{padding:8px 10px;font-size:11px}
   body{font-size:16px}
   .sec{padding:46px 0}
   .steps,.check,.out-launch-body{grid-template-columns:minmax(0,1fr)}
+  .out-alt{flex-direction:column;align-items:flex-start}
   .fig-launch img{max-width:240px;margin:0 auto}
   .panel-list li{grid-template-columns:minmax(0,1fr);gap:4px;padding:12px 0}
   .out-card-launch .panel-list li{padding:8px 0}
@@ -390,8 +400,8 @@ section[id]{scroll-margin-top:64px}
   .screen-stack .hero-ph{animation:none}
   .screen-stack .hero-ph:first-child{opacity:1}
 }
-/* 389px 이하: brand + lang + Convert + 두 링크만 들어간다. 첫 링크(설치/Setup)를 숨긴다. */
-@media (max-width:389px){
+/* 430px 이하: brand + lang + Convert + 두 링크만 넣는다. 첫 링크(설치/Setup)를 숨긴다. */
+@media (max-width:430px){
   .bar-nav a:first-child{display:none}
 }
 
@@ -399,6 +409,11 @@ section[id]{scroll-margin-top:64px}
 .compat-wrap{max-width:1120px;margin:0 auto;padding:28px 24px 64px}
 .compat h1{font-size:clamp(20px,3vw,28px)}
 .compat .lede{margin:12px 0 20px}
+/* 넓은 표는 좁은 화면에서 가로로 스크롤한다 (body의 overflow-x:hidden이 잘라내지 않도록). */
+.table-scroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-scroll:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.table-hint{display:none}
+@media (max-width:660px){.table-hint{display:block;margin:0 0 6px}}
 .compat table{width:100%;border-collapse:collapse;font-size:13px}
 .compat caption{text-align:left;color:var(--dim);font-size:12px;padding:0 0 10px}
 .compat th,.compat td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}

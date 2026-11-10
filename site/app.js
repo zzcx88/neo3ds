@@ -14,28 +14,27 @@ const EN = {
   'a11y.skip': 'Skip to content', 'a11y.sections': 'Sections',
   'a11y.noscript': 'This page needs JavaScript. The game list and the converter demo will not run.',
   'nav.download': 'Download', 'nav.games': 'Games', 'nav.faq': 'FAQ',
-  'cta.download': 'Convert now', 'cta.source': 'Source code',
-  'hero.kicker': 'romset zip on the PC → a 3DS install file (CIA) · converter + emulator engine',
-  'hero.h1': 'Neo Geo games,<br>on the 3DS HOME menu.',
+  'cta.download': 'Convert now',
+  'hero.h1': 'Neo Geo games, <br>on the 3DS HOME menu.',
   'hero.mock': 'Game footage composited into a 3DS console mockup',
-  'hero.lede': 'Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon. It runs at 60 fps even on an Old 3DS.',
-  'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'on an Old 3DS',
-  'hero.req': 'Runs in the browser · nothing to install · GPL-2.0',
-  'hero.notes': 'Patch notes — what changed in each version',
+  'hero.pause': 'Pause',
+  'hero.lede': 'Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon.',
+  'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'in tested games',
+  'hero.req': 'It runs in your browser and files are never uploaded.',
+  'hero.notes': 'What changed in each version',
   'cta.dl': 'Download', 'cta.dlWin': 'Get it for Windows x64',
   'cta.dlLin': 'Get it for Linux x64', 'cta.dlMac': 'Get it for macOS (Apple Silicon)',
   'steps.h2': 'Set-up in three steps',
   'steps.lede': 'Building an install file takes a minute or two on the PC. After that you only need the 3DS.',
   'steps.s1t': 'Get the romset ready',
   'steps.s1d': 'Keep your game\'s MAME romset and the BIOS together, names unchanged.',
-  'steps.s2t': 'Build the CIA (or launcher files)',
-  'steps.s2d': 'One game takes a minute or two, mostly compressing graphics. Drop several zips to convert them one after another, or build launcher files (.neo3ds) instead.',
-  'steps.s3t': 'Install on the 3DS (or copy to the launcher)',
-  'steps.s3d': 'A CIA shows up on the HOME menu. Launcher files go on the SD card at /neo3ds/games/ and start from the launcher app.',
+  'steps.s2t': 'Build the file',
+  'steps.s2d': 'One game takes a minute or two, mostly compressing graphics. Drop several zips and they convert one after another.',
+  'steps.s3t': 'Install it',
+  'steps.s3d': 'Install a CIA with FBI, or copy a launcher file to the SD card. The download page has the steps.',
   'out.ciaH': 'Game CIA', 'out.ciaP': 'One install file per game, with its own HOME menu icon.',
+  'ways.h3': 'Two ways to install',
   'out.ciaCta': 'Build a game CIA',
-  'out.p1': 'HOME icon and banner per game', 'out.p2': 'Key config, saves and quick saves per game',
-  'out.p3': 'Install only the games you want',
   'prep.h3': 'What you need',
   'prep.1b': 'A 3DS', 'prep.1d': 'Old 3DS / 2DS / New 3DS / New 2DS XL, with custom firmware (Luma3DS) and an installer (FBI)',
   'prep.2b': 'A web browser', 'prep.2d': 'Chrome, Edge, Firefox, Safari · roms stay inside the browser',
@@ -43,7 +42,7 @@ const EN = {
   'prep.note': 'Only MAME romset zips convert.<br>A romset whose names or chip CRCs differ from MAME\'s does not convert.',
   'prep.4b': 'The sound file', 'prep.4d': '<code>/3ds/dspfirm.cdc</code> on the SD card',
   'conv.p5d': 'Icon (48×48) and banner (256×128) from the title or from a picture you pick.', /* convert.html gatePipe가 공유 */
-  'launch.kicker': 'Recommended · the way to go for several games',
+  'launch.kicker': 'The way to go for several games',
   'launch.h2': 'Launcher: every game in one app',
   'launch.lede': 'Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.',
   'launch.imgAlt': 'Launcher game list with the All and Fav tabs',
@@ -56,8 +55,8 @@ const EN = {
   'speed.meas': 'Measured', 'speed.line': '16.7ms per frame · 59.8fps · KOF \'98 64.0 → 20.3MB',
   'speed.doc': 'Technical notes', 'speed.docHref': 'https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.md',
   'games.h2': 'Game compatibility',
-  'games.lede': 'The converter knows 282 romsets and builds 242 of them. 25 of those were played on an Old 3DS.',
-  'games.all': 'All 282 romsets — status per game',
+  'games.lede': 'The converter knows 282 romsets and builds 242 of them. 26 of those were played on an Old 3DS.',
+  'games.all': 'See all 282 romsets',
   /* 시리즈 바로가기 (#198): 앵커 텍스트는 게임명 + 3DS, 검색어와 일치시킨다. */
   'games.seriesH': 'Browse by series', 'games.seriesLabel': 'Series pages',
   'games.seriesMetalSlug': 'Metal Slug on 3DS', 'games.seriesKof': 'The King of Fighters on 3DS',
@@ -86,8 +85,8 @@ const EN = {
   'legal.h2': 'Legal',
   'legal.p1': 'No ROMs, BIOS or game data are included here.<br>Convert only games you own, and never distribute a CIA you build.',
   'legal.p2': 'neo3ds is a personal fan project, unaffiliated with SNK or Nintendo.<br>NEOGEO is a trademark of SNK CORPORATION; Nintendo 3DS of Nintendo.<br>Credits and third-party code are in <a href="https://github.com/zzcx88/neo3ds/blob/main/THIRD_PARTY_NOTICES.md">third-party notices</a>; the source is GPL-2.0.',
-  'foot.compat': 'Game list', 'foot.repo': 'Repository', 'foot.rel': 'Releases', 'foot.readme': 'README',
-  'foot.build': 'Build procedure', 'foot.lic': 'Licence',
+  'foot.compat': 'Game list', 'foot.repo': 'Repository', 'foot.rel': 'Releases',
+  'foot.lic': 'Licence',
   'foot.note': 'Game screens and trademarks belong to their owners.', 'foot.privacy': 'Privacy',
   'foot.report': 'Report a problem',
   /* privacy.html — web usage stats (#125) */
@@ -178,7 +177,7 @@ const EN = {
   'report.send': 'Send', 'report.open': 'Report a problem',
   /* JS가 그리는 문구 */
   'ex.verified': 'on hardware', 'ex.ok': 'buildable', 'ex.no': 'not supported',
-  'ex.pick': 'Pick a game on the left.',
+  'ex.pick': 'Pick a game from the list.',
   'ex.cta': 'Build this game\'s CIA',
   'ex.unverified': 'Converts fine, but not played on hardware yet.',
   'ex.romset': 'romset', 'ex.year': 'year', 'ex.maker': 'maker', 'ex.rom': 'ROM size',
@@ -282,6 +281,18 @@ const LANG = document.documentElement.lang === 'en' ? 'en' : 'ko';
 
 /** 지금 언어에 맞는 문구 (en이 없으면 넘긴 한국어를 그대로 씀) */
 const t = (ko, en) => (LANG === 'en' ? en : ko);
+
+/* 히어로 화면이 25초마다 저절로 넘어간다. 멈출 수단을 둔다 (WCAG 2.2.2). */
+const heroPause = $('#heroPause');
+if (heroPause) {
+  const stack = $('.screen-stack');
+  heroPause.addEventListener('click', () => {
+    const paused = heroPause.getAttribute('aria-pressed') !== 'true';
+    heroPause.setAttribute('aria-pressed', String(paused));
+    stack.classList.toggle('paused', paused);
+    heroPause.textContent = paused ? t('재생', 'Play') : t('일시정지', 'Pause');
+  });
+}
 
 /* 반대 언어판 힌트 (#130, #141). 브라우저의 첫 선호 언어가 이 페이지 언어와 다르면
    화면 아래에 한 줄로 알린다. 리다이렉트는 하지 않는다: 구글봇은 en-US로 렌더하므로
@@ -414,7 +425,7 @@ function renderPages(pages) {
 
 function renderDetail() {
   const row = selected ? bySet.get(selected) : null;
-  if (!row) { exDetail.innerHTML = `<p class="tiny">${t('왼쪽에서 게임을 고르세요.', EN['ex.pick'])}</p>`; return; }
+  if (!row) { exDetail.innerHTML = `<p class="tiny">${t('목록에서 게임을 고르세요.', EN['ex.pick'])}</p>`; return; }
   const [set, title, year, maker, mb, chain, st, noteKo, noteEn, spriteMb] = row;
   const note = st === 2 ? t(noteKo, noteEn) : st === 1 ? t(noteKo, noteEn) : t('변환은 되지만 아직 실기에서 확인하지 않았습니다.', EN['ex.unverified']);
   const cta = st === 2 ? '' : `<a class="btn btn-primary btn-sm ex-cta" href="convert.html">${t('이 게임 CIA 만들기', EN['ex.cta'])}</a>`;

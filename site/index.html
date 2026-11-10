@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Neo Geo emulator & converter for 3DS | neo3ds</title>
-<meta name="description" content="Turn Neo Geo (MAME) romsets into installable 3DS CIAs. Runs at 60 fps on an Old 3DS, one HOME menu icon per game. 242 of 282 romsets convert.">
+<meta name="description" content="Turn Neo Geo (MAME) romsets into installable 3DS CIAs. The games we checked run at 60 fps on an Old 3DS, one HOME menu icon per game. 242 of 282 romsets convert.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="Neo Geo emulator & converter for 3DS | neo3ds">
-<meta property="og:description" content="MAME romsets → installable 3DS CIAs. A Neo Geo emulator at 60 fps on an Old 3DS, plus a browser converter with nothing to install.">
+<meta property="og:description" content="MAME romsets → installable 3DS CIAs. A Neo Geo emulator at 60 fps in the games we checked on an Old 3DS, plus a browser converter with nothing to install.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -26,7 +26,7 @@
 <meta property="og:locale:alternate" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Neo Geo emulator & converter for 3DS | neo3ds">
-<meta name="twitter:description" content="MAME romsets → 3DS CIAs. 60 fps on an Old 3DS.">
+<meta name="twitter:description" content="MAME romsets → 3DS CIAs. 60 fps in the games we checked.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <script type="application/ld+json">
 {
@@ -81,21 +81,19 @@
 <section class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <p class="kicker">romset zip on the PC → a 3DS install file (CIA) · converter + emulator engine</p>
-      <h1>Neo Geo games,<br>on the 3DS HOME menu.</h1>
-      <p class="lede">Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon. It runs at 60 fps even on an Old 3DS.</p>
+      <h1>Neo Geo games, <br>on the 3DS HOME menu.</h1>
+      <p class="lede">Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="convert.html">Convert now</a>
         <a class="btn btn-ghost btn-lg" href="download.html">Download</a>
-        <a class="btn btn-ghost btn-lg" href="https://github.com/zzcx88/neo3ds">Source code</a>
       </div>
       <a class="hero-stats" href="#games">
         <span class="stat"><b>242 / 282</b><span>romsets convert</span></span>
-        <span class="stat"><b>25</b><span>played on hardware</span></span>
-        <span class="stat"><b>60fps</b><span>on an Old 3DS</span></span>
+        <span class="stat"><b>26</b><span>played on hardware</span></span>
+        <span class="stat"><b>60fps</b><span>in tested games</span></span>
       </a>
-      <p class="tiny">Runs in the browser · nothing to install · GPL-2.0</p>
-      <p class="tiny"><a class="hero-notes" href="changelog.html">Patch notes — what changed in each version</a></p>
+      <p class="tiny">It runs in your browser and files are never uploaded.</p>
+      <p class="tiny"><a class="hero-notes" href="changelog.html">What changed in each version</a></p>
     </div>
 
     
@@ -136,6 +134,7 @@
           </div>
         </div>
       </div>
+      <button type="button" class="hero-pause" id="heroPause" aria-pressed="false">Pause</button>
       <figcaption class="sr-only">Game footage composited into a 3DS console mockup</figcaption>
     </figure>
   </div>
@@ -155,30 +154,28 @@
       </li>
       <li>
         <span class="step-no">2</span>
-        <h3>Build the CIA (or launcher files)</h3>
-        <p>One game takes a minute or two, mostly compressing graphics. Drop several zips to convert them one after another, or build launcher files (.neo3ds) instead.</p>
+        <h3>Build the file</h3>
+        <p>One game takes a minute or two, mostly compressing graphics. Drop several zips and they convert one after another.</p>
       </li>
       <li>
         <span class="step-no">3</span>
-        <h3>Install on the 3DS (or copy to the launcher)</h3>
-        <p>A CIA shows up on the HOME menu. Launcher files go on the SD card at /neo3ds/games/ and start from the launcher app.</p>
+        <h3>Install it</h3>
+        <p>Install a CIA with FBI, or copy a launcher file to the SD card. The download page has the steps.</p>
       </li>
     </ol>
 
+    <h3 class="outputs-h">Two ways to install</h3>
     <div class="outputs">
-      <div class="out-card out-card-cia">
-        <h3>Game CIA</h3>
-        <p>One install file per game, with its own HOME menu icon.</p>
-        <ul class="out-points">
-          <li>HOME icon and banner per game</li>
-          <li>Key config, saves and quick saves per game</li>
-          <li>Install only the games you want</li>
-        </ul>
+      <div class="out-alt">
+        <div>
+          <h3>Game CIA</h3>
+          <p>One install file per game, with its own HOME menu icon.</p>
+        </div>
         <a class="btn btn-ghost" href="convert.html?mode=cia">Build a game CIA</a>
       </div>
 
       <div class="out-card out-card-launch">
-        <p class="kicker">Recommended · the way to go for several games</p>
+        <p class="kicker">The way to go for several games</p>
         <h3>Launcher: every game in one app</h3>
         <p>Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.</p>
         <div class="out-launch-body">
@@ -216,12 +213,12 @@
 <section class="sec" id="games">
   <div class="wrap">
     <h2>Game compatibility</h2>
-    <p class="lede narrow">The converter knows 282 romsets and builds 242 of them. 25 of those were played on an Old 3DS.</p>
-    <p class="tiny" style="margin:8px 0 18px"><a href="compat.html">All 282 romsets — status per game</a></p>
+    <p class="lede narrow">The converter knows 282 romsets and builds 242 of them. 26 of those were played on an Old 3DS.</p>
+    <p class="tiny" style="margin:8px 0 18px"><a href="compat.html">See all 282 romsets</a></p>
 
     
     <h3 class="series-h">Browse by series</h3>
-    <nav class="series-nav" aria-label="Series pages">
+    <nav class="series-line" aria-label="Series pages">
       <a href="series/metal-slug.html">Metal Slug on 3DS</a>
       <a href="series/king-of-fighters.html">The King of Fighters on 3DS</a>
       <a href="series/samurai-shodown.html">Samurai Shodown on 3DS</a>
@@ -291,7 +288,7 @@
         <summary>Where do I get the ROMs?</summary>
         <p>Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so never share it.</p>
       </details>
-      <details>
+      <details open>
         <summary>Is it really 60 fps on an Old 3DS?</summary>
         <p>KOF '95-'99, 2000, 2002, Metal Slug 1, X, 3 and 5, Neo Turf Masters, Neo Drift Out, SVC Chaos and Samurai Shodown V Special ran at full speed on hardware. Metal Slug 2, X and 3 slow down exactly where the original board did; Aero Fighters 3 is playable.</p>
         <p class="perf"><b>Measured</b> <span>16.7ms per frame · 59.8fps · KOF '98 64.0 → 20.3MB</span> · <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.md">Technical notes</a></p>
@@ -414,8 +411,6 @@
       <a href="index.html#feedback">Report a problem</a>
       <a href="https://github.com/zzcx88/neo3ds">Repository</a>
       <a href="https://github.com/zzcx88/neo3ds/releases">Releases</a>
-      <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md">README</a>
-      <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/build.md">Build procedure</a>
       <a href="https://github.com/zzcx88/neo3ds/blob/main/LICENSE">Licence</a>
       <a href="privacy.html">Privacy</a>
     </nav>

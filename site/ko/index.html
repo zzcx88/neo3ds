@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>네오지오 3DS 에뮬레이터·변환기 | neo3ds</title>
-<meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
+<meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 확인한 게임은 구형 3DS에서도 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <!-- 익명 제보 엔드포인트 (#188). 배포 후 worker URL을 넣는다: docs/build.md §7.3 -->
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
-<meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
+<meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 확인한 게임은 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -26,7 +26,7 @@
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
-<meta name="twitter:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 구형 3DS에서 60fps.">
+<meta name="twitter:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 확인한 게임은 구형 3DS에서 60fps.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <script type="application/ld+json">
 {
@@ -74,21 +74,19 @@
 <section class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <p class="kicker" data-i18n="hero.kicker">PC의 롬 zip → 3DS 설치 파일(CIA) · 변환기 + 에뮬레이터 엔진</p>
-      <h1 data-i18n="hero.h1">네오지오 게임을<br>3DS 홈 메뉴에.</h1>
-      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 3DS 설치 파일(CIA)이 나옵니다. 설치하면 HOME 메뉴에 자기 아이콘으로 뜨고, 구형 3DS에서도 60fps로 돕니다.</p>
+      <h1 data-i18n="hero.h1">네오지오 게임을 <br>3DS 홈 메뉴에.</h1>
+      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 3DS 설치 파일(CIA)이 나옵니다. 설치하면 HOME 메뉴에 자기 아이콘으로 뜹니다.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="convert.html" data-i18n="cta.download">변환하기</a>
         <a class="btn btn-ghost btn-lg" href="download.html" data-i18n="cta.dl">다운로드</a>
-        <a class="btn btn-ghost btn-lg" href="https://github.com/zzcx88/neo3ds" data-i18n="cta.source">소스 보기</a>
       </div>
       <a class="hero-stats" href="#games">
         <span class="stat"><b>242 / 282</b><span data-i18n="hero.st1">롬셋 변환 가능</span></span>
-        <span class="stat"><b>25</b><span data-i18n="hero.st2">실기 확인</span></span>
-        <span class="stat"><b>60fps</b><span data-i18n="hero.st3">구형 3DS</span></span>
+        <span class="stat"><b>26</b><span data-i18n="hero.st2">실기 확인</span></span>
+        <span class="stat"><b>60fps</b><span data-i18n="hero.st3">확인 게임 기준</span></span>
       </a>
-      <p class="tiny" data-i18n="hero.req">브라우저에서 동작 · 설치 불필요 · GPL-2.0</p>
-      <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">패치노트 — 버전별 변경 사항</a></p>
+      <p class="tiny" data-i18n="hero.req">브라우저에서 돌고, 파일은 올라가지 않습니다.</p>
+      <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">버전별 변경 사항</a></p>
     </div>
 
     <!-- 3DS 본체 목업: 윗화면 게임 교대, 아랫화면 터치 UI -->
@@ -129,6 +127,7 @@
           </div>
         </div>
       </div>
+      <button type="button" class="hero-pause" id="heroPause" aria-pressed="false" data-i18n="hero.pause">일시정지</button>
       <figcaption class="sr-only" data-i18n="hero.mock">3DS 본체 목업에 게임 화면 합성</figcaption>
     </figure>
   </div>
@@ -148,30 +147,28 @@
       </li>
       <li>
         <span class="step-no">2</span>
-        <h3 data-i18n="steps.s2t">CIA 만들기 (또는 런처용 파일)</h3>
-        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다. zip 여러 개를 한 번에 넣으면 차례로 변환되고, 런처용 파일(.neo3ds)로도 만들 수 있습니다.</p>
+        <h3 data-i18n="steps.s2t">파일 만들기</h3>
+        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다. zip 여러 개를 넣으면 차례로 변환됩니다.</p>
       </li>
       <li>
         <span class="step-no">3</span>
-        <h3 data-i18n="steps.s3t">3DS에 설치 (또는 런처에 복사)</h3>
-        <p data-i18n="steps.s3d">CIA는 설치하면 HOME 메뉴에 게임 아이콘이 생깁니다. 런처용 파일은 SD 카드 /neo3ds/games/에 복사하고 런처 앱에서 고릅니다.</p>
+        <h3 data-i18n="steps.s3t">3DS에 설치</h3>
+        <p data-i18n="steps.s3d">CIA는 FBI로 설치하고, 런처용 파일은 SD 카드에 복사합니다. 자세한 절차는 다운로드 페이지에 있습니다.</p>
       </li>
     </ol>
 
+    <h3 class="outputs-h" data-i18n="ways.h3">설치 방식 두 가지</h3>
     <div class="outputs">
-      <div class="out-card out-card-cia">
-        <h3 data-i18n="out.ciaH">게임 CIA</h3>
-        <p data-i18n="out.ciaP">게임마다 설치 파일 하나. HOME 메뉴에 게임별 아이콘이 생깁니다.</p>
-        <ul class="out-points">
-          <li data-i18n="out.p1">HOME 아이콘·배너가 게임별로</li>
-          <li data-i18n="out.p2">키 설정·세이브·퀵세이브가 게임별로</li>
-          <li data-i18n="out.p3">하고 싶은 게임만 골라 설치</li>
-        </ul>
+      <div class="out-alt">
+        <div>
+          <h3 data-i18n="out.ciaH">게임 CIA</h3>
+          <p data-i18n="out.ciaP">게임마다 설치 파일 하나, HOME 메뉴에 게임별 아이콘.</p>
+        </div>
         <a class="btn btn-ghost" href="convert.html?mode=cia" data-i18n="out.ciaCta">게임 CIA 만들기</a>
       </div>
 
       <div class="out-card out-card-launch">
-        <p class="kicker" data-i18n="launch.kicker">추천 · 여러 게임이면 이 방식</p>
+        <p class="kicker" data-i18n="launch.kicker">여러 게임이면 이 방식</p>
         <h3 data-i18n="launch.h2">런처: 앱 하나로 전 게임</h3>
         <p data-i18n="launch.lede">게임마다 CIA를 설치하는 대신, 런처 앱 하나만 설치하고 SD 카드의 게임 파일 목록에서 골라 실행합니다. HOME 메뉴 아이콘도 하나만 생깁니다.</p>
         <div class="out-launch-body">
@@ -209,12 +206,12 @@
 <section class="sec" id="games">
   <div class="wrap">
     <h2 data-i18n="games.h2">게임 호환성</h2>
-    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 25종은 구형 3DS 실기에서 확인했습니다.</p>
-    <p class="tiny" style="margin:8px 0 18px"><a href="compat.html" data-i18n="games.all">282종 전체 목록 — 게임별 지원 상태 보기</a></p>
+    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 26종은 구형 3DS 실기에서 확인했습니다.</p>
+    <p class="tiny" style="margin:8px 0 18px"><a href="compat.html" data-i18n="games.all">282종 전체 목록 보기</a></p>
 
     <!-- 시리즈 롱테일 페이지로 가는 유일한 홈 링크 (#198). 앵커 텍스트는 검색어(게임명 + 3DS)에 맞춘다. -->
     <h3 class="series-h" data-i18n="games.seriesH">시리즈별로 보기</h3>
-    <nav class="series-nav" aria-label="시리즈 페이지" data-i18n-attr="aria-label:games.seriesLabel">
+    <nav class="series-line" aria-label="시리즈 페이지" data-i18n-attr="aria-label:games.seriesLabel">
       <a href="series/metal-slug.html" data-i18n="games.seriesMetalSlug">메탈슬러그 3DS</a>
       <a href="series/king-of-fighters.html" data-i18n="games.seriesKof">킹 오브 파이터즈 3DS</a>
       <a href="series/samurai-shodown.html" data-i18n="games.seriesSamsho">사무라이 쇼다운 3DS</a>
@@ -284,7 +281,7 @@
         <summary data-i18n="faq.q1">롬은 어디서 받나요?</summary>
         <p data-i18n="faq.a1">받는 곳이 없습니다. 직접 가진 게임의 롬셋이 필요하고, 만든 CIA에는 롬 데이터가 들어 있으니 배포하면 안 됩니다.</p>
       </details>
-      <details>
+      <details open>
         <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
         <p data-i18n="faq.a2">KOF '95~'99·2000·2002, 메탈슬러그 1·X·3·5, 네오 터프 마스터즈, 네오 드리프트 아웃, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드입니다. 메탈슬러그 2·X·3은 원래 기판에서 느려지던 장면은 똑같이 느려지며, 소닉윙즈 3는 플레이 가능합니다.</p>
         <p class="perf"><b data-i18n="speed.meas">실측</b> <span data-i18n="speed.line">한 프레임 16.7ms · 59.8fps · KOF '98 64.0 → 20.3MB</span> · <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.ko.md" data-i18n-attr="href:speed.docHref" data-i18n="speed.doc">기술 문서</a></p>
@@ -407,8 +404,6 @@
       <a href="index.html#feedback" data-i18n="foot.report">문제 신고</a>
       <a href="https://github.com/zzcx88/neo3ds" data-i18n="foot.repo">저장소</a>
       <a href="https://github.com/zzcx88/neo3ds/releases" data-i18n="foot.rel">릴리스</a>
-      <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md" data-i18n="foot.readme">README</a>
-      <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/build.md" data-i18n="foot.build">빌드 절차</a>
       <a href="https://github.com/zzcx88/neo3ds/blob/main/LICENSE" data-i18n="foot.lic">라이선스</a>
       <a href="privacy.html" data-i18n="foot.privacy">개인정보</a>
     </nav>
