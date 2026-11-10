@@ -65,9 +65,21 @@ export function doneEvent(set) {
 
 // `stage` is the last progress step the page saw, `code` the worker's reason.
 // Both fold into one property: 'load/bios', 'romfs/oom', 'worker/crash' (#175).
+// #326: the worker's romfs sub-reasons are finer than the dashboard buckets, so
+// they fold back into the existing eleven before leaving the tab — no new
+// property, no new dashboard value. 'unknown' stays itself, so romfs/unknown
+// remains visible.
+const FOLD = Object.freeze({
+  'zip-corrupt': 'zip', // damaged/oversized entry
+  'crc-mismatch': 'missing', // the expected chip is not the one in the zip
+  'bios-read': 'bios', // neogeo.zip lacks a required chip
+  'game-db': 'unknown', // our own data/protection bug; report it
+});
+
 export function failEvent(set, stage, code) {
   const step = STAGES.has(stage) ? stage : 'worker';
-  const why = REASONS.has(code) ? `/${code}` : '';
+  const reason = FOLD[code] ?? code;
+  const why = REASONS.has(reason) ? `/${reason}` : '';
   return { name: EVENT.fail, data: { game: gameSet(set), stage: step + why } };
 }
 

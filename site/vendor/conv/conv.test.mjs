@@ -775,6 +775,23 @@ await t('messages/unknown-fallback', async () => {
   }
 });
 
+await t('analytics/failure-subreasons-fold-into-existing-buckets', async () => {
+  const { failEvent } = await import('./analytics.js');
+  const stage = (code) => failEvent('kof98h', 'romfs', code).data.stage;
+  const want = {
+    'zip-corrupt': 'romfs/zip',
+    'crc-mismatch': 'romfs/missing',
+    'bios-read': 'romfs/bios',
+    'game-db': 'romfs/unknown',
+    // The unknown bucket stays visible (#326 review: it is not dropped).
+    unknown: 'romfs/unknown',
+  };
+  for (const [code, expected] of Object.entries(want)) {
+    if (stage(code) !== expected) throw new Error(`${code}: ${stage(code)} != ${expected}`);
+  }
+  if (stage(null) !== 'romfs') throw new Error('null code: ' + stage(null));
+});
+
 // ── #188/#189 anonymous report payload (pure) ─────────────────────────────
 // A zip file name is download-only: it must never appear in the payload, in
 // the log, or in an error message. Catalog names survive untouched.
