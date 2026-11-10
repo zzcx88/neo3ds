@@ -33,6 +33,7 @@ TEXT = {
         'th': ['Game', 'Romset', 'Year', 'ROM MB', 'Status'],
         'stats': '{count} romsets · {ok} convert · {verified} verified on hardware',
         'caption': 'Verified first, then convertible, then unsupported',
+        'table_label': 'Game table, scrolls sideways',
         'all': 'All {total} romsets',
         'convert': 'Convert a romset',
         'home': 'Intro',
@@ -47,6 +48,7 @@ TEXT = {
         'th': ['게임', '롬셋', '연도', '롬 MB', '상태'],
         'stats': '롬셋 {count}종 · {ok}종 변환 가능 · {verified}종 실기 확인',
         'caption': '실기 확인 → 변환 가능 → 변환 불가 순',
+        'table_label': '게임 표, 가로로 스크롤',
         'all': '롬셋 {total}종 전체 목록',
         'convert': '변환하기',
         'home': '소개',
@@ -141,6 +143,7 @@ def page(series, rows, counts, total, locale):
         lede=html.escape(copy['lede'].format(**fields)),
         prose=prose, stats=stats, th=th,
         caption=html.escape(t['caption']),
+        table_label=html.escape(t['table_label']),
         jsonld=json.dumps(jsonld, ensure_ascii=False, indent=2),
         css=up + 'styles.css', icon=up + 'media/favicon.svg',
         og_image=SITE + ('media/og-ko.png?v=2' if locale == 'ko' else 'media/og.png?v=2'),
@@ -236,6 +239,7 @@ PAGE = '''<!doctype html>
     <p class="lede">{lede}</p>
     <p class="tiny">{stats}</p>
     {prose}
+    <div class="table-scroll" tabindex="0" role="region" aria-label="{table_label}">
     <table>
       <caption>{caption}</caption>
       <thead><tr>{th}</tr></thead>
@@ -243,6 +247,7 @@ PAGE = '''<!doctype html>
       {rows}
       </tbody>
     </table>
+    </div>
     <p class="compat-back"><a href="{compat}">{all}</a> · <a href="{convert}">{convert_label}</a></p>
     <nav class="series" aria-label="{series_label}">
         {peers}
