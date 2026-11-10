@@ -743,6 +743,38 @@ await t('analytics/game-name-never-is-a-zip-file', async () => {
   }
 });
 
+// ── #326 failure messages: two plain sentences, catalog name only ─────────
+await t('messages/every-code-has-cause-and-action-ko-en', async () => {
+  const { MESSAGE_CODES, failureMessage } = await import('./messages.js');
+  const marks = (text) => (text.match(/[.!?]/g) ?? []).length;
+  for (const lang of ['ko', 'en']) {
+    for (const code of MESSAGE_CODES) {
+      const text = failureMessage(code, { set: 'kof98h', lang });
+      if (!text || text.length < 20) throw new Error(`${lang}/${code}: empty`);
+      if (marks(text) < 2) throw new Error(`${lang}/${code}: not two sentences: ${text}`);
+    }
+  }
+});
+
+await t('messages/never-uses-the-user-zip-name', async () => {
+  const { failureMessage, catalogName } = await import('./messages.js');
+  if (catalogName('kof98h') !== 'kof98h') throw new Error('catalog name rejected');
+  if (catalogName('My Game (1).zip') !== 'game') throw new Error('user zip name accepted');
+  for (const lang of ['ko', 'en']) {
+    const text = failureMessage('zip-corrupt', { set: 'My Game (1).zip', lang });
+    if (/My Game|\.zip/i.test(text)) throw new Error(`leaked: ${text}`);
+    if (!text.includes('game')) throw new Error(`missing generic name: ${text}`);
+  }
+});
+
+await t('messages/unknown-fallback', async () => {
+  const { failureMessage } = await import('./messages.js');
+  for (const lang of ['ko', 'en']) {
+    const text = failureMessage('not-a-code', { lang });
+    if (text !== failureMessage('unknown', { lang })) throw new Error(`${lang} fallback drift`);
+  }
+});
+
 // ── #188/#189 anonymous report payload (pure) ─────────────────────────────
 // A zip file name is download-only: it must never appear in the payload, in
 // the log, or in an error message. Catalog names survive untouched.
