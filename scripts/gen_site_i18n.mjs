@@ -19,10 +19,10 @@ const PAGES = {
     file: 'index.html',
     url: '',
     title: 'Neo Geo emulator & converter for 3DS | neo3ds',
-    description: 'Turn Neo Geo (MAME) romsets into installable 3DS CIAs. Runs at 60 fps on an Old 3DS, one HOME menu icon per game. 242 of 282 romsets convert.',
+    description: 'Turn Neo Geo (MAME) romsets into installable 3DS CIAs. The games we checked run at 60 fps on an Old 3DS, one HOME menu icon per game. 242 of 282 romsets convert.',
     ogTitle: 'Neo Geo emulator & converter for 3DS | neo3ds',
-    ogDescription: 'MAME romsets → installable 3DS CIAs. A Neo Geo emulator at 60 fps on an Old 3DS, plus a browser converter with nothing to install.',
-    twitterDescription: 'MAME romsets → 3DS CIAs. 60 fps on an Old 3DS.',
+    ogDescription: 'MAME romsets → installable 3DS CIAs. A Neo Geo emulator at 60 fps in the games we checked on an Old 3DS, plus a browser converter with nothing to install.',
+    twitterDescription: 'MAME romsets → 3DS CIAs. 60 fps in the games we checked.',
     ogImageAlt: 'neo3ds — Neo Geo games on your 3DS HOME menu',
     jsonld: {
       '@context': 'https://schema.org',

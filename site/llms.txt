@@ -1,9 +1,9 @@
 # neo3ds
 
 > neo3ds turns Neo Geo (MAME) romsets into installable Nintendo 3DS CIAs and runs them
-> on real hardware — including the original Old 3DS — at 60 fps, one HOME menu icon per
-> game. 242 of the 282 romsets in its game database convert; 25 are confirmed on real
-> hardware. The converter runs offline (Windows, Linux, macOS) and in the browser.
+> on real hardware — including the original Old 3DS — at 60 fps in the games we checked,
+> one HOME menu icon per game. 242 of the 282 romsets in its game database convert; 26 are
+> confirmed on real hardware. The converter runs offline (Windows, Linux, macOS) and in the browser.
 
 ## Pages
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>네오지오 3DS 에뮬레이터·변환기 | neo3ds</title>
-<meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 구형 3DS에서 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
+<meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 확인한 게임은 구형 3DS에서도 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <!-- 익명 제보 엔드포인트 (#188). 배포 후 worker URL을 넣는다: docs/build.md §7.3 -->
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
-<meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
+<meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 확인한 게임은 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -26,7 +26,7 @@
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
-<meta name="twitter:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 구형 3DS에서 60fps.">
+<meta name="twitter:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 확인한 게임은 구형 3DS에서 60fps.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <script type="application/ld+json">
 {
@@ -76,7 +76,7 @@
     <div class="hero-copy">
       <p class="kicker" data-i18n="hero.kicker">PC의 롬 zip → 3DS 설치 파일(CIA) · 변환기 + 에뮬레이터 엔진</p>
       <h1 data-i18n="hero.h1">네오지오 게임을<br>3DS 홈 메뉴에.</h1>
-      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 3DS 설치 파일(CIA)이 나옵니다. 설치하면 HOME 메뉴에 자기 아이콘으로 뜨고, 구형 3DS에서도 60fps로 돕니다.</p>
+      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 3DS 설치 파일(CIA)이 나옵니다. 설치하면 HOME 메뉴에 자기 아이콘으로 뜹니다. 실기에서 확인한 게임은 구형 3DS에서도 60fps입니다.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="convert.html" data-i18n="cta.download">변환하기</a>
         <a class="btn btn-ghost btn-lg" href="download.html" data-i18n="cta.dl">다운로드</a>
@@ -84,8 +84,8 @@
       </div>
       <a class="hero-stats" href="#games">
         <span class="stat"><b>242 / 282</b><span data-i18n="hero.st1">롬셋 변환 가능</span></span>
-        <span class="stat"><b>25</b><span data-i18n="hero.st2">실기 확인</span></span>
-        <span class="stat"><b>60fps</b><span data-i18n="hero.st3">구형 3DS</span></span>
+        <span class="stat"><b>26</b><span data-i18n="hero.st2">실기 확인</span></span>
+        <span class="stat"><b>60fps</b><span data-i18n="hero.st3">확인 게임 기준</span></span>
       </a>
       <p class="tiny" data-i18n="hero.req">브라우저에서 동작 · 설치 불필요 · GPL-2.0</p>
       <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">패치노트 — 버전별 변경 사항</a></p>
@@ -209,7 +209,7 @@
 <section class="sec" id="games">
   <div class="wrap">
     <h2 data-i18n="games.h2">게임 호환성</h2>
-    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 25종은 구형 3DS 실기에서 확인했습니다.</p>
+    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 26종은 구형 3DS 실기에서 확인했습니다.</p>
     <p class="tiny" style="margin:8px 0 18px"><a href="compat.html" data-i18n="games.all">282종 전체 목록 — 게임별 지원 상태 보기</a></p>
 
     <!-- 시리즈 롱테일 페이지로 가는 유일한 홈 링크 (#198). 앵커 텍스트는 검색어(게임명 + 3DS)에 맞춘다. -->
