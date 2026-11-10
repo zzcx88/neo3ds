@@ -9,9 +9,10 @@
 import { FAILURE_CODES } from './errors.js';
 
 const SET_NAME = /^[a-z0-9_]{1,40}$/;
+const isCatalogName = (value) => typeof value === 'string' && SET_NAME.test(value);
 
 export function catalogName(value) {
-  return typeof value === 'string' && SET_NAME.test(value) ? value : 'game';
+  return isCatalogName(value) ? value : 'game';
 }
 
 // Every code the worker, analytics and report contracts may deliver. The list
@@ -69,13 +70,12 @@ export function failureMessage(code, { set = null, lang = 'ko' } = {}) {
 // page cannot leak a user's file name into role=alert text (XMR ISSUE-003).
 // Each entry is the same cause+action pair as the row; a message that already
 // names the romset is not prefixed twice.
-export function batchFailureText(items, { lang = 'ko', max = 3 } = {}) {
-  const failures = (Array.isArray(items) ? items : []).filter((item) => item && typeof item === 'object');
+export function batchFailureText(items, { lang = 'ko' } = {}) {
+  const failures = Array.isArray(items) ? items : [];
   if (failures.length === 0) return '';
-  const limit = Math.max(1, Math.trunc(Number(max) || 3));
-  const shown = failures.slice(0, limit).map((item) => {
+  const shown = failures.slice(0, 3).map((item) => {
     const set = item.set ?? null;
-    const named = typeof set === 'string' && SET_NAME.test(set);
+    const named = isCatalogName(set);
     const text = failureMessage(item.code, { set, lang });
     // The message often names the romset already; prefix only when it does not.
     return named && !text.includes(set) ? `${set} — ${text}` : text;
