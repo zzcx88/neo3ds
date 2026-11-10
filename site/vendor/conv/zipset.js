@@ -245,7 +245,7 @@ export class RomSet {
 }
 
 // neogeo.zip is ~1.7MB: load it whole so read() stays synchronous.
-export function biosFailure(err) {
+function biosFailure(err) {
   // The BIOS zip is the only input here, so a damaged one is a BIOS problem
   // for the reader; an OOM keeps its own bucket (#326).
   const message = String(err?.message ?? err);
