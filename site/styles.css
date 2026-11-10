@@ -368,6 +368,9 @@ section[id]{scroll-margin-top:64px}
   .bar-nav a{flex:0 0 auto}
 }
 @media (max-width:760px){
+  /* 390px대에서 강제 줄바꿈이 "menu."만 남기므로 자연 줄바꿈 + 균형 분배로 둔다. */
+  .hero h1 br{display:none}
+  .hero h1{text-wrap:balance}
   .bar{gap:10px;padding:9px 12px}
   .bar-nav{gap:8px}
   .bar-end .btn{padding:8px 10px;font-size:11px}
