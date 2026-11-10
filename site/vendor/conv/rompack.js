@@ -3,6 +3,7 @@
 // no-op hook here: kof98h/nam1975 are cart "rom" (Phase 2 ports the 6 schemes).
 import { GameDb, Region, regionName } from './gamedb.js';
 import { BiosSet } from './zipset.js';
+import { coded } from './errors.js';
 
 export const SPRITE_BLOCK_SIZE = 16384;
 export const SPRITE_CODEC_ZSTD = 2;
@@ -30,7 +31,7 @@ export function place(buf, flag, data, st, offset, size) {
       for (let i = 0; i < size; i++) buf[offset + (i >> 1) * 4 + ((i & 1) ^ 1)] = data[st.pos + i];
       break;
     default:
-      throw new Error('unknown load flag ' + flag);
+      throw coded('game-db', 'unknown load flag ' + flag);
   }
   st.pos += size;
 }
@@ -64,6 +65,7 @@ export async function buildRegions(game, rom) {
           break;
         case 'copy': {
           const src = op.src === region.name ? buf : built.get(op.src);
+          if (!src) throw coded('game-db', `${game.name}: copy source ${op.src} is missing.`);
           buf.set(src.subarray(op.a, op.a + op.c), op.b);
           break;
         }

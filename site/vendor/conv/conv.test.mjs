@@ -97,19 +97,93 @@ await t('zipset/crc-mismatch-keeps-reason', async () => {
   const rom = await RomSet.open([fileSourceOf('v1.zip', zipSync({ 'rom.bin': chip }))]);
   const actual = crc32Bytes(chip);
   const expected = (actual ^ 0xdead) >>> 0;
-  let msg = '';
-  try { await rom.read('rom.bin', expected, 'kof98h'); } catch (e) { msg = e.message; }
+  let msg = '', code = '';
+  try { await rom.read('rom.bin', expected, 'kof98h'); } catch (e) { msg = e.message; code = e.code; }
   const want = `rom.bin has CRC ${actual.toString(16)}, expected ${expected.toString(16)}: not the kof98h romset version.`;
   if (msg !== want) throw new Error(`got ${JSON.stringify(msg)}`);
+  if (code !== 'crc-mismatch') throw new Error('code: ' + code);
+});
+
+await t('zipset/missing-chip-has-code', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { RomSet } = await import('./zipset.js');
+  const rom = await RomSet.open([fileSourceOf('x.zip', zipSync({ 'a.bin': noise(64, 5) }))]);
+  let code = '';
+  try { await rom.read('zzz.bin', 0x1234, 'kof98h'); } catch (e) { code = e.code; }
+  if (code !== 'missing') throw new Error('code: ' + code);
+});
+
+await t('zipset/bios-read-code', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { BiosSet } = await import('./zipset.js');
+  const { crc32Bytes } = await import('./job.js');
+  const chip = noise(1024, 41);
+  const bios = await BiosSet.open(fileSourceOf('neogeo.zip', zipSync({ 'neo-epo.bin': chip })));
+  let code = '';
+  try { bios.read({ name: 'sp-s2.sp1', crc: 0x1234, size: 1024 }); } catch (e) { code = e.code; }
+  if (code !== 'bios-read') throw new Error('missing chip: ' + code);
+  code = '';
+  try { bios.read({ name: 'neo-epo.bin', crc: (crc32Bytes(chip) ^ 0xdead) >>> 0, size: 1024 }); } catch (e) { code = e.code; }
+  if (code !== 'bios-read') throw new Error('wrong crc: ' + code);
+});
+
+await t('zipset/corrupt-bios-zip-is-bios-read', async () => {
+  const { BiosSet } = await import('./zipset.js');
+  let code = '';
+  try { await BiosSet.open(fileSourceOf('neogeo.zip', new Uint8Array(8))); } catch (e) { code = e.code; }
+  if (code !== 'bios-read') throw new Error('code: ' + code);
+});
+
+// A forged central-directory usize must not bypass the cap: inflate is bounded
+// by the declared size, so an oversized stream fails as zip-corrupt.
+const patchCentralUsize = (zip, usize) => {
+  const dv = new DataView(zip.buffer, zip.byteOffset, zip.length);
+  for (let i = zip.length - 22; i >= 0; i--) {
+    if (dv.getUint32(i, true) === 0x02014b50) {
+      dv.setUint32(i + 24, usize, true);
+      return zip;
+    }
+  }
+  throw new Error('no central directory header');
+};
+
+await t('zipset/forged-usize-is-bounded', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { openZipIndex } = await import('./zipset.js');
+  const zip = patchCentralUsize(zipSync({ 'a.bin': noise(4096, 47) }), 64);
+  const z = await openZipIndex(fileSourceOf('forged.zip', zip));
+  let code = '';
+  try { await z.read('a.bin'); } catch (e) { code = e.code; }
+  if (code !== 'zip-corrupt') throw new Error('code: ' + code);
+});
+
+await t('zipset/caps-stop-bombs-before-inflating', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { openZipIndex } = await import('./zipset.js');
+  const body = noise(2048, 43);
+  const zip = zipSync({ 'a.bin': body, 'b.bin': body });
+  const source = () => fileSourceOf('bomb.zip', zip);
+  let code = '';
+  try { await openZipIndex(source(), { entries: 1 }); } catch (e) { code = e.code; }
+  if (code !== 'zip-corrupt') throw new Error('entries cap: ' + code);
+  code = '';
+  try { await (await openZipIndex(source(), { entryBytes: 1024 })).read('a.bin'); } catch (e) { code = e.code; }
+  if (code !== 'zip-corrupt') throw new Error('entry cap: ' + code);
+  const z = await openZipIndex(source(), { totalBytes: 3000 });
+  await z.read('a.bin');
+  code = '';
+  try { await z.read('b.bin'); } catch (e) { code = e.code; }
+  if (code !== 'zip-corrupt') throw new Error('total cap: ' + code);
 });
 
 await t('zipset/truncated-zip-throws', async () => {
   const { zipSync } = await import('./fflate.js');
   const { RomSet } = await import('./zipset.js');
   const zip = zipSync({ 'rom.bin': noise(512, 9) });
-  let msg = '';
-  try { await RomSet.open([fileSourceOf('broken.zip', zip.subarray(0, zip.length - 30))]); } catch (e) { msg = e.message; }
+  let msg = '', code = '';
+  try { await RomSet.open([fileSourceOf('broken.zip', zip.subarray(0, zip.length - 30))]); } catch (e) { msg = e.message; code = e.code; }
   if (!/zip archive|central directory/.test(msg)) throw new Error('expected a zip error, got ' + JSON.stringify(msg));
+  if (code !== 'zip-corrupt') throw new Error('code: ' + code);
 });
 
 // ── #202 BIOS profile: central directory only, known slots, sfix/lo ─────────
@@ -741,6 +815,92 @@ await t('analytics/game-name-never-is-a-zip-file', async () => {
     '../kof98h', 'kof98h\n', '', null, undefined, 98]) {
     if (gameSet(value) !== 'unknown') throw new Error(`leaked ${JSON.stringify(value)}`);
   }
+});
+
+// ── #326 failure messages: two plain sentences, catalog name only ─────────
+await t('messages/every-code-has-cause-and-action-ko-en', async () => {
+  const { MESSAGE_CODES, failureMessage } = await import('./messages.js');
+  const marks = (text) => (text.match(/[.!?]/g) ?? []).length;
+  for (const lang of ['ko', 'en']) {
+    for (const code of MESSAGE_CODES) {
+      const text = failureMessage(code, { set: 'kof98h', lang });
+      if (!text || text.length < 20) throw new Error(`${lang}/${code}: empty`);
+      if (marks(text) < 2) throw new Error(`${lang}/${code}: not two sentences: ${text}`);
+    }
+  }
+});
+
+await t('messages/never-uses-the-user-zip-name', async () => {
+  const { failureMessage, catalogName } = await import('./messages.js');
+  if (catalogName('kof98h') !== 'kof98h') throw new Error('catalog name rejected');
+  if (catalogName('My Game (1).zip') !== 'game') throw new Error('user zip name accepted');
+  for (const lang of ['ko', 'en']) {
+    const text = failureMessage('zip-corrupt', { set: 'My Game (1).zip', lang });
+    if (/My Game|\.zip/i.test(text)) throw new Error(`leaked: ${text}`);
+    if (!text.includes('game')) throw new Error(`missing generic name: ${text}`);
+  }
+});
+
+await t('messages/covers-analytics-buckets-and-subreasons', async () => {
+  const { MESSAGE_CODES, failureMessage } = await import('./messages.js');
+  const { REASONS } = await import('./analytics.js');
+  const { ANALYTICS_FOLD } = await import('./errors.js');
+  for (const code of REASONS) {
+    if (!MESSAGE_CODES.includes(code)) throw new Error('bucket without words: ' + code);
+  }
+  for (const code of Object.keys(ANALYTICS_FOLD)) {
+    if (!MESSAGE_CODES.includes(code)) throw new Error('subreason without words: ' + code);
+  }
+  for (const lang of ['ko', 'en']) {
+    for (const code of MESSAGE_CODES) {
+      if (code === 'unknown') continue;
+      if (failureMessage(code, { lang }) === failureMessage('unknown', { lang })) {
+        throw new Error(`${lang}/${code}: falls back silently`);
+      }
+    }
+  }
+});
+
+await t('messages/unknown-fallback', async () => {
+  const { failureMessage } = await import('./messages.js');
+  for (const lang of ['ko', 'en']) {
+    const text = failureMessage('not-a-code', { lang });
+    if (text !== failureMessage('unknown', { lang })) throw new Error(`${lang} fallback drift`);
+  }
+});
+
+await t('analytics/failure-subreasons-fold-into-existing-buckets', async () => {
+  const { failEvent } = await import('./analytics.js');
+  const stage = (code) => failEvent('kof98h', 'romfs', code).data.stage;
+  const want = {
+    'zip-corrupt': 'romfs/zip',
+    'crc-mismatch': 'romfs/missing',
+    'bios-read': 'romfs/bios',
+    'game-db': 'romfs/unknown',
+    // The unknown bucket stays visible (#326 review: it is not dropped).
+    unknown: 'romfs/unknown',
+  };
+  for (const [code, expected] of Object.entries(want)) {
+    if (stage(code) !== expected) throw new Error(`${code}: ${stage(code)} != ${expected}`);
+  }
+  if (stage(null) !== 'romfs') throw new Error('null code: ' + stage(null));
+});
+
+// ── #326 structured failure codes ──────────────────────────────────────────
+await t('errors/coded-errors-keep-their-code', async () => {
+  const { coded, reasonCode } = await import('./errors.js');
+  const e = coded('zip-corrupt', 'bad entry');
+  if (e.message !== 'bad entry' || e.code !== 'zip-corrupt') throw new Error(JSON.stringify({ m: e.message, c: e.code }));
+  if (reasonCode(e) !== 'zip-corrupt') throw new Error('reason lost: ' + reasonCode(e));
+});
+
+await t('errors/pickGame-keeps-oom-but-labels-unknown-as-zip', async () => {
+  const { coded, reasonCode, pickFailureCode } = await import('./errors.js');
+  if (reasonCode(new Error('out of memory')) !== 'oom') throw new Error('oom not detected');
+  if (reasonCode(new Error('boom')) !== 'unknown') throw new Error('unknown fallback');
+  if (pickFailureCode(new Error('out of memory')) !== 'oom') throw new Error('oom masked as zip');
+  if (pickFailureCode(coded('zip-corrupt', 'x')) !== 'zip-corrupt') throw new Error('coded reason lost');
+  if (pickFailureCode(new Error('boom')) !== 'zip') throw new Error('uncoded pickGame failure should be zip');
 });
 
 // ── #188/#189 anonymous report payload (pure) ─────────────────────────────

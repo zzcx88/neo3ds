@@ -3,6 +3,7 @@
 // (see scripts/gen_gamedb.py); RomOp decoding mirrors GameDb.Load.
 import { supported as protectionSupported } from './protection.js';
 import { L } from './lang.js';
+import { coded } from './errors.js';
 
 export const Region = Object.freeze({ Europe: 0, Japan: 1, Usa: 2 });
 
@@ -16,7 +17,7 @@ export function decodeOps(rawOps) {
       case 'ignore': return { kind, flag: '', file: '', crc: null, a: a[1], b: 0, c: 0, src: '' };
       case 'fill': return { kind, flag: '', file: '', crc: null, a: a[1], b: a[2], c: a[3], src: '' };
       case 'copy': return { kind, flag: '', file: '', crc: null, a: a[2], b: a[3], c: a[4], src: a[1] };
-      default: throw new Error('unknown ROM op ' + kind);
+      default: throw coded('game-db', 'unknown ROM op ' + kind);
     }
   });
 }

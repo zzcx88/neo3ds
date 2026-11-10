@@ -19,6 +19,7 @@ import { preflight, biosMissing } from './preflight.js';
 import { readBiosProfile } from './biosinfo.js';
 import { L } from './lang.js';
 import { loadZstd } from './zstd-adapter.js';
+import { coded, pickFailureCode, reasonCode } from './errors.js';
 
 // Build products are gitignored: load them only when something is actually
 // built (#74), so preflight answers in a checkout without a WASM build.
@@ -56,17 +57,6 @@ self.onmessage = async (e) => {
 };
 
 // #175: analytics gets a stable reason code; the message stays localized text.
-function fail(code, message) {
-  return Object.assign(new Error(message), { code });
-}
-
-function reasonCode(err) {
-  if (typeof err?.code === 'string') return err.code;
-  const message = String(err?.message ?? err);
-  // Browsers word this differently per engine; both mean the run ran out of memory.
-  if (/out of memory|allocation failed|cannot enlarge memory/i.test(message)) return 'oom';
-  return 'unknown';
-}
 
 function memMB() {
   return performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(0) : null;
@@ -77,7 +67,7 @@ function smdh(s, max) { return s.replaceAll('"', "'").slice(0, max); }
 function makeRun() {
   return (mod, args) => {
     try { mod.callMain(args); }
-    catch (e) { if (e.code !== 0 && e.status !== 0) throw fail('wasm', `exit ${e.code ?? e.status}: ${args.join(' ')}`); }
+    catch (e) { if (e.code !== 0 && e.status !== 0) throw coded('wasm', `exit ${e.code ?? e.status}: ${args.join(' ')}`); }
   };
 }
 
@@ -91,7 +81,7 @@ async function prepArt(bt, icon, banner) {
 async function fetchTools(mr) {
   for (const f of ['neo3ds.rsf', 'engine.elf']) {
     const r = await fetch('../' + f);
-    if (!r.ok) throw fail('wasm', `vendor/${f}: ${r.status}`);
+    if (!r.ok) throw coded('wasm', `vendor/${f}: ${r.status}`);
     mr.FS.writeFile('/work/' + f, new Uint8Array(await r.arrayBuffer()));
   }
 }
@@ -167,12 +157,12 @@ async function buildBatch(db, files, zips, opts, post, t0) {
 async function decodeArt(file, lang) {
   if (!file) return null;
   if (typeof createImageBitmap !== 'function')
-    throw fail('image', L(lang, '이미지를 읽을 수 없습니다: 이 브라우저에는 createImageBitmap이 없습니다.',
+    throw coded('image', L(lang, '이미지를 읽을 수 없습니다: 이 브라우저에는 createImageBitmap이 없습니다.',
       'Cannot decode image: browser has no createImageBitmap.'));
   try {
     return await createImageBitmap(file);
   } catch {
-    throw fail('image', L(lang, `이미지를 읽을 수 없습니다: ${file.name}`, `Cannot decode image: ${file.name}`));
+    throw coded('image', L(lang, `이미지를 읽을 수 없습니다: ${file.name}`, `Cannot decode image: ${file.name}`));
   }
 }
 
@@ -183,17 +173,17 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   const gameFile = forceZip
     ? files.find((f) => f.name.toLowerCase() === forceZip.toLowerCase())
     : files.find((f) => f.name.toLowerCase() !== 'neogeo.zip');
-  if (!gameFile) throw fail('nofile', L(lang, '게임 zip과 neogeo.zip을 함께 올려 주세요.', 'Drop a game zip together with neogeo.zip.'));
+  if (!gameFile) throw coded('nofile', L(lang, '게임 zip과 neogeo.zip을 함께 올려 주세요.', 'Drop a game zip together with neogeo.zip.'));
   const zipName = gameFile.name.replace(/\.zip$/i, '').toLowerCase();
   // A zip whose index cannot be read fails at the same point as pickGame's
   // own verdicts, so both carry a code (#175).
   let picked;
   try { picked = await pickGame(db, RomSet, files, zipName, { lang }); }
-  catch (err) { throw fail('zip', String(err?.message ?? err)); }
+  catch (err) { throw coded(pickFailureCode(err), String(err?.message ?? err)); }
   const { game, problem, romset, code } = picked;
-  if (!game) throw fail(code ?? 'unknown', problem);
+  if (!game) throw coded(code ?? 'unknown', problem);
   const biosFile = files.find((f) => f.name.toLowerCase() === 'neogeo.zip');
-  if (!biosFile) throw fail('bios', biosMissing(lang));
+  if (!biosFile) throw coded('bios', biosMissing(lang));
   const tid = titleId(zipName), uid = uniqueId(zipName);
 
   const Z = await loadZstd('../zstd.js');

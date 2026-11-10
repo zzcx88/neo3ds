@@ -4,6 +4,7 @@ import { BiosSet } from './zipset.js';
 import { buildRegions, writeSprites } from './rompack.js';
 import { apply, fixBankType, isPvc } from './protection.js';
 import { patchFor } from './patches.js';
+import { coded } from './errors.js';
 
 export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
   const { region = Region.Europe, startMvs = null, log = () => {}, onProgress = null } = opts;
@@ -13,7 +14,7 @@ export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
   const regions = await buildRegions(game, rom);
   const need = (n) => {
     const r = regions.get(n);
-    if (!r) throw new Error(`${game.name}: no ${n} region.`);
+    if (!r) throw coded('game-db', `${game.name}: no ${n} region.`);
     return r;
   };
 
@@ -23,7 +24,14 @@ export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
     const t = program[i]; program[i] = program[i + 1]; program[i + 1] = t;
   }
   if (game.cart !== 'rom') log('  Decrypting...');
-  const sma = apply(game.cart, regions);
+  let sma;
+  try { sma = apply(game.cart, regions); }
+  catch (err) {
+    // A null/missing region is a game-db bug; anything else (an OOM, a coded
+    // zip/BIOS failure) keeps its own reason (#326).
+    if (err instanceof TypeError) throw coded('game-db', `${game.name}: ${String(err?.message ?? err)}`);
+    throw err;
+  }
   patchFor(game.cart)?.(program);
   out.set('p.bin', program.slice());
   out.set('s.bin', need('fixed').slice());
@@ -110,7 +118,7 @@ export function buildPack(gameFiles, romName) {
   let off = 16 + entries.length * 32;
   entries.forEach(([n, d], i) => {
     const nb = enc.encode(n);
-    if (nb.length > 23) throw new Error(`${n}: name too long`);
+    if (nb.length > 23) throw coded('game-db', `${n}: name too long`);
     out.set(nb, 16 + i * 32);
     dv.setUint32(16 + i * 32 + 24, off, true);
     dv.setUint32(16 + i * 32 + 28, d.length, true);
