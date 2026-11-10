@@ -16,6 +16,7 @@ import { zipResults } from './vendor/conv/bundle.js';
 import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
 import { startEvent, doneEvent, failEvent, saveEvent, send as sendEvent } from './vendor/conv/analytics.js';
 import { buildReport, failuresFrom, PENDING_KEY } from './vendor/conv/report.js';
+import { batchFailureText, failureMessage } from './vendor/conv/messages.js';
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
@@ -58,6 +59,7 @@ function trackSave(mode) {
 const failInfo = new Map(); // batch row -> { code, stage }; row.step is cleared on fail
 let singleFail = null; // { code, stage } for the single-game path
 let lastErrorDetail = ''; // worker crash location, when the browser reports one
+let lastFailMessage = ''; // raw failure text for the report; the page shows plain words (#327)
 
 function reportFailures() {
   if (batch && batchStarted) return failuresFrom(batch, batchSource, failInfo);
@@ -78,7 +80,9 @@ function reportSources() {
 function stashPending() {
   const failures = reportFailures();
   const log = logEl.textContent;
-  const error = [$('gateAlert').textContent, lastErrorDetail].filter(Boolean).join('\n\n');
+  // #327: the alert is plain words now, so the report carries the raw failure
+  // text separately. buildReport's redactions() still strips user zip names.
+  const error = [lastFailMessage, lastErrorDetail].filter(Boolean).join('\n\n');
   if (!failures.length && !log && !error) return;
   const partial = buildReport({
     type: 'convert-fail', summary: 'pending', mode: currentMode(),
@@ -754,9 +758,16 @@ function statusLabel(row) {
   return batchStarted ? t('대기', 'Pending') : t('변환 가능', 'Convertible');
 }
 
-function detailText(row) {
+// #327: a failed row shows the plain cause+action pair; the raw worker message
+// stays in row.detail for the log/report only.
+function detailText(row, index = -1) {
   if (row.status === STATUS.BLOCKED) return row.problem ?? '';
-  if (row.status === STATUS.FAILED) return row.detail || row.problem || '';
+  if (row.status === STATUS.FAILED) {
+    return failureMessage(failInfo.get(index)?.code ?? 'unknown', {
+      set: batchSource?.[index]?.set ?? null,
+      lang: uiLang(),
+    });
+  }
   if (row.status === STATUS.RUNNING) {
     const step = stepLabel(row.step);
     if (!row.detail) return step;
@@ -776,7 +787,7 @@ function summaryText(s) {
 function paintRow(host, row) {
   host.li.dataset.status = row.status;
   host.state.textContent = statusLabel(row);
-  host.detail.textContent = detailText(row);
+  host.detail.textContent = detailText(row, host.index);
   const label = artLabel(row);
   host.art.textContent = label ? artBadgeText(label) : '';
   host.art.classList.toggle('hidden', !label || !batchArtEligible());
@@ -1208,6 +1219,7 @@ runBtn.addEventListener('click', () => {
   failInfo.clear();
   singleFail = null;
   lastErrorDetail = '';
+  lastFailMessage = '';
 
   if (isBatch) {
     // Fresh statuses for this run, but keep every row's chosen picture (#76).
@@ -1310,6 +1322,7 @@ function failRow(row, message, stage = null, code = null) {
   const secs = rowSecs(row);
   // markFailed clears row.step, so read the analytics stage first.
   const failedAt = stage ?? batch?.[row]?.step ?? null;
+  lastFailMessage = String(message ?? ''); // raw: the report reproduces the error (#327)
   failInfo.set(row, { code: code ?? null, stage: failedAt });
   markFailed(batch, row, message);
   trackFail(batchSource?.[row]?.set, failedAt, code);
@@ -1344,7 +1357,7 @@ function workerFailed(w, message, detail = null) {
     if (w.single) { singleFail = { code: 'crash', stage: 'worker' }; trackFail(singleRow?.set, 'worker', 'crash'); }
     endOverall('error');
     finish();
-    failAlert(message);
+    failAlert(message, 'crash', singleRow?.set);
     logGameFail(-1, t(`워커 오류 (${message})`, `worker error (${message})`), rowSecs(-1));
     return;
   }
@@ -1421,7 +1434,7 @@ function onSingleMessage(m) {
     trackFail(singleRow?.set, singleStage, m.code);
     endOverall('error');
     finish();
-    failAlert(m.message);
+    failAlert(m.message, m.code ?? 'unknown', singleRow?.set);
     logGameFail(-1, m.message, rowSecs(-1));
   }
 }
@@ -1458,30 +1471,33 @@ function showAlert(text) {
   if (jump) jump.classList.toggle('hidden', !text);
 }
 
-function failAlert(message) {
-  showAlert(t(`변환에 실패했습니다: ${message} 로그를 확인한 뒤 변환하기를 다시 누르세요.`,
-    `Conversion failed: ${message} Check the log, then press Convert to try again.`));
+// #327: the alert shows the same plain cause+action pair as the row. The raw
+// message stays in lastFailMessage for the log/report.
+function failAlert(message, code = 'unknown', set = null) {
+  lastFailMessage = String(message ?? '');
+  showAlert(failureMessage(code, { set, lang: uiLang() }));
 }
 
 // #172: batch failures must state their reason where the reader lands after
 // pressing Convert (#progress), not only in the list above the fold. Each row
 // keeps its own detail line; this is the summary, capped so it stays readable.
+// #327/XMR ISSUE-003: catalog names only — the user's zip name never enters
+// the alert.
 function showBatchFailures() {
   if (!batch) return;
-  const failed = batch.filter((row) => row.status === STATUS.FAILED);
-  if (failed.length === 0) return;
-  const shown = failed.slice(0, 3).map((row) =>
-    `${row.name} — ${row.detail || row.problem || t('이유 없음', 'no reason given')}`);
-  const rest = failed.length - shown.length;
-  showAlert(t(
-    `변환 실패 ${failed.length}개: ${shown.join(' / ')}${rest > 0 ? ` 외 ${rest}개` : ''}. 게임별 이유는 위 목록에 있습니다.`,
-    `${failed.length} failed: ${shown.join(' / ')}${rest > 0 ? `, ${rest} more` : ''}. Per-game reasons are in the list above.`,
-  ));
+  const failures = [];
+  batch.forEach((row, i) => {
+    if (row.status !== STATUS.FAILED) return;
+    failures.push({ code: failInfo.get(i)?.code ?? null, set: batchSource?.[i]?.set ?? null });
+  });
+  const text = batchFailureText(failures, { lang: uiLang() });
+  if (text) showAlert(text);
 }
 
 function resetResults() {
   revokeAllUrls();
   showAlert('');
+  lastFailMessage = '';
   $('gateResultLine').textContent = '';
   $('gateResult').classList.add('hidden');
 }
