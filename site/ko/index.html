@@ -146,25 +146,23 @@
       </li>
       <li>
         <span class="step-no">2</span>
-        <h3 data-i18n="steps.s2t">CIA 만들기 (또는 런처용 파일)</h3>
-        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다. zip 여러 개를 한 번에 넣으면 차례로 변환되고, 런처용 파일(.neo3ds)로도 만들 수 있습니다.</p>
+        <h3 data-i18n="steps.s2t">파일 만들기</h3>
+        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다. zip 여러 개를 넣으면 차례로 변환됩니다.</p>
       </li>
       <li>
         <span class="step-no">3</span>
-        <h3 data-i18n="steps.s3t">3DS에 설치 (또는 런처에 복사)</h3>
-        <p data-i18n="steps.s3d">CIA는 설치하면 HOME 메뉴에 게임 아이콘이 생깁니다. 런처용 파일은 SD 카드 /neo3ds/games/에 복사하고 런처 앱에서 고릅니다.</p>
+        <h3 data-i18n="steps.s3t">3DS에 설치</h3>
+        <p data-i18n="steps.s3d">CIA는 FBI로 설치하고, 런처용 파일은 SD 카드에 복사합니다. 자세한 절차는 다운로드 페이지에 있습니다.</p>
       </li>
     </ol>
 
+    <h3 class="outputs-h" data-i18n="ways.h3">설치 방식 두 가지</h3>
     <div class="outputs">
-      <div class="out-card out-card-cia">
-        <h3 data-i18n="out.ciaH">게임 CIA</h3>
-        <p data-i18n="out.ciaP">게임마다 설치 파일 하나. HOME 메뉴에 게임별 아이콘이 생깁니다.</p>
-        <ul class="out-points">
-          <li data-i18n="out.p1">HOME 아이콘·배너가 게임별로</li>
-          <li data-i18n="out.p2">키 설정·세이브·퀵세이브가 게임별로</li>
-          <li data-i18n="out.p3">하고 싶은 게임만 골라 설치</li>
-        </ul>
+      <div class="out-alt">
+        <div>
+          <h3 data-i18n="out.ciaH">게임 CIA</h3>
+          <p data-i18n="out.ciaP">게임마다 설치 파일 하나, HOME 메뉴에 게임별 아이콘.</p>
+        </div>
         <a class="btn btn-ghost" href="convert.html?mode=cia" data-i18n="out.ciaCta">게임 CIA 만들기</a>
       </div>
 
@@ -212,7 +210,7 @@
 
     <!-- 시리즈 롱테일 페이지로 가는 유일한 홈 링크 (#198). 앵커 텍스트는 검색어(게임명 + 3DS)에 맞춘다. -->
     <h3 class="series-h" data-i18n="games.seriesH">시리즈별로 보기</h3>
-    <nav class="series-nav" aria-label="시리즈 페이지" data-i18n-attr="aria-label:games.seriesLabel">
+    <nav class="series-line" aria-label="시리즈 페이지" data-i18n-attr="aria-label:games.seriesLabel">
       <a href="series/metal-slug.html" data-i18n="games.seriesMetalSlug">메탈슬러그 3DS</a>
       <a href="series/king-of-fighters.html" data-i18n="games.seriesKof">킹 오브 파이터즈 3DS</a>
       <a href="series/samurai-shodown.html" data-i18n="games.seriesSamsho">사무라이 쇼다운 3DS</a>
@@ -282,7 +280,7 @@
         <summary data-i18n="faq.q1">롬은 어디서 받나요?</summary>
         <p data-i18n="faq.a1">받는 곳이 없습니다. 직접 가진 게임의 롬셋이 필요하고, 만든 CIA에는 롬 데이터가 들어 있으니 배포하면 안 됩니다.</p>
       </details>
-      <details>
+      <details open>
         <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
         <p data-i18n="faq.a2">KOF '95~'99·2000·2002, 메탈슬러그 1·X·3·5, 네오 터프 마스터즈, 네오 드리프트 아웃, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드입니다. 메탈슬러그 2·X·3은 원래 기판에서 느려지던 장면은 똑같이 느려지며, 소닉윙즈 3는 플레이 가능합니다.</p>
         <p class="perf"><b data-i18n="speed.meas">실측</b> <span data-i18n="speed.line">한 프레임 16.7ms · 59.8fps · KOF '98 64.0 → 20.3MB</span> · <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.ko.md" data-i18n-attr="href:speed.docHref" data-i18n="speed.doc">기술 문서</a></p>
