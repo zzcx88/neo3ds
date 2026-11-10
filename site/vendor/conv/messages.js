@@ -4,8 +4,9 @@
 // language — a technical exception message stays in the log/report instead.
 //
 // Only a public catalog romset name may appear here. A user's dropped zip file
-// name (case, extension, spaces) or a path collapses to 'game', the same rule
-// analytics.gameSet and report.redactions already enforce. (#125, #326)
+// name (case, extension, spaces) or a path collapses to 'game'; analytics and
+// report payloads use 'unknown' as their sentinel for the same input. (#125, #326)
+import { FAILURE_CODES } from './errors.js';
 
 const SET_NAME = /^[a-z0-9_]{1,40}$/;
 
@@ -14,12 +15,8 @@ export function catalogName(value) {
 }
 
 // Every code the worker, analytics and report contracts may deliver. The list
-// is pinned by conv.test.mjs so a new worker code cannot ship without words.
-export const MESSAGE_CODES = Object.freeze([
-  'nofile', 'bios', 'notromset', 'missing', 'unsupported', 'zip', 'image',
-  'oom', 'wasm', 'crash', 'unknown',
-  'zip-corrupt', 'crc-mismatch', 'bios-read', 'game-db',
-]);
+// lives in errors.js so analytics folding and these words cannot drift apart.
+export const MESSAGE_CODES = FAILURE_CODES;
 
 const KO = {
   nofile: () => '게임 zip을 찾지 못했어요. 게임 zip과 neogeo.zip을 함께 올려 주세요.',

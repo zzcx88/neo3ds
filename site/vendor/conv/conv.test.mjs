@@ -127,6 +127,36 @@ await t('zipset/bios-read-code', async () => {
   if (code !== 'bios-read') throw new Error('wrong crc: ' + code);
 });
 
+await t('zipset/corrupt-bios-zip-is-bios-read', async () => {
+  const { BiosSet } = await import('./zipset.js');
+  let code = '';
+  try { await BiosSet.open(fileSourceOf('neogeo.zip', new Uint8Array(8))); } catch (e) { code = e.code; }
+  if (code !== 'bios-read') throw new Error('code: ' + code);
+});
+
+// A forged central-directory usize must not bypass the cap: inflate is bounded
+// by the declared size, so an oversized stream fails as zip-corrupt.
+const patchCentralUsize = (zip, usize) => {
+  const dv = new DataView(zip.buffer, zip.byteOffset, zip.length);
+  for (let i = zip.length - 22; i >= 0; i--) {
+    if (dv.getUint32(i, true) === 0x02014b50) {
+      dv.setUint32(i + 24, usize, true);
+      return zip;
+    }
+  }
+  throw new Error('no central directory header');
+};
+
+await t('zipset/forged-usize-is-bounded', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { openZipIndex } = await import('./zipset.js');
+  const zip = patchCentralUsize(zipSync({ 'a.bin': noise(4096, 47) }), 64);
+  const z = await openZipIndex(fileSourceOf('forged.zip', zip));
+  let code = '';
+  try { await z.read('a.bin'); } catch (e) { code = e.code; }
+  if (code !== 'zip-corrupt') throw new Error('code: ' + code);
+});
+
 await t('zipset/caps-stop-bombs-before-inflating', async () => {
   const { zipSync } = await import('./fflate.js');
   const { openZipIndex } = await import('./zipset.js');
@@ -808,6 +838,26 @@ await t('messages/never-uses-the-user-zip-name', async () => {
     const text = failureMessage('zip-corrupt', { set: 'My Game (1).zip', lang });
     if (/My Game|\.zip/i.test(text)) throw new Error(`leaked: ${text}`);
     if (!text.includes('game')) throw new Error(`missing generic name: ${text}`);
+  }
+});
+
+await t('messages/covers-analytics-buckets-and-subreasons', async () => {
+  const { MESSAGE_CODES, failureMessage } = await import('./messages.js');
+  const { REASONS } = await import('./analytics.js');
+  const { ANALYTICS_FOLD } = await import('./errors.js');
+  for (const code of REASONS) {
+    if (!MESSAGE_CODES.includes(code)) throw new Error('bucket without words: ' + code);
+  }
+  for (const code of Object.keys(ANALYTICS_FOLD)) {
+    if (!MESSAGE_CODES.includes(code)) throw new Error('subreason without words: ' + code);
+  }
+  for (const lang of ['ko', 'en']) {
+    for (const code of MESSAGE_CODES) {
+      if (code === 'unknown') continue;
+      if (failureMessage(code, { lang }) === failureMessage('unknown', { lang })) {
+        throw new Error(`${lang}/${code}: falls back silently`);
+      }
+    }
   }
 });
 

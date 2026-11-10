@@ -2,8 +2,13 @@
 import { coded } from './errors.js';
 
 export async function loadZstd(url) {
-  const init = (await import(url)).default;
-  const mod = await init();
+  let mod;
+  try {
+    const init = (await import(url)).default;
+    mod = await init();
+  } catch (err) {
+    throw coded('wasm', String(err?.message ?? err));
+  }
   return {
     compress(u8, level) {
       const bound = mod._zstd_compress_bound(u8.length);

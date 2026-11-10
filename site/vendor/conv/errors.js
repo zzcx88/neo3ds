@@ -3,6 +3,26 @@
 // message to guess a cause. The first throw wins: wrappers may keep a code but
 // must not replace it with a coarser one.
 
+// Every code the worker/page contract may carry. The page's wording table and
+// the analytics fold both derive from this one list, so a new code cannot be
+// added in one place and forgotten in another.
+export const FAILURE_CODES = Object.freeze([
+  'nofile', 'bios', 'notromset', 'missing', 'unsupported', 'zip', 'image',
+  'oom', 'wasm', 'crash', 'unknown',
+  'zip-corrupt', 'crc-mismatch', 'bios-read', 'game-db',
+]);
+
+// The worker's romfs sub-reasons are finer than the dashboard buckets, so they
+// fold back into the existing eleven before leaving the tab — no new property,
+// no new dashboard value. 'unknown' stays itself, so romfs/unknown remains
+// visible.
+export const ANALYTICS_FOLD = Object.freeze({
+  'zip-corrupt': 'zip', // damaged/oversized entry
+  'crc-mismatch': 'missing', // the expected chip is not the one in the zip
+  'bios-read': 'bios', // neogeo.zip lacks a required chip
+  'game-db': 'unknown', // our own data/protection bug; report it
+});
+
 export function coded(code, message) {
   return Object.assign(new Error(message), { code });
 }

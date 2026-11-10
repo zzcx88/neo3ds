@@ -4,7 +4,7 @@ import { BiosSet } from './zipset.js';
 import { buildRegions, writeSprites } from './rompack.js';
 import { apply, fixBankType, isPvc } from './protection.js';
 import { patchFor } from './patches.js';
-import { coded, reasonCode } from './errors.js';
+import { coded } from './errors.js';
 
 export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
   const { region = Region.Europe, startMvs = null, log = () => {}, onProgress = null } = opts;
@@ -27,9 +27,10 @@ export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
   let sma;
   try { sma = apply(game.cart, regions); }
   catch (err) {
-    // A null/missing region is a game-db bug; an OOM stays an OOM (#326).
-    const code = reasonCode(err);
-    throw coded(code === 'unknown' ? 'game-db' : code, `${game.name}: ${String(err?.message ?? err)}`);
+    // A null/missing region is a game-db bug; anything else (an OOM, a coded
+    // zip/BIOS failure) keeps its own reason (#326).
+    if (err instanceof TypeError) throw coded('game-db', `${game.name}: ${String(err?.message ?? err)}`);
+    throw err;
   }
   patchFor(game.cart)?.(program);
   out.set('p.bin', program.slice());

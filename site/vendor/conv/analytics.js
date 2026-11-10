@@ -7,6 +7,7 @@
 // (mode, batch size folded into the value), convert_done (game), convert_fail
 // (game + stage/reason folded into the value), convert_save (mode), and
 // feedback_submit (no property: the report itself is the record).
+import { ANALYTICS_FOLD } from './errors.js';
 
 export const EVENT = Object.freeze({
   start: 'convert_start',
@@ -21,8 +22,9 @@ const SAVE_MODES = new Set(['cia', 'pack', 'launcher', 'batch']);
 // Last progress step the page saw, or 'worker' when none arrived.
 const STAGES = new Set(['load', 'romfs', 'art', 'cia', 'worker']);
 // Why the run failed, stable across languages: the worker's message is for
-// humans, this code is for analytics (#175).
-const REASONS = new Set([
+// humans, this code is for analytics (#175). Exported so the wording tests can
+// prove every bucket has plain text (#326).
+export const REASONS = new Set([
   'nofile', // no game zip in the drop
   'bios', // neogeo.zip missing
   'notromset', // zip name is not a MAME Neo Geo romset
@@ -65,20 +67,10 @@ export function doneEvent(set) {
 
 // `stage` is the last progress step the page saw, `code` the worker's reason.
 // Both fold into one property: 'load/bios', 'romfs/oom', 'worker/crash' (#175).
-// #326: the worker's romfs sub-reasons are finer than the dashboard buckets, so
-// they fold back into the existing eleven before leaving the tab — no new
-// property, no new dashboard value. 'unknown' stays itself, so romfs/unknown
-// remains visible.
-const FOLD = Object.freeze({
-  'zip-corrupt': 'zip', // damaged/oversized entry
-  'crc-mismatch': 'missing', // the expected chip is not the one in the zip
-  'bios-read': 'bios', // neogeo.zip lacks a required chip
-  'game-db': 'unknown', // our own data/protection bug; report it
-});
-
+// #326: the fold table lives in errors.js beside the codes themselves.
 export function failEvent(set, stage, code) {
   const step = STAGES.has(stage) ? stage : 'worker';
-  const reason = FOLD[code] ?? code;
+  const reason = ANALYTICS_FOLD[code] ?? code;
   const why = REASONS.has(reason) ? `/${reason}` : '';
   return { name: EVENT.fail, data: { game: gameSet(set), stage: step + why } };
 }

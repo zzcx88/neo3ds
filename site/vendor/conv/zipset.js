@@ -4,7 +4,7 @@
 // every entry and recompute the CRC in JS (92 MB -> 1.75s per zip). Now the
 // directory alone builds the index and entry bytes are inflated on first read.
 import { inflateSync } from './fflate.js';
-import { coded } from './errors.js';
+import { coded, reasonCode } from './errors.js';
 
 const SIG_EOCD = 0x06054b50;
 const SIG_CENTRAL = 0x02014b50;
@@ -54,10 +54,16 @@ function zipError(name, what) {
   return coded('zip-corrupt', `${name}: ${what}`);
 }
 
+// A caller may pass only the cap it wants to exercise; the rest keep the defaults.
+function limitsOf(limits) {
+  return { ...ZIP_LIMITS, ...(limits ?? {}) };
+}
+
 // Central directory -> [{name, crc, csize, usize, method, flags, localOffset}].
 // Throws on anything this reader will not handle (zip64, multi-disk, no EOCD),
 // which preflight surfaces as "cannot read the rom zip".
 async function readIndex(source, limits = ZIP_LIMITS) {
+  const caps = limitsOf(limits);
   const { name, size } = source;
   if (size < EOCD_MIN) throw zipError(name, 'not a zip archive');
   const tailLen = Math.min(size, EOCD_READ);
@@ -109,7 +115,7 @@ async function readIndex(source, limits = ZIP_LIMITS) {
     entries.push({ name: entryName, crc, csize, usize, method, flags, localOffset });
     p += 46 + nlen + elen + clen;
   }
-  if (entries.length > limits.entries) throw zipError(name, 'too many entries');
+  if (entries.length > caps.entries) throw zipError(name, 'too many entries');
   return entries;
 }
 
@@ -120,7 +126,7 @@ export class ZipFile {
     this.entries = entries; // central-directory metadata; use meta() to read it
     this.byName = new Map(entries.map((e) => [e.name, e]));
     this.cache = new Map();
-    this.limits = limits;
+    this.limits = limitsOf(limits);
     this.bytes = 0; // inflated bytes held by the cache, checked against totalBytes
   }
 
@@ -151,9 +157,16 @@ export class ZipFile {
     if (start + e.csize > this.source.size) throw zipError(this.zipName, `${path}: data is truncated`);
     const raw = await this.source.read(start, e.csize);
     let out;
-    if (e.method === 0) out = raw.slice();
-    else if (e.method === 8) out = inflateSync(raw);
-    else throw zipError(this.zipName, `${path}: unsupported compression method ${e.method}`);
+    try {
+      if (e.method === 0) out = raw.slice();
+      // The declared usize can be forged, so inflate into exactly that buffer:
+      // a stream that expands past it fails instead of growing the heap.
+      else if (e.method === 8) out = inflateSync(raw, { out: new Uint8Array(e.usize) });
+      else throw zipError(this.zipName, `${path}: unsupported compression method ${e.method}`);
+    } catch (err) {
+      if (err?.code === 'zip-corrupt') throw err;
+      throw zipError(this.zipName, `${path}: ${String(err?.message ?? err)}`);
+    }
     if (out.length !== e.usize) throw zipError(this.zipName, `${path}: size mismatch`);
     this.cache.set(path, out);
     this.bytes += out.length;
@@ -231,15 +244,26 @@ export class RomSet {
   filesCrc({ zip, path }) { return zip.byName.get(path).crc; }
 }
 
+// neogeo.zip is ~1.7MB: load it whole so read() stays synchronous.
+export function biosFailure(err) {
+  // The BIOS zip is the only input here, so a damaged one is a BIOS problem
+  // for the reader; an OOM keeps its own bucket (#326).
+  const message = String(err?.message ?? err);
+  return coded(reasonCode(err) === 'oom' ? 'oom' : 'bios-read', message);
+}
+
 export class BiosSet {
   constructor(zip) {
     this.zip = zip;
   }
 
-  // neogeo.zip is ~1.7MB: load it whole so read() stays synchronous.
   static async open(pathOrFile) {
-    const zip = await openZipIndex(pathOrFile);
-    await Promise.all(zip.meta().filter((e) => e.usize > 0).map((e) => zip.read(e.name)));
+    let zip;
+    try { zip = await openZipIndex(pathOrFile); }
+    catch (err) { throw biosFailure(err); }
+    try {
+      await Promise.all(zip.meta().filter((e) => e.usize > 0).map((e) => zip.read(e.name)));
+    } catch (err) { throw biosFailure(err); }
     return new BiosSet(zip);
   }
 
