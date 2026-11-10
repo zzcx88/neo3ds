@@ -92,6 +92,9 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 /* ── 다운로드 페이지 (#242) ───────────────────────────────────────────── */
 .dl-list{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 8px}
 .device-col{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px}
+.hero-pause{font:400 11px/1 var(--pixel-sm);color:var(--dim);background:transparent;border:0;
+  cursor:pointer;padding:6px 2px;text-decoration:underline;text-underline-offset:3px}
+.hero-pause:hover{color:var(--gold)}
 
 /* ── 3DS 본체 목업 (위 360×216, 아래 288×194 — hero 축소, #52) ─────────── */
 .device{--u:min(1px,calc((100vw - 24px)/480));width:calc(480*var(--u));display:flex;flex-direction:column}
@@ -110,6 +113,7 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .screen-stack{position:relative}
 .screen-stack .hero-ph{position:absolute;inset:0;opacity:0;animation:heroRot 25s infinite}
 .screen-stack .hero-ph:first-child{position:relative;animation-delay:0s}
+.screen-stack.paused .hero-ph{animation-play-state:paused}
 .screen-stack .hero-ph:nth-child(2){animation-delay:-20s}
 .screen-stack .hero-ph:nth-child(3){animation-delay:-15s}
 .screen-stack .hero-ph:nth-child(4){animation-delay:-10s}
@@ -320,7 +324,7 @@ section[id]{scroll-margin-top:64px}
 .caveat{margin-top:40px}
 .caveat h3{font-size:19px;font-family:var(--text);font-weight:600;margin-bottom:10px}
 .caveat ul{display:grid;gap:9px}
-.caveat li{font-size:15px;color:#C9C9D2;padding-left:16px;position:relative}
+.caveat li{font-size:15px;color:#C9C9D2;padding-left:16px;position:relative;max-width:var(--prose)}
 .caveat li::before{content:"·";position:absolute;left:4px;color:var(--gold)}
 
 /* ── FAQ / 법적 / 푸터 ─────────────────────────────────────────────── */
@@ -396,8 +400,8 @@ section[id]{scroll-margin-top:64px}
   .screen-stack .hero-ph{animation:none}
   .screen-stack .hero-ph:first-child{opacity:1}
 }
-/* 389px 이하: brand + lang + Convert + 두 링크만 들어간다. 첫 링크(설치/Setup)를 숨긴다. */
-@media (max-width:389px){
+/* 430px 이하: brand + lang + Convert + 두 링크만 넣는다. 첫 링크(설치/Setup)를 숨긴다. */
+@media (max-width:430px){
   .bar-nav a:first-child{display:none}
 }
 

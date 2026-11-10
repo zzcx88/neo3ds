@@ -17,6 +17,7 @@ const EN = {
   'cta.download': 'Convert now',
   'hero.h1': 'Neo Geo games, <br>on the 3DS HOME menu.',
   'hero.mock': 'Game footage composited into a 3DS console mockup',
+  'hero.pause': 'Pause',
   'hero.lede': 'Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon.',
   'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'in tested games',
   'hero.req': 'It runs in your browser and files are never uploaded.',
@@ -84,8 +85,8 @@ const EN = {
   'legal.h2': 'Legal',
   'legal.p1': 'No ROMs, BIOS or game data are included here.<br>Convert only games you own, and never distribute a CIA you build.',
   'legal.p2': 'neo3ds is a personal fan project, unaffiliated with SNK or Nintendo.<br>NEOGEO is a trademark of SNK CORPORATION; Nintendo 3DS of Nintendo.<br>Credits and third-party code are in <a href="https://github.com/zzcx88/neo3ds/blob/main/THIRD_PARTY_NOTICES.md">third-party notices</a>; the source is GPL-2.0.',
-  'foot.compat': 'Game list', 'foot.repo': 'Repository', 'foot.rel': 'Releases', 'foot.readme': 'README',
-  'foot.build': 'Build procedure', 'foot.lic': 'Licence',
+  'foot.compat': 'Game list', 'foot.repo': 'Repository', 'foot.rel': 'Releases',
+  'foot.lic': 'Licence',
   'foot.note': 'Game screens and trademarks belong to their owners.', 'foot.privacy': 'Privacy',
   'foot.report': 'Report a problem',
   /* privacy.html — web usage stats (#125) */
@@ -176,7 +177,7 @@ const EN = {
   'report.send': 'Send', 'report.open': 'Report a problem',
   /* JS가 그리는 문구 */
   'ex.verified': 'on hardware', 'ex.ok': 'buildable', 'ex.no': 'not supported',
-  'ex.pick': 'Pick a game on the left.',
+  'ex.pick': 'Pick a game from the list.',
   'ex.cta': 'Build this game\'s CIA',
   'ex.unverified': 'Converts fine, but not played on hardware yet.',
   'ex.romset': 'romset', 'ex.year': 'year', 'ex.maker': 'maker', 'ex.rom': 'ROM size',
@@ -280,6 +281,18 @@ const LANG = document.documentElement.lang === 'en' ? 'en' : 'ko';
 
 /** 지금 언어에 맞는 문구 (en이 없으면 넘긴 한국어를 그대로 씀) */
 const t = (ko, en) => (LANG === 'en' ? en : ko);
+
+/* 히어로 화면이 25초마다 저절로 넘어간다. 멈출 수단을 둔다 (WCAG 2.2.2). */
+const heroPause = $('#heroPause');
+if (heroPause) {
+  const stack = $('.screen-stack');
+  heroPause.addEventListener('click', () => {
+    const paused = heroPause.getAttribute('aria-pressed') !== 'true';
+    heroPause.setAttribute('aria-pressed', String(paused));
+    stack.classList.toggle('paused', paused);
+    heroPause.textContent = paused ? t('재생', 'Play') : t('일시정지', 'Pause');
+  });
+}
 
 /* 반대 언어판 힌트 (#130, #141). 브라우저의 첫 선호 언어가 이 페이지 언어와 다르면
    화면 아래에 한 줄로 알린다. 리다이렉트는 하지 않는다: 구글봇은 en-US로 렌더하므로
@@ -412,7 +425,7 @@ function renderPages(pages) {
 
 function renderDetail() {
   const row = selected ? bySet.get(selected) : null;
-  if (!row) { exDetail.innerHTML = `<p class="tiny">${t('왼쪽에서 게임을 고르세요.', EN['ex.pick'])}</p>`; return; }
+  if (!row) { exDetail.innerHTML = `<p class="tiny">${t('목록에서 게임을 고르세요.', EN['ex.pick'])}</p>`; return; }
   const [set, title, year, maker, mb, chain, st, noteKo, noteEn, spriteMb] = row;
   const note = st === 2 ? t(noteKo, noteEn) : st === 1 ? t(noteKo, noteEn) : t('변환은 되지만 아직 실기에서 확인하지 않았습니다.', EN['ex.unverified']);
   const cta = st === 2 ? '' : `<a class="btn btn-primary btn-sm ex-cta" href="convert.html">${t('이 게임 CIA 만들기', EN['ex.cta'])}</a>`;
