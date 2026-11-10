@@ -409,6 +409,11 @@ section[id]{scroll-margin-top:64px}
 .compat-wrap{max-width:1120px;margin:0 auto;padding:28px 24px 64px}
 .compat h1{font-size:clamp(20px,3vw,28px)}
 .compat .lede{margin:12px 0 20px}
+/* 넓은 표는 좁은 화면에서 가로로 스크롤한다 (body의 overflow-x:hidden이 잘라내지 않도록). */
+.table-scroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-scroll:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.table-hint{display:none}
+@media (max-width:660px){.table-hint{display:block;margin:0 0 6px}}
 .compat table{width:100%;border-collapse:collapse;font-size:13px}
 .compat caption{text-align:left;color:var(--dim);font-size:12px;padding:0 0 10px}
 .compat th,.compat td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}

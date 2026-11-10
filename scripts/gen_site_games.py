@@ -178,6 +178,8 @@ COMPAT = {
         'h1': '호환 게임 282종 전체 목록',
         'lede': '롬셋 이름은 MAME 규격입니다. 변환 가능한 롬셋을 zip에 넣으면 해당 게임만 CIA로 나옵니다.',
         'caption': '실기 확인 → 변환 가능 → 변환 불가 순',
+        'table_label': '게임 표, 가로로 스크롤',
+        'table_hint': '표를 옆으로 스크롤하면 모든 열이 보입니다.',
         'counts': '롬셋 {total}종 · {ok}종 변환 가능 · {verified}종 실기 확인',
         'th': ['게임', '롬셋', '연도', '제작사', '롬 MB', '상태', '비고'],
         'back': '← 소개 페이지로',
@@ -201,6 +203,8 @@ COMPAT = {
         'h1': 'All 282 compatible games',
         'lede': 'Romset names follow the MAME set list. Drop the convertible ones in the zip and each game becomes its own CIA.',
         'caption': 'Verified first, then convertible, then unsupported',
+        'table_label': 'Game table, scrolls sideways',
+        'table_hint': 'Scroll the table sideways for every column.',
         'counts': '{total} romsets · {ok} convert · {verified} verified on hardware',
         'th': ['Game', 'Romset', 'Year', 'Maker', 'ROM MB', 'Status', 'Note'],
         'back': '← Back to the intro page',
@@ -248,6 +252,8 @@ def write_compat(rows, counts):
             desc=html.escape(c['desc']),
             h1=html.escape(c['h1']), lede=html.escape(c['lede']),
             caption=html.escape(c['caption']), th=th,
+            table_label=html.escape(c['table_label']),
+            table_hint=html.escape(c['table_hint']),
             counts=c['counts'].format(total=counts['total'], ok=counts['ok'],
                                       verified=counts['verified']),
             home=home[locale], convert=convert[locale], back=html.escape(c['back']),
@@ -335,6 +341,8 @@ COMPAT_PAGE = '''<!doctype html>
     <nav class="series" aria-label="{series_label}">
         {series}
     </nav>
+    <p class="tiny table-hint">{table_hint}</p>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="{table_label}">
     <table>
       <caption>{caption}</caption>
       <thead><tr>{th}</tr></thead>
@@ -342,6 +350,7 @@ COMPAT_PAGE = '''<!doctype html>
       {rows}
       </tbody>
     </table>
+    </div>
     <p class="compat-back"><a href="{home}">{back}</a></p>
   </div>
 </main>
