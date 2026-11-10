@@ -19,6 +19,7 @@ import { preflight, biosMissing } from './preflight.js';
 import { readBiosProfile } from './biosinfo.js';
 import { L } from './lang.js';
 import { loadZstd } from './zstd-adapter.js';
+import { pickFailureCode, reasonCode } from './errors.js';
 
 // Build products are gitignored: load them only when something is actually
 // built (#74), so preflight answers in a checkout without a WASM build.
@@ -58,14 +59,6 @@ self.onmessage = async (e) => {
 // #175: analytics gets a stable reason code; the message stays localized text.
 function fail(code, message) {
   return Object.assign(new Error(message), { code });
-}
-
-function reasonCode(err) {
-  if (typeof err?.code === 'string') return err.code;
-  const message = String(err?.message ?? err);
-  // Browsers word this differently per engine; both mean the run ran out of memory.
-  if (/out of memory|allocation failed|cannot enlarge memory/i.test(message)) return 'oom';
-  return 'unknown';
 }
 
 function memMB() {
@@ -189,7 +182,7 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   // own verdicts, so both carry a code (#175).
   let picked;
   try { picked = await pickGame(db, RomSet, files, zipName, { lang }); }
-  catch (err) { throw fail('zip', String(err?.message ?? err)); }
+  catch (err) { throw fail(pickFailureCode(err), String(err?.message ?? err)); }
   const { game, problem, romset, code } = picked;
   if (!game) throw fail(code ?? 'unknown', problem);
   const biosFile = files.find((f) => f.name.toLowerCase() === 'neogeo.zip');
@@ -197,8 +190,14 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
   const tid = titleId(zipName), uid = uniqueId(zipName);
 
   const Z = await loadZstd('../zstd.js');
+  let bios;
+  try { bios = await BiosSet.open(biosFile); }
+  catch (err) {
+    // A broken neogeo.zip is a BIOS problem for the reader; an OOM stays an OOM.
+    throw fail(reasonCode(err) === 'oom' ? 'oom' : 'bios-read', String(err?.message ?? err));
+  }
   post({ type: 'progress', step: 'romfs', frac: 0.1, detail: `romset ${game.name}` });
-  const { files: gameFiles, stats } = await writeGameFiles(game, romset, await BiosSet.open(biosFile), Z, {
+  const { files: gameFiles, stats } = await writeGameFiles(game, romset, bios, Z, {
     region: Region[region] ?? Region.Europe,
     startMvs: system === 'aes' ? false : system === 'mvs' ? true : null,
     log: (s) => post({ type: 'progress', step: 'romfs', frac: 0.1, detail: s.trim() }),
