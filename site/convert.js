@@ -16,6 +16,7 @@ import { zipResults } from './vendor/conv/bundle.js';
 import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
 import { startEvent, doneEvent, failEvent, saveEvent, send as sendEvent } from './vendor/conv/analytics.js';
 import { buildReport, failuresFrom, PENDING_KEY } from './vendor/conv/report.js';
+import { batchFailureText, failureMessage } from './vendor/conv/messages.js';
 import { uniqueEntryName } from './vendor/conv/bundle.js';
 
 const $ = (id) => document.getElementById(id);
@@ -58,6 +59,18 @@ function trackSave(mode) {
 const failInfo = new Map(); // batch row -> { code, stage }; row.step is cleared on fail
 let singleFail = null; // { code, stage } for the single-game path
 let lastErrorDetail = ''; // worker crash location, when the browser reports one
+let failMessages = []; // raw failure texts for the report; the page shows plain words (#327)
+
+// One row's public failure identity: a code for the wording/analytics and the
+// catalog romset for the sentence. The user's zip name is never part of it.
+function failureAt(index) {
+  return { code: failInfo.get(index)?.code ?? 'unknown', set: batchSource?.[index]?.set ?? null };
+}
+
+function rememberFailure(message) {
+  const text = String(message ?? '').trim();
+  if (text) failMessages.push(text);
+}
 
 function reportFailures() {
   if (batch && batchStarted) return failuresFrom(batch, batchSource, failInfo);
@@ -78,7 +91,9 @@ function reportSources() {
 function stashPending() {
   const failures = reportFailures();
   const log = logEl.textContent;
-  const error = [$('gateAlert').textContent, lastErrorDetail].filter(Boolean).join('\n\n');
+  // #327: the alert is plain words now, so the report carries every raw failure
+  // text separately. buildReport's redactions() still strips user zip names.
+  const error = [...new Set(failMessages), lastErrorDetail].filter(Boolean).join('\n\n');
   if (!failures.length && !log && !error) return;
   const partial = buildReport({
     type: 'convert-fail', summary: 'pending', mode: currentMode(),
@@ -568,8 +583,12 @@ function singleArtState() {
   if (checking) artProblem = null;
   else if (checkError) artProblem = { kind: 'raw', detail: checkError };
   else if (!row || !row.title) artProblem = { kind: 'unknown' };
-  else if (!row.ok) artProblem = { kind: 'blocked', detail: row.problem ?? '' };
-  else artProblem = null;
+  else if (!row.ok) {
+    artProblem = {
+      kind: 'blocked',
+      detail: failureMessage(row.code ?? 'unknown', { set: row.set ?? null, lang: uiLang() }),
+    };
+  } else artProblem = null;
 }
 
 // Single CIA: the panel shows the one game directly. Multi-game CIA: it shows
@@ -754,9 +773,20 @@ function statusLabel(row) {
   return batchStarted ? t('대기', 'Pending') : t('변환 가능', 'Convertible');
 }
 
-function detailText(row) {
-  if (row.status === STATUS.BLOCKED) return row.problem ?? '';
-  if (row.status === STATUS.FAILED) return row.detail || row.problem || '';
+// #327: blocked and failed rows show the plain cause+action pair; the stable
+// code comes from preflight or the failed run. Raw worker text stays in
+// row.detail for the log/report only.
+function detailText(row, index) {
+  if (row.status === STATUS.BLOCKED) {
+    return failureMessage(row.code ?? 'unknown', {
+      set: batchSource?.[index]?.set ?? null,
+      lang: uiLang(),
+    });
+  }
+  if (row.status === STATUS.FAILED) {
+    const { code, set } = failureAt(index);
+    return failureMessage(code, { set, lang: uiLang() });
+  }
   if (row.status === STATUS.RUNNING) {
     const step = stepLabel(row.step);
     if (!row.detail) return step;
@@ -776,7 +806,7 @@ function summaryText(s) {
 function paintRow(host, row) {
   host.li.dataset.status = row.status;
   host.state.textContent = statusLabel(row);
-  host.detail.textContent = detailText(row);
+  host.detail.textContent = detailText(row, host.index);
   const label = artLabel(row);
   host.art.textContent = label ? artBadgeText(label) : '';
   host.art.classList.toggle('hidden', !label || !batchArtEligible());
@@ -1027,7 +1057,7 @@ function refreshRun() {
     }
   } else if (!singleRow?.ok) {
     disabled = true;
-    hint = t(`변환할 수 없음 — ${singleRow?.problem ?? ''}`, `Not convertible — ${singleRow?.problem ?? ''}`);
+    hint = failureMessage(singleRow?.code ?? 'unknown', { set: singleRow?.set ?? null, lang: uiLang() });
   }
   if (running) hint = '';
   else if (artBusy) hint = t('이미지 확인 중…', 'Checking the picture…');
@@ -1073,15 +1103,18 @@ function resetPipe() {
 }
 
 function markRunningRowsFailed(message) {
-  if (!batch) return;
+  if (!batch) return 0;
+  let marked = 0;
   for (let i = 0; i < batch.length; i++) {
     if (batch[i].status === STATUS.RUNNING) {
       failInfo.set(i, { code: 'crash', stage: 'worker' });
       markFailed(batch, i, message);
       trackFail(batchSource?.[i]?.set, 'worker', 'crash');
+      marked++;
     }
   }
   renderBatch();
+  return marked;
 }
 
 /* ── #81 overall progress bar + progress focus ────────────────────────── */
@@ -1208,6 +1241,7 @@ runBtn.addEventListener('click', () => {
   failInfo.clear();
   singleFail = null;
   lastErrorDetail = '';
+  failMessages = [];
 
   if (isBatch) {
     // Fresh statuses for this run, but keep every row's chosen picture (#76).
@@ -1310,6 +1344,7 @@ function failRow(row, message, stage = null, code = null) {
   const secs = rowSecs(row);
   // markFailed clears row.step, so read the analytics stage first.
   const failedAt = stage ?? batch?.[row]?.step ?? null;
+  rememberFailure(message); // raw: the report reproduces the error (#327)
   failInfo.set(row, { code: code ?? null, stage: failedAt });
   markFailed(batch, row, message);
   trackFail(batchSource?.[row]?.set, failedAt, code);
@@ -1340,11 +1375,15 @@ function workerFailed(w, message, detail = null) {
   try { w.terminate(); } catch { /* already gone */ }
   if (!running) return;
   if (w.single || job == null) {
-    markRunningRowsFailed(t('워커 오류', 'Worker error'));
+    const marked = markRunningRowsFailed(t('워커 오류', 'Worker error'));
     if (w.single) { singleFail = { code: 'crash', stage: 'worker' }; trackFail(singleRow?.set, 'worker', 'crash'); }
     endOverall('error');
     finish();
-    failAlert(message);
+    // A batch-wide worker crash has no single row to blame: summarize every
+    // marked row with the same plain words as the list (#327).
+    if (w.single) failAlert(message, { code: 'crash', set: singleRow?.set });
+    else if (marked) { rememberFailure(message); showBatchFailures(); }
+    else failAlert(message, { code: 'crash' });
     logGameFail(-1, t(`워커 오류 (${message})`, `worker error (${message})`), rowSecs(-1));
     return;
   }
@@ -1421,7 +1460,7 @@ function onSingleMessage(m) {
     trackFail(singleRow?.set, singleStage, m.code);
     endOverall('error');
     finish();
-    failAlert(m.message);
+    failAlert(m.message, { code: m.code ?? 'unknown', set: singleRow?.set });
     logGameFail(-1, m.message, rowSecs(-1));
   }
 }
@@ -1458,30 +1497,30 @@ function showAlert(text) {
   if (jump) jump.classList.toggle('hidden', !text);
 }
 
-function failAlert(message) {
-  showAlert(t(`변환에 실패했습니다: ${message} 로그를 확인한 뒤 변환하기를 다시 누르세요.`,
-    `Conversion failed: ${message} Check the log, then press Convert to try again.`));
+// #327: the alert shows the same plain cause+action pair as the row. The raw
+// message stays in failMessages for the log/report.
+function failAlert(message, { code = 'unknown', set = null } = {}) {
+  rememberFailure(message);
+  showAlert(failureMessage(code, { set, lang: uiLang() }));
 }
 
 // #172: batch failures must state their reason where the reader lands after
 // pressing Convert (#progress), not only in the list above the fold. Each row
 // keeps its own detail line; this is the summary, capped so it stays readable.
+// #327/XMR ISSUE-003: catalog names only — the user's zip name never enters
+// the alert.
 function showBatchFailures() {
   if (!batch) return;
-  const failed = batch.filter((row) => row.status === STATUS.FAILED);
-  if (failed.length === 0) return;
-  const shown = failed.slice(0, 3).map((row) =>
-    `${row.name} — ${row.detail || row.problem || t('이유 없음', 'no reason given')}`);
-  const rest = failed.length - shown.length;
-  showAlert(t(
-    `변환 실패 ${failed.length}개: ${shown.join(' / ')}${rest > 0 ? ` 외 ${rest}개` : ''}. 게임별 이유는 위 목록에 있습니다.`,
-    `${failed.length} failed: ${shown.join(' / ')}${rest > 0 ? `, ${rest} more` : ''}. Per-game reasons are in the list above.`,
-  ));
+  // Same rows/reasons the report will carry, so the alert cannot drift.
+  const failures = failuresFrom(batch, batchSource, failInfo);
+  const text = batchFailureText(failures, { lang: uiLang() });
+  if (text) showAlert(text);
 }
 
 function resetResults() {
   revokeAllUrls();
   showAlert('');
+  failMessages = [];
   $('gateResultLine').textContent = '';
   $('gateResult').classList.add('hidden');
 }

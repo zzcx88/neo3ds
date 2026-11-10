@@ -9,9 +9,10 @@
 import { FAILURE_CODES } from './errors.js';
 
 const SET_NAME = /^[a-z0-9_]{1,40}$/;
+const isCatalogName = (value) => typeof value === 'string' && SET_NAME.test(value);
 
 export function catalogName(value) {
-  return typeof value === 'string' && SET_NAME.test(value) ? value : 'game';
+  return isCatalogName(value) ? value : 'game';
 }
 
 // Every code the worker, analytics and report contracts may deliver. The list
@@ -62,4 +63,25 @@ export function failureMessage(code, { set = null, lang = 'ko' } = {}) {
   const table = TABLES[lang === 'en' ? 'en' : 'ko'];
   const text = table[code] ?? table.unknown;
   return text(catalogName(set));
+}
+
+// #327: the batch alert summarizes a run that had failed games. Items carry
+// only `{ set, code }` — there is deliberately no zip-name field, so the
+// page cannot leak a user's file name into role=alert text (XMR ISSUE-003).
+// Each entry is the same cause+action pair as the row; a message that already
+// names the romset is not prefixed twice.
+export function batchFailureText(items, { lang = 'ko' } = {}) {
+  const failures = Array.isArray(items) ? items : [];
+  if (failures.length === 0) return '';
+  const shown = failures.slice(0, 3).map((item) => {
+    const set = item.set ?? null;
+    const named = isCatalogName(set);
+    const text = failureMessage(item.code, { set, lang });
+    // The message often names the romset already; prefix only when it does not.
+    return named && !text.includes(set) ? `${set} — ${text}` : text;
+  });
+  const rest = failures.length - shown.length;
+  return lang === 'en'
+    ? `${failures.length} failed: ${shown.join(' / ')}${rest > 0 ? `, ${rest} more` : ''}. Per-game reasons are in the list above.`
+    : `변환 실패 ${failures.length}개: ${shown.join(' / ')}${rest > 0 ? ` 외 ${rest}개` : ''}. 게임별 이유는 위 목록에 있습니다.`;
 }

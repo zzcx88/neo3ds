@@ -5,6 +5,7 @@
 // ({name, arrayBuffer()}).
 import { L } from './lang.js';
 import { pickGame } from './job.js';
+import { pickFailureCode } from './errors.js';
 
 // CiaBuilder.cs:129 is folder-based ("put it in the same folder"); the page
 // drops files, so the KO wording says "drop it together with the game zip".
@@ -12,10 +13,11 @@ export const BIOS_MISSING = 'neogeo.zip (BIOS) not found. Drop it together with 
 const BIOS_MISSING_KO = 'neogeo.zip(바이오스)이 없습니다. 게임 zip과 함께 올리세요.';
 export const biosMissing = (lang) => L(lang, BIOS_MISSING_KO, BIOS_MISSING);
 
-// One row per game zip: {name, ok, title, set, problem}. `name` is the user's
-// zip file name (download only), `set` the public catalog's romset name for
-// analytics (#125). The problem text is what conversion would throw, so the
-// list and the log tell the same story.
+// One row per game zip: {name, ok, title, set, code, problem}. `name` is the
+// user's zip file name (download only), `set` the public catalog's romset name
+// for analytics (#125), and `code` the stable reason the page turns into plain
+// words (#327). The problem text stays raw for diagnostics; the list shows
+// the plain message instead.
 // `lang` picks the reason text (KO page → KO reasons, #79).
 // `onProgress(done, total, name)` (#81) drives the recognition bar; `total` is
 // the number of game zips judged (neogeo.zip is checked once, not a row).
@@ -27,21 +29,22 @@ export async function preflight(db, RomSet, files, { lang = 'en', onProgress = n
   for (const f of games) {
     const zipName = f.name.replace(/\.zip$/i, '').toLowerCase();
     const known = db.find(zipName);
-    const row = { name: f.name, ok: false, title: null, set: null, problem: null };
+    const row = { name: f.name, ok: false, title: null, set: null, code: null, problem: null };
     try {
-      const { game, problem } = await pickGame(db, RomSet, files, zipName, { lang });
+      const { game, problem, code } = await pickGame(db, RomSet, files, zipName, { lang });
       const label = game ?? known;
       // #125: the canonical romset name is the only game identifier analytics
       // may send; the zip file name stays page-side for the download.
       row.set = label?.name ?? null;
       if (label) row.title = db.title(label);
-      if (!game) row.problem = problem;
-      else if (!bios) row.problem = biosMissing(lang);
+      if (!game) { row.problem = problem; row.code = code ?? 'unknown'; }
+      else if (!bios) { row.problem = biosMissing(lang); row.code = 'bios'; }
       else row.ok = true;
     } catch (err) {
       // Broken/unreadable zip: keep the technical detail but say it in the page language.
       if (known) { row.set = known.name; row.title = db.title(known); }
       const message = String(err?.message ?? err);
+      row.code = pickFailureCode(err);
       row.problem = L(lang, `롬 zip을 읽지 못했습니다: ${message}`, message);
     }
     rows.push(row);

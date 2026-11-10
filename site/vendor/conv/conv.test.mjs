@@ -333,7 +333,7 @@ await t('art/png-spec', async () => {
 // and one failure must not stop the others.
 const TWO_READY_ONE_BLOCKED = () => ([
   { name: 'nam1975.zip', title: 'NAM-1975', rom: 'nam1975', ok: true, problem: null },
-  { name: 'notagame.zip', title: null, rom: null, ok: false, problem: "'notagame' is not a MAME Neo Geo romset name." },
+  { name: 'notagame.zip', title: null, rom: null, ok: false, code: 'notromset', problem: "'notagame' is not a MAME Neo Geo romset name." },
   { name: 'mslug.zip', title: 'Metal Slug', rom: 'mslug', ok: true, problem: null },
 ]);
 
@@ -345,6 +345,8 @@ await t('batch/create-lists-ready-and-blocked', async () => {
     throw new Error('statuses ' + b.map((r) => r.status));
   if (b[1].problem == null || b[0].title !== 'NAM-1975' || b[0].name !== 'nam1975.zip')
     throw new Error('row fields lost');
+  // #327: the page turns this stable code into plain words.
+  if (b[1].code !== 'notromset' || b[0].code !== null) throw new Error('codes ' + b.map((r) => r.code));
 });
 
 await t('batch/summary-counts-ready-blocked', async () => {
@@ -445,6 +447,10 @@ await t('preflight/ready-blocked-reasons', async () => {
   if (by['notagame.zip'].ok || !/not a MAME Neo Geo romset/.test(by['notagame.zip'].problem))
     throw new Error('unknown zip reason: ' + JSON.stringify(by['notagame.zip']));
   if (by['notagame.zip'].set !== null) throw new Error('unknown set: ' + by['notagame.zip'].set);
+  // #327: blocked rows carry the stable code the page turns into plain words.
+  if (by['nam1975.zip'].code !== null) throw new Error('ready code: ' + by['nam1975.zip'].code);
+  if (by['kof98h.zip'].code !== 'missing') throw new Error('missing code: ' + by['kof98h.zip'].code);
+  if (by['notagame.zip'].code !== 'notromset') throw new Error('romset code: ' + by['notagame.zip'].code);
 }, true);
 
 // #79: blocked reasons follow the page language, so the KO page does not show
@@ -455,6 +461,7 @@ await t('preflight/korean-unknown-romset-reason', async () => {
   if (rows[0].ok || !/MAME/.test(rows[0].problem) || !/롬셋/.test(rows[0].problem))
     throw new Error('expected a Korean MAME romset reason: ' + JSON.stringify(rows[0]));
   if (rows[0].set !== null) throw new Error('unknown romset leaked a set: ' + rows[0].set);
+  if (rows[0].code !== 'notromset') throw new Error('code ' + rows[0].code);
 });
 
 await t('preflight/korean-unsupported-cart-reason', async () => {
@@ -462,12 +469,14 @@ await t('preflight/korean-unsupported-cart-reason', async () => {
   const rows = await preflight(db, RomSet, [fakeZip('fatfury2.zip')], { lang: 'ko' });
   if (rows[0].ok || !/보호 칩/.test(rows[0].problem))
     throw new Error('expected a Korean unsupported-cart reason: ' + JSON.stringify(rows[0]));
+  if (rows[0].code !== 'unsupported') throw new Error('code ' + rows[0].code);
 });
 
 await t('preflight/missing-bios-blocks-ready-game', async () => {
   const { db, RomSet, preflight, BIOS_MISSING } = await preflightFixture();
   const rows = await preflight(db, RomSet, [romFile('nam1975.zip')]);
   if (rows[0].ok !== false || rows[0].problem !== BIOS_MISSING) throw new Error(JSON.stringify(rows[0]));
+  if (rows[0].code !== 'bios') throw new Error('code ' + rows[0].code);
 }, true);
 
 await t('preflight/korean-missing-bios-reason', async () => {
@@ -484,6 +493,7 @@ await t('preflight/korean-missing-chips-reason', async () => {
   // keep the C# CiaBuilder wording and do not append the MAME-only sentence.
   if (rows[0].ok !== false || !/롬 파일이 빠졌습니다/.test(rows[0].problem) || /MAME/.test(rows[0].problem))
     throw new Error('expected a Korean missing-chips reason: ' + JSON.stringify(rows[0]));
+  if (rows[0].code !== 'missing') throw new Error('code ' + rows[0].code);
 }, true);
 
 await t('preflight/korean-corrupt-zip-reason', async () => {
@@ -491,6 +501,18 @@ await t('preflight/korean-corrupt-zip-reason', async () => {
   const rows = await preflight(db, RomSet, [fakeZip('nam1975.zip')], { lang: 'ko' });
   if (rows[0].ok || !/읽지 못했습니다/.test(rows[0].problem))
     throw new Error('expected a Korean unreadable-zip reason: ' + JSON.stringify(rows[0]));
+  if (rows[0].code !== 'zip-corrupt') throw new Error('code ' + rows[0].code);
+});
+
+// #327: the two most common blocked codes are reachable without ROM files, so
+// CI (which has no roms/) still proves the row carries the right reason.
+await t('preflight/bios-and-missing-codes-without-roms', async () => {
+  const { db, preflight } = await preflightFixture();
+  const fakeSet = (missing) => ({ open: async () => ({ missing: () => missing }) });
+  const bios = await preflight(db, fakeSet([]), [fakeZip('nam1975.zip')]);
+  if (bios[0].ok || bios[0].code !== 'bios') throw new Error('bios: ' + JSON.stringify(bios[0]));
+  const missing = await preflight(db, fakeSet(['201-p1.p1']), [fakeZip('nam1975.zip')]);
+  if (missing[0].ok || missing[0].code !== 'missing') throw new Error('missing: ' + JSON.stringify(missing[0]));
 });
 
 await t('preflight/clone-with-parent-zip-is-ready', async () => {
@@ -866,6 +888,54 @@ await t('messages/unknown-fallback', async () => {
   for (const lang of ['ko', 'en']) {
     const text = failureMessage('not-a-code', { lang });
     if (text !== failureMessage('unknown', { lang })) throw new Error(`${lang} fallback drift`);
+  }
+});
+
+// #327: the batch alert passes only the catalog name and the code. A zip file
+// name is not part of the input, so it cannot reach the role=alert text.
+await t('messages/batch-alert-uses-catalog-names-and-plain-words', async () => {
+  const { batchFailureText, failureMessage } = await import('./messages.js');
+  const text = batchFailureText([
+    { name: 'My Game (1).zip', set: 'kof98h', code: 'missing' },
+    { name: 'secret.zip', set: null, code: null },
+  ], { lang: 'ko' });
+  if (/My Game|secret\.zip/i.test(text)) throw new Error('zip name leaked: ' + text);
+  if (!text.includes('kof98h')) throw new Error('catalog name missing: ' + text);
+  if (!text.includes(failureMessage('missing', { set: 'kof98h', lang: 'ko' })))
+    throw new Error('plain cause/action missing: ' + text);
+  if (!text.includes(failureMessage('unknown', { lang: 'ko' })))
+    throw new Error('unknown guidance missing: ' + text);
+  if (!text.includes('제보')) throw new Error('report guidance missing: ' + text);
+  if (text.includes('game —')) throw new Error('invented catalog name: ' + text);
+  const named = batchFailureText([{ set: 'kof98h', code: 'zip' }], { lang: 'en' });
+  if ((named.match(/kof98h/g) ?? []).length !== 1)
+    throw new Error('catalog name duplicated: ' + named);
+});
+
+await t('messages/batch-alert-caps-and-localizes', async () => {
+  const { batchFailureText } = await import('./messages.js');
+  const many = Array.from({ length: 5 }, () => ({ set: 'mslug', code: 'bios' }));
+  const ko = batchFailureText(many, { lang: 'ko' });
+  const en = batchFailureText(many, { lang: 'en' });
+  if (!ko.includes('외 2개')) throw new Error('KO cap missing: ' + ko);
+  if (!en.includes('2 more')) throw new Error('EN cap missing: ' + en);
+  if (!en.includes('mslug')) throw new Error('catalog name missing: ' + en);
+  if (batchFailureText([], { lang: 'en' }) !== '') throw new Error('empty summary should stay empty');
+});
+
+// Acceptance #327: oom/crash/wasm/image keep a retry step, and unknown points
+// at the report path instead of a bare "failed".
+await t('messages/retry-and-report-guidance', async () => {
+  const { failureMessage } = await import('./messages.js');
+  for (const lang of ['ko', 'en']) {
+    for (const code of ['oom', 'crash', 'wasm', 'image']) {
+      const text = failureMessage(code, { lang });
+      if (!/(다시|새로고침|재지정)/.test(text) && !/(try again|reload|pick another)/i.test(text)) {
+        throw new Error(`${lang}/${code}: no retry step: ${text}`);
+      }
+    }
+    const unknown = failureMessage('unknown', { lang });
+    if (!/(제보|send a report)/i.test(unknown)) throw new Error(`${lang}: no report guidance: ${unknown}`);
   }
 });
 

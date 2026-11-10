@@ -1,6 +1,6 @@
 // Batch list/status model (#74). Pure: no DOM, no Worker, no File APIs, so the
 // page and Node tests share the same rules. Rows start from the worker's
-// preflight answer ({name, ok, title, rom, problem}); the page then feeds
+// preflight answer ({name, ok, title, set, code, problem}); the page then feeds
 // progress / batch-one / batch-error messages back through these helpers.
 //
 // Blocked rows keep STATUS.BLOCKED no matter what arrives later: only the
@@ -21,6 +21,8 @@ export function createBatch(rows = []) {
     name: r.name,
     title: r.title ?? null,
     ok: !!r.ok,
+    // #327: the stable reason the page turns into plain words.
+    code: r.ok ? null : (r.code ?? null),
     problem: r.ok ? null : (r.problem ?? ''),
     status: r.ok ? STATUS.PENDING : STATUS.BLOCKED,
     step: null,
