@@ -63,3 +63,25 @@ export function failureMessage(code, { set = null, lang = 'ko' } = {}) {
   const text = table[code] ?? table.unknown;
   return text(catalogName(set));
 }
+
+// #327: the batch alert summarizes a run that had failed games. Items carry
+// only `{ set, code }` — there is deliberately no zip-name field, so the
+// page cannot leak a user's file name into role=alert text (XMR ISSUE-003).
+// Each entry is the same cause+action pair as the row; a message that already
+// names the romset is not prefixed twice.
+export function batchFailureText(items, { lang = 'ko', max = 3 } = {}) {
+  const failures = (Array.isArray(items) ? items : []).filter((item) => item && typeof item === 'object');
+  if (failures.length === 0) return '';
+  const limit = Math.max(1, Math.trunc(Number(max) || 3));
+  const shown = failures.slice(0, limit).map((item) => {
+    const set = item.set ?? null;
+    const named = typeof set === 'string' && SET_NAME.test(set);
+    const text = failureMessage(item.code, { set, lang });
+    // The message often names the romset already; prefix only when it does not.
+    return named && !text.includes(set) ? `${set} — ${text}` : text;
+  });
+  const rest = failures.length - shown.length;
+  return lang === 'en'
+    ? `${failures.length} failed: ${shown.join(' / ')}${rest > 0 ? `, ${rest} more` : ''}. Per-game reasons are in the list above.`
+    : `변환 실패 ${failures.length}개: ${shown.join(' / ')}${rest > 0 ? ` 외 ${rest}개` : ''}. 게임별 이유는 위 목록에 있습니다.`;
+}

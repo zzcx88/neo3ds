@@ -869,6 +869,54 @@ await t('messages/unknown-fallback', async () => {
   }
 });
 
+// #327: the batch alert passes only the catalog name and the code. A zip file
+// name is not part of the input, so it cannot reach the role=alert text.
+await t('messages/batch-alert-uses-catalog-names-and-plain-words', async () => {
+  const { batchFailureText, failureMessage } = await import('./messages.js');
+  const text = batchFailureText([
+    { name: 'My Game (1).zip', set: 'kof98h', code: 'missing' },
+    { name: 'secret.zip', set: null, code: null },
+  ], { lang: 'ko' });
+  if (/My Game|secret\.zip/i.test(text)) throw new Error('zip name leaked: ' + text);
+  if (!text.includes('kof98h')) throw new Error('catalog name missing: ' + text);
+  if (!text.includes(failureMessage('missing', { set: 'kof98h', lang: 'ko' })))
+    throw new Error('plain cause/action missing: ' + text);
+  if (!text.includes(failureMessage('unknown', { lang: 'ko' })))
+    throw new Error('unknown guidance missing: ' + text);
+  if (!text.includes('제보')) throw new Error('report guidance missing: ' + text);
+  if (text.includes('game —')) throw new Error('invented catalog name: ' + text);
+  const named = batchFailureText([{ set: 'kof98h', code: 'zip' }], { lang: 'en' });
+  if ((named.match(/kof98h/g) ?? []).length !== 1)
+    throw new Error('catalog name duplicated: ' + named);
+});
+
+await t('messages/batch-alert-caps-and-localizes', async () => {
+  const { batchFailureText } = await import('./messages.js');
+  const many = Array.from({ length: 5 }, () => ({ set: 'mslug', code: 'bios' }));
+  const ko = batchFailureText(many, { lang: 'ko' });
+  const en = batchFailureText(many, { lang: 'en' });
+  if (!ko.includes('외 2개')) throw new Error('KO cap missing: ' + ko);
+  if (!en.includes('2 more')) throw new Error('EN cap missing: ' + en);
+  if (!en.includes('mslug')) throw new Error('catalog name missing: ' + en);
+  if (batchFailureText([], { lang: 'en' }) !== '') throw new Error('empty summary should stay empty');
+});
+
+// Acceptance #327: oom/crash/wasm/image keep a retry step, and unknown points
+// at the report path instead of a bare "failed".
+await t('messages/retry-and-report-guidance', async () => {
+  const { failureMessage } = await import('./messages.js');
+  for (const lang of ['ko', 'en']) {
+    for (const code of ['oom', 'crash', 'wasm', 'image']) {
+      const text = failureMessage(code, { lang });
+      if (!/(다시|새로고침|재지정)/.test(text) && !/(try again|reload|pick another)/i.test(text)) {
+        throw new Error(`${lang}/${code}: no retry step: ${text}`);
+      }
+    }
+    const unknown = failureMessage('unknown', { lang });
+    if (!/(제보|send a report)/i.test(unknown)) throw new Error(`${lang}: no report guidance: ${unknown}`);
+  }
+});
+
 await t('analytics/failure-subreasons-fold-into-existing-buckets', async () => {
   const { failEvent } = await import('./analytics.js');
   const stage = (code) => failEvent('kof98h', 'romfs', code).data.stage;
