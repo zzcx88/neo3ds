@@ -1,5 +1,5 @@
 {
- "fingerprint": "3635f6bcaa7a0edb",
+ "fingerprint": "faa2b26803b357e4",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -305,6 +305,7 @@
    "number:44",
    "number:98",
    "zip:kof98.zip",
+   "zip:kof98h.zip",
    "zip:neogeo.zip"
   ],
   "site/series/king-of-the-monsters.html": [
@@ -373,6 +374,7 @@
    "number:1992",
    "number:1996",
    "number:282",
+   "zip:ssideki.zip",
    "zip:ssideki4.zip"
   ],
   "site/series/world-heroes.html": [
