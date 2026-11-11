@@ -4,8 +4,8 @@
 //   lang?: 'ko'|'en', art?: {icon: File|null, banner: File|null}, batch: [{name, art?}]?}
 //   or the non-converting preflight: {id, type:'preflight', files: File[], lang?}
 //   `lang` picks the romset/BIOS/image failure reasons and preflight row text (#79).
-// Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia, stats}
-//   | {id, type:'batch-one', batch, bin, stats} | {id, type:'batch-error', index, name, message}
+// Messages out: {id, type:'progress', step, frac, detail, batch?} | {id, type:'done', cia: Blob, stats}
+//   | {id, type:'batch-one', batch, bin: Blob, stats} | {id, type:'batch-error', index, name, message}
 //   | {id, type:'batch-done', count, ok, failed, secs}
 //   | {id, type:'preflight-progress', done, total, name} | {id, type:'preflight', rows, bios}
 //   | {id, type:'error', message}
@@ -30,7 +30,15 @@ const converterVersion = async () => (await import('./version.js')).CONVERTER_VE
 self.onmessage = async (e) => {
   const msg = e.data;
   const { id, files, region, system, mode = 'cia', batch = null, art = null, lang = 'en' } = msg;
-  const post = (m) => self.postMessage({ id, ...m });
+  // #340: a finished CIA crosses to the page as a Blob. Blobs are shared by
+  // reference in postMessage (no byte-copy in the page) and the page can make
+  // an ObjectURL without copying again. Pack mode still builds a Uint8Array;
+  // runMakerom() already returns a Blob, so only the raw bytes need wrapping.
+  const post = (m) => self.postMessage({
+    id,
+    ...m,
+    ...(m.bin instanceof Uint8Array ? { bin: new Blob([m.bin], { type: 'application/octet-stream' }) } : null),
+  });
   try {
     const db = await GameDb.load('../neogeo_games.json');
     if (msg.type === 'preflight') {
@@ -103,7 +111,9 @@ async function runMakerom(mr, bt, romfs, product, uid) {
     '-DAPP_TITLE=neo3ds', `-DAPP_PRODUCT_CODE=${product}`,
     `-DAPP_UNIQUE_ID=0x${uid.toString(16).toUpperCase().padStart(5, '0')}`,
     '-DAPP_ROMFS=/work/romfs']);
-  return mr.FS.readFile('/work/out.cia').slice();
+  // #340: FS.readFile already returns a fresh Uint8Array; the old .slice()
+  // copied the whole 45-90MB CIA again. A Blob crosses to the page by reference.
+  return new Blob([mr.FS.readFile('/work/out.cia')], { type: 'application/octet-stream' });
 }
 
 async function buildLauncher(post, t0) {
@@ -125,7 +135,7 @@ async function buildLauncher(post, t0) {
   post({
     type: 'done', cia, stats: {
       rom: 'launcher', title: 'neo3ds', titleId: '000400000BFF0000', set: null, tiles: 0,
-      spriteRawMB: 0, spritePackedMB: 0, totalMB: 0, ciaMB: +(cia.length / 1048576).toFixed(1),
+      spriteRawMB: 0, spritePackedMB: 0, totalMB: 0, ciaMB: +(cia.size / 1048576).toFixed(1),
       memMB: memMB(), secs: ((performance.now() - t0) / 1000).toFixed(1),
     },
   });
@@ -204,7 +214,7 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
     post({ type: 'progress', step: 'cia', frac: 0.9, detail: `${zipName}.neo3ds` });
     const bin = buildPack(gameFiles, zipName);
     gameFiles.clear();
-    return { zipName, bin, stats: packStats(zipName, title, tid, game.name, stats, bin) };
+    return { zipName, bin, stats: packStats(zipName, title, tid, game.name, stats, bin.length) };
   }
 
   const romfs = new Map();
@@ -232,17 +242,17 @@ async function buildOneCapture(db, files, forceZip, opts, post) {
 
   const cia = await runMakerom(await initMakerom(), bt, romfs, productCode(zipName), uid);
   romfs.clear();
-  return { zipName, bin: cia, stats: packStats(zipName, title, tid, game.name, stats, cia) };
+  return { zipName, bin: cia, stats: packStats(zipName, title, tid, game.name, stats, cia.size) };
 }
 
 // #125: `rom` is the user's zip base name (download only); `set` is the public
 // catalog's romset name, the only game identifier the page may send.
-function packStats(zipName, title, tid, set, stats, bin) {
+function packStats(zipName, title, tid, set, stats, binSize) {
   return {
     rom: zipName, title, titleId: tid, set, tiles: stats.tiles,
     spriteRawMB: +(stats.raw / 1048576).toFixed(1),
     spritePackedMB: +(stats.packed / 1048576).toFixed(1),
     totalMB: +(stats.total / 1048576).toFixed(1),
-    ciaMB: +(bin.length / 1048576).toFixed(1),
+    ciaMB: +(binSize / 1048576).toFixed(1),
   };
 }

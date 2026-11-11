@@ -530,6 +530,16 @@ await t('batch/display-order-running-unknown-permutation', async () => {
     throw new Error('not a permutation: ' + JSON.stringify(order));
 });
 
+// #340: the silent makerom stage shows elapsed seconds, never a fake percent.
+await t('batch/cia-elapsed-text', async () => {
+  const { elapsedText } = await import('./batch.js');
+  const want = [[0, '0.0s'], [1800, '1.8s'], [61200, '61.2s'], [-50, '0.0s']];
+  for (const [ms, text] of want) {
+    const got = elapsedText(ms);
+    if (got !== text) throw new Error(`${ms}ms -> ${got}`);
+  }
+});
+
 // ── #74 preflight judgment against real romsets (skipped when roms/ absent) ──
 // The list's "convertible / why not" rules must be the same ones conversion
 // uses, so these drive the real GameDb/pickGame path with real zip files.

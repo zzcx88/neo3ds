@@ -85,6 +85,14 @@ export function progress(batch, i, step, detail = '') {
   return batch;
 }
 
+/* ── #340 cia elapsed time ────────────────────────────────────────────────
+   makerom is one synchronous WASM call, so the worker sends no progress for
+   2-4s. The page shows a clock instead of a fake percentage. */
+export function elapsedText(ms) {
+  const s = Math.max(0, Number(ms) || 0) / 1000;
+  return `${s.toFixed(1)}s`;
+}
+
 // A running row goes back to pending when the run is cancelled: nothing was
 // produced for it, so it must not be counted as a failure in the summary.
 export function markPending(batch, i) {
