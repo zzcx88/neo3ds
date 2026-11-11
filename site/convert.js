@@ -7,7 +7,7 @@
 // #81: determinate recognition/overall bars, progress focus, one ZIP for all.
 import {
   createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary,
-  setArt, artLabel, artPayload, poolSize, STATUS,
+  setArt, artLabel, artPayload, poolSize, STATUS, elapsedText,
 } from './vendor/conv/batch.js';
 import {
   iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
@@ -185,6 +185,9 @@ let singleStep = null; // #152: one-game stage changes for the log
 let singleStage = null; // #125: last progress message stage for convert_fail
 const rowT0 = new Map(); // #152: batch row (-1 = single) -> start time
 const rowMeta = new Map(); // #152: batch row (-1 = single) -> { romset, bios } once logged
+const ciaSince = new Map(); // #340: batch row -> performance.now() when cia began
+let singleCiaSince = null; // #340: one-game run's cia start
+let ciaTimer = null; // #340: one shared 200ms ticker for every cia row
 let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
 let checkRows = null, checkFiles = null, checkBios = null, checkError = '', checkProgress = null;
 let singleRow = null; // #143: the one game's check row when there is no batch list
@@ -229,7 +232,8 @@ function wantsBatch() {
 /* ── ObjectURL bookkeeping (#74): every generated file URL is revoked when a
    new run starts, so repeated runs cannot leak blobs. ───────────────────── */
 function makeUrl(bin) {
-  const url = URL.createObjectURL(new Blob([bin], { type: 'application/octet-stream' }));
+  const blob = bin instanceof Blob ? bin : new Blob([bin], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
   urls.add(url);
   return url;
 }
@@ -789,6 +793,12 @@ function detailText(row, index) {
   }
   if (row.status === STATUS.RUNNING) {
     const step = stepLabel(row.step);
+    // #340: makerom sends no progress for 2-4s. The row shows the elapsed time
+    // instead of the worker detail (Title ID goes to the log); no fake percent.
+    if (row.step === 'cia') {
+      const since = ciaSince.get(index);
+      return since == null ? step : `${step} · ${elapsedText(performance.now() - since)}`;
+    }
     if (!row.detail) return step;
     return step ? `${step} · ${row.detail}` : row.detail;
   }
@@ -1121,7 +1131,10 @@ function markRunningRowsFailed(message) {
 // single: stage progress of this game. batch: finished games plus every game
 // in flight (#122: the page may run several workers at once). A batch stays
 // ≤99% until finishBatchRun(), and a cancelled/errored run keeps its value.
-function renderOverall() {
+// `textOnly` is the #340 cia ticker: it advances the seconds text without
+// touching aria-valuenow/valuetext or the fill, so assistive tech is only
+// notified on real progress messages.
+function renderOverall(textOnly = false) {
   if (!overallView) return;
   const f = Math.max(0, Math.min(1, Number(overallView.fraction) || 0));
   const pct = percentText(f);
@@ -1133,16 +1146,22 @@ function renderOverall() {
     const finished = Math.min(total, Math.max(0, overallView.done));
     label = t(`완료 ${finished}/${total} · ${pct}`, `Done ${finished}/${total} · ${pct}`);
   } else {
-    label = overallView.end === 'done' ? t(`완료 ${pct}`, `Done ${pct}`) : t(`변환 중 ${pct}`, `Converting ${pct}`);
+    const elapsed = singleCiaSince != null && overallView.end == null
+      ? ` · ${elapsedText(performance.now() - singleCiaSince)}` : '';
+    label = overallView.end === 'done'
+      ? t(`완료 ${pct}`, `Done ${pct}`)
+      : t(`변환 중 ${pct}${elapsed}`, `Converting ${pct}${elapsed}`);
   }
-  const percent = Math.round(f * 100);
   overallText.textContent = label;
+  if (textOnly) return;
+  const percent = Math.round(f * 100);
   overallBar.setAttribute('aria-valuenow', String(percent));
   overallBar.setAttribute('aria-valuetext', label);
   overallFill.style.width = `${percent}%`;
 }
 
 function resetOverall() {
+  stopCiaTicker();
   overallView = null;
   overallBox.classList.add('hidden');
   overallFill.style.width = '0%';
@@ -1203,6 +1222,42 @@ function endOverall(kind) {
   if (!overallView) return;
   overallView.end = kind;
   renderOverall();
+}
+
+/* ── #340 cia elapsed ticker ─────────────────────────────────────────────
+   runMakerom() is one synchronous WASM call, so no progress arrives while it
+   runs (2-4s). One shared 200ms timer updates text nodes only; it must not go
+   through updateRow()/paintRowsScroll(), which forces layout on every paint. */
+const CIA_TICK_MS = 200;
+
+function startCiaTicker() {
+  if (ciaTimer != null) return;
+  ciaTimer = setInterval(tickCia, CIA_TICK_MS);
+}
+
+function stopCiaTicker() {
+  if (ciaTimer != null) clearInterval(ciaTimer);
+  ciaTimer = null;
+  ciaSince.clear();
+  singleCiaSince = null;
+}
+
+function tickCia() {
+  let active = false;
+  if (batch) {
+    for (let i = 0; i < batch.length; i++) {
+      const row = batch[i];
+      if (row.status !== STATUS.RUNNING || row.step !== 'cia') continue;
+      active = true;
+      const host = rowEls.get(i);
+      if (host) host.detail.textContent = detailText(row, i);
+    }
+  }
+  if (singleCiaSince != null && overallView?.kind === 'single' && overallView.end == null) {
+    active = true;
+    renderOverall(true); // #340: text only; aria-valuetext stays on progress
+  }
+  if (!active) stopCiaTicker();
 }
 
 // #81: the run button scrolls to the progress section and puts focus on its
@@ -1347,6 +1402,7 @@ function failRow(row, message, stage = null, code = null) {
   rememberFailure(message); // raw: the report reproduces the error (#327)
   failInfo.set(row, { code: code ?? null, stage: failedAt });
   markFailed(batch, row, message);
+  ciaSince.delete(row); // #340: no ticker updates for a failed row
   trackFail(batchSource?.[row]?.set, failedAt, code);
   updateRow(row);
   finishOverallRow(row);
@@ -1413,11 +1469,22 @@ function onWorkerMessage(w, m) {
       logEvent(gameTag(row), m.detail, 'info');
     }
     logBiosLine(row, m.detail);
-    if (batch?.[row] && batch[row].step !== m.step) logStage(row, m.step);
+    const stepChanged = !!batch?.[row] && batch[row].step !== m.step;
+    if (stepChanged) logStage(row, m.step);
+    if (batch?.[row] && m.step === 'cia') {
+      // #340: the row shows elapsed seconds, so the Title ID moves to the log
+      // once; the makerom call then stays silent until batch-one/batch-error.
+      if (stepChanged) logEvent(gameTag(row), m.detail, 'info');
+      if (!ciaSince.has(row)) {
+        ciaSince.set(row, performance.now());
+        startCiaTicker();
+      }
+    }
     rowProgress(batch, row, m.step, m.detail);
     updateRow(row);
   } else if (m.type === 'batch-one') {
     const name = downloadName({ ...m.stats, mode: currentMode() });
+    ciaSince.delete(row); // #340: the shared ticker stops on its next tick
     markDone(batch, row, { url: makeUrl(m.bin), name, mb: m.stats.ciaMB });
     trackDone(m.stats.set);
     updateRow(row);
@@ -1441,7 +1508,15 @@ function onSingleMessage(m) {
       logEvent(gameTag(-1), m.detail, 'info');
     }
     logBiosLine(-1, m.detail);
-    if (m.step !== singleStep) { singleStep = m.step; logStage(-1, m.step); }
+    if (m.step !== singleStep) {
+      singleStep = m.step;
+      logStage(-1, m.step);
+      if (m.step === 'cia') logEvent('', m.detail, 'info'); // #340: Title ID once
+    }
+    if (m.step === 'cia' && singleCiaSince == null) {
+      singleCiaSince = performance.now();
+      startCiaTicker();
+    }
     updateOverallProgress(m);
   } else if (m.type === 'done') {
     completeOverall();
@@ -1518,6 +1593,7 @@ function showBatchFailures() {
 }
 
 function resetResults() {
+  stopCiaTicker();
   revokeAllUrls();
   showAlert('');
   failMessages = [];
@@ -1548,6 +1624,7 @@ function showStats(stats) {
 }
 
 function finish() {
+  stopCiaTicker();
   running = false;
   cancelBtn.classList.add('hidden');
   for (const w of workers) { try { w.terminate(); } catch { /* already gone */ } }
