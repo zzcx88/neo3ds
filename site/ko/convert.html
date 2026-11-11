@@ -151,13 +151,13 @@
 <section class="hero" id="top">
   <div class="wrap gate-hero-grid">
     <div class="hero-copy">
-      <p class="kicker" data-i18n="gate.kicker">웹 변환기 · 서버 없음 · 파일은 이 탭 안에만</p>
+      <p class="kicker" data-i18n="gate.kicker">웹 변환기 · 이 탭에서 실행</p>
       <h1 data-i18n="gate.h1">브라우저에서<br>변환하기.</h1>
       <p class="lede" data-i18n="gate.lede">게임 zip 여러 개와 neogeo.zip을 올리면 이 탭 안에서 차례로 변환합니다. 롬도 결과물도 외부로 나가지 않습니다.</p>
       <ul class="gate-facts" data-i18n-attr="aria-label:gate.factLabel" aria-label="변환 전 확인">
-        <li><b data-i18n="gate.biosT">neogeo.zip(바이오스) 필수</b> <span data-i18n="gate.biosD">— 게임 zip과 함께 올리세요. 없으면 변환되지 않습니다.</span></li>
+        <li><b data-i18n="gate.biosT">neogeo.zip(바이오스) 필수</b> <span data-i18n="gate.biosD">— 게임 zip과 함께 올리세요. 모든 변환에 필요합니다.</span></li>
         <li><b data-i18n="gate.batchT">여러 게임 한 번에</b> <span data-i18n="gate.batchD">— 게임 zip을 여러 개 올리면 차례로 변환합니다. 게임마다 새로고침할 필요 없습니다.</span></li>
-        <li><b data-i18n="gate.onlyT">MAME 네오지오 롬셋 zip만</b> <span data-i18n="gate.onlyD">— 이름·칩 CRC가 MAME 규격과 다르면 변환되지 않습니다. 합본 롬은 부모 zip도 함께 올리세요 (kof98h.zip + kof98.zip).</span></li>
+        <li><b data-i18n="gate.onlyT">MAME 네오지오 롬셋 zip만</b> <span data-i18n="gate.onlyD">— 롬셋 이름과 칩 CRC가 MAME 규격과 같아야 변환됩니다. 합본 롬은 부모 zip도 함께 올리세요 (kof98h.zip + kof98.zip).</span></li>
       </ul>
     </div>
 
@@ -216,7 +216,7 @@
           <span class="art-title" id="gateArtTitle"></span>
           <button type="button" class="btn btn-ghost btn-sm art-back hidden" id="gateArtBack" data-i18n="gate.artBack">목록으로</button>
         </div>
-        <p class="tiny art-hint" data-i18n="gate.artHint">변환하기 전에 HOME 메뉴에 나올 모습을 확인하세요. 직접 고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다.</p>
+        <p class="tiny art-hint" data-i18n="gate.artHint">고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다. 변환을 시작하면 바꿀 수 없습니다.</p>
         <p class="tiny art-lock hidden" id="gateArtLock" role="status" data-i18n="gate.artLock">변환 중에는 아이콘·배너를 바꿀 수 없습니다.</p>
         <div class="art-row" data-art="icon">
           <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>

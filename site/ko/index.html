@@ -197,7 +197,7 @@
         <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip + neogeo.zip (저장소에는 없음)</span></li>
         <li><b data-i18n="prep.4b">소리 파일</b> <span data-i18n="prep.4d">SD 카드에 <code>/3ds/dspfirm.cdc</code></span></li>
       </ul>
-      <p class="tiny" data-i18n="prep.note">MAME 롬셋 zip만 변환할 수 있습니다.<br>MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.</p>
+      <p class="tiny" data-i18n="prep.note">MAME 규격 롬셋 zip을 변환합니다.<br>롬셋 이름과 칩 CRC가 MAME 규격과 같아야 합니다.</p>
     </div>
   </div>
 </section>
@@ -264,7 +264,7 @@
       <ul>
         <li data-i18n="games.cav3">메모리가 빠듯한 롬셋은 변환기가 미리 경고합니다.</li>
         <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다.</li>
-        <li data-i18n="games.cav4">메탈슬러그 2·X·3은 적과 폭발이 많은 장면에서 원래 아케이드 기판도 느려집니다. neo3ds도 그 구간에서는 똑같이 프레임이 떨어집니다.</li>
+        <li data-i18n="games.cav4">메탈슬러그 2·X·3은 원래 기판에서도 느려지던 장면이 있습니다. 어느 구간인지는 <a href="#faq">자주 묻는 질문</a>에 적어 두었습니다.</li>
         <li data-i18n="games.cav1b">롬이 없어서 확인하지 못한 게임은 다음과 같습니다 - CMC42: 전국전승 3, 줏파파, 스트라이커즈 1945 플러스, 프리히스토릭 아일 2, 나이트메어 인 더 다크, 간류, 뱅 비드 · CMC50: KOF2001 · PCM2: 메탈슬러그 4 플러스, 레이지 오브 드래곤즈, 포치와 냐</li>
         <li data-i18n="games.cav2">KOF '98 MVS판은 보호 칩 때문에 변환되지 않습니다. 가정용판(kof98h)이 zip에 있으면 자동으로 그쪽으로 변환됩니다.</li>
       </ul>
@@ -283,7 +283,7 @@
       </details>
       <details open>
         <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
-        <p data-i18n="faq.a2">KOF '95~'99·2000·2002, 메탈슬러그 1·X·3·5, 네오 터프 마스터즈, 네오 드리프트 아웃, SVC Chaos, 사무라이 쇼다운 5 스페셜은 실기에서 풀 스피드입니다. 메탈슬러그 2·X·3은 원래 기판에서 느려지던 장면은 똑같이 느려지며, 소닉윙즈 3는 플레이 가능합니다.</p>
+        <p data-i18n="faq.a2">실기에서 풀 스피드로 확인한 게임은 KOF '95~'99·2000·2002, 메탈슬러그 1·X·3·5, 네오 터프 마스터즈, 네오 드리프트 아웃, SVC Chaos, 사무라이 쇼다운 5 스페셜입니다. 메탈슬러그 2·X·3은 원래 기판에서도 느려지던 장면에서 똑같이 느려지고, 소닉윙즈 3는 플레이할 수 있는 수준입니다.</p>
         <p class="perf"><b data-i18n="speed.meas">실측</b> <span data-i18n="speed.line">한 프레임 16.7ms · 59.8fps · KOF '98 64.0 → 20.3MB</span> · <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.ko.md" data-i18n-attr="href:speed.docHref" data-i18n="speed.doc">기술 문서</a></p>
       </details>
       <details>
