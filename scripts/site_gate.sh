@@ -163,6 +163,9 @@ EOF
 # The baseline is refreshed only in the commit that carries the reviewed rewrite.
 python3 scripts/check_site_facts.py
 
+# llms.txt is hand-written, so nothing else notices when it drifts (#351).
+python3 scripts/check_llms_txt.py
+
 git diff --exit-code -- site/games.js site/compat.html site/ko/compat.html site/sitemap.xml site/privacy.html site/manual.html site/download.html site/changelog.html site/ko/changelog.html site/series site/ko/series || {
   echo 'generated site files are out of date: site/games.js, site/compat.html, site/ko/compat.html, site/sitemap.xml, site/privacy.html, site/manual.html, site/download.html, site/changelog.html, site/ko/changelog.html, site/series, site/ko/series' >&2
   exit 1
