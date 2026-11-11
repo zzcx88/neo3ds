@@ -59,7 +59,7 @@ SERIES = [
             'lede': '94부터 2003까지 매년 나온 본편과 리비전, 한국판, 해적판 — {count}종.',
             'prose': [
                 'KOF는 1994년부터 2003년까지 같은 MVS 기판에서 매년 나왔다. 후반 카트리지는 CMC50 계열 보호가 걸려 있는데, 변환기가 브라우저 안에서 복호화한다.',
-                '먼저 볼 세트는 kof98.zip이다. 이 목록에만 98 리비전이 네 종 있다. 암호화 카트리지는 복호화에 BIOS가 필요하니 neogeo.zip을 같이 넣어라.',
+                'MVS판 kof98.zip은 보호 칩 때문에 변환되지 않는다. 같은 게임의 가정용 세트인 kof98h.zip을 쓰면 되고, 이 목록에는 98 리비전이 다섯 종 있다. 암호화 카트리지는 복호화에 BIOS가 필요하니 neogeo.zip을 같이 넣는다.',
             ],
         },
         'en': {
@@ -70,7 +70,7 @@ SERIES = [
             'lede': 'Ten yearly entries, their revisions, the Korean releases and the bootlegs — {count} sets in the database.',
             'prose': [
                 'KOF shipped every year from 1994 to 2003 on the same MVS board, so the mainline series is here in full. The later carts carry CMC50-era protection, which the converter decrypts inside the browser tab.',
-                'Try kof98.zip first: this list alone holds four 98 revisions. Encrypted carts need the BIOS set to decrypt, so drop neogeo.zip alongside them.',
+                'The MVS kof98.zip does not convert because of its protection chip. Use kof98h.zip, the home set of the same game; this list holds five 98 revisions. Encrypted carts need the BIOS set to decrypt, so drop neogeo.zip alongside them.',
             ],
         },
     },
@@ -115,7 +115,7 @@ SERIES = [
             'lede': '1991년 원작, 속편 3종, 리얼 바웃 3종, 그리고 가로우 — 리비전·해적판 포함 {count}종.',
             'prose': [
                 '페이탈 퓨리는 SNK의 2라인 격투를 대표하는 시리즈로 1991년에 나왔고, 리얼 바웃이 1995년에 틀을 다시 잡았으며 가로우가 1999년에 새 캐스트로 마무리했다.',
-                '리얼 바웃 카트리지는 SMA 보호가 걸려 있으니 neogeo.zip을 같은 배치에 넣어라. 가장 많이 변환되는 세트는 garou.zip이다.',
+                '리얼 바웃 세트는 보호가 없어 그대로 변환된다. SMA 보호가 걸린 쪽은 가로우 계열이므로, garou.zip을 쓸 때만 neogeo.zip을 같은 배치에 넣는다.',
             ],
         },
         'en': {
@@ -125,8 +125,8 @@ SERIES = [
             'h1': 'Fatal Fury and Garou on the 3DS',
             'lede': 'The 1991 original, three sequels, three Real Bout games and Garou: Mark of the Wolves — {count} sets including revisions and bootlegs.',
             'prose': [
-                'Fatal Fury put SNK two-lane fighting on the map in 1991, Real Bout rebuilt it in 1995, and Garou closed the line in 1999 with a new cast and a time skip.',
-                'The Real Bout carts carry SMA protection, so keep neogeo.zip in the same drop. garou.zip is the set most people convert first.',
+                'Fatal Fury put SNK\'s two-lane fighting on the map in 1991, Real Bout rebuilt it in 1995, and Garou closed the line in 1999 with a new cast and a time skip.',
+                'The Real Bout sets carry no protection and convert as they are. SMA protection belongs to the Garou carts, so neogeo.zip is only needed in the same drop when you pick garou.zip.',
             ],
         },
     },
@@ -245,18 +245,18 @@ SERIES = [
             'lede': '타이토의 퍼즐 게임과 같은 기판을 쓰는 퍼즐 드 폰 — {count}종.',
             'prose': [
                 '퍼즐 보블은 아케이드 원작이 나온 이듬해인 1994년 네오지오에 올라왔고, 버블 보블 어게인이 1999년에 뒤를 이었다. 퍼즐 드 폰과 R!은 같은 2인 대전 형식이다.',
-                'pbobblen.zip이 부모 세트이고, pbobblenb.zip은 해적판이라 목록에서 변환 불가로 표시된다.',
+                'pbobblen.zip이 부모 세트이고, pbobblenb.zip은 해적판이라 부모 없이도 변환된다. 목록에서도 변환 가능으로 표시된다.',
             ],
         },
         'en': {
             'name': 'Puzzle Bobble',
             'title': 'Puzzle Bobble on 3DS — Neo Geo romsets | neo3ds',
-            'desc': 'Puzzle Bobble, Bust-A-Move Again and Puzzle De Pon on the Neo Geo — {count} romsets with 3DS conversion status. The bootleg set is marked unsupported.',
+            'desc': 'Puzzle Bobble, Bust-A-Move Again and Puzzle De Pon on the Neo Geo — {count} romsets with 3DS conversion status.',
             'h1': 'Puzzle Bobble on the 3DS',
             'lede': "Taito's bubble puzzler and the Puzzle De Pon sets Visco built on the same board — {count} romsets.",
             'prose': [
                 'Puzzle Bobble reached the Neo Geo in 1994, a year after the arcade original, and Bust-A-Move Again followed in 1999. Puzzle De Pon and its R! revision use the same two-player versus format.',
-                'pbobblen.zip is the parent set; pbobblenb.zip is the bootleg and is listed as unsupported.',
+                'pbobblen.zip is the parent set. pbobblenb.zip is the bootleg and converts on its own, and the list marks it as convertible.',
             ],
         },
     },
@@ -297,7 +297,7 @@ SERIES = [
             'lede': '1992년부터 1996년까지의 축구 게임 4종 — {count}종.',
             'prose': [
                 '슈퍼 사이드킥은 아케이드 축구에 대한 SNK식 답이었다. 전반이 짧고 반칙이 없으며, 카드 시스템으로 슛을 결정했다. 1996년 얼티밋 11이 시리즈의 끝이다.',
-                '네 작품 모두 무보호 카트리지라 그대로 변환된다. 가장 완성형은 ssideki4.zip이다.',
+                '1편 ssideki.zip은 보호 칩 때문에 변환되지 않는다. 2·3편과 얼티밋 11은 보호가 없어 그대로 변환되고, 가장 완성형은 ssideki4.zip이다.',
             ],
         },
         'en': {
@@ -307,8 +307,8 @@ SERIES = [
             'h1': 'Super Sidekicks on the 3DS',
             'lede': 'Four football games from 1992 to 1996 — {count} romsets.',
             'prose': [
-                'Super Sidekicks was SNK answer to arcade football: short halves, no fouls, and a card system that decided shots. The fourth game, The Ultimate 11, closed the series in 1996.',
-                'All four convert as unprotected carts. ssideki4.zip is the most complete of the set.',
+                'Super Sidekicks was SNK\'s answer to arcade football: short halves, no fouls, and a card system that decided shots. The fourth game, The Ultimate 11, closed the series in 1996.',
+                'The first game, ssideki.zip, does not convert because of its protection chip. The other three carry no protection and convert as they are; ssideki4.zip is the most complete of the set.',
             ],
         },
     },
