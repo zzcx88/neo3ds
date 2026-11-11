@@ -54,10 +54,13 @@ EXEMPT = {'site/privacy.html', 'site/ko/privacy.html'}
 # number inside it.
 TOKEN_RE = re.compile(
     r'(?P<url>https?://[^\s<>")\]]+)'
-    r'|(?P<zip>\b[a-z0-9][a-z0-9_]*\.zip\b)'
-    r'|(?P<acronym>\b[A-Z][A-Z0-9]{2,}[A-Z0-9]\b)'
-    r'|(?P<number>\b\d+(?:\.\d+)?(?:\s?(?:ms|fps|MB|KB|GB|MHz|%))?\b)'
+    r'|(?P<zip>[a-z0-9][a-z0-9_]*\.zip)(?![a-z0-9_])'
+    r'|(?P<acronym>[A-Z][A-Z0-9]{2,}[A-Z0-9])(?![A-Za-z0-9_])'
+    r'|(?P<number>\d+(?:\.\d+)?(?:\s?(?:ms|fps|MB|KB|GB|MHz|%))?)(?![A-Za-z0-9_])'
 )
+# Note the lookaheads instead of \b: a Korean particle attaches straight to the token
+# ("wh2j.zip을", "37.3MB입니다"), and \b treats Hangul as a word character, so the token
+# would silently stop being visible to this check.
 
 # Numbers that appear in navigation, version strings and generated counters but carry no
 # claim: list positions, "1-3", section numbers. Dropped so a copy edit is not blamed for
