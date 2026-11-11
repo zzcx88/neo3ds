@@ -195,9 +195,11 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 
 `index.html`·`convert.html`·`download.html`·`compat.html`·`manual.html`·`changelog.html`은 Umami Cloud 트래커(`data-domains="zzcx88.github.io"`)를 싣고,
 변환 페이지는 `convert_start`(모드, 배치면 `batch:3-5`처럼 규모 접미), `convert_done`(게임),
-`convert_fail`(게임, `load/bios`처럼 단계/사유), `convert_save`(다운로드 클릭의 출력 모드),
+`convert_fail`(게임, `load/bios`처럼 단계/사유 — romfs 실패는 `romfs/oom`·`romfs/wasm`·
+`romfs/game-db`로 분해), `convert_save`(다운로드 클릭의 출력 모드),
 `feedback_submit`(제보 전송 1회, 속성 없음) 다섯 이벤트만 보낸다.
 게임 식별자는 공개 카탈로그의 롬셋 이름(`set`)뿐이며 zip 파일명은 보내지 않는다 (#125·#175·#189, ADR 0001).
+romfs 실패 사유 분해도 `stage` 한 속성에 접는 것이라 이벤트·속성 수는 그대로다 (#341).
 
 생성물은 손으로 고치지 않는다. 한국어 원본을 고치고 아래를 실행해 산출물을 같이 커밋한다:
 

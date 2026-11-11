@@ -32,6 +32,7 @@ export const REASONS = new Set([
   'unsupported', // protection chip / no AES build
   'zip', // zip unreadable or corrupt
   'image', // icon/banner could not be decoded
+  'game-db', // our DB/protection bug
   'oom', // browser ran out of memory
   'wasm', // makerom/bannertool failed or did not load
   'crash', // worker died without a message

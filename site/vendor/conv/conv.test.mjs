@@ -818,6 +818,7 @@ await t('analytics/event-payloads', async () => {
   same(failEvent('kof98h', 'romfs'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'romfs' } }, 'fail');
   same(failEvent('kof98h', 'load', 'bios'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'load/bios' } }, 'reason');
   same(failEvent('kof98h', 'romfs', 'oom'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'romfs/oom' } }, 'oom');
+  same(failEvent('svc', 'romfs', 'game-db'), { name: 'convert_fail', data: { game: 'svc', stage: 'romfs/game-db' } }, 'game-db');
   same(failEvent('kof98h', null, 'crash'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker/crash' } }, 'crash');
   same(failEvent('kof98h', null), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'no stage');
   same(failEvent('kof98h', 'weird'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'bad stage');
@@ -946,7 +947,7 @@ await t('analytics/failure-subreasons-fold-into-existing-buckets', async () => {
     'zip-corrupt': 'romfs/zip',
     'crc-mismatch': 'romfs/missing',
     'bios-read': 'romfs/bios',
-    'game-db': 'romfs/unknown',
+    'game-db': 'romfs/game-db',
     // The unknown bucket stays visible (#326 review: it is not dropped).
     unknown: 'romfs/unknown',
   };
@@ -971,6 +972,20 @@ await t('errors/pickGame-keeps-oom-but-labels-unknown-as-zip', async () => {
   if (pickFailureCode(new Error('out of memory')) !== 'oom') throw new Error('oom masked as zip');
   if (pickFailureCode(coded('zip-corrupt', 'x')) !== 'zip-corrupt') throw new Error('coded reason lost');
   if (pickFailureCode(new Error('boom')) !== 'zip') throw new Error('uncoded pickGame failure should be zip');
+});
+
+// #341: a large allocation helper must reject a bad size without pretending it
+// is an OOM. The allocation-failure branch is not exercised (it would need real
+// memory pressure).
+await t('errors/allocBytes-returns-bytes-and-rejects-bad-sizes', async () => {
+  const { allocBytes } = await import('./errors.js');
+  const buf = allocBytes(16);
+  if (!(buf instanceof Uint8Array) || buf.length !== 16) throw new Error('allocation mismatch');
+  for (const bad of [-1, 1.5, NaN, Infinity]) {
+    let err = null;
+    try { allocBytes(bad); } catch (e) { err = e; }
+    if (!(err instanceof RangeError)) throw new Error(`accepted size ${bad}`);
+  }
 });
 
 // ── #188/#189 anonymous report payload (pure) ─────────────────────────────
