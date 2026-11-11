@@ -4,7 +4,7 @@ import { BiosSet } from './zipset.js';
 import { buildRegions, writeSprites } from './rompack.js';
 import { apply, fixBankType, isPvc } from './protection.js';
 import { patchFor } from './patches.js';
-import { coded } from './errors.js';
+import { coded, allocBytes, allocCopy } from './errors.js';
 
 export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
   const { region = Region.Europe, startMvs = null, log = () => {}, onProgress = null } = opts;
@@ -33,8 +33,8 @@ export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
     throw err;
   }
   patchFor(game.cart)?.(program);
-  out.set('p.bin', program.slice());
-  out.set('s.bin', need('fixed').slice());
+  out.set('p.bin', allocCopy(program));
+  out.set('s.bin', allocCopy(need('fixed')));
   if (sma) out.set('sma.bin', encodeSma(sma));
   const bankType = fixBankType(game.cart);
   if (bankType !== 0) out.set('fixbank.bin', new Uint8Array([bankType]));
@@ -51,7 +51,7 @@ export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
       start = 0x10000;
       size = Math.max(...ops.map((o) => o.kind === 'load' || o.kind === 'cont' ? o.a + o.b : o.kind === 'copy' ? o.b + o.c : 0)) - start;
     }
-    m1 = audio.slice(start, Math.min(start + size, audio.length));
+    m1 = allocCopy(audio, start, Math.min(start + size, audio.length));
   }
   out.set('m1.bin', m1);
   out.set('v.bin', need('ymsnd:adpcma'));
@@ -78,7 +78,7 @@ export async function writeGameFiles(game, rom, biosZip, zstd, opts = {}) {
   out.set('lo.bin', bios.read(GameDb.ZOOM_TABLE));
 
   log('  Converting and compressing graphics...');
-  const gfx = need('sprites').slice(); // writeSprites converts in place
+  const gfx = allocCopy(need('sprites')); // writeSprites converts in place
   const spr = await writeSprites(gfx, zstd, onProgress);
   out.set('c.pak', spr.pak);
   out.set('c.idx', spr.idx);
@@ -110,7 +110,7 @@ export function buildPack(gameFiles, romName) {
   entries.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   let total = 16 + entries.length * 32;
   for (const [, d] of entries) total += d.length;
-  const out = new Uint8Array(total);
+  const out = allocBytes(total);
   const dv = new DataView(out.buffer);
   out.set([0x4E, 0x45, 0x4F, 0x33, 0x44, 0x53, 0x50, 0x4B], 0); // NEO3DSPK
   dv.setUint32(8, 1, true);

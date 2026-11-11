@@ -12,19 +12,36 @@ export const FAILURE_CODES = Object.freeze([
   'zip-corrupt', 'crc-mismatch', 'bios-read', 'game-db',
 ]);
 
-// The worker's romfs sub-reasons are finer than the dashboard buckets, so they
-// fold back into the existing eleven before leaving the tab — no new property,
-// no new dashboard value. 'unknown' stays itself, so romfs/unknown remains
-// visible.
+// The worker's romfs sub-reasons are finer than the dashboard buckets, so most
+// fold back into an existing value before leaving the tab — no new property, no
+// new dashboard event. 'unknown' and 'game-db' stay themselves, so
+// romfs/unknown and romfs/game-db remain visible (#326, #341).
 export const ANALYTICS_FOLD = Object.freeze({
   'zip-corrupt': 'zip', // damaged/oversized entry
   'crc-mismatch': 'missing', // the expected chip is not the one in the zip
   'bios-read': 'bios', // neogeo.zip lacks a required chip
-  'game-db': 'unknown', // our own data/protection bug; report it
 });
 
 export function coded(code, message) {
   return Object.assign(new Error(message), { code });
+}
+
+// A large region buffer: an allocation failure must reach analytics as 'oom',
+// not as an uncoded RangeError ('unknown'). Invalid sizes stay RangeError so a
+// programming error is not mislabelled as memory pressure (#341).
+export function allocBytes(n) {
+  if (!Number.isSafeInteger(n) || n < 0) throw new RangeError(`invalid allocation size: ${n}`);
+  try { return new Uint8Array(n); }
+  catch { throw coded('oom', `allocation failed: ${n} bytes`); }
+}
+
+// A large slice/copy. Validate the range first so a bad DB index is not hidden
+// by TypedArray.slice's silent clamping; only the allocation itself is an OOM.
+export function allocCopy(view, start = 0, end = view.length) {
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || end > view.length)
+    throw new RangeError(`invalid copy range: ${start}..${end}`);
+  try { return view.slice(start, end); }
+  catch { throw coded('oom', `allocation failed copying ${end - start} bytes`); }
 }
 
 // A worker error -> the stable code the page may display/report.
