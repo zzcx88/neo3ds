@@ -136,6 +136,25 @@ export function poolSize({ ready = 1, cores = 2, memory = null, mobile = false }
   return Math.max(1, Math.min(MAX_WORKERS, Math.max(1, numOr(cores, 2) - 1), games));
 }
 
+/* ── #338 result order ───────────────────────────────────────────────────
+   A normally finished batch shows done → failed → pending/running → blocked,
+   keeping the original zip order inside each group. This is display-only:
+   `batch` indexes key failInfo/batchSource/rowEls and the ZIP entry order, so
+   the function returns indexes and never touches the array. */
+const DISPLAY_GROUP = Object.freeze({
+  [STATUS.DONE]: 0, [STATUS.FAILED]: 1,
+  [STATUS.PENDING]: 2, [STATUS.RUNNING]: 2,
+  [STATUS.BLOCKED]: 3,
+});
+
+export function displayOrder(batch = []) {
+  const rows = Array.isArray(batch) ? batch : [];
+  return rows
+    .map((row, i) => ({ i, group: DISPLAY_GROUP[row?.status] ?? 4 }))
+    .sort((a, b) => a.group - b.group || a.i - b.i)
+    .map(({ i }) => i);
+}
+
 // Counts for the list header and the final success/fail summary.
 export function summary(batch = []) {
   const s = {

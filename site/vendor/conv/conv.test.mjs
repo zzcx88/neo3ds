@@ -413,6 +413,47 @@ await t('batch/cancel-returns-running-row-to-pending', async () => {
   if (b[0].status !== STATUS.RUNNING) throw new Error('cannot restart after cancel');
 });
 
+// #338: after a normal batch end the list shows done → failed → pending/running
+// → blocked, keeping zip order inside each group. The batch array itself never
+// moves: its index keys failInfo/batchSource/rowEls and the ZIP entry order.
+const statusRow = (status) => ({ name: status, ok: status !== 'blocked', status });
+
+await t('batch/display-order-groups-stable', async () => {
+  const { displayOrder, STATUS } = await import('./batch.js');
+  const batch = [
+    statusRow(STATUS.DONE),
+    statusRow(STATUS.BLOCKED),
+    statusRow(STATUS.FAILED),
+    statusRow(STATUS.PENDING),
+    statusRow(STATUS.DONE),
+  ];
+  const before = batch.map((r) => r.status);
+  const order = displayOrder(batch);
+  if (JSON.stringify(order) !== JSON.stringify([0, 4, 2, 3, 1]))
+    throw new Error('order ' + JSON.stringify(order));
+  if (JSON.stringify(batch.map((r) => r.status)) !== JSON.stringify(before))
+    throw new Error('batch mutated');
+});
+
+await t('batch/display-order-running-unknown-permutation', async () => {
+  const { displayOrder, STATUS } = await import('./batch.js');
+  const batch = [
+    { status: 'unknown' },
+    statusRow(STATUS.RUNNING),
+    statusRow(STATUS.BLOCKED),
+    statusRow(STATUS.FAILED),
+    statusRow(STATUS.PENDING),
+    statusRow(STATUS.DONE),
+  ];
+  const order = displayOrder(batch);
+  // running joins the pending group; an unknown status goes last.
+  if (JSON.stringify(order) !== JSON.stringify([5, 3, 1, 4, 2, 0]))
+    throw new Error('order ' + JSON.stringify(order));
+  const seen = new Set(order);
+  if (seen.size !== batch.length || order.some((i) => i < 0 || i >= batch.length))
+    throw new Error('not a permutation: ' + JSON.stringify(order));
+});
+
 // ── #74 preflight judgment against real romsets (skipped when roms/ absent) ──
 // The list's "convertible / why not" rules must be the same ones conversion
 // uses, so these drive the real GameDb/pickGame path with real zip files.

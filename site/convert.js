@@ -7,7 +7,7 @@
 // #81: determinate recognition/overall bars, progress focus, one ZIP for all.
 import {
   createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary,
-  setArt, artLabel, artPayload, poolSize, STATUS,
+  displayOrder, setArt, artLabel, artPayload, poolSize, STATUS,
 } from './vendor/conv/batch.js';
 import {
   iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
@@ -189,6 +189,7 @@ let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
 let checkRows = null, checkFiles = null, checkBios = null, checkError = '', checkProgress = null;
 let singleRow = null; // #143: the one game's check row when there is no batch list
 let batch = null, batchSource = null;
+let resultOrder = null; // #338: display indexes after a normal batch end; `batch` keeps zip order
 let batchStarted = false, readyIndexes = [];
 let artEditor = null;
 let runInputs = null; // #81: {files, mode} the current run started with
@@ -972,6 +973,7 @@ function updateRow(index) {
 function renderBatch() {
   batchPanel.classList.toggle('hidden', !wantsBatch());
   if (!wantsBatch()) {
+    resultOrder = null;
     rowEls.clear();
     batchRowsEl.replaceChildren();
     paintRowsScroll();
@@ -981,7 +983,12 @@ function renderBatch() {
   if (selectedIndex >= 0 && !batch?.[selectedIndex]?.ok) selectedIndex = -1;
   rowEls.clear();
   const frag = document.createDocumentFragment();
-  (batch ?? []).forEach((row, i) => frag.appendChild(makeRow(row, i)));
+  // #338: display only. makeRow always gets the original index so failInfo,
+  // rowEls and ZIP order keep pointing at the same row.
+  const order = resultOrder?.length === (batch ?? []).length
+    ? resultOrder
+    : (batch ?? []).map((_, i) => i);
+  for (const i of order) frag.appendChild(makeRow(batch[i], i));
   batchRowsEl.replaceChildren(frag);
   paintRowsScroll();
   paintBatchHeader();
@@ -1000,7 +1007,10 @@ function paintRowsScroll() {
     return;
   }
   const gap = parseFloat(getComputedStyle(batchRowsEl).rowGap) || 0;
-  const h = first.getBoundingClientRect().height;
+  // #338: a done row can be taller (download link), so size the window from the
+  // tallest of the visible rows instead of only the first one.
+  const visible = Array.from(rows).slice(0, ROWS_VISIBLE);
+  const h = Math.max(...visible.map((r) => r.getBoundingClientRect().height));
   batchRowsEl.style.maxHeight = `${Math.round(h * ROWS_VISIBLE + gap * (ROWS_VISIBLE - 1))}px`;
   batchRowsEl.classList.add('scroll');
   batchRowsEl.tabIndex = 0;
@@ -1143,6 +1153,7 @@ function renderOverall() {
 }
 
 function resetOverall() {
+  resultOrder = null; // inputs changed under a finished run: show zip order again
   overallView = null;
   overallBox.classList.add('hidden');
   overallFill.style.width = '0%';
@@ -1358,10 +1369,15 @@ function failRow(row, message, stage = null, code = null) {
 function finishBatchRun() {
   const s = summary(batch);
   const secs = ((performance.now() - batchT0) / 1000).toFixed(1);
+  // #338: set the display order before finish(), whose syncOutput() may render
+  // the list again. Cancel and rerun never reach here, so they keep zip order.
+  resultOrder = displayOrder(batch);
   completeOverall();
   finish();
   for (const step of PIPE_STEPS) setStep(step, 'done');
   renderBatch();
+  // Only the list's own scroll moves; the page viewport stays where it is.
+  if (batchRowsEl.classList.contains('scroll')) batchRowsEl.scrollTop = 0;
   logEvent('', t(`■ 성공 ${s.done} · 실패 ${s.failed} · ${secs}초`,
     `■ ${s.done} done · ${s.failed} failed · ${secs}s`), 'meta');
 }
@@ -1518,6 +1534,7 @@ function showBatchFailures() {
 }
 
 function resetResults() {
+  resultOrder = null;
   revokeAllUrls();
   showAlert('');
   failMessages = [];
@@ -1564,6 +1581,7 @@ function finish() {
 cancelBtn.addEventListener('click', () => {
   if (!running) return;
   if (batch) {
+    resultOrder = null; // #338: a cancelled run keeps the original zip order
     for (let i = 0; i < batch.length; i++) {
       if (batch[i].status === STATUS.RUNNING) markPending(batch, i);
     }
