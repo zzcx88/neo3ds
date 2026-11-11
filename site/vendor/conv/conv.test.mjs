@@ -33,6 +33,61 @@ await t('job/title-id', async () => {
   const { titleId } = await import('./job.js');
   if (titleId('kof98h') !== '000400000C9DF700') throw new Error('got ' + titleId('kof98h'));
 });
+
+// #339: the blocked row needs the exact chips and parent romset, so pickGame
+// returns the detail of the same candidate that produced code/problem.
+const fakeRomSet = (detail) => ({ open: async () => ({ missingDetail: () => detail }) });
+
+await t('job/pickGame-missing-chips-and-parent', async () => {
+  const { GameDb } = await import('./gamedb.js');
+  const { pickGame } = await import('./job.js');
+  const db = await GameDb.load(join(ROOT, 'converter/assets/neogeo_games.json'));
+  const got = await pickGame(db, fakeRomSet({ missing: ['242-m1.m1', '242-p1.p1'], mismatch: [] }),
+    [{ name: 'kof98h.zip' }], 'kof98h');
+  if (got.game !== null || got.code !== 'missing') throw new Error('verdict: ' + JSON.stringify(got));
+  if (JSON.stringify(got.missing) !== '["242-m1.m1","242-p1.p1"]') throw new Error('missing: ' + JSON.stringify(got.missing));
+  if (got.mismatch.length !== 0 || got.versionMismatch !== false) throw new Error('version: ' + JSON.stringify(got));
+  if (got.parent !== 'kof98') throw new Error('parent: ' + got.parent);
+});
+
+await t('job/pickGame-version-mismatch-wins', async () => {
+  const { GameDb } = await import('./gamedb.js');
+  const { pickGame } = await import('./job.js');
+  const db = await GameDb.load(join(ROOT, 'converter/assets/neogeo_games.json'));
+  const got = await pickGame(db, fakeRomSet({ missing: ['242-p1.p1'], mismatch: ['242-pn1.p1'] }),
+    [{ name: 'kof98h.zip' }], 'kof98h');
+  if (got.code !== 'crc-mismatch' || got.versionMismatch !== true) throw new Error('verdict: ' + JSON.stringify(got));
+  if (JSON.stringify(got.mismatch) !== '["242-pn1.p1"]') throw new Error('mismatch: ' + JSON.stringify(got.mismatch));
+  if (got.parent !== 'kof98') throw new Error('parent: ' + got.parent);
+});
+
+await t('job/pickGame-success-has-no-detail', async () => {
+  const { GameDb } = await import('./gamedb.js');
+  const { pickGame } = await import('./job.js');
+  const db = await GameDb.load(join(ROOT, 'converter/assets/neogeo_games.json'));
+  const got = await pickGame(db, fakeRomSet({ missing: [], mismatch: [] }), [{ name: 'nam1975.zip' }], 'nam1975');
+  if (!got.game || got.game.name !== 'nam1975') throw new Error('not ready: ' + JSON.stringify(got));
+  if (got.missing.length !== 0 || got.mismatch.length !== 0 || got.parent !== null || got.versionMismatch !== false)
+    throw new Error('detail: ' + JSON.stringify(got));
+});
+
+await t('job/pickGame-detail-follows-the-recorded-candidate', async () => {
+  const { GameDb } = await import('./gamedb.js');
+  const { pickGame } = await import('./job.js');
+  const db = await GameDb.load(join(ROOT, 'converter/assets/neogeo_games.json'));
+  let calls = 0;
+  const set = { open: async () => {
+    calls += 1;
+    return { missingDetail: () => (calls === 1
+      ? { missing: ['exact-chip.bin'], mismatch: [] }
+      : { missing: ['clone-chip.bin'], mismatch: [] }) };
+  } };
+  const got = await pickGame(db, set, [{ name: '2020bb.zip' }], '2020bb');
+  if (got.code !== 'missing') throw new Error('verdict: ' + JSON.stringify(got));
+  if (JSON.stringify(got.missing) !== '["exact-chip.bin"]')
+    throw new Error('last candidate overwrote the detail: ' + JSON.stringify(got.missing));
+});
+
 await t('zipset/split-crc', async () => {
   const { RomSet } = await import('./zipset.js');
   const rom = await RomSet.open([
@@ -111,6 +166,27 @@ await t('zipset/missing-chip-has-code', async () => {
   let code = '';
   try { await rom.read('zzz.bin', 0x1234, 'kof98h'); } catch (e) { code = e.code; }
   if (code !== 'missing') throw new Error('code: ' + code);
+});
+
+// #339: a chip absent by CRC but present by name is a version mismatch, not a
+// missing file; repeated ops list once and keep the game DB order.
+await t('zipset/missing-detail-splits-missing-and-mismatch', async () => {
+  const { zipSync } = await import('./fflate.js');
+  const { RomSet } = await import('./zipset.js');
+  const { crc32Bytes } = await import('./job.js');
+  const chip = noise(1024, 13);
+  const rom = await RomSet.open([fileSourceOf('split.zip', zipSync({ 'present.bin': chip }))]);
+  const wrong = (crc32Bytes(chip) ^ 0xdead) >>> 0;
+  const g = { regions: [{ ops: [
+    { kind: 'load', file: 'present.bin', crc: wrong },
+    { kind: 'load', file: 'ghost.bin', crc: 0x1234 },
+    { kind: 'load', file: 'ghost.bin', crc: 0x1234 },
+    { kind: 'load', file: 'no-crc.bin', crc: null },
+    { kind: 'fill', file: 'ignored.bin', crc: 0x5678 },
+  ] }] };
+  const got = JSON.stringify(rom.missingDetail(g));
+  const want = JSON.stringify({ missing: ['ghost.bin'], mismatch: ['present.bin'] });
+  if (got !== want) throw new Error(got);
 });
 
 await t('zipset/bios-read-code', async () => {
@@ -413,6 +489,47 @@ await t('batch/cancel-returns-running-row-to-pending', async () => {
   if (b[0].status !== STATUS.RUNNING) throw new Error('cannot restart after cancel');
 });
 
+// #338: after a normal batch end the list shows done → failed → pending/running
+// → blocked, keeping zip order inside each group. The batch array itself never
+// moves: its index keys failInfo/batchSource/rowEls and the ZIP entry order.
+const statusRow = (status) => ({ name: status, ok: status !== 'blocked', status });
+
+await t('batch/display-order-groups-stable', async () => {
+  const { displayOrder, STATUS } = await import('./batch.js');
+  const batch = [
+    statusRow(STATUS.DONE),
+    statusRow(STATUS.BLOCKED),
+    statusRow(STATUS.FAILED),
+    statusRow(STATUS.PENDING),
+    statusRow(STATUS.DONE),
+  ];
+  const before = batch.map((r) => r.status);
+  const order = displayOrder(batch);
+  if (JSON.stringify(order) !== JSON.stringify([0, 4, 2, 3, 1]))
+    throw new Error('order ' + JSON.stringify(order));
+  if (JSON.stringify(batch.map((r) => r.status)) !== JSON.stringify(before))
+    throw new Error('batch mutated');
+});
+
+await t('batch/display-order-running-unknown-permutation', async () => {
+  const { displayOrder, STATUS } = await import('./batch.js');
+  const batch = [
+    { status: 'unknown' },
+    statusRow(STATUS.RUNNING),
+    statusRow(STATUS.BLOCKED),
+    statusRow(STATUS.FAILED),
+    statusRow(STATUS.PENDING),
+    statusRow(STATUS.DONE),
+  ];
+  const order = displayOrder(batch);
+  // running joins the pending group; an unknown status goes last.
+  if (JSON.stringify(order) !== JSON.stringify([5, 3, 1, 4, 2, 0]))
+    throw new Error('order ' + JSON.stringify(order));
+  const seen = new Set(order);
+  if (seen.size !== batch.length || order.some((i) => i < 0 || i >= batch.length))
+    throw new Error('not a permutation: ' + JSON.stringify(order));
+});
+
 // #340: the silent makerom stage shows elapsed seconds, never a fake percent.
 await t('batch/cia-elapsed-text', async () => {
   const { elapsedText } = await import('./batch.js');
@@ -518,11 +635,37 @@ await t('preflight/korean-corrupt-zip-reason', async () => {
 // CI (which has no roms/) still proves the row carries the right reason.
 await t('preflight/bios-and-missing-codes-without-roms', async () => {
   const { db, preflight } = await preflightFixture();
-  const fakeSet = (missing) => ({ open: async () => ({ missing: () => missing }) });
+  const fakeSet = (missing, mismatch = []) => ({
+    open: async () => ({ missingDetail: () => ({ missing, mismatch }) }),
+  });
   const bios = await preflight(db, fakeSet([]), [fakeZip('nam1975.zip')]);
   if (bios[0].ok || bios[0].code !== 'bios') throw new Error('bios: ' + JSON.stringify(bios[0]));
   const missing = await preflight(db, fakeSet(['201-p1.p1']), [fakeZip('nam1975.zip')]);
   if (missing[0].ok || missing[0].code !== 'missing') throw new Error('missing: ' + JSON.stringify(missing[0]));
+});
+
+// #339: a blocked row carries the chips, parent romset and version flag the
+// plain detail line needs; a ready row leaves every field empty.
+await t('preflight/blocked-row-carries-chip-detail', async () => {
+  const { db, preflight } = await preflightFixture();
+  const fakeSet = (missing, mismatch = []) => ({
+    open: async () => ({ missingDetail: () => ({ missing, mismatch }) }),
+  });
+  const [kof] = await preflight(db, fakeSet(['242-m1.m1', '242-p1.p1']), [fakeZip('kof98h.zip')], { lang: 'ko' });
+  if (kof.ok || kof.code !== 'missing') throw new Error('blocked: ' + JSON.stringify(kof));
+  if (JSON.stringify(kof.missing) !== '["242-m1.m1","242-p1.p1"]') throw new Error('missing: ' + JSON.stringify(kof));
+  if (kof.mismatch.length !== 0 || kof.parent !== 'kof98' || kof.versionMismatch !== false)
+    throw new Error('detail: ' + JSON.stringify(kof));
+
+  const [wrong] = await preflight(db, fakeSet([], ['242-pn1.p1']), [fakeZip('kof98h.zip')]);
+  if (wrong.ok || wrong.code !== 'crc-mismatch' || wrong.versionMismatch !== true)
+    throw new Error('version: ' + JSON.stringify(wrong));
+  if (JSON.stringify(wrong.mismatch) !== '["242-pn1.p1"]') throw new Error('mismatch: ' + JSON.stringify(wrong));
+
+  const [ready] = await preflight(db, fakeSet([]), [fakeZip('nam1975.zip'), fakeZip('neogeo.zip')]);
+  if (!ready.ok) throw new Error('ready: ' + JSON.stringify(ready));
+  if (ready.missing.length !== 0 || ready.mismatch.length !== 0 || ready.parent !== null || ready.versionMismatch !== false)
+    throw new Error('ready detail: ' + JSON.stringify(ready));
 });
 
 await t('preflight/clone-with-parent-zip-is-ready', async () => {
@@ -828,6 +971,7 @@ await t('analytics/event-payloads', async () => {
   same(failEvent('kof98h', 'romfs'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'romfs' } }, 'fail');
   same(failEvent('kof98h', 'load', 'bios'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'load/bios' } }, 'reason');
   same(failEvent('kof98h', 'romfs', 'oom'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'romfs/oom' } }, 'oom');
+  same(failEvent('svc', 'romfs', 'game-db'), { name: 'convert_fail', data: { game: 'svc', stage: 'romfs/game-db' } }, 'game-db');
   same(failEvent('kof98h', null, 'crash'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker/crash' } }, 'crash');
   same(failEvent('kof98h', null), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'no stage');
   same(failEvent('kof98h', 'weird'), { name: 'convert_fail', data: { game: 'kof98h', stage: 'worker' } }, 'bad stage');
@@ -871,6 +1015,46 @@ await t('messages/never-uses-the-user-zip-name', async () => {
     if (/My Game|\.zip/i.test(text)) throw new Error(`leaked: ${text}`);
     if (!text.includes('game')) throw new Error(`missing generic name: ${text}`);
   }
+});
+
+// #339: at most four chips plus a count, an optional parent romset, and no CRC
+// number in plain words.
+await t('messages/chips-parent-and-version-are-plain', async () => {
+  const { failureMessage } = await import('./messages.js');
+  const chips = ['242-m1.m1', '242-p1.p1', '242-c1.c1', '242-c2.c2', '242-c3.c3', '242-c4.c4'];
+  const ko = failureMessage('missing', { set: 'kof98h', lang: 'ko', chips, parent: 'kof98' });
+  const en = failureMessage('missing', { set: 'kof98h', lang: 'en', chips, parent: 'kof98' });
+  if (!ko.includes('242-m1.m1, 242-p1.p1, 242-c1.c1, 242-c2.c2 외 2개')) throw new Error(ko);
+  if (!ko.includes('kof98.zip(부모 롬셋)')) throw new Error(ko);
+  if (!en.includes('242-m1.m1, 242-p1.p1, 242-c1.c1, 242-c2.c2 and 2 more')) throw new Error(en);
+  if (!en.includes('kof98.zip (the parent romset)')) throw new Error(en);
+  if (ko.includes('242-c3.c3') || en.includes('242-c3.c3')) throw new Error('chip cap missing');
+
+  const koWrong = failureMessage('crc-mismatch', {
+    set: 'kof98h', lang: 'ko', mismatch: ['242-pn1.p1'], versionMismatch: true,
+  });
+  const enWrong = failureMessage('crc-mismatch', {
+    set: 'kof98h', lang: 'en', mismatch: ['242-pn1.p1'], versionMismatch: true, parent: 'kof98',
+  });
+  if (!/다른 버전/.test(koWrong) || !koWrong.includes('242-pn1.p1')) throw new Error(koWrong);
+  if (!/different version/.test(enWrong) || !enWrong.includes('kof98.zip (the parent romset)')) throw new Error(enWrong);
+  for (const text of [koWrong, enWrong]) {
+    if (/[0-9a-f]{8}/i.test(text)) throw new Error('CRC leaked: ' + text);
+  }
+});
+
+// #339: chips come only from the game DB. The pattern also drops uppercase,
+// spaces, paths, and overlong names; a user zip name and parent never pass.
+await t('messages/chip-names-are-guarded', async () => {
+  const { failureMessage } = await import('./messages.js');
+  const text = failureMessage('missing', {
+    set: 'kof98h', lang: 'en',
+    chips: ['242-p1.p1', '242-m1.m1', 'My Game (1).zip', 'UPPER.P1', 'has space.bin', 'a/b.bin', 'a'.repeat(25)],
+    parent: 'My Parent.zip',
+  });
+  if (!text.includes('242-p1.p1') || !text.includes('242-m1.m1')) throw new Error(text);
+  if (/My Game|UPPER|has space|a\/b|a{25}/.test(text)) throw new Error('bad name leaked: ' + text);
+  if (text.includes('My Parent')) throw new Error('bad parent leaked: ' + text);
 });
 
 await t('messages/covers-analytics-buckets-and-subreasons', async () => {
@@ -956,7 +1140,7 @@ await t('analytics/failure-subreasons-fold-into-existing-buckets', async () => {
     'zip-corrupt': 'romfs/zip',
     'crc-mismatch': 'romfs/missing',
     'bios-read': 'romfs/bios',
-    'game-db': 'romfs/unknown',
+    'game-db': 'romfs/game-db',
     // The unknown bucket stays visible (#326 review: it is not dropped).
     unknown: 'romfs/unknown',
   };
@@ -981,6 +1165,20 @@ await t('errors/pickGame-keeps-oom-but-labels-unknown-as-zip', async () => {
   if (pickFailureCode(new Error('out of memory')) !== 'oom') throw new Error('oom masked as zip');
   if (pickFailureCode(coded('zip-corrupt', 'x')) !== 'zip-corrupt') throw new Error('coded reason lost');
   if (pickFailureCode(new Error('boom')) !== 'zip') throw new Error('uncoded pickGame failure should be zip');
+});
+
+// #341: a large allocation helper must reject a bad size without pretending it
+// is an OOM. The allocation-failure branch is not exercised (it would need real
+// memory pressure).
+await t('errors/allocBytes-returns-bytes-and-rejects-bad-sizes', async () => {
+  const { allocBytes } = await import('./errors.js');
+  const buf = allocBytes(16);
+  if (!(buf instanceof Uint8Array) || buf.length !== 16) throw new Error('allocation mismatch');
+  for (const bad of [-1, 1.5, NaN, Infinity]) {
+    let err = null;
+    try { allocBytes(bad); } catch (e) { err = e; }
+    if (!(err instanceof RangeError)) throw new Error(`accepted size ${bad}`);
+  }
 });
 
 // ── #188/#189 anonymous report payload (pure) ─────────────────────────────

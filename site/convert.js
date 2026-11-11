@@ -7,7 +7,7 @@
 // #81: determinate recognition/overall bars, progress focus, one ZIP for all.
 import {
   createBatch, markRunning, markPending, markDone, markFailed, progress as rowProgress, summary,
-  setArt, artLabel, artPayload, poolSize, STATUS, elapsedText,
+  displayOrder, elapsedText, setArt, artLabel, artPayload, poolSize, STATUS,
 } from './vendor/conv/batch.js';
 import {
   iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
@@ -63,8 +63,28 @@ let failMessages = []; // raw failure texts for the report; the page shows plain
 
 // One row's public failure identity: a code for the wording/analytics and the
 // catalog romset for the sentence. The user's zip name is never part of it.
+// #339: the preflight row also carries the chips and parent romset the plain
+// message may name; a runtime failure has no chip list of its own.
 function failureAt(index) {
-  return { code: failInfo.get(index)?.code ?? 'unknown', set: batchSource?.[index]?.set ?? null };
+  const source = batchSource?.[index];
+  return {
+    code: failInfo.get(index)?.code ?? 'unknown',
+    set: source?.set ?? null,
+    missing: source?.missing ?? [],
+    mismatch: source?.mismatch ?? [],
+    parent: source?.parent ?? null,
+    versionMismatch: source?.versionMismatch === true,
+  };
+}
+
+// Map the row fields to the message options (#339).
+function messageDetail(source) {
+  return {
+    chips: source?.missing ?? [],
+    mismatch: source?.mismatch ?? [],
+    parent: source?.parent ?? null,
+    versionMismatch: source?.versionMismatch === true,
+  };
 }
 
 function rememberFailure(message) {
@@ -192,6 +212,7 @@ let checkCancel = null, preflightSeq = 0, checking = false, checkShape = false;
 let checkRows = null, checkFiles = null, checkBios = null, checkError = '', checkProgress = null;
 let singleRow = null; // #143: the one game's check row when there is no batch list
 let batch = null, batchSource = null;
+let resultOrder = null; // #338: display indexes after a normal batch end; `batch` keeps zip order
 let batchStarted = false, readyIndexes = [];
 let artEditor = null;
 let runInputs = null; // #81: {files, mode} the current run started with
@@ -782,14 +803,16 @@ function statusLabel(row) {
 // row.detail for the log/report only.
 function detailText(row, index) {
   if (row.status === STATUS.BLOCKED) {
+    const source = batchSource?.[index];
     return failureMessage(row.code ?? 'unknown', {
-      set: batchSource?.[index]?.set ?? null,
+      set: source?.set ?? null,
       lang: uiLang(),
+      ...messageDetail(source),
     });
   }
   if (row.status === STATUS.FAILED) {
-    const { code, set } = failureAt(index);
-    return failureMessage(code, { set, lang: uiLang() });
+    const info = failureAt(index);
+    return failureMessage(info.code, { set: info.set, lang: uiLang(), ...messageDetail(info) });
   }
   if (row.status === STATUS.RUNNING) {
     const step = stepLabel(row.step);
@@ -982,6 +1005,7 @@ function updateRow(index) {
 function renderBatch() {
   batchPanel.classList.toggle('hidden', !wantsBatch());
   if (!wantsBatch()) {
+    resultOrder = null;
     rowEls.clear();
     batchRowsEl.replaceChildren();
     paintRowsScroll();
@@ -991,7 +1015,12 @@ function renderBatch() {
   if (selectedIndex >= 0 && !batch?.[selectedIndex]?.ok) selectedIndex = -1;
   rowEls.clear();
   const frag = document.createDocumentFragment();
-  (batch ?? []).forEach((row, i) => frag.appendChild(makeRow(row, i)));
+  // #338: display only. makeRow always gets the original index so failInfo,
+  // rowEls and ZIP order keep pointing at the same row.
+  const order = resultOrder?.length === (batch ?? []).length
+    ? resultOrder
+    : (batch ?? []).map((_, i) => i);
+  for (const i of order) frag.appendChild(makeRow(batch[i], i));
   batchRowsEl.replaceChildren(frag);
   paintRowsScroll();
   paintBatchHeader();
@@ -1010,7 +1039,10 @@ function paintRowsScroll() {
     return;
   }
   const gap = parseFloat(getComputedStyle(batchRowsEl).rowGap) || 0;
-  const h = first.getBoundingClientRect().height;
+  // #338: a done row can be taller (download link), so size the window from the
+  // tallest of the visible rows instead of only the first one.
+  const visible = Array.from(rows).slice(0, ROWS_VISIBLE);
+  const h = Math.max(...visible.map((r) => r.getBoundingClientRect().height));
   batchRowsEl.style.maxHeight = `${Math.round(h * ROWS_VISIBLE + gap * (ROWS_VISIBLE - 1))}px`;
   batchRowsEl.classList.add('scroll');
   batchRowsEl.tabIndex = 0;
@@ -1067,7 +1099,11 @@ function refreshRun() {
     }
   } else if (!singleRow?.ok) {
     disabled = true;
-    hint = failureMessage(singleRow?.code ?? 'unknown', { set: singleRow?.set ?? null, lang: uiLang() });
+    hint = failureMessage(singleRow?.code ?? 'unknown', {
+      set: singleRow?.set ?? null,
+      lang: uiLang(),
+      ...messageDetail(singleRow),
+    });
   }
   if (running) hint = '';
   else if (artBusy) hint = t('이미지 확인 중…', 'Checking the picture…');
@@ -1161,6 +1197,7 @@ function renderOverall(textOnly = false) {
 }
 
 function resetOverall() {
+  resultOrder = null; // inputs changed under a finished run: show zip order again
   stopCiaTicker();
   overallView = null;
   overallBox.classList.add('hidden');
@@ -1414,10 +1451,15 @@ function failRow(row, message, stage = null, code = null) {
 function finishBatchRun() {
   const s = summary(batch);
   const secs = ((performance.now() - batchT0) / 1000).toFixed(1);
+  // #338: set the display order before finish(), whose syncOutput() may render
+  // the list again. Cancel and rerun never reach here, so they keep zip order.
+  resultOrder = displayOrder(batch);
   completeOverall();
   finish();
   for (const step of PIPE_STEPS) setStep(step, 'done');
   renderBatch();
+  // Only the list's own scroll moves; the page viewport stays where it is.
+  if (batchRowsEl.classList.contains('scroll')) batchRowsEl.scrollTop = 0;
   logEvent('', t(`■ 성공 ${s.done} · 실패 ${s.failed} · ${secs}초`,
     `■ ${s.done} done · ${s.failed} failed · ${secs}s`), 'meta');
 }
@@ -1593,6 +1635,7 @@ function showBatchFailures() {
 }
 
 function resetResults() {
+  resultOrder = null;
   stopCiaTicker();
   revokeAllUrls();
   showAlert('');
@@ -1641,6 +1684,7 @@ function finish() {
 cancelBtn.addEventListener('click', () => {
   if (!running) return;
   if (batch) {
+    resultOrder = null; // #338: a cancelled run keeps the original zip order
     for (let i = 0; i < batch.length; i++) {
       if (batch[i].status === STATUS.RUNNING) markPending(batch, i);
     }

@@ -2,6 +2,7 @@
 // MAME cart decryption, region buffers mutated in place. maincpu words are
 // little-endian (dump byte order) at this stage — same contract as C#.
 import * as T from './cmc-tables.js';
+import { allocBytes, allocCopy } from './errors.js';
 
 export function bitSwap(value, bits) {
   let r = 0;
@@ -34,7 +35,7 @@ export function gfxDecrypt(rom, extraXor, cmc50) {
   const a07 = cmc50 ? T.Kof2000Address07Xor : T.Kof99Address07Xor;
 
   const words = Math.floor(rom.length / 4);
-  const buf = new Uint8Array(rom.length);
+  const buf = allocBytes(rom.length);
   for (let rpos = 0; rpos < words; rpos++) {
     cmcDecrypt(buf, 4 * rpos, 4 * rpos + 3, rom[4 * rpos], rom[4 * rpos + 3], t03, t12, u03, a07, rpos, (rpos >> 8) & 1);
     cmcDecrypt(buf, 4 * rpos + 1, 4 * rpos + 2, rom[4 * rpos + 1], rom[4 * rpos + 2], t12, t03, u12, a07, rpos,
@@ -92,7 +93,7 @@ export function m1Decrypt(crypt) {
   let key = 0;
   for (let i = 0; i < 0x10000; i++) key += crypt[i];
   key &= 0xFFFF;
-  const rom = new Uint8Array(size);
+  const rom = allocBytes(size);
   for (let i = 0; i < size; i++) rom[i] = crypt[m1AddressScramble(i, key)];
   return rom;
 }
@@ -107,7 +108,7 @@ function smaDataSwap(p, bits) {
 }
 
 function smaBankedSwap(p, length, block, bits) {
-  const buffer = new Uint8Array(block);
+  const buffer = allocBytes(block);
   for (let i = 0; i < length; i += block) {
     const at = 0x100000 + i;
     buffer.set(p.subarray(at, at + block));
@@ -241,7 +242,7 @@ const PCM2_XOR = [
 ];
 
 export function pcm2Swap(ym, value) {
-  const buf = ym.slice(0, 0x1000000);
+  const buf = allocCopy(ym, 0, 0x1000000);
   for (let i = 0; i < 0x1000000; i++) {
     let j = bitSwap(i, [23, 22, 21, 20, 19, 18, 17, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 16]);
     j ^= PCM2_ADDRS[value][1];
@@ -253,7 +254,7 @@ export function pcm2Swap(ym, value) {
 // --- KOF2002 ---
 
 function kof2002Blocks(p, start, length, sec) {
-  const dst = p.slice(start, start + length);
+  const dst = allocCopy(p, start, start + length);
   for (let i = 0; i < sec.length; i++) p.set(dst.subarray(sec[i], sec[i] + 0x80000), start + i * 0x80000);
 }
 
@@ -286,7 +287,7 @@ function pvcSwapBits(rom, bits) {
 const swap8 = (v, bits) => bitSwap(v, bits);
 
 function pvcShuffle8M(rom, lowBits, xorMid, midBits) {
-  let buf = rom.slice(0, 0x800000);
+  let buf = allocCopy(rom, 0, 0x800000);
   for (let i = 0; i < 0x10; i++) {
     const ofst = (i & 0xF0) + swap8(i & 0x0F, lowBits);
     rom.set(buf.subarray(ofst * 0x10000, ofst * 0x10000 + 0x10000), i * 0x10000);
@@ -295,13 +296,13 @@ function pvcShuffle8M(rom, lowBits, xorMid, midBits) {
     const ofst = (i & 0xF000FF) + ((i & 0x000F00) ^ xorMid) + (swap8((i & 0x0FF000) >> 12, midBits) << 12);
     rom.set(buf.subarray(ofst, ofst + 0x100), i);
   }
-  buf = rom.slice(0, 0x800000);
+  buf = allocCopy(rom, 0, 0x800000);
   rom.set(buf.subarray(0x700000, 0x800000), 0x100000);
   rom.set(buf.subarray(0x100000, 0x700000), 0x200000);
 }
 
 function pvcShuffle9M(rom, lowBits, xorMid, midBits) {
-  const buf = new Uint8Array(0x900000);
+  const buf = allocBytes(0x900000);
   for (let i = 0; i < 0x10; i++) {
     const ofst = (i & 0xF0) + swap8(i & 0x0F, lowBits);
     buf.set(rom.subarray(ofst * 0x10000, ofst * 0x10000 + 0x10000), i * 0x10000);
@@ -351,7 +352,7 @@ export const PVC_PROG = {
 
 export function svcplusProgram(rom) {
   const sec = [0x00, 0x03, 0x02, 0x05, 0x04, 0x01];
-  const dst = rom.slice();
+  const dst = allocCopy(rom);
   for (let i = 0; i < rom.length / 2; i++) {
     let ofst = bitSwap(i & 0xFFFFF, [0x17, 0x16, 0x15, 0x14, 0x13, 0x00, 0x01, 0x02,
       0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x10, 0x11, 0x12]);
@@ -367,7 +368,7 @@ export function svcplusProgram(rom) {
 export function svcbootSprites(spr) {
   const idxTbl = [0, 1, 0, 1, 2, 3, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5];
   const swap4 = [[3, 0, 1, 2], [2, 3, 0, 1], [1, 2, 3, 0], [0, 1, 2, 3], [3, 2, 1, 0], [3, 0, 2, 1]];
-  const dst = spr.slice();
+  const dst = allocCopy(spr);
   for (let i = 0; i < spr.length / 0x80; i++) {
     const idx = idxTbl[(i & 0xF00) >> 8];
     let ofst = bitSwap(i & 0xFF, [7, 6, 5, 4, swap4[idx][3], swap4[idx][2], swap4[idx][1], swap4[idx][0]]);

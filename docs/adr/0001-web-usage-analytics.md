@@ -57,3 +57,11 @@
 - `unibios`: `uni-bios*.rom` 존재 여부(현재 변환 불가).
 - 이슈 표는 mismatch/unknown/UniBIOS 행을 값이 있을 때만 추가한다.
 - `site/privacy.html` KO/EN과 `docs/build.md` §7.3을 같은 커밋에서 갱신했다.
+
+## Amendment 2026-11-11 (#341)
+
+`romfs/unknown`이 우리 DB/보호 로직 버그와 코드 없는 OOM/WASM 예외를 한 버킷에 합치고 있어, romfs 실패를 원인별로 나눴다. 이벤트·프로퍼티 수는 그대로다.
+
+- `ANALYTICS_FOLD`에서 `game-db` 접기를 제거하고 `REASONS`에 `game-db`를 추가했다. 이제 `convert_fail`의 `stage`에 `romfs/game-db`가 별도로 남는다.
+- `oom`·`wasm`은 기존 버킷 값을 그대로 쓴다. 대형 할당 실패는 `allocBytes`/`allocCopy`가, zstd `_malloc` 0과 비코드 WASM 예외는 어댑터가 각각 coded `oom`/`wasm`으로 분류한다.
+- `convert_fail`은 계속 `game`+`stage` 한 속성이고, 새 개인정보도 없다. `site/privacy.html`은 바꾸지 않는다.

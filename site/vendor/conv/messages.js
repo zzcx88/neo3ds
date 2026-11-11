@@ -11,6 +11,23 @@ import { FAILURE_CODES } from './errors.js';
 const SET_NAME = /^[a-z0-9_]{1,40}$/;
 const isCatalogName = (value) => typeof value === 'string' && SET_NAME.test(value);
 
+// #339: game DB chip names are [a-z0-9._-] (max 17 chars today). `SET_NAME`
+// rejects the dot, so chips get their own guard; callers still pass only names
+// read from neogeo_games.json, never a user's zip file name.
+const CHIP_NAME = /^[a-z0-9._-]{1,24}$/;
+const chipNames = (value) => (Array.isArray(value)
+  ? [...new Set(value.filter((v) => typeof v === 'string' && CHIP_NAME.test(v)))]
+  : []);
+
+function chipText(value, lang) {
+  const names = chipNames(value);
+  if (names.length === 0) return '';
+  const shown = names.slice(0, 4).join(', ');
+  const rest = names.length - 4;
+  if (rest <= 0) return shown;
+  return lang === 'en' ? `${shown} and ${rest} more` : `${shown} 외 ${rest}개`;
+}
+
 export function catalogName(value) {
   return isCatalogName(value) ? value : 'game';
 }
@@ -23,7 +40,13 @@ const KO = {
   nofile: () => '게임 zip을 찾지 못했어요. 게임 zip과 neogeo.zip을 함께 올려 주세요.',
   bios: () => 'neogeo.zip(바이오스)이 없어요. neogeo.zip을 게임 zip과 함께 올려 주세요.',
   notromset: () => '이 zip 이름은 MAME 네오지오 롬셋이 아니에요. zip 파일 이름을 원래대로 두고 다시 올려 주세요.',
-  missing: (n) => `${n}에 필요한 롬 파일이 빠져 있어요. 같은 버전의 롬셋 zip을 모두 올려 주세요.`,
+  missing: (n, { chips, parent }) => {
+    const list = chipText(chips, 'ko');
+    return `${n}에 필요한 롬 파일이 빠져 있어요${list ? `(빠진 칩: ${list})` : ''}. ` +
+      (parent
+        ? `같은 버전의 롬셋 zip과 ${parent}.zip(부모 롬셋)을 함께 올려 주세요.`
+        : '같은 버전의 롬셋 zip을 모두 올려 주세요.');
+  },
   unsupported: (n) => `${n}은(는) 이 변환기가 지원하지 않는 카트리지예요. 지원 목록에 있는 다른 게임을 골라 주세요.`,
   zip: (n) => `${n} zip을 읽지 못했어요. zip이 손상되지 않았는지 확인하고 다시 올려 주세요.`,
   image: () => '아이콘·배너 이미지를 읽지 못했어요. 다른 PNG나 JPG로 다시 지정해 주세요.',
@@ -32,7 +55,13 @@ const KO = {
   crash: () => '변환 작업이 예기치 않게 끝났어요. 다시 시도하고, 계속되면 제보해 주세요.',
   unknown: () => '확실한 원인을 찾지 못했어요. 다시 시도해 보고, 계속되면 제보해 주세요.',
   'zip-corrupt': (n) => `${n} zip 안의 항목이 손상됐어요. 다른 롬셋 zip으로 다시 올려 주세요.`,
-  'crc-mismatch': (n) => `${n}이(가) 기대한 버전과 달라요. MAME 롬셋 zip 원본으로 다시 올려 주세요.`,
+  'crc-mismatch': (n, { mismatch, parent }) => {
+    const list = chipText(mismatch, 'ko');
+    return `${n}이(가) 기대한 버전과 달라요${list ? `(다른 버전 칩: ${list})` : ''}. ` +
+      (parent
+        ? `MAME 롬셋 zip 원본과 ${parent}.zip(부모 롬셋)을 함께 올려 주세요.`
+        : 'MAME 롬셋 zip 원본으로 다시 올려 주세요.');
+  },
   'bios-read': () => 'neogeo.zip에서 필요한 바이오스 칩을 찾지 못했어요. neogeo.zip을 게임 zip과 함께 다시 올려 주세요.',
   'game-db': (n) => `${n} 그래픽을 처리하는 중 문제가 생겼어요. 다시 시도하고, 계속되면 제보해 주세요.`,
 };
@@ -41,7 +70,13 @@ const EN = {
   nofile: () => 'No game zip was found. Drop the game zip together with neogeo.zip.',
   bios: () => 'neogeo.zip (the BIOS) is missing. Drop it together with the game zip.',
   notromset: () => 'This zip name is not a MAME Neo Geo romset. Keep the zip file name as it was and drop it again.',
-  missing: (n) => `${n} is missing required ROM files. Drop every zip of the same romset version.`,
+  missing: (n, { chips, parent }) => {
+    const list = chipText(chips, 'en');
+    return `${n} is missing required ROM files${list ? ` (chips: ${list})` : ''}. ` +
+      (parent
+        ? `Drop every zip of the same romset version, plus ${parent}.zip (the parent romset).`
+        : 'Drop every zip of the same romset version.');
+  },
   unsupported: (n) => `${n} uses a cartridge this converter does not support. Pick another game from the supported list.`,
   zip: (n) => `The ${n} zip could not be read. Check that the zip is not damaged and drop it again.`,
   image: () => 'The icon or banner image could not be read. Pick another PNG or JPG.',
@@ -50,7 +85,13 @@ const EN = {
   crash: () => 'The conversion stopped unexpectedly. Try again; if it keeps happening, send a report.',
   unknown: () => 'The exact cause could not be found. Try again; if it keeps happening, send a report.',
   'zip-corrupt': (n) => `An entry inside the ${n} zip is damaged. Drop a different romset zip.`,
-  'crc-mismatch': (n) => `${n} is a different version than expected. Drop the original MAME romset zip.`,
+  'crc-mismatch': (n, { mismatch, parent }) => {
+    const list = chipText(mismatch, 'en');
+    return `${n} is a different version than expected${list ? ` (chips: ${list})` : ''}. ` +
+      (parent
+        ? `Drop the original MAME romset zip and ${parent}.zip (the parent romset).`
+        : 'Drop the original MAME romset zip.');
+  },
   'bios-read': () => 'neogeo.zip is missing a required BIOS chip. Drop neogeo.zip again with the game zip.',
   'game-db': (n) => `Something went wrong while processing ${n} graphics. Try again; if it keeps happening, send a report.`,
 };
@@ -59,10 +100,19 @@ const TABLES = Object.freeze({ ko: KO, en: EN });
 
 // `lang` is the page language ('ko' | 'en'); anything else reads as Korean.
 // `set` is the public catalog romset name, never the user's file name.
-export function failureMessage(code, { set = null, lang = 'ko' } = {}) {
+// #339: `chips`/`mismatch` are game DB chip names and `parent` a catalog
+// romset name; all default to empty so older callers keep the short message.
+export function failureMessage(code, {
+  set = null, lang = 'ko', chips = [], mismatch = [], parent = null, versionMismatch = false,
+} = {}) {
   const table = TABLES[lang === 'en' ? 'en' : 'ko'];
   const text = table[code] ?? table.unknown;
-  return text(catalogName(set));
+  return text(catalogName(set), {
+    chips: chipNames(chips),
+    mismatch: chipNames(mismatch),
+    parent: isCatalogName(parent) ? parent : null,
+    versionMismatch: versionMismatch === true,
+  });
 }
 
 // #327: the batch alert summarizes a run that had failed games. Items carry

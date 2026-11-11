@@ -224,6 +224,21 @@ export class RomSet {
     return out;
   }
 
+  // #339: a chip absent by CRC but present by name is a different romset
+  // version, not a missing file. Names keep the game DB order and repeat once.
+  missingDetail(g) {
+    const missing = [], mismatch = [];
+    const add = (out, name) => { if (!out.includes(name)) out.push(name); };
+    for (const r of g.regions) {
+      for (const o of r.ops) {
+        if (o.kind !== 'load' || o.crc == null) continue;
+        if (this.byCrc.has(o.crc >>> 0)) continue;
+        add(this.byName.has(baseName(o.file)) ? mismatch : missing, o.file);
+      }
+    }
+    return { missing, mismatch };
+  }
+
   async read(name, crc, game) {
     if (crc == null) {
       const n = this.byName.get(name.toLowerCase());
