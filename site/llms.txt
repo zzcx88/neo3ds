@@ -1,15 +1,16 @@
 # neo3ds
 
 > neo3ds turns Neo Geo (MAME) romsets into installable Nintendo 3DS CIAs and runs them
-> on real hardware — including the original Old 3DS — at 60 fps in the games we checked,
-> one HOME menu icon per game. 242 of the 282 romsets in its game database convert; 26 are
-> confirmed on real hardware. The converter runs offline (Windows, Linux, macOS) and in the browser.
+> on real hardware, including the original Old 3DS. In the games we have tested it holds
+> 60 fps, and each game gets its own HOME menu icon. 242 of the 282 romsets in its game
+> database convert, and 26 of those have been played on real hardware. The converter runs
+> offline on Windows, Linux and macOS, and in the browser.
 
 ## Pages
 
 - [Intro](https://zzcx88.github.io/neo3ds/): what neo3ds is, the three-step set-up, and a compatibility summary.
 - [Compatibility list](https://zzcx88.github.io/neo3ds/compat.html): every one of the 282 romsets with its conversion status, generated from the game database.
-- [Web converter](https://zzcx88.github.io/neo3ds/convert.html): converts a romset zip to a CIA inside the browser tab. Nothing is uploaded and nothing is installed.
+- [Web converter](https://zzcx88.github.io/neo3ds/convert.html): turns a romset zip into a CIA inside the browser tab. Nothing is uploaded.
 - [Download and install](https://zzcx88.github.io/neo3ds/download.html): launcher CIA QR, FBI install and update steps, SD card fallback, and the Windows/Linux/macOS offline converter.
 - [3DS manual](https://zzcx88.github.io/neo3ds/manual.html): launcher controls, key configuration, turbo, quick saves and save paths.
 - [Changelog](https://zzcx88.github.io/neo3ds/changelog.html): every release, newest first.
@@ -17,18 +18,18 @@
 
 ## Series pages
 
-- [Metal Slug](https://zzcx88.github.io/neo3ds/series/metal-slug.html)
-- [The King of Fighters](https://zzcx88.github.io/neo3ds/series/king-of-fighters.html)
-- [Samurai Shodown](https://zzcx88.github.io/neo3ds/series/samurai-shodown.html)
-- [Fatal Fury and Garou](https://zzcx88.github.io/neo3ds/series/fatal-fury.html)
-- [Art of Fighting](https://zzcx88.github.io/neo3ds/series/art-of-fighting.html)
-- [The Last Blade](https://zzcx88.github.io/neo3ds/series/last-blade.html)
-- [World Heroes](https://zzcx88.github.io/neo3ds/series/world-heroes.html)
-- [Sengoku](https://zzcx88.github.io/neo3ds/series/sengoku.html)
-- [Puzzle Bobble](https://zzcx88.github.io/neo3ds/series/puzzle-bobble.html)
-- [Shock Troopers](https://zzcx88.github.io/neo3ds/series/shock-troopers.html)
-- [Super Sidekicks](https://zzcx88.github.io/neo3ds/series/super-sidekicks.html)
-- [King of the Monsters](https://zzcx88.github.io/neo3ds/series/king-of-the-monsters.html)
+- [Metal Slug](https://zzcx88.github.io/neo3ds/series/metal-slug.html): 15 romsets, 12 convert, 6 verified.
+- [The King of Fighters](https://zzcx88.github.io/neo3ds/series/king-of-fighters.html): 44 romsets, 27 convert, 8 verified.
+- [Samurai Shodown](https://zzcx88.github.io/neo3ds/series/samurai-shodown.html): 17 romsets, 16 convert, 1 verified.
+- [Fatal Fury and Garou](https://zzcx88.github.io/neo3ds/series/fatal-fury.html): 19 romsets, 17 convert, 1 verified.
+- [Art of Fighting](https://zzcx88.github.io/neo3ds/series/art-of-fighting.html): 5 romsets, 5 convert.
+- [The Last Blade](https://zzcx88.github.io/neo3ds/series/last-blade.html): 4 romsets, 4 convert.
+- [World Heroes](https://zzcx88.github.io/neo3ds/series/world-heroes.html): 7 romsets, 7 convert.
+- [Sengoku](https://zzcx88.github.io/neo3ds/series/sengoku.html): 5 romsets, 5 convert.
+- [Puzzle Bobble](https://zzcx88.github.io/neo3ds/series/puzzle-bobble.html): 5 romsets, 5 convert.
+- [Shock Troopers](https://zzcx88.github.io/neo3ds/series/shock-troopers.html): 4 romsets, 3 convert, 1 verified.
+- [Super Sidekicks](https://zzcx88.github.io/neo3ds/series/super-sidekicks.html): 4 romsets, 3 convert.
+- [King of the Monsters](https://zzcx88.github.io/neo3ds/series/king-of-the-monsters.html): 5 romsets, 5 convert.
 
 ## Facts
 
