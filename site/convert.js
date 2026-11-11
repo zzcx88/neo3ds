@@ -63,8 +63,28 @@ let failMessages = []; // raw failure texts for the report; the page shows plain
 
 // One row's public failure identity: a code for the wording/analytics and the
 // catalog romset for the sentence. The user's zip name is never part of it.
+// #339: the preflight row also carries the chips and parent romset the plain
+// message may name; a runtime failure has no chip list of its own.
 function failureAt(index) {
-  return { code: failInfo.get(index)?.code ?? 'unknown', set: batchSource?.[index]?.set ?? null };
+  const source = batchSource?.[index];
+  return {
+    code: failInfo.get(index)?.code ?? 'unknown',
+    set: source?.set ?? null,
+    missing: source?.missing ?? [],
+    mismatch: source?.mismatch ?? [],
+    parent: source?.parent ?? null,
+    versionMismatch: source?.versionMismatch === true,
+  };
+}
+
+// Map the row fields to the message options (#339).
+function messageDetail(source) {
+  return {
+    chips: source?.missing ?? [],
+    mismatch: source?.mismatch ?? [],
+    parent: source?.parent ?? null,
+    versionMismatch: source?.versionMismatch === true,
+  };
 }
 
 function rememberFailure(message) {
@@ -778,14 +798,16 @@ function statusLabel(row) {
 // row.detail for the log/report only.
 function detailText(row, index) {
   if (row.status === STATUS.BLOCKED) {
+    const source = batchSource?.[index];
     return failureMessage(row.code ?? 'unknown', {
-      set: batchSource?.[index]?.set ?? null,
+      set: source?.set ?? null,
       lang: uiLang(),
+      ...messageDetail(source),
     });
   }
   if (row.status === STATUS.FAILED) {
-    const { code, set } = failureAt(index);
-    return failureMessage(code, { set, lang: uiLang() });
+    const info = failureAt(index);
+    return failureMessage(info.code, { set: info.set, lang: uiLang(), ...messageDetail(info) });
   }
   if (row.status === STATUS.RUNNING) {
     const step = stepLabel(row.step);
@@ -1057,7 +1079,11 @@ function refreshRun() {
     }
   } else if (!singleRow?.ok) {
     disabled = true;
-    hint = failureMessage(singleRow?.code ?? 'unknown', { set: singleRow?.set ?? null, lang: uiLang() });
+    hint = failureMessage(singleRow?.code ?? 'unknown', {
+      set: singleRow?.set ?? null,
+      lang: uiLang(),
+      ...messageDetail(singleRow),
+    });
   }
   if (running) hint = '';
   else if (artBusy) hint = t('이미지 확인 중…', 'Checking the picture…');

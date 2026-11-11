@@ -33,32 +33,81 @@ export function zipsFor(g, files, zipName) {
   return files.filter((f) => want.has(f.name.toLowerCase()));
 }
 
+// The parent romset a reader should also drop: only when a chip the game needs
+// is a load op of that parent (a clone's split set) (#339).
+function parentHint(db, g, missing, mismatch) {
+  if (!g.parent) return null;
+  const parent = db.find(g.parent);
+  if (!parent) return null;
+  const names = new Set([...missing, ...mismatch]);
+  for (const r of parent.regions) {
+    for (const o of r.ops) {
+      if (o.kind === 'load' && names.has(o.file)) return parent.name;
+    }
+  }
+  return null;
+}
+
+// Log/report text keeps the C# CiaBuilder shape; the page shows the plain
+// message from messages.js instead (#327, #339).
+function failureProblem(lang, g, missing, mismatch) {
+  const names = [...mismatch, ...missing];
+  const shown = names.slice(0, 4).join(', ') + (names.length > 4 ? ' ...' : '');
+  return `${g.name}: ` + L(lang,
+    mismatch.length > 0 ? '롬 파일 버전이 다릅니다' : '롬 파일이 빠졌습니다',
+    mismatch.length > 0 ? 'ROM files are a different version' : 'ROM files are missing') + ` (${shown})`;
+}
+
 // The romset named like the zip when supported and complete; otherwise a
 // supported clone whose chips the zips hold (CiaBuilder.cs:65-81).
 // `lang` picks the reason text (C# Lang.L): a KO page gets KO reasons (#79).
 // Options keep the C# `set` argument and the page language distinct.
 export async function pickGame(db, RomSetCls, files, name, { set = null, lang = 'en' } = {}) {
   const exact = db.find(set ?? name);
-  if (!exact) return { game: null, code: 'notromset', problem: L(lang,
-    `'${name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. MAME 롬셋 zip만 지원합니다. zip 파일 이름을 바꾸지 마세요.`,
-    `'${name}' is not a MAME Neo Geo romset name. Only MAME romset zips are supported; keep the zip's original file name.`) };
-  let problem = null, code = null;
+  if (!exact) return {
+    game: null, code: 'notromset', problem: L(lang,
+      `'${name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. MAME 롬셋 zip만 지원합니다. zip 파일 이름을 바꾸지 마세요.`,
+      `'${name}' is not a MAME Neo Geo romset name. Only MAME romset zips are supported; keep the zip's original file name.`),
+    missing: [], mismatch: [], parent: null, versionMismatch: false, romset: null,
+  };
+  // #339: the detail must belong to the same candidate as code/problem. The
+  // exact record is judged first, so a later clone cannot overwrite it.
+  let found = null;
   const cands = set != null ? [exact] : [exact, ...db.clonesOf(exact.name)];
   for (const g of cands) {
     const why = db.unsupported(g, lang);
-    if (why != null) { problem ??= `${db.title(exact)}: ${why}`; code ??= 'unsupported'; continue; }
+    if (why != null) {
+      found ??= {
+        code: 'unsupported', problem: `${db.title(exact)}: ${why}`,
+        missing: [], mismatch: [], parent: null, versionMismatch: false,
+      };
+      continue;
+    }
     // Index-only open (#121): the browser reads the zip tail + central directory,
     // so judging a romset no longer inflates its chips.
     const zips = await RomSetCls.open(zipsFor(g, files, name));
-    const missing = zips.missing(g);
-    if (missing.length === 0) return { game: g, code: null, problem: null, romset: zips };
-    if (g === exact || problem == null) {
-      problem = `${g.name}: ` + L(lang, '롬 파일이 빠졌습니다', 'ROM files are missing') +
-        ` (${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ' ...' : ''})`;
-      code = 'missing';
+    const { missing, mismatch } = zips.missingDetail(g);
+    if (missing.length === 0 && mismatch.length === 0) return {
+      game: g, code: null, problem: null, romset: zips,
+      missing: [], mismatch: [], parent: null, versionMismatch: false,
+    };
+    if (g === exact || found == null) {
+      const versionMismatch = mismatch.length > 0;
+      found = {
+        code: versionMismatch ? 'crc-mismatch' : 'missing',
+        problem: failureProblem(lang, g, missing, mismatch),
+        missing, mismatch,
+        parent: parentHint(db, g, missing, mismatch),
+        versionMismatch,
+      };
     }
   }
-  return { game: null, code: code ?? 'unknown', problem, romset: null };
+  return {
+    game: null, code: found?.code ?? 'unknown', problem: found?.problem ?? null,
+    missing: found?.missing ?? [], mismatch: found?.mismatch ?? [],
+    parent: found?.parent ?? null, versionMismatch: found?.versionMismatch ?? false,
+    romset: null,
+  };
 }
 
 export function productCode(romName) {
