@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Neo Geo ROM to CIA converter — in your browser | neo3ds</title>
-<meta name="description" content="Drop a game zip and it becomes a CIA inside your browser. Nothing is uploaded, nothing to install, no account. 242 of 282 romsets supported.">
+<meta name="description" content="A Neo Geo game zip becomes an installable 3DS CIA inside your browser. Nothing is uploaded, nothing to install, no account. 242 of 282 romsets supported.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/convert.html">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="Neo Geo 3DS converter | neo3ds">
-<meta property="og:description" content="Drop a zip, get a CIA. Converted in your browser — nothing leaves the tab.">
+<meta property="og:description" content="A romset zip becomes an installable 3DS CIA, and the conversion stays in the browser tab.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/convert.html">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:locale:alternate" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Neo Geo 3DS converter | neo3ds">
-<meta name="twitter:description" content="Drop a zip, get a CIA in your browser. Nothing uploaded.">
+<meta name="twitter:description" content="A romset zip becomes a 3DS CIA inside the browser. Nothing is uploaded.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <script type="application/ld+json">
 {
@@ -163,13 +163,13 @@
 <section class="hero" id="top">
   <div class="wrap gate-hero-grid">
     <div class="hero-copy">
-      <p class="kicker">Web converter · no server · files stay in this tab</p>
+      <p class="kicker">Web converter · runs in this tab</p>
       <h1>Convert<br>in the browser.</h1>
       <p class="lede">Drop several game zips plus neogeo.zip and this tab converts them one after another. Neither the rom nor the result ever leaves it.</p>
       <ul class="gate-facts" aria-label="Before you convert">
-        <li><b>neogeo.zip (BIOS) is required</b> <span>— drop it together with the game zip. Without it nothing converts.</span></li>
+        <li><b>neogeo.zip (BIOS) is required</b> <span>— drop it together with the game zip. Every conversion needs it.</span></li>
         <li><b>Many games at once</b> <span>— drop several game zips and they convert one after another. No refresh between games.</span></li>
-        <li><b>MAME Neo Geo romset zips only</b> <span>— a romset whose names or chip CRCs differ from MAME will not convert. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</span></li>
+        <li><b>MAME Neo Geo romset zips only</b> <span>— the romset name and chip CRCs must match the MAME set. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</span></li>
       </ul>
     </div>
 
@@ -228,7 +228,7 @@
           <span class="art-title" id="gateArtTitle"></span>
           <button type="button" class="btn btn-ghost btn-sm art-back hidden" id="gateArtBack">Back to list</button>
         </div>
-        <p class="tiny art-hint">Check the HOME menu art before converting. A picture you pick is centre-cropped to 48×48 / 256×128.</p>
+        <p class="tiny art-hint">A picture you pick is centre-cropped to 48×48 / 256×128. It cannot be changed once conversion starts.</p>
         <p class="tiny art-lock hidden" id="gateArtLock" role="status">The icon and banner cannot be changed while converting.</p>
         <div class="art-row" data-art="icon">
           <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>
