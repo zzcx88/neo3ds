@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>네오지오 3DS 에뮬레이터·변환기 | neo3ds</title>
+<title>네오지오 3DS 에뮬레이터와 변환기 | neo3ds</title>
 <meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 확인한 게임은 구형 3DS에서도 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
@@ -15,7 +15,7 @@
 <link rel="alternate" hreflang="x-default" href="https://zzcx88.github.io/neo3ds/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
-<meta property="og:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
+<meta property="og:title" content="네오지오 3DS 에뮬레이터와 변환기 | neo3ds">
 <meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 확인한 게임은 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
@@ -25,7 +25,7 @@
 <meta property="og:locale" content="ko_KR">
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="네오지오 3DS 에뮬레이터·변환기 | neo3ds">
+<meta name="twitter:title" content="네오지오 3DS 에뮬레이터와 변환기 | neo3ds">
 <meta name="twitter:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 확인한 게임은 구형 3DS에서 60fps.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <script type="application/ld+json">
@@ -68,14 +68,14 @@
 </header>
 
 <main id="main">
-<noscript><p style="padding:12px 24px" data-i18n="a11y.noscript">이 페이지는 JavaScript가 필요합니다. 게임 목록·변환 데모가 동작하지 않습니다.</p></noscript>
+<noscript><p style="padding:12px 24px" data-i18n="a11y.noscript">이 페이지는 JavaScript가 필요합니다. 게임 목록과 변환 데모가 동작하지 않습니다.</p></noscript>
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
 <section class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <h1 data-i18n="hero.h1">네오지오 게임을 <br>3DS 홈 메뉴에.</h1>
-      <p class="lede" data-i18n="hero.lede">직접 가진 게임의 롬 파일(MAME 롬셋 zip)을 변환기에 넣으면 3DS 설치 파일(CIA)이 나옵니다. 설치하면 HOME 메뉴에 자기 아이콘으로 뜹니다.</p>
+      <h1 data-i18n="hero.h1">그 시절 오락실,<br>이제 당신의 3DS에서</h1>
+      <p class="lede" data-i18n="hero.lede">추억의 네오지오 게임을 닌텐도 3DS로. neo3ds로 간편하게 변환하세요.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="convert.html" data-i18n="cta.download">변환하기</a>
         <a class="btn btn-ghost btn-lg" href="download.html" data-i18n="cta.dl">다운로드</a>
@@ -83,10 +83,9 @@
       <a class="hero-stats" href="#games">
         <span class="stat"><b>242 / 282</b><span data-i18n="hero.st1">롬셋 변환 가능</span></span>
         <span class="stat"><b>26</b><span data-i18n="hero.st2">실기 확인</span></span>
-        <span class="stat"><b>60fps</b><span data-i18n="hero.st3">확인 게임 기준</span></span>
+        <span class="stat"><b>60fps</b><span data-i18n="hero.st3">확인한 게임</span></span>
       </a>
-      <p class="tiny" data-i18n="hero.req">브라우저에서 돌고, 파일은 올라가지 않습니다.</p>
-      <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">버전별 변경 사항</a></p>
+      <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">릴리즈 노트</a></p>
     </div>
 
     <!-- 3DS 본체 목업: 윗화면 게임 교대, 아랫화면 터치 UI -->
@@ -136,49 +135,49 @@
 <!-- ── 3단계 ───────────────────────────────────────────────────────────── -->
 <section class="sec" id="steps">
   <div class="wrap">
-    <h2 data-i18n="steps.h2">설치 3단계</h2>
-    <p class="lede narrow" data-i18n="steps.lede">설치 파일을 만드는 건 PC에서 1~2분입니다. 그 뒤로는 3DS만 있으면 됩니다.</p>
+    <h2 data-i18n="steps.h2">만들고, 넣으면 끝</h2>
+    <p class="lede narrow" data-i18n="steps.lede">설치 파일은 PC에서 1~2분이면 나옵니다.</p>
 
     <ol class="steps">
       <li>
         <span class="step-no">1</span>
-        <h3 data-i18n="steps.s1t">롬 준비</h3>
-        <p data-i18n="steps.s1d">직접 가진 게임의 MAME 롬셋과 바이오스를 한 폴더에 둡니다. zip 이름은 그대로 두세요.</p>
+        <h3 data-i18n="steps.s1t">롬셋을 모읍니다</h3>
+        <p data-i18n="steps.s1d">갖고 있는 게임의 MAME 롬셋과 바이오스를 한 폴더에 둡니다. zip 이름은 바꾸지 마세요.</p>
       </li>
       <li>
         <span class="step-no">2</span>
-        <h3 data-i18n="steps.s2t">파일 만들기</h3>
-        <p data-i18n="steps.s2d">게임 하나에 1~2분. 대부분은 그래픽 압축 시간입니다. zip 여러 개를 넣으면 차례로 변환됩니다.</p>
+        <h3 data-i18n="steps.s2t">브라우저에 넣습니다</h3>
+        <p data-i18n="steps.s2d">게임 하나에 1~2분, 대부분은 그래픽 압축 시간입니다. zip을 여러 개 넣으면 차례로 변환합니다.</p>
       </li>
       <li>
         <span class="step-no">3</span>
-        <h3 data-i18n="steps.s3t">3DS에 설치</h3>
-        <p data-i18n="steps.s3d">CIA는 FBI로 설치하고, 런처용 파일은 SD 카드에 복사합니다. 자세한 절차는 다운로드 페이지에 있습니다.</p>
+        <h3 data-i18n="steps.s3t">3DS에 넣습니다</h3>
+        <p data-i18n="steps.s3d">CIA는 FBI로 설치합니다. 런처용 파일은 SD 카드에 복사하고요. 자세한 절차는 다운로드 페이지에 있습니다.</p>
       </li>
     </ol>
 
-    <h3 class="outputs-h" data-i18n="ways.h3">설치 방식 두 가지</h3>
+    <h3 class="outputs-h" data-i18n="ways.h3">게임별 CIA, 아니면 런처</h3>
     <div class="outputs">
       <div class="out-alt">
         <div>
           <h3 data-i18n="out.ciaH">게임 CIA</h3>
-          <p data-i18n="out.ciaP">게임마다 설치 파일 하나, HOME 메뉴에 게임별 아이콘.</p>
+          <p data-i18n="out.ciaP">게임 하나에 파일 하나. HOME 메뉴에 그 게임 아이콘이 생깁니다.</p>
         </div>
         <a class="btn btn-ghost" href="convert.html?mode=cia" data-i18n="out.ciaCta">게임 CIA 만들기</a>
       </div>
 
       <div class="out-card out-card-launch">
-        <p class="kicker" data-i18n="launch.kicker">여러 게임이면 이 방식</p>
-        <h3 data-i18n="launch.h2">런처: 앱 하나로 전 게임</h3>
-        <p data-i18n="launch.lede">게임마다 CIA를 설치하는 대신, 런처 앱 하나만 설치하고 SD 카드의 게임 파일 목록에서 골라 실행합니다. HOME 메뉴 아이콘도 하나만 생깁니다.</p>
+        <p class="kicker" data-i18n="launch.kicker">여러 개를 모을 거라면</p>
+        <h3 data-i18n="launch.h2">런처 앱 하나로 전부</h3>
+        <p data-i18n="launch.lede">게임마다 CIA를 깔지 않고, 런처 하나만 설치합니다. SD 카드에 넣은 게임 파일이 목록으로 뜨고, 거기서 고르면 됩니다. HOME 메뉴 아이콘은 하나만 생깁니다.</p>
         <div class="out-launch-body">
           <figure class="fig fig-launch">
-            <img src="../media/launcher.png" width="320" alt="All·Fav 탭이 있는 런처 게임 목록" data-i18n-attr="alt:launch.imgAlt" loading="lazy" decoding="async">
+            <img src="../media/launcher.png" width="320" alt="All/Fav 탭이 있는 런처 게임 목록" data-i18n-attr="alt:launch.imgAlt" loading="lazy" decoding="async">
             <figcaption class="fig-note"><a href="manual.html" data-i18n-attr="href:launch.capHref" data-i18n="launch.cap">런처 조작 방법</a></figcaption>
           </figure>
           <ul class="panel-list">
-            <li><span class="pb-name" data-i18n="launch.p1n">설치는 한 번</span><span class="pb-desc" data-i18n="launch.p1">런처 CIA는 FBI로 한 번만 설치. 이후 게임 추가는 .neo3ds 파일을 /neo3ds/games/에 복사하거나, 오프라인 변환기에서 Wi-Fi로 보내면 됩니다.</span></li>
-            <li><span class="pb-name" data-i18n="launch.p2n">저장 공유</span><span class="pb-desc" data-i18n="launch.p2">같은 게임이라면 CIA판과 런처판이 키 설정·백업 RAM·퀵세이브를 함께 씁니다.</span></li>
+            <li><span class="pb-name" data-i18n="launch.p1n">설치는 한 번</span><span class="pb-desc" data-i18n="launch.p1">런처 CIA는 FBI로 한 번만 설치합니다. 게임을 추가할 때는 .neo3ds 파일을 /neo3ds/games/에 복사하거나, 오프라인 변환기에서 Wi-Fi로 보내면 됩니다.</span></li>
+            <li><span class="pb-name" data-i18n="launch.p2n">저장 공유</span><span class="pb-desc" data-i18n="launch.p2">같은 게임이면 CIA판과 런처판이 키 설정, 백업 RAM, 퀵세이브를 같이 씁니다.</span></li>
             <li><span class="pb-name" data-i18n="launch.p3n">바로 복귀</span><span class="pb-desc" data-i18n="launch.p3">게임 중 아래 화면 Game list를 두 번 누르면 목록으로 돌아갑니다.</span></li>
           </ul>
         </div>
@@ -190,14 +189,14 @@
     </div>
 
     <div class="prep">
-      <h3 data-i18n="prep.h3">준비물</h3>
+      <h3 data-i18n="prep.h3">미리 챙길 것</h3>
       <ul class="check">
-        <li><b data-i18n="prep.1b">3DS</b> <span data-i18n="prep.1d">구형 3DS / 2DS / New 3DS / New 2DS XL, 커스텀 펌웨어(Luma3DS)와 설치 도구(FBI) 필요</span></li>
-        <li><b data-i18n="prep.2b">웹 브라우저</b> <span data-i18n="prep.2d">Chrome·Edge·Firefox·Safari · 롬은 브라우저 안에서만 처리</span></li>
-        <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip + neogeo.zip (저장소에는 없음)</span></li>
+        <li><b data-i18n="prep.1b">3DS</b> <span data-i18n="prep.1d">구형 3DS / 2DS / New 3DS / New 2DS XL. Luma3DS와 FBI는 미리 설치해 둡니다.</span></li>
+        <li><b data-i18n="prep.2b">웹 브라우저</b> <span data-i18n="prep.2d">Chrome, Edge, Firefox, Safari. 롬은 브라우저 안에서만 처리합니다.</span></li>
+        <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip과 neogeo.zip. 여기에는 없습니다.</span></li>
         <li><b data-i18n="prep.4b">소리 파일</b> <span data-i18n="prep.4d">SD 카드에 <code>/3ds/dspfirm.cdc</code></span></li>
       </ul>
-      <p class="tiny" data-i18n="prep.note">MAME 규격 롬셋 zip을 변환합니다.<br>롬셋 이름과 칩 CRC가 MAME 규격과 같아야 합니다.</p>
+      <p class="tiny" data-i18n="prep.note">롬셋 이름과 칩 CRC가 MAME 규격과 맞아야 합니다.<br>안 맞으면 변환기가 알아보지 못합니다.</p>
     </div>
   </div>
 </section>
@@ -205,12 +204,12 @@
 <!-- ── 호환성 ──────────────────────────────────────────────────────────── -->
 <section class="sec" id="games">
   <div class="wrap">
-    <h2 data-i18n="games.h2">게임 호환성</h2>
-    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 인식하고 242종을 변환합니다. 그중 26종은 구형 3DS 실기에서 확인했습니다.</p>
+    <h2 data-i18n="games.h2">되는 게임, 안 되는 게임</h2>
+    <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 알아보고 그중 242종을 변환합니다. 26종은 구형 3DS 실기에서 돌려 봤습니다.</p>
     <p class="tiny" style="margin:8px 0 18px"><a href="compat.html" data-i18n="games.all">282종 전체 목록 보기</a></p>
 
     <!-- 시리즈 롱테일 페이지로 가는 유일한 홈 링크 (#198). 앵커 텍스트는 검색어(게임명 + 3DS)에 맞춘다. -->
-    <h3 class="series-h" data-i18n="games.seriesH">시리즈별로 보기</h3>
+    <h3 class="series-h" data-i18n="games.seriesH">시리즈로 찾기</h3>
     <nav class="series-line" aria-label="시리즈 페이지" data-i18n-attr="aria-label:games.seriesLabel">
       <a href="series/metal-slug.html" data-i18n="games.seriesMetalSlug">메탈슬러그 3DS</a>
       <a href="series/king-of-fighters.html" data-i18n="games.seriesKof">킹 오브 파이터즈 3DS</a>
@@ -250,23 +249,23 @@
       </div>
 
       <div class="ex-body">
-        <div class="ex-list-wrap">
-          <div class="ex-list" id="exList" role="list"></div>
+        <div class="ex-list" id="exList" role="list"></div>
+        <div class="ex-detail-col"><aside class="ex-detail" id="exDetail" aria-live="polite"></aside></div>
+        <div class="ex-list-foot">
           <nav class="ex-pages" id="exPages" aria-label="페이지" data-i18n-attr="aria-label:games.pagesLabel"></nav>
           <p class="tiny" id="exCount" aria-live="polite"></p>
         </div>
-        <aside class="ex-detail" id="exDetail" aria-live="polite"></aside>
       </div>
     </div>
 
     <div class="caveat">
-      <h3 data-i18n="games.cavH3">참고 사항</h3>
+      <h3 data-i18n="games.cavH3">알아두실 것</h3>
       <ul>
         <li data-i18n="games.cav3">메모리가 빠듯한 롬셋은 변환기가 미리 경고합니다.</li>
         <li data-i18n="games.cav1">해독은 구현했지만 실기에서 돌려 보지 못한 방식도 있습니다.</li>
-        <li data-i18n="games.cav4">메탈슬러그 2·X·3은 원래 기판에서도 느려지던 장면이 있습니다. 어느 구간인지는 <a href="#faq">자주 묻는 질문</a>에 적어 두었습니다.</li>
-        <li data-i18n="games.cav1b">롬이 없어서 확인하지 못한 게임은 다음과 같습니다 - CMC42: 전국전승 3, 줏파파, 스트라이커즈 1945 플러스, 프리히스토릭 아일 2, 나이트메어 인 더 다크, 간류, 뱅 비드 · CMC50: KOF2001 · PCM2: 메탈슬러그 4 플러스, 레이지 오브 드래곤즈, 포치와 냐</li>
-        <li data-i18n="games.cav2">KOF '98 MVS판은 보호 칩 때문에 변환되지 않습니다. 가정용판(kof98h)이 zip에 있으면 자동으로 그쪽으로 변환됩니다.</li>
+        <li data-i18n="games.cav4">메탈슬러그 2, X, 3은 원래 기판에서도 느려지던 장면이 있습니다. 어느 구간인지는 <a href="#faq">FAQ</a>에 적어 두었습니다.</li>
+        <li data-i18n="games.cav1b">롬이 없어서 확인하지 못한 게임은 <a href="https://github.com/zzcx88/neo3ds/blob/main/README.ko.md">README</a>에서 볼 수 있습니다.</li>
+        <li data-i18n="games.cav2">KOF '98은 MVS판에 보호 칩이 있어서 안 됩니다. 홈셋(kof98h)이 zip에 들어 있으면 그쪽으로 알아서 갑니다.</li>
       </ul>
     </div>
   </div>
@@ -275,24 +274,24 @@
 <!-- ── FAQ ────────────────────────────────────────────────────────────── -->
 <section class="sec" id="faq">
   <div class="wrap">
-    <h2 data-i18n="faq.h2">자주 묻는 질문</h2>
+    <h2 data-i18n="faq.h2">많이 묻는 것들</h2>
     <div class="faq">
       <details>
         <summary data-i18n="faq.q1">롬은 어디서 받나요?</summary>
-        <p data-i18n="faq.a1">받는 곳이 없습니다. 직접 가진 게임의 롬셋이 필요하고, 만든 CIA에는 롬 데이터가 들어 있으니 배포하면 안 됩니다.</p>
-      </details>
-      <details open>
-        <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
-        <p data-i18n="faq.a2">실기에서 풀 스피드로 확인한 게임은 KOF '95~'99·2000·2002, 메탈슬러그 1·X·3·5, 네오 터프 마스터즈, 네오 드리프트 아웃, SVC Chaos, 사무라이 쇼다운 5 스페셜입니다. 메탈슬러그 2·X·3은 원래 기판에서도 느려지던 장면에서 똑같이 느려지고, 소닉윙즈 3는 플레이할 수 있는 수준입니다.</p>
-        <p class="perf"><b data-i18n="speed.meas">실측</b> <span data-i18n="speed.line">한 프레임 16.7ms · 59.8fps · KOF '98 64.0 → 20.3MB</span> · <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.ko.md" data-i18n-attr="href:speed.docHref" data-i18n="speed.doc">기술 문서</a></p>
+        <p data-i18n="faq.a1">제공하지 않습니다. 갖고 있는 게임의 롬셋이 필요하고, 만든 CIA에는 롬이 들어 있으니 배포하면 안 됩니다.</p>
       </details>
       <details>
-        <summary data-i18n="faq.q3">소리가 안 나요.</summary>
+        <summary data-i18n="faq.q2">구형 3DS에서도 60fps인가요?</summary>
+        <p data-i18n="faq.a2">실기에서 풀 스피드로 확인한 게임은 KOF '95부터 '99까지, 2000, 2002, 메탈슬러그 1, X, 3, 5, 네오 터프 마스터즈, 네오 드리프트 아웃, SVC Chaos, 사무라이 쇼다운 5 스페셜입니다. 메탈슬러그 2, X, 3은 원래 기판에서도 느려지던 장면에서 똑같이 느려지고, 소닉윙즈 3는 플레이할 수 있는 수준입니다.</p>
+        <p class="perf"><b data-i18n="speed.meas">실측 기준</b> <span data-i18n="speed.line">KOF '98은 64.0MB에서 20.3MB로. 한 프레임 16.7ms, 59.8fps.</span> <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.ko.md" data-i18n-attr="href:speed.docHref" data-i18n="speed.doc">기술 문서</a></p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q3">소리가 안 나요?</summary>
         <p data-i18n="faq.a3">SD 카드에 <code>/3ds/dspfirm.cdc</code>가 필요합니다. DSP1 같은 도구로 한 번 만들어 두면 됩니다.</p>
       </details>
       <details>
         <summary data-i18n="faq.q5">New 3DS에서는요?</summary>
-        <p data-i18n="faq.a5">804MHz와 L2 캐시를 켜도록 설정해 두어 훨씬 여유롭습니다(실기 미확인).</p>
+        <p data-i18n="faq.a5">804MHz와 L2 캐시를 쓰도록 해 둬서 훨씬 여유롭습니다. 다만 실기로 확인하지는 못했습니다.</p>
       </details>
       <details>
         <summary data-i18n="faq.q6">상업적으로 써도 되나요?</summary>
@@ -305,11 +304,11 @@
 <!-- ── 문제 신고 (#189) — 사이트의 유일한 제보 폼 ─────────────────────── -->
 <section class="sec" id="feedback">
   <div class="wrap">
-    <h2 data-i18n="report.landingH">문제 신고</h2>
-    <p class="lede narrow" data-i18n="report.landingLede">의견이나 문제를 남겨 주세요. 계정 없이 익명으로 접수되고 공개 GitHub 이슈로 등록됩니다.</p>
+    <h2 data-i18n="report.landingH">안 되면 알려주세요</h2>
+    <p class="lede narrow" data-i18n="report.landingLede">변환이 실패했거나 게임에서 문제가 생겼다면 적어 주세요.</p>
     <div class="report-guide">
-      <p data-i18n="report.guidePrivacy">기기 종류·CFW·지역·설치 방식은 선택 입력이며, 시리얼·SD 경로 같은 개인 정보는 적지 마세요.</p>
-      <p data-i18n="report.guideDiag">진단 화면(<code>Diagnostics</code>)을 켜 두면 FPS·메모리 수치를 함께 볼 수 있습니다. 퀵세이브를 썼다면 슬롯 번호와 그 슬롯을 만든 버전도 적어 주세요.</p>
+      <p data-i18n="report.guidePrivacy">기기, CFW, 지역, 설치 방식은 비워도 됩니다. 시리얼이나 SD 카드 경로는 적지 마세요.</p>
+      <p data-i18n="report.guideDiag">진단 화면을 켜 두면 리포트에 FPS와 메모리 수치도 함께 담깁니다.<br>퀵세이브를 썼다면 슬롯 번호와 그 슬롯을 만든 버전도 적어 주세요.</p>
     </div>
     <form class="report" id="reportForm" novalidate>
       <div class="report-grid">
@@ -317,7 +316,7 @@
           <span data-i18n="report.type">유형</span>
           <select id="reportType">
             <option value="convert-fail" data-i18n="report.typeConvert">변환 실패</option>
-            <option value="site-bug" data-i18n="report.typeBug">사이트·변환기 버그</option>
+            <option value="site-bug" data-i18n="report.typeBug">사이트나 변환기 버그</option>
             <option value="ingame" data-i18n="report.typeIngame">인게임 버그</option>
             <option value="feature" data-i18n="report.typeFeature">기능 제안</option>
             <option value="other" data-i18n="report.typeOther">기타</option>
@@ -353,7 +352,7 @@
             <option value="" data-i18n="report.unknown">모름</option>
             <option value="JP" data-i18n="report.regionJP">일본</option>
             <option value="US" data-i18n="report.regionUS">미국</option>
-            <option value="EU" data-i18n="report.regionEU">유럽·아시아</option>
+            <option value="EU" data-i18n="report.regionEU">유럽/아시아</option>
           </select>
         </label>
         <label class="report-field">
@@ -364,7 +363,7 @@
             <option value="pack" data-i18n="report.modePack">런처 + .neo3ds 파일</option>
           </select>
         </label>
-        <p class="tiny" data-i18n="report.ingameHint">엔진 버전은 앱 하단 화면에 표시됩니다. 시리얼·SD 경로는 적지 마세요.</p>
+        <p class="tiny" data-i18n="report.ingameHint">엔진 버전은 앱 하단 화면에 표시됩니다. 시리얼이나 SD 카드 경로는 적지 마세요.</p>
       </div>
       <label class="report-field">
         <span data-i18n="report.textLabel">무엇이 잘못됐나요?</span>
@@ -372,7 +371,7 @@
       </label>
       <input class="trap" id="reportTrap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <p class="tiny hidden" id="reportPending" data-i18n="report.pending">방금 실패한 변환의 로그와 게임 정보가 함께 첨부됩니다.</p>
-      <p class="tiny" data-i18n="report.public">전송 내용(증상·로그·브라우저 정보)은 공개 GitHub 이슈로 등록됩니다. 개인정보는 적지 마세요.</p>
+      <p class="tiny" data-i18n="report.public">증상과 로그, 브라우저 정보가 공개 이슈로 올라갑니다. 개인정보는 적지 마세요.</p>
       <div class="report-actions">
         <button type="submit" class="btn btn-primary" id="reportSend" data-i18n="report.send">보내기</button>
         <a class="btn btn-ghost hidden" id="reportLink" target="_blank" rel="noopener"></a>
@@ -386,8 +385,8 @@
 <section class="sec sec-legal" id="legal">
   <div class="wrap legal">
     <h2 data-i18n="legal.h2">법적 고지</h2>
-    <p data-i18n="legal.p1">롬·바이오스·게임 데이터는 저장소와 배포 파일에 없습니다.<br>직접 가진 게임으로만 만들고, 만든 CIA는 배포하지 마세요.</p>
-    <p data-i18n="legal.p2">neo3ds는 개인 팬 프로젝트이며 SNK·Nintendo와 관계가 없습니다.<br>NEOGEO는 SNK CORPORATION, Nintendo 3DS는 Nintendo의 상표입니다.<br>크레딧과 외부 코드는 <a href="https://github.com/zzcx88/neo3ds/blob/main/THIRD_PARTY_NOTICES.md">제3자 고지사항</a>, 소스는 GPL-2.0입니다.</p>
+    <p data-i18n="legal.p1">롬, 바이오스, 게임 데이터는 저장소와 배포 파일에 없습니다.<br>직접 가진 게임으로만 만들고, 만든 CIA는 배포하지 마세요.</p>
+    <p data-i18n="legal.p2">neo3ds는 개인 팬 프로젝트이며 SNK나 Nintendo와 관계가 없습니다.<br>NEOGEO는 SNK CORPORATION, Nintendo 3DS는 Nintendo의 상표입니다.<br>크레딧과 외부 코드는 <a href="https://github.com/zzcx88/neo3ds/blob/main/THIRD_PARTY_NOTICES.md">제3자 고지사항</a>, 소스는 GPL-2.0입니다.</p>
   </div>
 </section>
 

@@ -15,50 +15,49 @@ const EN = {
   'a11y.noscript': 'This page needs JavaScript. The game list and the converter demo will not run.',
   'nav.download': 'Download', 'nav.games': 'Games', 'nav.faq': 'FAQ',
   'cta.download': 'Convert now',
-  'hero.h1': 'Neo Geo games, <br>on the 3DS HOME menu.',
+  'hero.h1': 'The arcade you remember,<br>now on your 3DS',
   'hero.mock': 'Game footage composited into a 3DS console mockup',
   'hero.pause': 'Pause',
-  'hero.lede': 'Drop the romset zip of a game you own and it becomes a 3DS install file (CIA) with its own HOME menu icon.',
+  'hero.lede': 'The Neo Geo games you remember, on the Nintendo 3DS. Convert them with neo3ds.',
   'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'in tested games',
-  'hero.req': 'It runs in your browser and files are never uploaded.',
-  'hero.notes': 'What changed in each version',
+  'hero.notes': 'Release notes',
   'cta.dl': 'Download', 'cta.dlWin': 'Get it for Windows x64',
   'cta.dlLin': 'Get it for Linux x64', 'cta.dlMac': 'Get it for macOS (Apple Silicon)',
-  'steps.h2': 'Set-up in three steps',
-  'steps.lede': 'Building an install file takes a minute or two on the PC. After that you only need the 3DS.',
-  'steps.s1t': 'Get the romset ready',
-  'steps.s1d': 'Keep your game\'s MAME romset and the BIOS together, names unchanged.',
-  'steps.s2t': 'Build the file',
-  'steps.s2d': 'One game takes a minute or two, mostly compressing graphics. Drop several zips and they convert one after another.',
-  'steps.s3t': 'Install it',
-  'steps.s3d': 'Install a CIA with FBI, or copy a launcher file to the SD card. The download page has the steps.',
-  'out.ciaH': 'Game CIA', 'out.ciaP': 'One install file per game, with its own HOME menu icon.',
-  'ways.h3': 'Two ways to install',
+  'steps.h2': 'Make it, then install it',
+  'steps.lede': 'The install file takes a minute or two on your PC.',
+  'steps.s1t': 'Gather the romset',
+  'steps.s1d': 'Put your game\'s MAME romset and the BIOS in one folder. Leave the zip names alone.',
+  'steps.s2t': 'Drop it in the browser',
+  'steps.s2d': 'A minute or two per game, mostly compressing graphics. Drop several zips and they convert one after another.',
+  'steps.s3t': 'Put it on the 3DS',
+  'steps.s3d': 'Install the CIA with FBI. The launcher file goes on the SD card. The download page walks through both.',
+  'out.ciaH': 'Game CIA', 'out.ciaP': 'One file per game. Its own icon on the HOME menu.',
+  'ways.h3': 'A CIA per game, or one launcher',
   'out.ciaCta': 'Build a game CIA',
-  'prep.h3': 'What you need',
-  'prep.1b': 'A 3DS', 'prep.1d': 'Old 3DS / 2DS / New 3DS / New 2DS XL, with custom firmware (Luma3DS) and an installer (FBI)',
-  'prep.2b': 'A web browser', 'prep.2d': 'Chrome, Edge, Firefox, Safari · roms stay inside the browser',
-  'prep.3b': 'Romsets you own', 'prep.3d': 'MAME romset zip + neogeo.zip (not included here)',
-  'prep.note': 'Game zips must use MAME romset names.<br>The romset name and chip CRCs have to match the MAME set.',
+  'prep.h3': 'What to have ready',
+  'prep.1b': 'A 3DS', 'prep.1d': 'Old 3DS / 2DS / New 3DS / New 2DS XL, with Luma3DS and FBI already installed.',
+  'prep.2b': 'A web browser', 'prep.2d': 'Chrome, Edge, Firefox or Safari. Roms stay inside the browser.',
+  'prep.3b': 'Romsets you own', 'prep.3d': 'A MAME romset zip and neogeo.zip. Neither is included here.',
+  'prep.note': 'The romset name and chip CRCs have to match the MAME set.<br>If they don\'t, the converter won\'t recognise the zip.',
   'prep.4b': 'The sound file', 'prep.4d': '<code>/3ds/dspfirm.cdc</code> on the SD card',
   'conv.p5d': 'Icon (48×48) and banner (256×128) from the title or from a picture you pick.', /* convert.html gatePipe가 공유 */
-  'launch.kicker': 'The way to go for several games',
-  'launch.h2': 'Launcher: every game in one app',
-  'launch.lede': 'Instead of a CIA per game, install the launcher once and pick games from the list of files on the SD card. Only one HOME menu icon is added.',
+  'launch.kicker': 'If you\'re collecting a few',
+  'launch.h2': 'One launcher for all of them',
+  'launch.lede': 'Instead of installing a CIA per game, install the launcher once. The game files you put on the SD card show up as a list, and you pick from there. Only one HOME menu icon.',
   'launch.imgAlt': 'Launcher game list with the All and Fav tabs',
   'launch.cap': 'Launcher controls',
   'launch.capHref': 'manual.html',
-  'launch.p1n': 'Install once', 'launch.p1': 'Install the launcher CIA with FBI just once. Adding a game later is copying its .neo3ds file to /neo3ds/games/, or sending it over Wi-Fi from the offline converter.',
-  'launch.p2n': 'Shared saves', 'launch.p2': 'The same game shares key config, backup RAM and quick saves between its CIA and launcher copies.',
+  'launch.p1n': 'Install once', 'launch.p1': 'Install the launcher CIA with FBI once. To add a game, copy its .neo3ds file to /neo3ds/games/, or send it over Wi-Fi from the offline converter.',
+  'launch.p2n': 'Shared saves', 'launch.p2': 'A game shares its key config, backup RAM and quick saves between the CIA and the launcher copy.',
   'launch.p3n': 'Back in a tap', 'launch.p3': 'In a game, tap Game list on the bottom screen twice to return to the list.',
   'launch.cta1': 'Download the launcher', 'launch.cta2': 'Convert launcher files',
-  'speed.meas': 'Measured', 'speed.line': '16.7ms per frame · 59.8fps · KOF \'98 64.0 → 20.3MB',
+  'speed.meas': 'Measured:', 'speed.line': 'KOF \'98 went from 64.0MB to 20.3MB. A frame takes 16.7ms; 59.8fps.',
   'speed.doc': 'Technical notes', 'speed.docHref': 'https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.md',
-  'games.h2': 'Game compatibility',
-  'games.lede': 'The converter knows 282 romsets and builds 242 of them. 26 of those were played on an Old 3DS.',
+  'games.h2': 'What runs, what doesn\'t',
+  'games.lede': 'It recognises 282 romsets and converts 242 of them. 26 have been played on an Old 3DS.',
   'games.all': 'See all 282 romsets',
   /* 시리즈 바로가기 (#198): 앵커 텍스트는 게임명 + 3DS, 검색어와 일치시킨다. */
-  'games.seriesH': 'Browse by series', 'games.seriesLabel': 'Series pages',
+  'games.seriesH': 'Find it by series', 'games.seriesLabel': 'Series pages',
   'games.seriesMetalSlug': 'Metal Slug on 3DS', 'games.seriesKof': 'The King of Fighters on 3DS',
   'games.seriesSamsho': 'Samurai Shodown on 3DS', 'games.seriesFatalFury': 'Fatal Fury &amp; Garou on 3DS',
   'games.seriesAof': 'Art of Fighting on 3DS', 'games.seriesLastBlade': 'The Last Blade on 3DS',
@@ -70,17 +69,17 @@ const EN = {
   'games.sort': 'Sort', 'games.sortDefault': 'Hardware first', 'games.sortName': 'Title',
   'games.sortYear': 'Year', 'games.sortSize': 'ROM size',
   'games.pagesLabel': 'Pages', 'games.prev': 'Previous page', 'games.next': 'Next page',
-  'games.cavH3': 'Notes',
+  'games.cavH3': 'Worth knowing',
   'games.cav1': 'Some decryption is implemented but never played, because we lack the ROMs.',
-  'games.cav1b': 'Games we could not check because we have no ROM — CMC42: Sengoku 3, Zupapa, Strikers 1945 Plus, Prehistoric Isle 2, Nightmare in the Dark, Ganryu, Bang Bead · CMC50: KOF2001 · PCM2: Metal Slug 4 Plus, Rage of the Dragons, Pochi and Nyaa',
-  'games.cav2': 'KOF \'98 does not convert: the MVS version has a protection chip. When the home set (kof98h) is in the zip it is picked automatically.',
+  'games.cav1b': 'Games we could not check because we don\'t have the ROMs are listed in the <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md">README</a>.',
+  'games.cav2': 'KOF \'98 doesn\'t convert: the MVS version has a protection chip. If the home set (kof98h) is in the zip, it\'s picked automatically.',
   'games.cav3': 'When a romset is tight for memory, the converter warns you first.',
-  'games.cav4': 'Metal Slug 2, X and 3 have scenes that slowed down on the original arcade board too. The <a href="#faq">FAQ</a> says which ones.',
-  'faq.h2': 'Questions',
-  'faq.q1': 'Where do I get the ROMs?', 'faq.a1': 'Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so never share it.',
+  'games.cav4': 'Metal Slug 2, X and 3 slow down in the same scenes the original board did. The <a href="#faq">FAQ</a> says where.',
+  'faq.h2': 'Things people ask',
+  'faq.q1': 'Where do I get the ROMs?', 'faq.a1': 'Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so don\'t share it.',
   'faq.q2': 'Is it really 60 fps on an Old 3DS?', 'faq.a2': 'These ran at full speed on hardware: KOF \'95-\'99, 2000, 2002, Metal Slug 1, X, 3 and 5, Neo Turf Masters, Neo Drift Out, SVC Chaos and Samurai Shodown V Special. Metal Slug 2, X and 3 slow down in the same scenes the original board did, and Aero Fighters 3 stays playable.',
-  'faq.q3': 'No sound.', 'faq.a3': 'The SD card needs <code>/3ds/dspfirm.cdc</code>; a tool like DSP1 creates it once.',
-  'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, which leaves more headroom (not confirmed on hardware yet).',
+  'faq.q3': 'No sound?', 'faq.a3': 'The SD card needs <code>/3ds/dspfirm.cdc</code>; a tool like DSP1 creates it once.',
+  'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, which leaves a lot more headroom. We haven\'t confirmed it on hardware.',
   'faq.q6': 'Can I use it commercially?', 'faq.a6': 'No: the included CPU cores (Cyclone 68000, DrZ80) allow non-commercial use only.',
   'legal.h2': 'Legal',
   'legal.p1': 'No ROMs, BIOS or game data are included here.<br>Convert only games you own, and never distribute a CIA you build.',
@@ -115,17 +114,17 @@ const EN = {
   /* convert.html — web converter */
   'gate.meta': 'Drop game zips and convert in the browser. Files never leave this tab.',
   'gate.noscript': 'This page needs JavaScript.',
-  'gate.kicker': 'Web converter · runs in this tab',
-  'gate.h1': 'Convert<br>in the browser.',
+  'gate.kicker': 'Web converter',
+  'gate.h1': 'Convert<br>in the browser',
   'gate.lede': 'Drop several game zips plus neogeo.zip and this tab converts them one after another. Neither the rom nor the result ever leaves it.',
   'gate.factLabel': 'Before you convert',
   'gate.biosT': 'neogeo.zip (BIOS) is required',
-  'gate.biosD': '— drop it together with the game zip. Every conversion needs it.',
+  'gate.biosD': 'Drop it together with the game zip. Every conversion needs it.',
   'gate.batchT': 'Many games at once',
-  'gate.batchD': '— drop several game zips and they convert one after another. No refresh between games.',
+  'gate.batchD': 'Drop several game zips and they convert one after another. No refresh between games.',
   'gate.onlyT': 'MAME Neo Geo romset zips only',
-  'gate.onlyD': '— the romset name and chip CRCs must match the MAME set. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).',
-  'gate.dropT': 'Drop rom zips',  'gate.dropD': 'Click or drag here · multiple files allowed (game zip + neogeo.zip)',
+  'gate.onlyD': 'The romset name and chip CRCs must match the MAME set. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).',
+  'gate.dropT': 'Drop rom zips',  'gate.dropD': 'Click or drag files here. You can add several at once, including neogeo.zip.',
   'gate.run': 'Convert', 'gate.dl': 'Download', 'gate.cancel': 'Cancel',
   'gate.launcherHint': 'No neo3ds launcher yet?',
   'gate.region': 'Region', 'gate.eu': 'Europe/Asia', 'gate.jp': 'Japan', 'gate.us': 'USA',
@@ -133,13 +132,13 @@ const EN = {
   'gate.progH2': 'Progress', 'gate.progLede': 'Each step reports here. Download right here when it is done.', 'gate.resultH': 'Result',
   'gate.p1t': 'Checking romset', 'gate.p1d': 'Find the romset by zip name and check chips by CRC.',
   'gate.p2t': 'Compressing graphics', 'gate.p2d': 'Pack sprites into 16KB zstd blocks.',
-  'gate.p3t': 'Icon·banner', 'gate.p4t': 'Packing the output',
+  'gate.p3t': 'Icon and banner', 'gate.p4t': 'Packing the output',
   'gate.p3d': 'Bundle the output with WASM tooling.',
   'gate.logLabel': 'Converter log', 'gate.logNote': 'Each log line shows the elapsed time, game and stage. Outputs are usually tens of MB.',
 'gate.home': 'Intro page',
   'gate.mCia': 'Game CIA', 'gate.mPack': 'Launcher file',
-  'gate.mLabel': 'Pick an output', 'gate.mGame': 'Per game — straight onto the HOME menu',
-  'gate.mLaunchGroupTitle': 'For the launcher — many games in one app',
+  'gate.mLabel': 'Pick an output', 'gate.mGame': 'Per game, straight onto the HOME menu',
+  'gate.mLaunchGroupTitle': 'For the launcher, many games in one app',
   'gate.mGameGroup': 'Per game', 'gate.mLaunchGroup': 'For the launcher',
   'gate.mCiaOut': '.cia → install with FBI', 'gate.mPackOut': '.neo3ds → /neo3ds/games/',
   'gate.listH': 'Recognized games',
@@ -152,11 +151,11 @@ const EN = {
   'gate.artBack': 'Back to list', 'gate.artLock': 'The icon and banner cannot be changed while converting.',
   /* #188/#189 익명 제보 폼 — 소개 페이지 */
   'report.h': 'Something went wrong?',
-  'report.landingH': 'Report a problem',
-  'report.landingLede': 'Leave a comment or a problem. It is filed anonymously as a public GitHub issue, no account needed.',
-  'report.guidePrivacy': 'Console, CFW, region and install method are optional; do not include serial numbers or SD card paths.',
-  'report.guideDiag': 'The <code>Diagnostics</code> screen shows FPS and memory figures worth quoting. If you used a quick save, add the slot number and the version that wrote it.',
-  'report.convertLede': 'Reports go through the form on the intro page. The log and game details of the failed run travel with you.',
+  'report.landingH': 'If it breaks, tell us',
+  'report.landingLede': 'If a conversion failed or a game misbehaves, write it down here.',
+  'report.guidePrivacy': 'Console, CFW, region and install method are optional. Don\'t include serial numbers or SD card paths.',
+  'report.guideDiag': 'Turning on the Diagnostics screen also puts fps and memory numbers in the report.<br>If you used a quick save, add the slot number and the version that wrote it.',
+  'report.convertLede': 'Reports go through the form on the intro page. The failed run\'s log and game details come along.',
   'report.go': 'Report',
   'report.pending': 'The log and game details of the failed run are attached.',
   'report.type': 'Type', 'report.typeConvert': 'Conversion failed', 'report.typeBug': 'Site / converter bug',
@@ -173,7 +172,7 @@ const EN = {
   'report.modePack': 'Launcher + .neo3ds file',
   'report.unknown': 'Unknown',
   'report.ingameHint': 'The engine version is shown at the bottom of the app. Do not include serial numbers or SD card paths.',
-  'report.public': 'The report (symptom, log, browser info) becomes a public GitHub issue. Do not include personal details.',
+  'report.public': 'The symptom, log and browser info become a public issue. Leave personal details out.',
   'report.send': 'Send', 'report.open': 'Report a problem',
   /* JS가 그리는 문구 */
   'ex.verified': 'on hardware', 'ex.ok': 'buildable', 'ex.no': 'not supported',
@@ -184,8 +183,8 @@ const EN = {
   'ex.gfx': 'graphics', 'ex.tiles': 'tiles', 'ex.decrypt': 'decryption',
   'tiles': 'tiles',
   /* download.html (#242) — launcher QR, install, offline converter */
-  'dl.h1': 'Download &amp; install',
-  'dl.lede': 'Install the launcher CIA once with a QR code; build the game files in the converter. The offline converter runs on your PC.',
+  'dl.h1': 'Download and install',
+  'dl.lede': 'Install the launcher CIA once with a QR code, then build the game files in the converter. The offline converter runs on your PC.',
   'dl.launchH2': 'Launcher',
   'dl.launchP': 'The game-list app. Install it once, then put <code>.neo3ds</code> files on the SD card and pick them from the list. Only one HOME menu icon is added.',
   'dl.update': '<strong>Updating only takes the launcher.</strong> Existing <code>.neo3ds</code> files keep working on a new version. Per-game CIAs must be converted again; quick saves from another version cannot be loaded.',
@@ -213,7 +212,7 @@ const EN = {
   'man.nav.launch': 'Launcher', 'man.nav.controls': 'Controls', 'man.nav.keys': 'Key config',
   'man.launchH2': 'Launcher',
   'man.launchAlt': 'Launcher game list with the All and Fav tabs',
-  'man.launchCap': 'Game list · All / Fav tabs',
+  'man.launchCap': 'Game list, All/Fav tabs',
   'man.pickK': 'Pick a game',
   'man.pickD': 'Up/Down (L/R for a page) or touch to pick; A or a double tap to start.',
   'man.favK': 'Favorites',
@@ -239,10 +238,10 @@ const EN = {
   'man.bottomAlt': 'Bottom screen buttons and key layout',
   'man.bottomCap': 'The bottom screen in a game',
   'man.b.keys': 'Opens the key config screen (the game pauses)',
-  'man.b.turbo': 'Each tap moves turbo off → A → B → X → Y',
-  'man.b.system': 'Switches between the home (AES) and arcade (MVS) BIOS. Tap twice; the game restarts on it',
+  'man.b.turbo': 'Each tap cycles turbo: off, A, B, X, Y',
+  'man.b.system': 'Switches between the home (AES) and arcade (MVS) BIOS. Tap twice and the game restarts on that BIOS',
   'man.b.diag': 'fps, per-core time and memory use, once a second. Touch to go back',
-  'man.b.restart': 'Hold until the yellow bar fills. Like switching the console off and on (cartridge saves are kept)',
+  'man.b.restart': 'Hold until the yellow bar fills. Same as switching the console off and on; cartridge saves are kept',
   'man.b.service': 'MVS BIOS service menu (difficulty, credits, hardware tests). MVS only',
   'man.b.slot': 'Quick save: pick slot 1-3, save, load (tap twice)',
   'man.b.snapshot': "From the launcher only: saves the current scene as the game's picture in the list",
@@ -328,7 +327,7 @@ const DB = window.NEO3DS_DB || { counts: { total: 0, ok: 0, no: 0, verified: 0 }
 const bySet = new Map(DB.games.map((r) => [r[0], r]));
 const CHAIN = {
   '': ['보호칩 없음', 'no protection'],
-  'patch': ['보호칩 없음 · 검사 패치', 'no protection · check patched'],
+  'patch': ['보호칩 없음, 검사 패치', 'no protection, check patched'],
   'cmc42': ['CMC42 해독', 'CMC42 decrypted'],
   'cmc50': ['CMC50 해독', 'CMC50 decrypted'],
   'sma+cmc42': ['SMA + CMC42 해독', 'SMA + CMC42 decrypted'],
@@ -367,7 +366,7 @@ const sorted = (rows) => {
 };
 
 const narrow = matchMedia('(max-width: 1080px)');
-const exListWrap = $('.ex-list-wrap');
+const exDetailCol = $('.ex-detail-col');
 const exPages = $('#exPages'), exCount = $('#exCount');
 
 function renderList() {
@@ -412,7 +411,7 @@ function renderPages(pages) {
       nums.push(`<button type="button" data-page="${n}"${n === page ? ' aria-current="page"' : ''}>${n}</button>`);
       last = n;
     });
-  exPages.innerHTML = prev + nums.join('') + next;
+  exPages.innerHTML = prev + '<span class="ex-page-nums">' + nums.join('') + '</span>' + next;
   $$('button', exPages).forEach((b) => b.addEventListener('click', () => {
     if (b.disabled) return;
     page = Number(b.dataset.page);
@@ -435,7 +434,7 @@ function renderDetail() {
       <div><dt>${t('롬셋', 'romset')}</dt><dd>${set}</dd></div>
       <div><dt>${t('연도', 'year')}</dt><dd>${year}</dd></div>
       <div><dt>${t('제작', 'maker')}</dt><dd>${maker}</dd></div>
-      <div><dt>${t('롬 크기', 'ROM size')}</dt><dd>${mb}MB · ${t('그래픽', 'graphics')} ${spriteMb}MB</dd></div>
+      <div><dt>${t('롬 크기', 'ROM size')}</dt><dd>${mb}MB, ${t('그래픽', 'graphics')} ${spriteMb}MB</dd></div>
       <div><dt>${t('타일', 'tiles')}</dt><dd>${tiles(spriteMb).toLocaleString()}</dd></div>
       <div><dt>${t('해독', 'decryption')}</dt><dd>${st === 2 ? t('지원 안 함', 'not supported') : chainText(chain)}</dd></div>
     </dl>
@@ -448,7 +447,7 @@ function placeDetail() {
   if (narrow.matches && item) {
     item.appendChild(exDetail);
   } else {
-    exListWrap.insertAdjacentElement('afterend', exDetail);
+    exDetailCol.appendChild(exDetail);
   }
   exDetail.classList.toggle('hidden', narrow.matches && !item);
 }
