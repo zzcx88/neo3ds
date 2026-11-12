@@ -20,6 +20,7 @@ const EN = {
   'hero.pause': 'Pause',
   'hero.lede': 'The Neo Geo games you remember, on the Nintendo 3DS. Convert them with neo3ds.',
   'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'in tested games',
+  'hero.coverage': 'Coverage',
   'hero.notes': 'Release notes',
   'cta.dl': 'Download', 'cta.dlWin': 'Get it for Windows x64',
   'cta.dlLin': 'Get it for Linux x64', 'cta.dlMac': 'Get it for macOS (Apple Silicon)',
