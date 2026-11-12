@@ -88,6 +88,12 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 /* ── 히어로 ──────────────────────────────────────────────────────────── */
 .hero{padding:52px 0 30px;border-bottom:1px solid var(--line)}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,520px);gap:44px;align-items:start}
+.hero-grid > .hero-copy .hero-lede span{display:block}
+@media (min-width:1081px){
+  .hero-grid > .hero-copy h1{font-size:48px}
+  .hero-grid > .hero-copy .hero-lede{font-size:19px}
+  .hero-grid > .hero-copy .stat b{font-size:22px}
+}
 .kicker{font-family:var(--pixel-sm);font-size:11px;color:var(--gold);margin:0 0 14px}
 .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 10px}
 /* ── 다운로드 페이지 (#242) ───────────────────────────────────────────── */
@@ -403,6 +409,7 @@ section[id]{scroll-margin-top:64px}
   /* 390px대에서 강제 줄바꿈이 "menu."만 남기므로 자연 줄바꿈 + 균형 분배로 둔다. */
   .hero h1 br{display:none}
   .hero h1{text-wrap:balance}
+  .hero-grid > .hero-copy .hero-lede span{display:inline}
   .bar{gap:10px;padding:9px 12px}
   .bar-nav{gap:8px}
   .bar-end .btn{padding:8px 10px;font-size:11px}
