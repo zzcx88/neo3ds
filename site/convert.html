@@ -163,13 +163,13 @@
 <section class="hero" id="top">
   <div class="wrap gate-hero-grid">
     <div class="hero-copy">
-      <p class="kicker">Web converter · runs in this tab</p>
-      <h1>Convert<br>in the browser.</h1>
+      <p class="kicker">Web converter</p>
+      <h1>Convert<br>in the browser</h1>
       <p class="lede">Drop several game zips plus neogeo.zip and this tab converts them one after another. Neither the rom nor the result ever leaves it.</p>
       <ul class="gate-facts" aria-label="Before you convert">
-        <li><b>neogeo.zip (BIOS) is required</b> <span>— drop it together with the game zip. Every conversion needs it.</span></li>
-        <li><b>Many games at once</b> <span>— drop several game zips and they convert one after another. No refresh between games.</span></li>
-        <li><b>MAME Neo Geo romset zips only</b> <span>— the romset name and chip CRCs must match the MAME set. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</span></li>
+        <li><b>neogeo.zip (BIOS) is required</b> <span>Drop it together with the game zip. Every conversion needs it.</span></li>
+        <li><b>Many games at once</b> <span>Drop several game zips and they convert one after another. No refresh between games.</span></li>
+        <li><b>MAME Neo Geo romset zips only</b> <span>The romset name and chip CRCs must match the MAME set. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</span></li>
       </ul>
     </div>
 
@@ -178,7 +178,7 @@
       <label class="drop" id="gateDrop">
         <input type="file" id="gateZips" accept=".zip" multiple>
         <b>Drop rom zips</b>
-        <span class="tiny">Click or drag here · multiple files allowed (game zip + neogeo.zip)</span>
+        <span class="tiny">Click or drag files here. You can add several at once, including neogeo.zip.</span>
         <span class="drop-meta" id="gateMeta"></span>
       </label>
       <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0">
@@ -198,11 +198,11 @@
         </label>
       </div>
       <span class="tiny mode-label">Pick an output</span>
-      <span class="tiny mode-group">Per game — straight onto the HOME menu</span>
+      <span class="tiny mode-group">Per game, straight onto the HOME menu</span>
       <div class="chips mode-pick one" role="group" aria-label="Per game">
         <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span>Game CIA</span><span class="mode-out">.cia → install with FBI</span></label>
       </div>
-      <span class="tiny mode-group">For the launcher — many games in one app</span>
+      <span class="tiny mode-group">For the launcher, many games in one app</span>
       <div class="chips mode-pick one" role="group" aria-label="For the launcher">
         <label class="chip"><input type="radio" name="gateMode" value="pack"> <span>Launcher file</span><span class="mode-out">.neo3ds → /neo3ds/games/</span></label>
       </div>
@@ -292,7 +292,7 @@
       <ol class="pipe" id="gatePipe">
         <li data-step="load"><span class="pipe-no">1</span><div><h3>Checking romset</h3><p>Find the romset by zip name and check chips by CRC.</p></div></li>
         <li data-step="romfs"><span class="pipe-no">2</span><div><h3>Compressing graphics</h3><p>Pack sprites into 16KB zstd blocks.</p></div></li>
-        <li data-step="art"><span class="pipe-no">3</span><div><h3>Icon·banner</h3><p>Icon (48×48) and banner (256×128) from the title or from a picture you pick.</p></div></li>
+        <li data-step="art"><span class="pipe-no">3</span><div><h3>Icon and banner</h3><p>Icon (48×48) and banner (256×128) from the title or from a picture you pick.</p></div></li>
         <li data-step="cia"><span class="pipe-no">4</span><div><h3>Packing the output</h3><p>Bundle the output with WASM tooling.</p></div></li>
       </ol>
       <div class="conv-side">
@@ -307,7 +307,7 @@
 <section class="sec" id="feedback">
   <div class="wrap">
     <h2>Something went wrong?</h2>
-    <p class="lede narrow">Reports go through the form on the intro page. The log and game details of the failed run travel with you.</p>
+    <p class="lede narrow">Reports go through the form on the intro page. The failed run's log and game details come along.</p>
     <a class="btn btn-primary btn-lg" id="gateReportGo" href="index.html#feedback" target="_blank" rel="noopener">Report</a>
   </div>
 </section>

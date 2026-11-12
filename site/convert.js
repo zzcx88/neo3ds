@@ -175,11 +175,11 @@ function logStage(row, step) {
 }
 
 function logGameDone(row, name, mb, secs) {
-  logEvent(gameTag(row), `✓ ${name} ${mb} MB · ${secs}s`, 'done');
+  logEvent(gameTag(row), `✓ ${name} ${mb} MB, ${secs}s`, 'done');
 }
 
 function logGameFail(row, message, secs) {
-  logEvent(gameTag(row), `✗ ${message}${secs ? ` · ${secs}s` : ''}`, 'fail');
+  logEvent(gameTag(row), `✗ ${message}${secs ? `, ${secs}s` : ''}`, 'fail');
 }
 
 // #207: pack.js reports the BIOS choice and the start system as progress
@@ -504,14 +504,14 @@ function batchArtEligible() {
 
 function artProblemText() {
   if (!artProblem) return '';
-  if (artProblem.kind === 'unknown') return t('게임을 인식하지 못해 아이콘·배너 미리보기를 만들 수 없습니다.',
+  if (artProblem.kind === 'unknown') return t('게임을 인식하지 못해 아이콘/배너 미리보기를 만들 수 없습니다.',
     'Game not recognized, so the icon and banner preview cannot be built.');
   if (artProblem.kind === 'blocked') return t(`변환할 수 없습니다: ${artProblem.detail}`,
     `Cannot convert: ${artProblem.detail}`);
-  if (artProblem.kind === 'preview') return t('아이콘·배너 미리보기를 만들지 못했습니다.',
+  if (artProblem.kind === 'preview') return t('아이콘/배너 미리보기를 만들지 못했습니다.',
     'Could not build the icon and banner preview.');
   if (artProblem.kind === 'raw') return artProblem.detail ?? '';
-  return t(`아이콘·배너 확인 실패: ${artProblem.detail}`, `Icon and banner check failed: ${artProblem.detail}`);
+  return t(`아이콘/배너 확인 실패: ${artProblem.detail}`, `Icon and banner check failed: ${artProblem.detail}`);
 }
 
 function renderArtMsg(text = artProblemText()) {
@@ -521,7 +521,7 @@ function renderArtMsg(text = artProblemText()) {
 
 /* ── #76 per-game art panel (one row at a time) ─────────────────────────── */
 function artBadgeText(label) {
-  if (label === 'icon+banner') return t('아이콘·배너 지정', 'Custom art');
+  if (label === 'icon+banner') return t('아이콘/배너 지정', 'Custom art');
   if (label === 'icon') return t('아이콘 지정', 'Custom icon');
   return t('배너 지정', 'Custom banner');
 }
@@ -785,7 +785,7 @@ function syncOutput() {
 function stepLabel(step) {
   if (step === 'load') return t('롬셋 확인', 'Checking romset');
   if (step === 'romfs') return t('그래픽 압축', 'Compressing graphics');
-  if (step === 'art') return t('아이콘·배너', 'Icon and banner');
+  if (step === 'art') return t('아이콘/배너', 'Icon and banner');
   if (step === 'cia') return t('결과물 묶기', 'Packing output');
   return step ?? '';
 }
@@ -820,19 +820,19 @@ function detailText(row, index) {
     // instead of the worker detail (Title ID goes to the log); no fake percent.
     if (row.step === 'cia') {
       const since = ciaSince.get(index);
-      return since == null ? step : `${step} · ${elapsedText(performance.now() - since)}`;
+      return since == null ? step : `${step}, ${elapsedText(performance.now() - since)}`;
     }
     if (!row.detail) return step;
-    return step ? `${step} · ${row.detail}` : row.detail;
+    return step ? `${step}, ${row.detail}` : row.detail;
   }
   return '';
 }
 
 function summaryText(s) {
-  const blocked = s.blocked ? t(` · 변환 불가 ${s.blocked}`, ` · ${s.blocked} not convertible`) : '';
+  const blocked = s.blocked ? t(`, 변환 불가 ${s.blocked}`, `, ${s.blocked} not convertible`) : '';
   return t(
-    `변환 가능 ${s.ready}개 중 성공 ${s.done} · 실패 ${s.failed}${blocked}`,
-    `${s.done} done · ${s.failed} failed of ${s.ready} convertible${blocked}`,
+    `변환 가능 ${s.ready}개 중 성공 ${s.done}, 실패 ${s.failed}${blocked}`,
+    `${s.done} done, ${s.failed} failed of ${s.ready} convertible${blocked}`,
   );
 }
 
@@ -914,7 +914,7 @@ function paintBatchHeader() {
   const s = summary(batch ?? []);
   const hint = $('gateBatchHint');
   hint.textContent = batchArtEligible()
-    ? t('변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘·배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
+    ? t('변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘/배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
       'Check before converting. Select a game row to change that game\'s icon and banner. Games that cannot be converted show why and are skipped.')
     : t('변환하기 전에 확인하세요. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
       'Check before converting. Games that cannot be converted show why and are skipped.');
@@ -1074,7 +1074,7 @@ function refreshRun() {
     notes.push(t(`zip 파일만 지원합니다 (${rejectedFiles}개 제외)`,
       `Only .zip files are supported (${rejectedFiles} ignored)`));
   }
-  $('gateMeta').textContent = notes.join(' · ');
+  $('gateMeta').textContent = notes.join(', ');
 
   // #143: a disabled Convert always says why, and the same check that builds
   // the list decides it.
@@ -1175,15 +1175,15 @@ function renderOverall(textOnly = false) {
   const f = Math.max(0, Math.min(1, Number(overallView.fraction) || 0));
   const pct = percentText(f);
   let label;
-  if (overallView.end === 'cancel') label = t(`취소됨 · ${pct}`, `Cancelled · ${pct}`);
-  else if (overallView.end === 'error') label = t(`중단됨 · ${pct}`, `Stopped · ${pct}`);
+  if (overallView.end === 'cancel') label = t(`취소됨, ${pct}`, `Cancelled, ${pct}`);
+  else if (overallView.end === 'error') label = t(`중단됨, ${pct}`, `Stopped, ${pct}`);
   else if (overallView.kind === 'batch') {
     const total = Math.max(1, overallView.ready);
     const finished = Math.min(total, Math.max(0, overallView.done));
-    label = t(`완료 ${finished}/${total} · ${pct}`, `Done ${finished}/${total} · ${pct}`);
+    label = t(`완료 ${finished}/${total}, ${pct}`, `Done ${finished}/${total}, ${pct}`);
   } else {
     const elapsed = singleCiaSince != null && overallView.end == null
-      ? ` · ${elapsedText(performance.now() - singleCiaSince)}` : '';
+      ? `, ${elapsedText(performance.now() - singleCiaSince)}` : '';
     label = overallView.end === 'done'
       ? t(`완료 ${pct}`, `Done ${pct}`)
       : t(`변환 중 ${pct}${elapsed}`, `Converting ${pct}${elapsed}`);
@@ -1384,7 +1384,7 @@ function startSingleRun(base) {
   rowT0.set(-1, performance.now());
   rowMeta.set(-1, { romset: false });
   singleStep = 'load';
-  logEvent('', t('▶ 1개 게임 · 워커 1', '▶ 1 game · 1 worker'), 'meta');
+  logEvent('', t('▶ 1개 게임, 워커 1', '▶ 1 game, 1 worker'), 'meta');
   logStage(-1, 'load');
   w.postMessage({ ...base, id: w.job.id, batch: null });
 }
@@ -1398,8 +1398,8 @@ function startBatchRun(base) {
     memory: navigator.deviceMemory ?? null,
     mobile: isMobileBrowser(),
   });
-  logEvent('', t(`▶ ${readyIndexes.length}개 게임 · 워커 ${size}`,
-    `▶ ${readyIndexes.length} games · ${size} worker${size === 1 ? '' : 's'}`), 'meta');
+  logEvent('', t(`▶ ${readyIndexes.length}개 게임, 워커 ${size}`,
+    `▶ ${readyIndexes.length} games, ${size} worker${size === 1 ? '' : 's'}`), 'meta');
   for (let i = 0; i < size; i++) spawnWorker(base);
   for (const w of workers) if (!pushJob(w)) break;
 }
@@ -1460,8 +1460,8 @@ function finishBatchRun() {
   renderBatch();
   // Only the list's own scroll moves; the page viewport stays where it is.
   if (batchRowsEl.classList.contains('scroll')) batchRowsEl.scrollTop = 0;
-  logEvent('', t(`■ 성공 ${s.done} · 실패 ${s.failed} · ${secs}초`,
-    `■ ${s.done} done · ${s.failed} failed · ${secs}s`), 'meta');
+  logEvent('', t(`■ 성공 ${s.done}, 실패 ${s.failed}, ${secs}초`,
+    `■ ${s.done} done, ${s.failed} failed, ${secs}s`), 'meta');
 }
 
 // A crashed worker loses its game (failed row) and is replaced while work is
@@ -1569,8 +1569,8 @@ function onSingleMessage(m) {
     showStats(m.stats);
     logGameDone(-1, downloadName(m.stats), m.stats.ciaMB, m.stats.secs);
     if (m.stats.tiles) logEvent('   ', t(
-      `타일 ${m.stats.tiles.toLocaleString()}개 · 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
-      `${m.stats.tiles.toLocaleString()} tiles · graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
+      `타일 ${m.stats.tiles.toLocaleString()}개, 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
+      `${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
   } else if (m.type === 'error') {
     markRunningRowsFailed(m.message);
     singleFail = { code: m.code ?? null, stage: singleStage };
@@ -1660,8 +1660,8 @@ function showStats(stats) {
   const st = $('gateResultLine');
   const kind = (stats.mode ?? currentMode()) === 'pack' ? '.neo3ds' : 'CIA';
   st.textContent = t(
-    `${kind} ${stats.ciaMB}MB · 메모리 ${stats.memMB ?? '?'}MB · 3DS 약 ${stats.totalMB}MB · ${stats.secs}초`,
-    `${kind} ${stats.ciaMB}MB · memory ${stats.memMB ?? '?'}MB · 3DS ~${stats.totalMB}MB · ${stats.secs}s`,
+    `${kind} ${stats.ciaMB}MB, 메모리 ${stats.memMB ?? '?'}MB, 3DS 약 ${stats.totalMB}MB, ${stats.secs}초`,
+    `${kind} ${stats.ciaMB}MB, memory ${stats.memMB ?? '?'}MB, 3DS ~${stats.totalMB}MB, ${stats.secs}s`,
   );
   paintResult();
 }

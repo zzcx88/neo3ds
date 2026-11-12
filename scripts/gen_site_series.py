@@ -31,7 +31,7 @@ def locales():
 TEXT = {
     'en': {
         'th': ['Game', 'Romset', 'Year', 'ROM MB', 'Status'],
-        'stats': '{count} romsets · {ok} convert · {verified} verified on hardware',
+        'stats': '{count} romsets, {ok} convert, {verified} verified on hardware',
         'caption': 'Verified first, then convertible, then unsupported',
         'table_label': 'Game table, scrolls sideways',
         'all': 'All {total} romsets',
@@ -46,8 +46,8 @@ TEXT = {
     },
     'ko': {
         'th': ['게임', '롬셋', '연도', '롬 MB', '상태'],
-        'stats': '롬셋 {count}종 · {ok}종 변환 가능 · {verified}종 실기 확인',
-        'caption': '실기 확인 → 변환 가능 → 변환 불가 순',
+        'stats': '롬셋 {count}종, {ok}종 변환 가능, {verified}종 실기 확인',
+        'caption': '실기 확인, 변환 가능, 변환 불가 순',
         'table_label': '게임 표, 가로로 스크롤',
         'all': '롬셋 {total}종 전체 목록',
         'convert': '변환하기',
@@ -109,7 +109,7 @@ def page(series, rows, counts, total, locale):
               'first': subset[0][2], 'last': subset[-1][2], 'total': total}
     stats = t['stats'].format(**fields)
     th = ''.join('<th>%s</th>' % html.escape(h) for h in t['th'])
-    prose = '\n    '.join('<p>%s</p>' % html.escape(p) for p in copy['prose'])
+    prose = '\n    '.join('<p>%s</p>' % html.escape(p.format(**fields)) for p in copy['prose'])
 
     peers = '\n        '.join('<a href="%s.html">%s</a>' % (s['slug'], html.escape(s[locale]['name']))
                               for s in SERIES if s['slug'] != series['slug'])

@@ -37,7 +37,7 @@
   "isAccessibleForFree": true,
   "inLanguage": ["ko", "en"],
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
-  "featureList": ["롬셋 zip → CIA 변환", "파일이 브라우저 밖으로 나가지 않음", "여러 게임 배치 변환", "아이콘·배너 직접 지정"]
+  "featureList": ["롬셋 zip → CIA 변환", "파일이 브라우저 밖으로 나가지 않음", "여러 게임 배치 변환", "아이콘/배너 직접 지정"]
 }
 </script>
 <link rel="icon" href="../media/favicon.svg">
@@ -151,13 +151,13 @@
 <section class="hero" id="top">
   <div class="wrap gate-hero-grid">
     <div class="hero-copy">
-      <p class="kicker" data-i18n="gate.kicker">웹 변환기 · 이 탭에서 실행</p>
-      <h1 data-i18n="gate.h1">브라우저에서<br>변환하기.</h1>
+      <p class="kicker" data-i18n="gate.kicker">웹 변환기</p>
+      <h1 data-i18n="gate.h1">브라우저에서<br>변환하기</h1>
       <p class="lede" data-i18n="gate.lede">게임 zip 여러 개와 neogeo.zip을 올리면 이 탭 안에서 차례로 변환합니다. 롬도 결과물도 외부로 나가지 않습니다.</p>
       <ul class="gate-facts" data-i18n-attr="aria-label:gate.factLabel" aria-label="변환 전 확인">
-        <li><b data-i18n="gate.biosT">neogeo.zip(바이오스) 필수</b> <span data-i18n="gate.biosD">— 게임 zip과 함께 올리세요. 모든 변환에 필요합니다.</span></li>
-        <li><b data-i18n="gate.batchT">여러 게임 한 번에</b> <span data-i18n="gate.batchD">— 게임 zip을 여러 개 올리면 차례로 변환합니다. 게임마다 새로고침할 필요 없습니다.</span></li>
-        <li><b data-i18n="gate.onlyT">MAME 네오지오 롬셋 zip만</b> <span data-i18n="gate.onlyD">— 롬셋 이름과 칩 CRC가 MAME 규격과 같아야 변환됩니다. 합본 롬은 부모 zip도 함께 올리세요 (kof98h.zip + kof98.zip).</span></li>
+        <li><b data-i18n="gate.biosT">neogeo.zip(바이오스) 필수</b> <span data-i18n="gate.biosD">게임 zip과 함께 올리세요. 모든 변환에 필요합니다.</span></li>
+        <li><b data-i18n="gate.batchT">여러 게임 한 번에</b> <span data-i18n="gate.batchD">게임 zip을 여러 개 올리면 차례로 변환합니다. 게임마다 새로고침할 필요 없습니다.</span></li>
+        <li><b data-i18n="gate.onlyT">MAME 네오지오 롬셋 zip만</b> <span data-i18n="gate.onlyD">롬셋 이름과 칩 CRC가 MAME 규격과 같아야 변환됩니다. 합본 롬은 부모 zip도 함께 올리세요 (kof98h.zip + kof98.zip).</span></li>
       </ul>
     </div>
 
@@ -166,13 +166,13 @@
       <label class="drop" id="gateDrop">
         <input type="file" id="gateZips" accept=".zip" multiple>
         <b data-i18n="gate.dropT">롬 zip 올리기</b>
-        <span class="tiny" data-i18n="gate.dropD">클릭하거나 여기로 드래그 · 여러 개 선택 가능 (게임 zip + neogeo.zip)</span>
+        <span class="tiny" data-i18n="gate.dropD">클릭하거나 끌어다 놓으세요. 게임 zip과 neogeo.zip을 한 번에 넣을 수 있습니다.</span>
         <span class="drop-meta" id="gateMeta"></span>
       </label>
       <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0">
         <label class="tiny"><span data-i18n="gate.region">지역</span>
           <select id="gateRegion">
-            <option value="Europe" data-i18n="gate.eu">유럽·아시아</option>
+            <option value="Europe" data-i18n="gate.eu">유럽/아시아</option>
             <option value="Japan" data-i18n="gate.jp">일본</option>
             <option value="Usa" data-i18n="gate.us">미국</option>
           </select>
@@ -186,11 +186,11 @@
         </label>
       </div>
       <span class="tiny mode-label" data-i18n="gate.mLabel">출력 선택</span>
-      <span class="tiny mode-group" data-i18n="gate.mGame">게임별 — HOME 메뉴에 바로 뜸</span>
+      <span class="tiny mode-group" data-i18n="gate.mGame">게임별로, HOME 메뉴에 바로 뜹니다</span>
       <div class="chips mode-pick one" role="group" aria-label="게임별" data-i18n-attr="aria-label:gate.mGameGroup">
         <label class="chip"><input type="radio" name="gateMode" value="cia" checked> <span data-i18n="gate.mCia">게임 CIA</span><span class="mode-out" data-i18n="gate.mCiaOut">.cia → FBI로 설치</span></label>
       </div>
-      <span class="tiny mode-group" data-i18n="gate.mLaunchGroupTitle">런처용 — 앱 하나로 여러 게임</span>
+      <span class="tiny mode-group" data-i18n="gate.mLaunchGroupTitle">런처용으로, 앱 하나에 여러 게임</span>
       <div class="chips mode-pick one" role="group" aria-label="런처용" data-i18n-attr="aria-label:gate.mLaunchGroup">
         <label class="chip"><input type="radio" name="gateMode" value="pack"> <span data-i18n="gate.mPack">런처용 파일</span><span class="mode-out" data-i18n="gate.mPackOut">.neo3ds → /neo3ds/games/</span></label>
       </div>
@@ -199,7 +199,7 @@
           <h3 id="gateBatchH" data-i18n="gate.listH">인식된 게임</h3>
           <span class="batch-count" id="gateBatchCount"></span>
         </div>
-        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘·배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.</p>
+        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘/배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.</p>
         <p class="tiny batch-msg hidden" id="gateBatchMsg" role="status"></p>
         <div class="recog hidden" id="gateBatchProg">
           <span class="recog-text" id="gateBatchProgText" data-i18n="gate.recog">인식 중…</span>
@@ -212,12 +212,12 @@
       </div>
       <div class="art hidden" id="gateArt" role="region" aria-labelledby="gateArtH">
         <div class="art-head">
-          <h3 id="gateArtH" data-i18n="gate.artH">아이콘·배너</h3>
+          <h3 id="gateArtH" data-i18n="gate.artH">아이콘/배너</h3>
           <span class="art-title" id="gateArtTitle"></span>
           <button type="button" class="btn btn-ghost btn-sm art-back hidden" id="gateArtBack" data-i18n="gate.artBack">목록으로</button>
         </div>
         <p class="tiny art-hint" data-i18n="gate.artHint">고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다. 변환을 시작하면 바꿀 수 없습니다.</p>
-        <p class="tiny art-lock hidden" id="gateArtLock" role="status" data-i18n="gate.artLock">변환 중에는 아이콘·배너를 바꿀 수 없습니다.</p>
+        <p class="tiny art-lock hidden" id="gateArtLock" role="status" data-i18n="gate.artLock">변환 중에는 아이콘/배너를 바꿀 수 없습니다.</p>
         <div class="art-row" data-art="icon">
           <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>
           <div class="art-info">
@@ -244,7 +244,7 @@
         </div>
         <p class="tiny art-msg hidden" id="gateArtMsg" role="status"></p>
       </div>
-      <p class="tiny hidden" id="gateLauncherHint"><a href="download.html" data-i18n="gate.launcherHint">만약 neo3ds 런처가 없다면?</a></p>
+      <p class="tiny hidden" id="gateLauncherHint"><a href="download.html" data-i18n="gate.launcherHint">neo3ds 런처가 아직 없다면?</a></p>
       <div class="cta-row">
         <button type="button" class="btn btn-primary btn-lg" id="gateRun" disabled aria-describedby="gateRunHint" data-i18n="gate.run">변환하기</button>
         <button type="button" class="btn btn-lg hidden" id="gateCancel" data-i18n="gate.cancel">취소</button>
@@ -280,12 +280,12 @@
       <ol class="pipe" id="gatePipe">
         <li data-step="load"><span class="pipe-no">1</span><div><h3 data-i18n="gate.p1t">롬셋 확인</h3><p data-i18n="gate.p1d">zip 이름으로 롬셋을 찾고 칩을 CRC로 검사합니다.</p></div></li>
         <li data-step="romfs"><span class="pipe-no">2</span><div><h3 data-i18n="gate.p2t">그래픽 압축</h3><p data-i18n="gate.p2d">스프라이트를 16KB 블록으로 zstd 압축합니다.</p></div></li>
-        <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘·배너</h3><p data-i18n="conv.p5d">게임 이름 또는 직접 지정한 그림으로 아이콘(48×48)과 배너(256×128)를 만듭니다.</p></div></li>
+        <li data-step="art"><span class="pipe-no">3</span><div><h3 data-i18n="gate.p3t">아이콘/배너</h3><p data-i18n="conv.p5d">게임 이름 또는 직접 지정한 그림으로 아이콘(48×48)과 배너(256×128)를 만듭니다.</p></div></li>
         <li data-step="cia"><span class="pipe-no">4</span><div><h3 data-i18n="gate.p4t">결과물 묶기</h3><p data-i18n="gate.p3d">WASM 도구로 결과물을 묶습니다.</p></div></li>
       </ol>
       <div class="conv-side">
         <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>
-        <p class="tiny" data-i18n="gate.logNote">로그 한 줄마다 경과 시간·게임·단계가 표시됩니다. 결과물은 보통 수십 MB입니다.</p>
+        <p class="tiny" data-i18n="gate.logNote">로그 한 줄마다 경과 시간, 게임, 단계가 표시됩니다. 결과물은 보통 수십 MB입니다.</p>
       </div>
     </div>
   </div>
@@ -295,7 +295,7 @@
 <section class="sec" id="feedback">
   <div class="wrap">
     <h2 data-i18n="report.h">문제가 있었나요?</h2>
-    <p class="lede narrow" data-i18n="report.convertLede">제보는 소개 페이지의 문제 신고 폼에서 받습니다. 방금 실패한 변환의 로그와 게임 정보도 함께 전달됩니다.</p>
+    <p class="lede narrow" data-i18n="report.convertLede">제보는 소개 페이지의 폼에서 받습니다. 방금 실패한 변환의 로그와 게임 정보도 같이 올라갑니다.</p>
     <a class="btn btn-primary btn-lg" id="gateReportGo" href="index.html#feedback" target="_blank" rel="noopener" data-i18n="report.go">신고하기</a>
   </div>
 </section>
