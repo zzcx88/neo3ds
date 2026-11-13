@@ -5,11 +5,60 @@ set -euo pipefail
 
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-for f in site/app.js site/convert.js site/feedback.js site/vendor/conv/*.js site/vendor/conv/*.mjs \
+for f in site/app.js site/convert.js site/feedback.js site/intro-device.js site/intro-motion.mjs site/intro-launcher.mjs site/launcher-model.mjs site/launcher-previews.mjs site/vendor/conv/*.js site/vendor/conv/*.mjs \
          site/vendor/*.mjs site/vendor/bench/* scripts/gen_site_i18n.mjs; do
   node --check "$f"
 done
 echo "syntax OK"
+
+node --test site/launcher-model.test.mjs site/intro-motion.test.mjs site/launcher-previews.test.mjs
+
+python3 - << 'EOF'
+from html.parser import HTMLParser
+from pathlib import Path
+from urllib.parse import urlsplit
+
+assets = {'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs', 'launcher-previews.mjs'}
+# intro-motion.mjs is imported by intro-device.js, so it has no link/script tag of its own.
+imported = {'intro-motion.mjs'}
+for asset in assets | imported:
+    assert (Path('site') / asset).is_file(), f'missing intro asset: {asset}'
+
+class References(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.urls = []
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'link' and 'href' in attrs: self.urls.append(attrs['href'])
+        if tag == 'script' and 'src' in attrs: self.urls.append(attrs['src'])
+
+for page in (Path('site/index.html'), Path('site/ko/index.html')):
+    parser = References()
+    parser.feed(page.read_text(encoding='utf-8'))
+    referenced = {(page.parent / urlsplit(url).path).resolve() for url in parser.urls}
+    missing = [asset for asset in sorted(assets) if (Path('site') / asset).resolve() not in referenced]
+    assert not missing, f'{page}: missing intro references: {missing}'
+print('intro assets + references OK')
+EOF
+
+# The four installed games are the only proof the screenshots exist; a renamed image would
+# otherwise 404 quietly on both home pages (#361).
+python3 - << 'EOF'
+import re
+from pathlib import Path
+
+expected = {'kof98h', 'mslug3', 'sonicwi3', 'samsh5sp'}
+for page in (Path('site/index.html'), Path('site/ko/index.html')):
+    previews = re.findall(r'<img\b[^>]*data-preview-set="([^"]+)"[^>]*src="([^"]+)"', page.read_text(encoding='utf-8'))
+    assert len(previews) == 4, f'{page}: expected 4 preview images, got {len(previews)}'
+    assert {set_id for set_id, _ in previews} == expected, f'{page}: unexpected preview sets'
+    for set_id, src in previews:
+        image = (page.parent / src).resolve()
+        assert image.is_file(), f'{page}: missing preview image for {set_id}: {src}'
+        assert re.fullmatch(r'hero_.+\.jpg', image.name), f'{page}: unexpected preview image: {src}'
+print('launcher previews + images OK')
+EOF
 
 python3 - << 'EOF'
 import html.parser
@@ -134,6 +183,18 @@ top = json.load(open('site/releases.json', encoding='utf-8'))[0]['version']
 if top != version:
     sys.exit('site/releases.json: top release %s != <Version> %s' % (top, version))
 print('changelog top release matches <Version>')
+EOF
+
+# The launcher demo's in-game header shows the engine version; the single source stays
+# converter/Directory.Build.props (#361).
+python3 - << 'EOF'
+import re
+from pathlib import Path
+
+version = re.search(r'<Version>([^<]+)</Version>', Path('converter/Directory.Build.props').read_text(encoding='utf-8')).group(1)
+for page in (Path('site/index.html'), Path('site/ko/index.html')):
+    assert f'v{version}' in page.read_text(encoding='utf-8'), f'{page}: in-game header is not v{version}'
+print('demo version matches <Version>')
 EOF
 
 # CHANGELOG.md at the repo root is generated from the same data (scripts/gen_changelog.py).

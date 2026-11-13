@@ -15,9 +15,7 @@ const EN = {
   'a11y.noscript': 'This page needs JavaScript. The game list and the converter demo will not run.',
   'nav.download': 'Download', 'nav.games': 'Games', 'nav.faq': 'FAQ',
   'cta.download': 'Convert now',
-  'hero.h1': 'The arcade you remember,<br>now on your 3DS',
-  'hero.mock': 'Game footage composited into a 3DS console mockup',
-  'hero.pause': 'Pause',
+  'hero.h1': 'The arcade you remember, <br>now on your 3DS',
   'hero.lede1': 'Turn Neo Geo romsets into files that run on your 3DS.',
   'hero.lede2': 'Convert in your browser or use the PC converter.',
   'hero.lede3': 'Install the launcher to pick games from a list.',
@@ -82,7 +80,7 @@ const EN = {
   'faq.q1': 'Where do I get the ROMs?', 'faq.a1': 'Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so don\'t share it.',
   'faq.q2': 'Is it really 60 fps on an Old 3DS?', 'faq.a2': 'These ran at full speed on hardware: KOF \'95-\'99, 2000, 2002, Metal Slug 1, X, 3 and 5, Neo Turf Masters, Neo Drift Out, SVC Chaos and Samurai Shodown V Special. Metal Slug 2, X and 3 slow down in the same scenes the original board did, and Aero Fighters 3 stays playable.',
   'faq.q3': 'No sound?', 'faq.a3': 'The SD card needs <code>/3ds/dspfirm.cdc</code>; a tool like DSP1 creates it once.',
-  'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, which leaves a lot more headroom. We haven\'t confirmed it on hardware.',
+  'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, and we confirmed on hardware that it runs more comfortably.',
   'faq.q6': 'Can I use it commercially?', 'faq.a6': 'No: the included CPU cores (Cyclone 68000, DrZ80) allow non-commercial use only.',
   'legal.h2': 'Legal',
   'legal.p1': 'No ROMs, BIOS or game data are included here.<br>Convert only games you own, and never distribute a CIA you build.',
@@ -277,18 +275,6 @@ const LANG = document.documentElement.lang === 'en' ? 'en' : 'ko';
 
 /** 지금 언어에 맞는 문구 (en이 없으면 넘긴 한국어를 그대로 씀) */
 const t = (ko, en) => (LANG === 'en' ? en : ko);
-
-/* 히어로 화면이 25초마다 저절로 넘어간다. 멈출 수단을 둔다 (WCAG 2.2.2). */
-const heroPause = $('#heroPause');
-if (heroPause) {
-  const stack = $('.screen-stack');
-  heroPause.addEventListener('click', () => {
-    const paused = heroPause.getAttribute('aria-pressed') !== 'true';
-    heroPause.setAttribute('aria-pressed', String(paused));
-    stack.classList.toggle('paused', paused);
-    heroPause.textContent = paused ? t('재생', 'Play') : t('일시정지', 'Pause');
-  });
-}
 
 /* 반대 언어판 힌트 (#130, #141). 브라우저의 첫 선호 언어가 이 페이지 언어와 다르면
    화면 아래에 한 줄로 알린다. 리다이렉트는 하지 않는다: 구글봇은 en-US로 렌더하므로

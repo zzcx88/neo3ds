@@ -1,0 +1,50 @@
+/* The home page pairs an arcade cabinet ground with a single paper menu. */
+.page-home .hero { border-bottom: 6px solid var(--marquee); }
+.page-home .hero-copy { align-self: center; }
+/* Keeps the left column's old breathing room now that the notes are a grid item. */
+@media (min-width: 1081px) {
+  .page-home .hero-grid > .tiny { padding-bottom: 4rem; }
+}
+.page-home .hero-stats { width: 100%; border-top: 2px solid var(--marquee); }
+.page-home .sec { padding-block: 80px; }
+.page-home .sec h2 { max-width: 24ch; }
+
+.page-home #steps { background: var(--ink-2); color: var(--paper); border-bottom: 0; }
+.page-home #steps > .wrap { border-top: 6px solid var(--marquee); padding-top: 34px; }
+.page-home #steps .lede,
+.page-home #steps .steps p,
+.page-home #steps .check li,
+.page-home #steps .out-alt p,
+.page-home #steps .prep .tiny { color: #C9C9D2; }
+.page-home #steps .step-no { display: inline-grid; place-items: center; width: 36px; height: 36px; background: var(--marquee); color: var(--paper); border: 1px solid #C8151F; border-radius: 6px; }
+.page-home #steps .steps li { border-top: 1px solid var(--line); }
+.page-home #steps .check li { border-color: var(--line); }
+.page-home #steps .check b { color: var(--gold); }
+.page-home #steps .out-alt { background: transparent; border-color: var(--line); border-radius: 0; }
+.page-home #steps .out-alt .btn { color: var(--paper); border-color: var(--line); }
+.page-home #steps .out-alt .btn:hover { color: var(--gold); border-color: var(--gold); }
+.page-home #steps .out-card-launch { background: var(--ink); color: var(--paper); border: 2px solid var(--gold); border-radius: 0; padding: 26px; }
+.page-home #steps .out-card-launch p { color: #D6D6DC; }
+.page-home #steps .out-card-launch .kicker { color: var(--gold); }
+.page-home #steps :focus-visible { outline-color: var(--gold); }
+.page-home #steps .out-card-launch :focus-visible { outline-color: var(--gold); }
+
+.page-home #games { background: var(--ink-2); }
+.page-home #games h2 { border-top: 6px solid var(--marquee); padding-top: 28px; }
+.page-home #games .explorer { border: 1px solid var(--pressed); border-top: 4px solid var(--marquee); background: var(--ink); padding: 20px; }
+.page-home #games .ex-tools { border-top: 0; padding-top: 0; }
+.page-home #games .ex-detail { border-top: 2px solid var(--gold); }
+.page-home #faq .wrap, .page-home #feedback .wrap, .page-home #legal .wrap { max-width: 900px; }
+.page-home #faq .faq { max-width: 72ch; }
+.page-home #feedback { background: var(--ink-2); }
+.page-home #feedback .report { border-radius: 0; background: var(--panel-2); }
+.page-home #legal { border-bottom: 0; }
+
+@media (max-width: 760px) {
+  .page-home .hero-grid { gap: 0; }
+  .page-home .device-col { margin-top: 24px; }
+  .page-home .sec { padding-block: 56px; }
+  .page-home #steps > .wrap { padding-top: 26px; }
+  .page-home #steps .out-card-launch { padding: 20px; }
+  .page-home #games .explorer { padding: 14px; }
+}

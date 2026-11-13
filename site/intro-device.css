@@ -1,0 +1,218 @@
+/* Intro direction contract: Neo Geo cabinet ground, 3DS information surfaces,
+   SNK-inspired typographic emphasis. Target ink/paper/red/gold 70/20/7/3.
+   Arcade surfaces stay square; only device screens, shells and controls round.
+   All colors and type come from styles.css / the existing device palette. */
+.hero .device-stage { position: relative; max-width: 100%; margin-bottom: 46px; perspective: 1100px; }
+.hero .device-shadow {
+  position: absolute; left: 50%; bottom: -56px; width: min(94%, 440px); height: 32px;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.85), rgba(0,0,0,.38) 46%, transparent 74%);
+  filter: blur(5px);
+}
+.hero .device-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; text-align: center; font: 400 11px/1.5 var(--pixel-sm); }
+.hero .device-controls[hidden] { display: none; }
+.hero .device-controls p { margin: 0; color: var(--dim); }
+.hero .device-controls button {
+  font: inherit; color: var(--paper); background: var(--panel); border: 1px solid var(--line);
+  padding: 6px 9px; margin: 0; cursor: pointer;
+}
+.hero .device-controls button:hover { border-color: var(--gold); color: var(--gold); }
+.hero .launcher-screen-top { position:relative; }
+/* Top screen: the list shows the launcher's dark plate with the wordmark, the selected game
+   title and the tagline. The gameplay image replaces it only on the game start screen (#361). */
+.hero .launcher-title-card { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; align-items:center; padding:calc(34*var(--u)) calc(16*var(--u)) calc(18*var(--u)); background:var(--ink); color:var(--paper); text-align:center; }
+.hero .launcher-title-card[hidden] { display:none; }
+.hero .launcher-wordmark-top { color:var(--marquee); font:700 calc(34*var(--u))/1 var(--pixel); letter-spacing:calc(2*var(--u)); }
+.hero .launcher-title-card strong { max-width:100%; font:700 calc(13*var(--u))/1.3 var(--pixel); overflow-wrap:anywhere; }
+.hero .launcher-tagline { color:var(--dim); font:400 calc(8.5*var(--u))/1.5 var(--pixel-sm); letter-spacing:.18em; }
+/* The game start screen (#361): the real 3DS top screen is a full 400x240 game frame, with no
+   launcher band. The image is only revealed after A/START; the list keeps the title card. */
+.hero .launcher-play-top { position:absolute; inset:0; background:var(--ink); }
+.hero .launcher-play-top[hidden] { display:none; }
+.hero .launcher-preview { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; }
+.hero .launcher-preview[hidden] { display:none; }
+.hero .launcher-screen { display:flex; flex-direction:column; background:var(--ink-2); color:var(--paper); font:400 calc(10*var(--u))/1.2 var(--text); }
+.hero .launcher-panel { display:flex; flex-direction:column; height:100%; min-height:0; }
+.hero .launcher-panel[hidden] { display:none; }
+.hero .launcher-bar { display:flex; align-items:center; gap:calc(4*var(--u)); background:var(--marquee); color:var(--paper); padding:calc(2*var(--u)) calc(4*var(--u)); border-bottom:1px solid #C8151F; }
+.hero .launcher-wordmark { font:700 max(10px,calc(13*var(--u)))/1 var(--pixel); letter-spacing:.04em; color:var(--paper); }
+.hero .launcher-tabs { display:flex; align-items:center; gap:calc(2*var(--u)); margin-left:auto; }
+.hero .launcher-tabs button { display:flex; align-items:center; gap:calc(3*var(--u)); border:0; background:var(--marquee); color:var(--paper); font:400 max(8px,calc(9*var(--u)))/1 var(--pixel-sm); padding:calc(3*var(--u)) calc(7*var(--u)); cursor:pointer; }
+.hero .launcher-tabs button b { font:700 max(8px,calc(9*var(--u)))/1 var(--pixel); }
+.hero .launcher-tabs button[aria-selected="true"] { background:var(--ink); border-radius:calc(1*var(--u)); }
+.hero .launcher-rows { flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+/* Real-launcher rows: a left star marker and the title, with the selected row on --pressed. */
+.hero .launcher-row { flex:0 0 calc(100% / 8); min-height:0; width:100%; display:flex; align-items:center; gap:calc(5*var(--u)); border:0; border-bottom:1px solid var(--line); padding:0 calc(6*var(--u)); color:var(--paper); background:transparent; font:inherit; text-align:left; cursor:pointer; }
+.hero .launcher-star { flex:none; width:max(9px, calc(10*var(--u))); color:var(--dim); font:400 max(7px, calc(8*var(--u)))/1 var(--pixel-sm); }
+.hero .launcher-star.is-fav { color:var(--gold); }
+.hero .launcher-row-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:400 max(8px, calc(10*var(--u)))/1.2 var(--pixel); letter-spacing:.02em; }
+.hero .launcher-row[aria-pressed="true"] { background:var(--pressed); color:var(--paper); }
+.hero .launcher-row[aria-pressed="true"] .launcher-star { color:var(--b); }
+.hero .launcher-empty { padding:calc(8*var(--u)); color:var(--dim); }
+.hero .launcher-help { margin:0; flex:none; padding:calc(4*var(--u)) calc(6*var(--u)) calc(5*var(--u)); border-top:1px solid var(--line); background:var(--ink); color:var(--dim); font:400 max(7.5px, calc(7.5*var(--u)))/1.5 var(--pixel-sm); letter-spacing:.02em; }
+.hero .launcher-help span { display:block; }
+/* In-game menu (#361): the bottom screen of the running game, laid out from engine ui.c in
+   launcher mode. Rects are the engine's 320x240 pixels as percentages; the mock's screen is
+   288x194, so this keeps the proportions rather than the exact pixel grid. */
+.hero .ingame-panel {
+  position:relative; flex:1; min-height:0; overflow:hidden;
+  background:var(--ink); color:var(--paper);
+  font:400 max(5.5px, calc(7.2*var(--u)))/1.2 var(--pixel-sm);
+}
+.hero .ingame-panel[hidden] { display:none; }
+.hero .ingame-head { position:absolute; left:0; top:0; width:100%; height:10.833%; display:flex; align-items:center; gap:.6em; padding:0 2.5%; background:var(--marquee); color:var(--paper); }
+.hero .ingame-head b { font:700 2em/1 var(--pixel); letter-spacing:.04em; }
+.hero .ingame-fps { margin-left:auto; }
+.hero .ingame-title { position:absolute; left:2.5%; top:13.5%; width:95%; margin:0; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hero .ingame-btn { position:absolute; display:flex; align-items:center; justify-content:center; margin:0; padding:0 .3em; border:0; border-top:1px solid var(--dim); background:var(--panel); color:var(--paper); font:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+.hero .ingame-btn:hover { color:var(--gold); }
+.hero .ingame-btn:active { background:var(--pressed); }
+.hero .ingame-btn.is-confirm { background:var(--marquee); }
+.hero [data-ingame="keys"] { left:2.5%; top:18.333%; width:46.25%; height:12.5%; }
+.hero [data-ingame="turbo"] { left:51.25%; top:18.333%; width:46.25%; height:12.5%; }
+.hero [data-ingame="system"] { left:2.5%; top:33.333%; width:46.25%; height:12.5%; }
+.hero [data-ingame="diagnostics"] { left:51.25%; top:33.333%; width:46.25%; height:12.5%; }
+.hero [data-ingame="reset"] { left:2.5%; top:48.333%; width:26.25%; height:10.833%; }
+.hero [data-ingame="service"] { left:29.375%; top:48.333%; width:21.875%; height:10.833%; }
+.hero [data-ingame="snapshot"] { left:51.875%; top:48.333%; width:21.875%; height:10.833%; }
+.hero [data-ingame="game-list"] { left:74.375%; top:48.333%; width:23.125%; height:10.833%; }
+.hero [data-ingame="slot"] { left:2.5%; top:61.667%; width:30%; height:10.833%; }
+.hero [data-ingame="save"] { left:35%; top:61.667%; width:30%; height:10.833%; }
+.hero [data-ingame="load"] { left:67.5%; top:61.667%; width:30%; height:10.833%; }
+.hero .ingame-keymap { position:absolute; left:7.5%; top:76.2%; width:85%; height:15%; display:grid; grid-auto-flow:column; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,1fr); align-content:start; }
+.hero .ingame-keymap span { display:inline-flex; align-items:center; gap:.2em; white-space:nowrap; }
+.hero .ingame-keymap b { font-weight:400; }
+.hero .ingame-keymap i { font-style:normal; color:var(--dim); }
+.hero .neo-a { color:var(--a); }
+.hero .neo-b { color:var(--b); }
+.hero .neo-c { color:var(--c); }
+.hero .neo-d { color:var(--d); }
+.hero .ingame-status { position:absolute; left:2.5%; top:94.5%; width:95%; margin:0; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@keyframes ingameHold { from { width:0; } to { width:100%; } }
+.hero .ingame-btn.is-holding::after { content:""; position:absolute; left:0; bottom:0; width:0; height:2px; background:var(--gold); animation:ingameHold 1s linear forwards; }
+
+/* The info panel follows its content (#361): the old fixed 315px left a large empty block.
+   Only the long game note is capped, at three lines, and scrolls inside that cap. */
+.hero .launcher-info { display:flex; flex-direction:column; width:min(100%,480px); border-top:2px solid var(--marquee); padding:14px 0 0; font:400 13px/1.5 var(--text); }
+.hero .launcher-info b { flex:none; display:block; color:var(--gold); font:400 11px/1.5 var(--pixel-sm); }
+.hero .launcher-info strong { flex:none; display:block; font-size:16px; }
+.hero .launcher-info p { flex:none; margin:6px 0; }
+.hero .launcher-info #launcherInfoStatus { margin-top:0; color:var(--dim); }
+.hero .launcher-info .launcher-notice { flex:none; color:var(--gold); font:400 11px/1.5 var(--pixel-sm); }
+.hero .launcher-info .launcher-notice[hidden] { display:none; }
+.hero .launcher-info .launcher-note { flex:none; max-height:4.5em; overflow-y:auto; margin-bottom:0; padding-right:6px; }
+.hero .launcher-info .launcher-note:empty { display:none; }
+.hero .launcher-back { align-self:flex-start; margin:8px 0 0; padding:0; border:0; background:none; color:var(--gold); font:inherit; cursor:pointer; }
+.hero .launcher-back[hidden] { display:none; }
+.hero .launcher-back:hover { text-decoration:underline; }
+.hero button.shell-btn { cursor:pointer; }
+/* The device is rotated in a preserve-3d context, and Chrome then hands about half of the points
+   inside a shell button to the .device container, so presses felt dead (#374). Only the real
+   controls take pointer events; every other part of the shell falls through and drags the device.
+   Dragging must not select the mock hardware labels; page text outside .device stays selectable. */
+.hero .device {
+  pointer-events:none;
+  -webkit-user-select:none; user-select:none;
+}
+.hero .device button, .hero .device a, .hero .device .launcher-screen { pointer-events:auto; }
+/* A larger D-pad (#378): 72 units inside the widened 74-unit left column, so it never overlaps
+   the 288-unit screen or the face buttons.
+   The cross is one vector plate (#361). The old four bordered buttons left 1-unit gaps and 1px
+   edges that aliased away while the device turned, so the cross flickered; a single plate with
+   one stroke has no hairline to lose. The arrows are CSS triangles, not text glyphs, for the
+   same reason. */
+.hero .dpad { position:relative; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:calc(72*var(--u)); height:calc(72*var(--u)); touch-action:manipulation; }
+.hero .shell-bottom { grid-template-columns:calc(74*var(--u)) calc(288*var(--u)) calc(74*var(--u)); padding-inline:calc(12*var(--u)); }
+.hero .dpad::before, .hero .dpad::after { content:none; }
+.hero .dpad-plate { position:absolute; left:calc(-2*var(--u)); top:calc(-2*var(--u)); width:calc(100% + 4*var(--u)); height:calc(100% + 4*var(--u)); pointer-events:none; }
+.hero .dpad-plate path { fill:#26262F; stroke:var(--pressed); }
+.hero .dpad button { position:relative; display:grid; place-items:center; min-width:0; min-height:0; margin:0; padding:0; border:0; background:transparent; color:var(--dim); cursor:pointer; touch-action:manipulation; }
+.hero .dpad button span { pointer-events:none; width:0; height:0; border-style:solid; border-color:transparent; }
+.hero .dpad-up span { border-width:0 calc(4*var(--u)) calc(5*var(--u)); border-bottom-color:currentColor; }
+.hero .dpad-down span { border-width:calc(5*var(--u)) calc(4*var(--u)) 0; border-top-color:currentColor; }
+.hero .dpad-left span { border-width:calc(4*var(--u)) calc(5*var(--u)) calc(4*var(--u)) 0; border-right-color:currentColor; }
+.hero .dpad-right span { border-width:calc(4*var(--u)) 0 calc(4*var(--u)) calc(5*var(--u)); border-left-color:currentColor; }
+/* Up and down take the empty corners of their row as touch area, so the 24-unit arm is not
+   the whole target on a phone; the strip stays inside the D-pad and never reaches the screen. */
+.hero .dpad-btn { position:relative; }
+.hero .dpad-up::before, .hero .dpad-down::before {
+  content:""; position:absolute; top:0; bottom:0;
+  left:calc(-100% - 1*var(--u)); right:calc(-100% - 1*var(--u));
+}
+.hero .dpad-up { grid-area:1 / 2 / 2 / 3; }
+.hero .dpad-left { grid-area:2 / 1 / 3 / 2; }
+.hero .dpad-right { grid-area:2 / 3 / 3 / 4; }
+.hero .dpad-down { grid-area:3 / 2 / 4 / 3; }
+.hero .shell-btn:hover, .hero .dpad button:hover { border-color:var(--gold); color:var(--gold); }
+.hero .shell-btn:active { transform:translateY(calc(1*var(--u))); background:#1B1B22; color:var(--gold); box-shadow:inset 0 calc(2*var(--u)) calc(4*var(--u)) rgba(0,0,0,.6); }
+.hero .dpad button:active { color:var(--gold); }
+.hero :is(button, a, .launcher-screen):focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+@media (max-width: 520px) { .hero .device { --u:min(1px,calc((100vw - 70px)/480)); } }
+
+/* Volume: the two shells get a back plate, four side planes and a rim, the hinge
+   gets a back plate, and a ground shadow replaces the flat drop-shadow filter.
+   `filter` and partial `opacity` both flatten preserve-3d, so the entrance fades
+   the stage and the shadow lives beside the device. */
+@supports (transform-style: preserve-3d) and (perspective: 1px) {
+  .hero .device {
+    --device-depth: calc(20 * var(--u));
+    filter: none; transform-style: preserve-3d;
+    transform: rotateX(var(--device-x, 0deg)) rotateY(var(--device-y, 0deg))
+      scale3d(var(--device-scale, 1), var(--device-scale, 1), var(--device-scale, 1));
+  }
+  .hero .shell { transform-style: preserve-3d; }
+  /* Open to about 150 degrees (#378): the top shell swings around the fixed hinge, the bottom
+     shell stays flat, and the whole-device drag rotation still applies on top. The negative
+     margin removes the projection loss (250u * (1 - cos 29deg) ≈ 31u) so the hero stays tight. */
+  .hero .shell-top {
+    transform-origin: center bottom;
+    /* rotateX negative brings the top edge toward the viewer, which is the ~150-degree clamshell
+       pose; positive pushed the screen away and read as folded shut (#378). */
+    transform: rotateX(-29deg);
+    margin-top: calc(-31 * var(--u));
+  }
+  .hero .shell::before {
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:linear-gradient(180deg,#1A1A20,#0C0C10);
+    transform: translateZ(calc(-1 * var(--device-depth)));
+    box-shadow: inset 0 0 0 1px #454550;
+  }
+  .hero .shell::after {
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.07),
+      inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.10),
+      inset calc(-1*var(--u)) 0 0 rgba(255,255,255,.055),
+      inset 0 calc(-2*var(--u)) calc(5*var(--u)) rgba(0,0,0,.42);
+  }
+  .hero .shell-side { position:absolute; display:block; pointer-events:none; }
+  .hero .shell-side.side-l,
+  .hero .shell-side.side-r {
+    top:0; bottom:0; width:var(--device-depth);
+    background:linear-gradient(180deg,var(--pressed),#3A3A44 34%,#24242C 72%,var(--ink-2));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10), inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.20), inset 0 0 calc(6*var(--u)) rgba(0,0,0,.38);
+  }
+  .hero .shell-side.side-l {
+    left:0; transform-origin:left center; transform:rotateY(90deg);
+    border-radius:calc(10*var(--u)) 0 0 calc(10*var(--u));
+  }
+  .hero .shell-side.side-r {
+    right:0; transform-origin:right center; transform:rotateY(-90deg);
+    border-radius:0 calc(10*var(--u)) calc(10*var(--u)) 0;
+  }
+  .hero .shell-side.side-t,
+  .hero .shell-side.side-b {
+    left:0; right:0; height:var(--device-depth);
+    background:linear-gradient(90deg,#1B1B22,#454550 48%,#1B1B22);
+  }
+  .hero .shell-side.side-t { top:0; transform-origin:center top; transform:rotateX(-90deg); }
+  .hero .shell-side.side-b { bottom:0; transform-origin:center bottom; transform:rotateX(90deg); }
+  .hero .hinge { transform-style:preserve-3d; }
+  .hero .hinge::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:#0C0C10;
+    transform:translateZ(calc(-10 * var(--u)));
+    box-shadow: inset 0 0 0 1px #454550;
+  }
+  .hero .device-stage.is-rotatable { touch-action:none; cursor:grab; }
+  .hero .device-stage.is-dragging { cursor:grabbing; }
+}

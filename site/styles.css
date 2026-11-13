@@ -87,12 +87,21 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 
 /* ── 히어로 ──────────────────────────────────────────────────────────── */
 .hero{padding:52px 0 30px;border-bottom:1px solid var(--line)}
-.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,520px);gap:44px;align-items:start}
+/* DOM 순서는 글 → 기기 → 통계 → 릴리즈 노트라 탭 순서가 화면 순서와 같다.
+   데스크톱에서는 통계·노트를 그리드 영역으로 왼쪽 칸에 다시 둔다. */
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,520px);
+  grid-template-rows:1fr auto auto auto 1fr;
+  grid-template-areas:". device" "copy device" "stats device" "notes device" ". device";
+  column-gap:44px;row-gap:0;align-items:start}
+.hero-grid > .hero-copy{grid-area:copy}
+.hero-grid > .device-col{grid-area:device}
+.hero-grid > .hero-stats{grid-area:stats}
+.hero-grid > .tiny{grid-area:notes}
 .hero-grid > .hero-copy .hero-lede span{display:block}
 @media (min-width:1081px){
   .hero-grid > .hero-copy h1{font-size:48px}
   .hero-grid > .hero-copy .hero-lede{font-size:19px}
-  .hero-grid > .hero-copy .stat b{font-size:22px}
+  .hero-grid > .hero-stats .stat b{font-size:22px}
 }
 .kicker{font-family:var(--pixel-sm);font-size:11px;color:var(--gold);margin:0 0 14px}
 .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 10px}
@@ -403,7 +412,8 @@ section[id]{scroll-margin-top:64px}
 
 /* ── 반응형 ─────────────────────────────────────────────────────────── */
 @media (max-width:1080px){
-  .hero-grid{grid-template-columns:minmax(0,1fr);gap:34px}
+  .hero-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;
+    grid-template-areas:"copy" "device" "stats" "notes";gap:34px}
   .conv-grid,.ex-body{grid-template-columns:minmax(0,1fr)}
   .ex-body{grid-template-areas:"list" "detail" "foot"}
   .ex-detail{position:static;max-height:none;overflow:visible}

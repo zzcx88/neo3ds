@@ -53,9 +53,13 @@
 <link rel="preload" href="fonts/Galmuri11.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Galmuri9.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="intro-device.css">
+<link rel="modulepreload" href="launcher-model.mjs">
+<link rel="modulepreload" href="launcher-previews.mjs">
+<link rel="stylesheet" href="intro-home.css">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
 </head>
-<body>
+<body class="page-home">
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="bar">
@@ -81,7 +85,7 @@
 <section class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <h1>The arcade you remember,<br>now on your 3DS</h1>
+      <h1>The arcade you remember, <br>now on your 3DS</h1>
       <p class="lede hero-lede"><span>Turn Neo Geo romsets into files that run on your 3DS.</span> <span>Convert in your browser or use the PC converter.</span> <span>Install the launcher to pick games from a list.</span></p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="convert.html">Convert online</a>
@@ -96,55 +100,127 @@
         </details>
         <a class="btn btn-ghost btn-lg" href="download.html">Download launcher</a>
       </div>
-      <a class="hero-stats" href="#games">
-        <span class="stat"><b>242 / 282</b><span>romsets convert</span></span>
-        <span class="stat"><b>26</b><span>played on hardware</span></span>
-        <span class="stat"><b>60fps</b><span>in tested games</span></span>
-      </a>
-      <p class="tiny"><a class="hero-notes" href="changelog.html">Release notes</a></p>
     </div>
 
     
-    <figure class="device-col">
-      <div class="device" aria-hidden="true">
+    <figure class="device-col" lang="en">
+      <div class="device-stage" id="deviceStage">
+      <span class="device-shadow" aria-hidden="true"></span>
+      <div class="device" id="introDevice">
         <div class="shell shell-top">
+          <span class="shell-side side-l" aria-hidden="true"></span>
+          <span class="shell-side side-r" aria-hidden="true"></span>
+          <span class="shell-side side-t" aria-hidden="true"></span>
+          <span class="shell-side side-b" aria-hidden="true"></span>
           <div class="cam"></div>
           <span class="speaker"></span>
-          <div class="screen-outer screen-stack">
-            <img class="screen-top hero-ph" src="media/hero_kof98.jpg" width="400" height="240" alt="" fetchpriority="high" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_mslug3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_sonicwi3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_samsho5.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_maxres.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
+          <div class="screen-outer launcher-screen-top" id="launcherTopScreen">
+            <div class="launcher-title-card" id="launcherTitleCard">
+              <span class="launcher-wordmark-top">neo3ds</span>
+              <strong id="launcherTitle"></strong>
+              <small class="launcher-tagline">Nintendo 3DS Neo Geo emulator</small>
+            </div>
+            <div class="launcher-play-top" id="launcherPlayTop" hidden>
+              <img class="launcher-preview" data-preview-set="kof98h" src="media/hero_kof98.jpg" alt="" hidden>
+              <img class="launcher-preview" data-preview-set="mslug3" src="media/hero_mslug3.jpg" alt="" hidden>
+              <img class="launcher-preview" data-preview-set="sonicwi3" src="media/hero_sonicwi3.jpg" alt="" hidden>
+              <img class="launcher-preview" data-preview-set="samsh5sp" src="media/hero_samsho5.jpg" alt="" hidden>
+            </div>
           </div>
         </div>
         <div class="hinge"><span></span><span></span></div>
         <div class="shell shell-bottom">
-          <span class="shell-btn sh-l">L</span>
-          <span class="shell-btn sh-r">R</span>
+          <span class="shell-side side-l" aria-hidden="true"></span>
+          <span class="shell-side side-r" aria-hidden="true"></span>
+          <span class="shell-side side-t" aria-hidden="true"></span>
+          <span class="shell-side side-b" aria-hidden="true"></span>
+          <button type="button" class="shell-btn sh-l" data-launcher-action="page-up" aria-label="Page up">L</button>
+          <button type="button" class="shell-btn sh-r" data-launcher-action="page-down" aria-label="Page down">R</button>
           <div class="pad-wrap">
             <div class="circle-pad"><span></span></div>
-            <div class="dpad"></div>
+            <div class="dpad" role="group" aria-label="D-pad">
+              <svg class="dpad-plate" viewBox="-2 -2 76 76" aria-hidden="true" focusable="false">
+                <path d="M24 0H48V24H72V48H48V72H24V48H0V24H24Z" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+              <button type="button" class="dpad-btn dpad-up" data-launcher-action="up" aria-label="Up"><span aria-hidden="true"></span></button>
+              <button type="button" class="dpad-btn dpad-left" data-launcher-action="tab-all" aria-label="Left: All"><span aria-hidden="true"></span></button>
+              <button type="button" class="dpad-btn dpad-right" data-launcher-action="tab-fav" aria-label="Right: Fav"><span aria-hidden="true"></span></button>
+              <button type="button" class="dpad-btn dpad-down" data-launcher-action="down" aria-label="Down"><span aria-hidden="true"></span></button>
+            </div>
           </div>
-          <div class="touch-outer">
-            <img class="screen-bottom" src="media/ui-bottom.png" width="320" height="240" alt="">
+          <div class="touch-outer launcher-screen" id="deviceLauncherScreen" role="group" tabindex="0" aria-label="Launcher list: use arrow keys to select">
+            <div class="launcher-panel" id="launcherPanel" role="group" aria-label="Launcher panel">
+              <div class="launcher-bar">
+                <b class="launcher-wordmark">neo3ds</b>
+                <div class="launcher-tabs" role="tablist" aria-label="Game list">
+                  <button type="button" role="tab" data-tab="all" aria-selected="true">All <b id="launcherCountAll">0</b></button>
+                  <button type="button" role="tab" data-tab="fav" aria-selected="false">Fav <b id="launcherCountFav">0</b></button>
+                </div>
+              </div>
+              <div class="launcher-rows" id="launcherRows"></div>
+              <p class="launcher-help"><span>A/tap twice: play · SELECT/*: favorite</span><span>Up/Down, L/R: choose · Left/Right: tab</span></p>
+            </div>
+            <div class="ingame-panel" id="ingamePanel" role="group" aria-label="In-game menu" hidden>
+              <div class="ingame-head"><b>neo3ds</b><span>v1.5.0</span><span class="ingame-fps">59.8 fps</span></div>
+              <p class="ingame-title" id="ingameTitle"></p>
+              <button type="button" class="ingame-btn" data-ingame="keys">Key config</button>
+              <button type="button" class="ingame-btn" data-ingame="turbo" id="ingameTurbo">Turbo: off</button>
+              <button type="button" class="ingame-btn" data-ingame="system" id="ingameSystem">System: MVS</button>
+              <button type="button" class="ingame-btn" data-ingame="diagnostics">Diagnostics</button>
+              <button type="button" class="ingame-btn" data-ingame="reset">Hold:reset</button>
+              <button type="button" class="ingame-btn" data-ingame="service" id="ingameService">Service</button>
+              <button type="button" class="ingame-btn" data-ingame="snapshot">Snapshot</button>
+              <button type="button" class="ingame-btn" data-ingame="game-list" id="ingameGameList">Game list</button>
+              <button type="button" class="ingame-btn" data-ingame="slot" id="ingameSlot">Slot 1</button>
+              <button type="button" class="ingame-btn" data-ingame="save">Save</button>
+              <button type="button" class="ingame-btn" data-ingame="load" id="ingameLoad">Load</button>
+              <div class="ingame-keymap" role="group" aria-label="Key map">
+                <span><b>A</b><i>&gt;</i><b class="neo-b">B</b></span>
+                <span><b>B</b><i>&gt;</i><b class="neo-a">A</b></span>
+                <span><b>X</b><i>&gt;</i><b class="neo-d">D</b></span>
+                <span><b>Y</b><i>&gt;</i><b class="neo-c">C</b></span>
+                <span><b>L</b><i>&gt;</i><b class="neo-a">A</b><i>+</i><b class="neo-b">B</b></span>
+                <span><b>R</b><i>&gt;</i><b class="neo-c">C</b><i>+</i><b class="neo-d">D</b></span>
+              </div>
+              <p class="ingame-status" id="ingameStatus">Loaded in 4.4s</p>
+            </div>
           </div>
           <div class="face">
-            <span class="shell-btn face-a">A</span>
-            <span class="shell-btn face-b">B</span>
-            <span class="shell-btn face-x">X</span>
-            <span class="shell-btn face-y">Y</span>
+            <button type="button" class="shell-btn face-a" data-launcher-action="play" aria-label="A: play">A</button>
+            <button type="button" class="shell-btn face-b" data-launcher-action="back" aria-label="B: back to the launcher">B</button>
+            <button type="button" class="shell-btn face-x" aria-label="X button (decorative)">X</button>
+            <button type="button" class="shell-btn face-y" aria-label="Y button (decorative)">Y</button>
           </div>
           <div class="strip">
-            <span class="shell-btn small">SELECT</span>
-            <span class="shell-btn small">HOME</span>
-            <span class="shell-btn small">START</span>
+            <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="SELECT: toggle favorite" aria-pressed="false">SELECT</button>
+            <button type="button" class="shell-btn small" aria-label="HOME button (decorative)">HOME</button>
+            <button type="button" class="shell-btn small" data-launcher-action="play" aria-label="START: play">START</button>
           </div>
         </div>
       </div>
-      <button type="button" class="hero-pause" id="heroPause" aria-pressed="false">Pause</button>
-      <figcaption class="sr-only">Game footage composited into a 3DS console mockup</figcaption>
+      </div>
+      <div class="device-controls" id="deviceControls" hidden role="group" aria-label="Rotate the device">
+        <p>Drag the device to look around.</p>
+        <button type="button" data-rotate="reset">Reset angle</button>
+      </div>
+      <figcaption class="launcher-info" id="launcherInfo">
+        <b>Selected game</b>
+        <strong id="launcherInfoTitle"></strong>
+        <p id="launcherInfoDetails"></p>
+        <p id="launcherInfoStatus"></p>
+        <p class="launcher-notice" id="launcherNotice" hidden></p>
+        <p class="launcher-note" id="launcherNote"></p>
+        <button type="button" class="launcher-back" id="launcherBack" hidden>← Back to launcher</button>
+        <p class="sr-only" id="launcherMessage" role="status" aria-live="polite"></p>
+      </figcaption>
     </figure>
+
+    <a class="hero-stats" href="#games">
+      <span class="stat"><b>242 / 282</b><span>romsets convert</span></span>
+      <span class="stat"><b>26</b><span>played on hardware</span></span>
+      <span class="stat"><b>60fps</b><span>in tested games</span></span>
+    </a>
+    <p class="tiny"><a class="hero-notes" href="changelog.html">Release notes</a></p>
   </div>
 </section>
 
@@ -307,7 +383,7 @@
       </details>
       <details>
         <summary>What about a New 3DS?</summary>
-        <p>The CIA asks for 804MHz and the L2 cache, which leaves a lot more headroom. We haven't confirmed it on hardware.</p>
+        <p>The CIA asks for 804MHz and the L2 cache, and we confirmed on hardware that it runs more comfortably.</p>
       </details>
       <details>
         <summary>Can I use it commercially?</summary>
@@ -424,6 +500,8 @@
 
 <script src="games.js"></script>
 <script src="app.js"></script>
+<script type="module" src="intro-device.js"></script>
+<script type="module" src="intro-launcher.mjs"></script>
 <script type="module" src="feedback.js"></script>
 </body>
 </html>
