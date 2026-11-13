@@ -163,17 +163,25 @@
             <div class="ingame-panel" id="ingamePanel" role="group" aria-label="In-game menu" hidden>
               <div class="ingame-head"><b>neo3ds</b><span>v1.5.0</span><span class="ingame-fps">59.8 fps</span></div>
               <p class="ingame-title" id="ingameTitle"></p>
-              <button type="button" class="ingame-btn" data-ingame="keys">Key config</button>
-              <button type="button" class="ingame-btn" data-ingame="turbo" id="ingameTurbo">Turbo: off</button>
-              <button type="button" class="ingame-btn" data-ingame="system" id="ingameSystem">System: MVS</button>
-              <button type="button" class="ingame-btn" data-ingame="diagnostics">Diagnostics</button>
-              <button type="button" class="ingame-btn" data-ingame="reset">Hold:reset</button>
-              <button type="button" class="ingame-btn" data-ingame="service" id="ingameService">Service</button>
-              <button type="button" class="ingame-btn" data-ingame="snapshot">Snapshot</button>
-              <button type="button" class="ingame-btn" data-ingame="game-list" id="ingameGameList">Game list</button>
-              <button type="button" class="ingame-btn" data-ingame="slot" id="ingameSlot">Slot 1</button>
-              <button type="button" class="ingame-btn" data-ingame="save">Save</button>
-              <button type="button" class="ingame-btn" data-ingame="load" id="ingameLoad">Load</button>
+              <div class="ingame-row ingame-row-wide">
+                <button type="button" class="ingame-btn" data-ingame="keys">Key config</button>
+                <button type="button" class="ingame-btn" data-ingame="turbo" id="ingameTurbo">Turbo: off</button>
+              </div>
+              <div class="ingame-row ingame-row-wide">
+                <button type="button" class="ingame-btn" data-ingame="system" id="ingameSystem">System: MVS</button>
+                <button type="button" class="ingame-btn" data-ingame="diagnostics">Diagnostics</button>
+              </div>
+              <div class="ingame-row ingame-row-four">
+                <button type="button" class="ingame-btn" data-ingame="reset">Hold:reset</button>
+                <button type="button" class="ingame-btn" data-ingame="service" id="ingameService">Service</button>
+                <button type="button" class="ingame-btn" data-ingame="snapshot">Snapshot</button>
+                <button type="button" class="ingame-btn" data-ingame="game-list" id="ingameGameList">Game list</button>
+              </div>
+              <div class="ingame-row ingame-row-three">
+                <button type="button" class="ingame-btn" data-ingame="slot" id="ingameSlot">Slot 1</button>
+                <button type="button" class="ingame-btn" data-ingame="save">Save</button>
+                <button type="button" class="ingame-btn" data-ingame="load" id="ingameLoad">Load</button>
+              </div>
               <div class="ingame-keymap" role="group" aria-label="Key map">
                 <span><b>A</b><i>&gt;</i><b class="neo-b">B</b></span>
                 <span><b>B</b><i>&gt;</i><b class="neo-a">A</b></span>

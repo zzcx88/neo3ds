@@ -105,6 +105,7 @@ if (screen && window.NEO3DS_DB) {
     ingamePanel.hidden = !playing;
     titleCard.hidden = playing;
     playTop.hidden = !playing;
+    screen.classList.toggle('is-playing', playing);
     for (const preview of previews) preview.hidden = !(playing && preview.dataset.previewSet === game?.id);
     notice.textContent = playing ? view.messages.preview : '';
     notice.hidden = !playing;

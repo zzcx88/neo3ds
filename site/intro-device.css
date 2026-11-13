@@ -31,11 +31,13 @@
 .hero .launcher-play-top[hidden] { display:none; }
 .hero .launcher-preview { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; }
 .hero .launcher-preview[hidden] { display:none; }
-.hero .launcher-screen { position:relative; background:var(--ink-2); color:var(--paper); font:400 calc(10*var(--u))/1.2 var(--text); }
-/* Both screens fill the same box absolutely (#361). A flex-sized column panel inside the
-   transformed shell collapsed to zero height on iOS WebKit once the in-game screen replaced the
-   launcher; a definite inset box removes that dependency. */
-.hero .launcher-panel { position:absolute; inset:0; display:flex; flex-direction:column; min-height:0; }
+.hero .launcher-screen { --screen-h:calc(194*var(--u)); display:flex; flex-direction:column; background:var(--ink-2); color:var(--paper); font:400 calc(10*var(--u))/1.2 var(--text); }
+.hero .launcher-screen.is-playing { background:var(--ink); }
+/* Both screens take their height from the same explicit expression as .touch-outer (#379).
+   iOS WebKit collapsed the column panel when its height came from flex:1, and painting
+   position:absolute panels inside the transformed shell failed too, so neither percentage nor
+   flex sizing is left here. */
+.hero .launcher-panel { display:flex; flex-direction:column; height:var(--screen-h); min-height:0; }
 .hero .launcher-panel[hidden] { display:none; }
 .hero .launcher-bar { display:flex; align-items:center; gap:calc(4*var(--u)); background:var(--marquee); color:var(--paper); padding:calc(2*var(--u)) calc(4*var(--u)); border-bottom:1px solid #C8151F; }
 .hero .launcher-wordmark { font:700 max(10px,calc(13*var(--u)))/1 var(--pixel); letter-spacing:.04em; color:var(--paper); }
@@ -55,34 +57,34 @@
 .hero .launcher-help { margin:0; flex:none; padding:calc(4*var(--u)) calc(6*var(--u)) calc(5*var(--u)); border-top:1px solid var(--line); background:var(--ink); color:var(--dim); font:400 max(7.5px, calc(7.5*var(--u)))/1.5 var(--pixel-sm); letter-spacing:.02em; }
 .hero .launcher-help span { display:block; }
 /* In-game menu (#361): the bottom screen of the running game, laid out from engine ui.c in
-   launcher mode. Rects are the engine's 320x240 pixels as percentages; the mock's screen is
-   288x194, so this keeps the proportions rather than the exact pixel grid. */
+   launcher mode. The rows are ordinary flow boxes (#379): absolutely positioned panels or
+   children inside the transformed bottom shell did not paint on iOS WebKit, so nothing here
+   depends on absolute placement or flex-grow sizing. */
 .hero .ingame-panel {
-  position:absolute; inset:0; min-height:0; overflow:hidden;
-  background:var(--ink); color:var(--paper);
+  display:flex; flex-direction:column; height:var(--screen-h); min-height:0; overflow:hidden;
+  background:transparent; color:var(--paper);
   font:400 max(5.5px, calc(7.2*var(--u)))/1.2 var(--pixel-sm);
 }
 .hero .ingame-panel[hidden] { display:none; }
-.hero .ingame-head { position:absolute; left:0; top:0; width:100%; height:10.833%; display:flex; align-items:center; gap:.6em; padding:0 2.5%; background:var(--marquee); color:var(--paper); }
+.hero .ingame-head { position:relative; flex:none; height:calc(21*var(--u)); display:flex; align-items:center; gap:.6em; padding:0 2.5%; background:var(--marquee); color:var(--paper); }
 .hero .ingame-head b { font:700 2em/1 var(--pixel); letter-spacing:.04em; }
 .hero .ingame-fps { margin-left:auto; }
-.hero .ingame-title { position:absolute; left:2.5%; top:13.5%; width:95%; margin:0; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.hero .ingame-btn { position:absolute; display:flex; align-items:center; justify-content:center; margin:0; padding:0 .3em; border:0; border-top:1px solid var(--dim); background:var(--panel); color:var(--paper); font:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+.hero .ingame-title { position:relative; flex:none; margin:calc(5*var(--u)) 2.5% 0; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hero .ingame-row { position:relative; flex:none; display:flex; margin-top:calc(4*var(--u)); }
+.hero .ingame-row > .ingame-btn:first-child { margin-left:2.5%; }
+.hero .ingame-row-wide > .ingame-btn { width:46.25%; height:calc(24*var(--u)); }
+.hero .ingame-row-wide > .ingame-btn + .ingame-btn { margin-left:2.5%; }
+.hero .ingame-row-four > .ingame-btn { height:calc(21*var(--u)); margin-left:0.625%; }
+.hero .ingame-row-four > :nth-child(1) { width:26.25%; }
+.hero .ingame-row-four > :nth-child(2) { width:21.875%; }
+.hero .ingame-row-four > :nth-child(3) { width:21.875%; }
+.hero .ingame-row-four > :nth-child(4) { width:23.125%; }
+.hero .ingame-row-three > .ingame-btn { width:30%; height:calc(21*var(--u)); margin-left:2.5%; }
+.hero .ingame-btn { position:relative; display:flex; align-items:center; justify-content:center; margin:0; padding:0 .3em; border:0; border-top:1px solid var(--dim); background:var(--panel); color:var(--paper); font:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
 .hero .ingame-btn:hover { color:var(--gold); }
 .hero .ingame-btn:active { background:var(--pressed); }
 .hero .ingame-btn.is-confirm { background:var(--marquee); }
-.hero [data-ingame="keys"] { left:2.5%; top:18.333%; width:46.25%; height:12.5%; }
-.hero [data-ingame="turbo"] { left:51.25%; top:18.333%; width:46.25%; height:12.5%; }
-.hero [data-ingame="system"] { left:2.5%; top:33.333%; width:46.25%; height:12.5%; }
-.hero [data-ingame="diagnostics"] { left:51.25%; top:33.333%; width:46.25%; height:12.5%; }
-.hero [data-ingame="reset"] { left:2.5%; top:48.333%; width:26.25%; height:10.833%; }
-.hero [data-ingame="service"] { left:29.375%; top:48.333%; width:21.875%; height:10.833%; }
-.hero [data-ingame="snapshot"] { left:51.875%; top:48.333%; width:21.875%; height:10.833%; }
-.hero [data-ingame="game-list"] { left:74.375%; top:48.333%; width:23.125%; height:10.833%; }
-.hero [data-ingame="slot"] { left:2.5%; top:61.667%; width:30%; height:10.833%; }
-.hero [data-ingame="save"] { left:35%; top:61.667%; width:30%; height:10.833%; }
-.hero [data-ingame="load"] { left:67.5%; top:61.667%; width:30%; height:10.833%; }
-.hero .ingame-keymap { position:absolute; left:7.5%; top:76.2%; width:85%; height:15%; display:grid; grid-auto-flow:column; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,1fr); align-content:start; }
+.hero .ingame-keymap { position:relative; flex:none; margin:calc(6*var(--u)) 7.5% 0; display:grid; grid-auto-flow:column; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,auto); line-height:1.25; }
 .hero .ingame-keymap span { display:inline-flex; align-items:center; gap:.2em; white-space:nowrap; }
 .hero .ingame-keymap b { font-weight:400; }
 .hero .ingame-keymap i { font-style:normal; color:var(--dim); }
@@ -90,7 +92,7 @@
 .hero .neo-b { color:var(--b); }
 .hero .neo-c { color:var(--c); }
 .hero .neo-d { color:var(--d); }
-.hero .ingame-status { position:absolute; left:2.5%; top:94.5%; width:95%; margin:0; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hero .ingame-status { position:relative; flex:none; margin:auto 2.5% calc(3*var(--u)); color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 @keyframes ingameHold { from { width:0; } to { width:100%; } }
 .hero .ingame-btn.is-holding::after { content:""; position:absolute; left:0; bottom:0; width:0; height:2px; background:var(--gold); animation:ingameHold 1s linear forwards; }
 
