@@ -19,7 +19,6 @@ const EN = {
   'launcher.screen': 'Launcher list: use arrow keys to select',
   'launcher.tabs': 'Game list',
   'launcher.panel': 'Launcher panel',
-  'launcher.demoLabel': 'Demo',
   'launcher.info': 'Selected game',
   'launcher.files': 'The selected game is not passed to the converter. Choose your own files there.',
   'launcher.convert': 'Go to converter →',
