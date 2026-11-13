@@ -53,6 +53,7 @@
 <link rel="preload" href="fonts/Galmuri11.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Galmuri9.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="intro-device.css">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
 </head>
 <body>
@@ -106,7 +107,8 @@
 
     
     <figure class="device-col">
-      <div class="device" aria-hidden="true">
+      <div class="device-stage" id="deviceStage">
+      <div class="device" id="introDevice">
         <div class="shell shell-top">
           <div class="cam"></div>
           <span class="speaker"></span>
@@ -126,7 +128,8 @@
             <div class="circle-pad"><span></span></div>
             <div class="dpad"></div>
           </div>
-          <div class="touch-outer">
+
+          <div class="touch-outer" id="deviceLauncherScreen">
             <img class="screen-bottom" src="media/ui-bottom.png" width="320" height="240" alt="">
           </div>
           <div class="face">
@@ -141,6 +144,15 @@
             <span class="shell-btn small">START</span>
           </div>
         </div>
+      </div>
+      </div>
+      <div class="device-controls" id="deviceControls" hidden role="group" aria-label="Rotate the device">
+        <p>Drag or use the direction buttons to rotate the device.</p>
+        <button type="button" data-rotate="left">Left</button>
+        <button type="button" data-rotate="right">Right</button>
+        <button type="button" data-rotate="up">Up</button>
+        <button type="button" data-rotate="down">Down</button>
+        <button type="button" data-rotate="reset">Reset angle</button>
       </div>
       <button type="button" class="hero-pause" id="heroPause" aria-pressed="false">Pause</button>
       <figcaption class="sr-only">Game footage composited into a 3DS console mockup</figcaption>
@@ -424,6 +436,7 @@
 
 <script src="games.js"></script>
 <script src="app.js"></script>
+<script src="intro-device.js" defer></script>
 <script type="module" src="feedback.js"></script>
 </body>
 </html>
