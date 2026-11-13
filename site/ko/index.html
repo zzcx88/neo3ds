@@ -97,8 +97,13 @@
     <!-- 3DS 런처 체험 -->
     <figure class="device-col">
       <div class="device-stage" id="deviceStage">
+      <span class="device-shadow" aria-hidden="true"></span>
       <div class="device" id="introDevice">
         <div class="shell shell-top">
+          <span class="shell-side side-l" aria-hidden="true"></span>
+          <span class="shell-side side-r" aria-hidden="true"></span>
+          <span class="shell-side side-t" aria-hidden="true"></span>
+          <span class="shell-side side-b" aria-hidden="true"></span>
           <div class="cam"></div>
           <span class="speaker"></span>
           <div class="screen-outer launcher-marquee">
@@ -107,6 +112,10 @@
         </div>
         <div class="hinge"><span></span><span></span></div>
         <div class="shell shell-bottom">
+          <span class="shell-side side-l" aria-hidden="true"></span>
+          <span class="shell-side side-r" aria-hidden="true"></span>
+          <span class="shell-side side-t" aria-hidden="true"></span>
+          <span class="shell-side side-b" aria-hidden="true"></span>
           <span class="shell-btn sh-l">L</span>
           <span class="shell-btn sh-r">R</span>
           <div class="pad-wrap">
@@ -132,11 +141,7 @@
       </div>
       </div>
       <div class="device-controls" id="deviceControls" hidden role="group" aria-label="기기 회전" data-i18n-attr="aria-label:device.controls">
-        <p data-i18n="device.hint">드래그하거나 방향 버튼으로 기기를 돌려보세요.</p>
-        <button type="button" data-rotate="left" data-i18n="device.left">왼쪽</button>
-        <button type="button" data-rotate="right" data-i18n="device.right">오른쪽</button>
-        <button type="button" data-rotate="up" data-i18n="device.up">위</button>
-        <button type="button" data-rotate="down" data-i18n="device.down">아래</button>
+        <p data-i18n="device.hint">끌어서 기기를 돌려보세요.</p>
         <button type="button" data-rotate="reset" data-i18n="device.reset">각도 초기화</button>
       </div>
       <div class="launcher-touch-controls" role="group" aria-label="런처 조작" data-i18n-attr="aria-label:launcher.controls">
@@ -441,7 +446,7 @@
 
 <script src="../games.js"></script>
 <script src="../app.js"></script>
-<script src="../intro-device.js" defer></script>
+<script type="module" src="../intro-device.js"></script>
 <script type="module" src="../intro-launcher.mjs"></script>
 <script type="module" src="../feedback.js"></script>
 </body>
