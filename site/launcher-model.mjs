@@ -15,45 +15,76 @@ const copy = {
   },
 };
 
+const catalogGame = ([set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb]) =>
+  ({ id: set, set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb, image: null });
+
 // Pass window.NEO3DS_DB from the page. Each instance represents a fresh session.
-export function createLauncher(catalog) {
-  const games = catalog.games.map(([set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb]) =>
-    ({ set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb }));
+// Pass the curated demo list as the second argument (site/demo-games.mjs) to show only those
+// entries; omit it to browse the full catalog, as tests and other callers do.
+export function createLauncher(catalog, demoGames = null) {
+  const full = catalog.games.map(catalogGame);
+  const games = demoGames
+    ? demoGames.map(entry => {
+      const row = full.find(game => game.set === entry.set);
+      // An entry whose set left the catalog is dropped rather than rendered without status data.
+      return row && { ...row, ...entry, id: entry.id };
+    }).filter(Boolean)
+    : full;
   let index = 0;
   let tab = 'all';
+  let playingId = null;
   const favorites = new Set();
-  const visible = () => tab === 'all' ? games : games.filter(game => favorites.has(game.set));
+  const visible = () => tab === 'all' ? games : games.filter(game => favorites.has(game.id));
+  const display = (game, language) => {
+    if (!game) return null;
+    const text = copy[language] ?? copy.en;
+    return { ...game, favorite: favorites.has(game.id),
+      statusLabel: text.status[game.status] ?? '', note: language === 'ko' ? game.noteKo : game.noteEn };
+  };
+  const view = (language = 'en') => {
+    const text = copy[language] ?? copy.en;
+    const list = visible();
+    const size = Math.min(8, list.length);
+    const start = Math.max(0, Math.min(index - (size - 1), list.length - size));
+    const playing = games.find(game => game.id === playingId) ?? null;
+    return { tab, total: list.length, rows: list.slice(start, start + size).map(game => display(game, language)),
+      selected: display(list[index], language) ?? null, playing: display(playing, language),
+      messages: { demo: text.demo, launch: text.launch, qr: text.qr, empty: text.empty } };
+  };
   return {
-    view(language = 'en') {
-      const list = visible();
-      const text = copy[language] ?? copy.en;
-      const display = game => game && ({ ...game, favorite: favorites.has(game.set),
-        statusLabel: text.status[game.status] ?? '', note: language === 'ko' ? game.noteKo : game.noteEn });
-      const start = Math.max(0, index - 7);
-      return { tab, total: list.length, rows: list.slice(start, start + 8).map(display),
-        selected: display(list[index]) ?? null, messages: { demo: text.demo, launch: text.launch, qr: text.qr, empty: text.empty } };
-    },
+    view,
     move(direction) {
+      if (playingId) return;
       const length = visible().length;
       if (length) index = (index + Math.sign(direction) + length) % length;
     },
-    select(set) {
-      const next = visible().findIndex(game => game.set === set);
+    select(id) {
+      if (playingId) return;
+      const next = visible().findIndex(game => game.id === id);
       if (next !== -1) index = next;
     },
     setTab(next) {
-      if (next !== 'all' && next !== 'fav') return;
-      const selected = visible()[index]?.set;
+      if (playingId || (next !== 'all' && next !== 'fav')) return;
+      const selected = visible()[index]?.id;
       tab = next;
-      index = Math.max(0, visible().findIndex(game => game.set === selected));
+      index = Math.max(0, visible().findIndex(game => game.id === selected));
     },
     toggleFavorite() {
+      if (playingId) return;
       const game = visible()[index];
       if (!game) return;
-      if (favorites.has(game.set)) favorites.delete(game.set);
-      else favorites.add(game.set);
+      if (favorites.has(game.id)) favorites.delete(game.id);
+      else favorites.add(game.id);
       index = Math.max(0, Math.min(index, visible().length - 1));
     },
-    reset() { favorites.clear(); tab = 'all'; index = 0; },
+    start(language = 'en') {
+      if (!playingId) playingId = visible()[index]?.id ?? null;
+      return view(language);
+    },
+    back(language = 'en') {
+      playingId = null;
+      return view(language);
+    },
+    reset() { favorites.clear(); tab = 'all'; index = 0; playingId = null; },
   };
 }
