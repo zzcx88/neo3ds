@@ -1,0 +1,34 @@
+/* Intro direction contract: Neo Geo cabinet ground, 3DS information surfaces,
+   SNK-inspired typographic emphasis. Target ink/paper/red/gold 70/20/7/3.
+   Arcade surfaces stay square; only device screens, shells and controls round.
+   All colors and type come from styles.css / the existing device palette. */
+.hero {
+  --intro-ground: var(--ink);
+  --intro-surface: var(--paper);
+  --intro-emphasis: var(--marquee);
+  --intro-accent: var(--gold);
+  --intro-title: var(--pixel);
+  --intro-label: var(--pixel-sm);
+  --intro-body: var(--text);
+}
+.hero .device-stage { max-width: 100%; perspective: 1100px; }
+.hero .device-controls { text-align: center; font: 400 11px/1.5 var(--intro-label); }
+.hero .device-controls[hidden] { display: none; }
+.hero .device-controls p { margin: 0 0 8px; color: var(--dim); }
+.hero .device-controls button {
+  font: inherit; color: var(--paper); background: var(--panel); border: 1px solid var(--line);
+  padding: 8px 10px; margin: 2px; cursor: pointer;
+}
+.hero .device-controls button:hover { border-color: var(--intro-accent); }
+@supports (transform-style: preserve-3d) and (perspective: 1px) {
+  .hero .device-stage.is-rotatable { touch-action: none; cursor: grab; }
+  .hero .device-stage.is-dragging { cursor: grabbing; }
+  .hero .device-stage.is-rotatable .device {
+    filter: none; transform-style: preserve-3d;
+    transform: rotateX(var(--device-x, -8deg)) rotateY(var(--device-y, -12deg));
+  }
+  .hero .device-stage.is-rotatable .shell { transform-style: preserve-3d; }
+  .hero .device-stage.is-rotatable .shell-top { transform: translateZ(8px) rotateX(-5deg); transform-origin: bottom; }
+  .hero .device-stage.is-rotatable .shell-bottom { transform: translateZ(8px) rotateX(5deg); transform-origin: top; }
+  .hero .device-stage.is-rotatable .hinge { transform: translateZ(4px); }
+}
