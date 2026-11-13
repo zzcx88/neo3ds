@@ -1,5 +1,5 @@
 {
- "fingerprint": "7cd27564f9df7cf2",
+ "fingerprint": "da128063eae01740",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -77,8 +77,7 @@
   "site/download.html": [
    "acronym:HOME",
    "number:2.4",
-   "number:450 KB",
-   "number:64"
+   "number:450 KB"
   ],
   "site/index.html": [
    "acronym:BIOS",
@@ -101,6 +100,7 @@
    "number:59.8fps",
    "number:60 fps",
    "number:60fps",
+   "number:64",
    "number:64.0MB",
    "number:68000",
    "number:80",
@@ -185,8 +185,7 @@
   "site/ko/download.html": [
    "acronym:HOME",
    "number:2.4",
-   "number:450 KB",
-   "number:64"
+   "number:450 KB"
   ],
   "site/ko/index.html": [
    "acronym:CORPORATION",
@@ -207,6 +206,7 @@
    "number:282",
    "number:59.8fps",
    "number:60fps",
+   "number:64",
    "number:64.0MB",
    "number:68000",
    "number:80",

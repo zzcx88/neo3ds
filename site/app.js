@@ -23,7 +23,8 @@ const EN = {
   'hero.lede3': 'Install the launcher to pick games from a list.',
   'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'in tested games',
   'hero.notes': 'Release notes',
-  'cta.dl': 'Download', 'cta.dlWin': 'Get it for Windows x64',
+  'cta.web': 'Convert online', 'cta.pc': 'Convert on PC', 'cta.launcher': 'Download launcher',
+  'cta.dlWin': 'Get it for Windows x64',
   'cta.dlLin': 'Get it for Linux x64', 'cta.dlMac': 'Get it for macOS (Apple Silicon)',
   'steps.h2': 'Make it, then install it',
   'steps.lede': 'The install file takes a minute or two on your PC.',
@@ -155,8 +156,6 @@ const EN = {
   'report.h': 'Something went wrong?',
   'report.landingH': 'If it breaks, tell us',
   'report.landingLede': 'If a conversion failed or a game misbehaves, write it down here.',
-  'report.guidePrivacy': 'Console, CFW, region and install method are optional. Don\'t include serial numbers or SD card paths.',
-  'report.guideDiag': 'Turning on the Diagnostics screen also puts fps and memory numbers in the report.<br>If you used a quick save, add the slot number and the version that wrote it.',
   'report.convertLede': 'Reports go through the form on the intro page. The failed run\'s log and game details come along.',
   'report.go': 'Report',
   'report.pending': 'The log and game details of the failed run are attached.',
@@ -184,9 +183,9 @@ const EN = {
   'ex.romset': 'romset', 'ex.year': 'year', 'ex.maker': 'maker', 'ex.rom': 'ROM size',
   'ex.gfx': 'graphics', 'ex.tiles': 'tiles', 'ex.decrypt': 'decryption',
   'tiles': 'tiles',
-  /* download.html (#242) — launcher QR, install, offline converter */
+  /* download.html (#242) — launcher QR and install */
   'dl.h1': 'Download and install',
-  'dl.lede': 'Install the launcher CIA once with a QR code, then build the game files in the converter. The offline converter runs on your PC.',
+  'dl.lede': 'Install the launcher CIA once with a QR code, then build the game files in the converter.',
   'dl.launchH2': 'Launcher',
   'dl.launchP': 'The game-list app. Install it once, then put <code>.neo3ds</code> files on the SD card and pick them from the list. Only one HOME menu icon is added.',
   'dl.update': '<strong>Updating only takes the launcher.</strong> Existing <code>.neo3ds</code> files keep working on a new version. Per-game CIAs must be converted again; quick saves from another version cannot be loaded.',
@@ -201,10 +200,7 @@ const EN = {
   'dl.ciaH2': 'Per-game install',
   'dl.ciaP': 'To use per-game CIAs instead, copy the <code>.cia</code> to the SD card and install it in FBI (SD → the file → <strong>Install CIA</strong>). A game shares its key config, backup RAM and quick saves between its CIA and the launcher.',
   'dl.ciaLink': 'Build a game CIA',
-  'dl.convH2': 'Offline converter',
-  'dl.convP': 'Convert on your PC without a browser. No .NET runtime to install; keep the unpacked folder together.',
   'dl.convNote': 'macOS builds are Apple Silicon only. On an Intel Mac, use the browser converter.',
-  'dl.browserLink': 'Open the browser converter',
   'dl.moreH2': 'More',
   'dl.changelogLink': 'Changelog', 'dl.changelogD': 'what changed in each version',
   'dl.releasesLink': 'GitHub releases', 'dl.releasesD': 'every download file',
@@ -366,6 +362,19 @@ const sorted = (rows) => {
   else r.sort((a, b) => (a[6] !== 1) - (b[6] !== 1) || a[1].localeCompare(b[1]));
   return r;
 };
+
+const pcDownload = $('.pc-download');
+if (pcDownload) {
+  document.addEventListener('click', (event) => {
+    if (pcDownload.open && !pcDownload.contains(event.target)) pcDownload.open = false;
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && pcDownload.open) {
+      pcDownload.open = false;
+      $('summary', pcDownload).focus();
+    }
+  });
+}
 
 const narrow = matchMedia('(max-width: 1080px)');
 const exDetailCol = $('.ex-detail-col');

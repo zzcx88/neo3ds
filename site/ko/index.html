@@ -77,8 +77,17 @@
       <h1 data-i18n="hero.h1">그 시절 오락실,<br>이제 당신의 3DS에서</h1>
       <p class="lede hero-lede"><span data-i18n="hero.lede1">네오지오 롬셋을 3DS에서 실행할 수 있는 파일로 바꿉니다.</span> <span data-i18n="hero.lede2">브라우저에서 바로 변환하거나, PC용 변환기를 사용할 수 있습니다.</span> <span data-i18n="hero.lede3">전용 런처를 설치하면 게임을 목록에서 골라 실행할 수 있습니다.</span></p>
       <div class="cta-row">
-        <a class="btn btn-primary btn-lg" href="convert.html" data-i18n="cta.download">변환하기</a>
-        <a class="btn btn-ghost btn-lg" href="download.html" data-i18n="cta.dl">다운로드</a>
+        <a class="btn btn-primary btn-lg" href="convert.html" data-i18n="cta.web">웹으로 변환</a>
+        <details class="pc-download">
+          <summary class="btn btn-ghost btn-lg" data-i18n="cta.pc">PC로 변환</summary>
+          <div class="pc-download-panel">
+            <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter.zip" data-i18n="cta.dlWin">Windows x64 받기</a>
+            <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-linux-x64.zip" data-i18n="cta.dlLin">Linux x64 받기</a>
+            <a href="https://github.com/zzcx88/neo3ds/releases/latest/download/neo3ds-converter-osx-arm64.zip" data-i18n="cta.dlMac">macOS Apple Silicon 받기</a>
+            <p class="tiny" data-i18n="dl.convNote">macOS는 Apple Silicon 전용입니다. Intel Mac은 브라우저 변환기를 쓰세요.</p>
+          </div>
+        </details>
+        <a class="btn btn-ghost btn-lg" href="download.html" data-i18n="cta.launcher">런처 다운로드</a>
       </div>
       <a class="hero-stats" href="#games">
         <span class="stat"><b>242 / 282</b><span data-i18n="hero.st1">롬셋 변환 가능</span></span>
@@ -306,10 +315,6 @@
   <div class="wrap">
     <h2 data-i18n="report.landingH">안 되면 알려주세요</h2>
     <p class="lede narrow" data-i18n="report.landingLede">변환이 실패했거나 게임에서 문제가 생겼다면 적어 주세요.</p>
-    <div class="report-guide">
-      <p data-i18n="report.guidePrivacy">기기, CFW, 지역, 설치 방식은 비워도 됩니다. 시리얼이나 SD 카드 경로는 적지 마세요.</p>
-      <p data-i18n="report.guideDiag">진단 화면을 켜 두면 리포트에 FPS와 메모리 수치도 함께 담깁니다.<br>퀵세이브를 썼다면 슬롯 번호와 그 슬롯을 만든 버전도 적어 주세요.</p>
-    </div>
     <form class="report" id="reportForm" novalidate>
       <div class="report-grid">
         <label class="report-field">
