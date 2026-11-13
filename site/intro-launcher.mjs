@@ -21,15 +21,20 @@ if (screen && window.NEO3DS_DB) {
 
   const focusSelected = () => rows.querySelector('[aria-pressed="true"]')?.focus();
   const tabLabel = view => view.tab === 'all' ? 'All' : 'Fav';
-  const announce = view => {
-    if (view.playing) {
-      message.textContent = `${view.messages.preview}: ${view.playing.title}`;
+  const announce = (view, retrigger = false) => {
+    const text = view.playing
+      ? `${view.messages.preview}: ${view.playing.title}`
+      : view.selected
+        ? `${tabLabel(view)} · ${view.selected.title} · ${view.selected.statusLabel} · ${view.selected.favorite ? '★' : '☆'}`
+        : view.messages.empty;
+    if (!retrigger) {
+      message.textContent = text;
       return;
     }
-    const game = view.selected;
-    message.textContent = game
-      ? `${tabLabel(view)} · ${game.title} · ${game.statusLabel} · ${game.favorite ? '★' : '☆'}`
-      : view.messages.empty;
+    // Starting the same game twice produces the same string, which screen readers ignore,
+    // so clear the live region and set it again on the next frame (#374).
+    message.textContent = '';
+    requestAnimationFrame(() => { message.textContent = text; });
   };
 
   function render(status = false) {
@@ -76,7 +81,6 @@ if (screen && window.NEO3DS_DB) {
       favorite.setAttribute('aria-pressed', String(!!game?.favorite));
       favorite.disabled = !game;
     }
-    for (const tab of document.querySelectorAll('[data-launcher-tab]')) tab.setAttribute('aria-pressed', String(tab.dataset.launcherTab === view.tab));
 
     const playing = view.playing;
     panel.hidden = !!playing;
@@ -95,31 +99,33 @@ if (screen && window.NEO3DS_DB) {
     const view = launcher.start(lang);
     render();
     if (!view.playing) return;
-    announce(view);
+    announce(view, true);
     playBack.focus();
   }
 
-  function back() {
+  function back(focus = false) {
     const view = launcher.back(lang);
     render();
     message.textContent = view.messages.returned;
-    focusSelected();
+    if (focus) focusSelected();
   }
 
-  function run(action) {
+  // `keyboard` only moves focus for keyboard navigation; a pointer click on the D-pad,
+  // L/R or the info-panel buttons must not pull focus into the row list (#374).
+  function run(action, keyboard = false) {
     const view = launcher.view(lang);
     if (view.playing) {
-      if (action === 'back') back();
+      if (action === 'back') back(keyboard);
       return;
     }
     if (action === 'up' || action === 'down') {
       launcher.move(action === 'down' ? 1 : -1);
       render(true);
-      focusSelected();
+      if (keyboard) focusSelected();
     } else if (action === 'first' || action === 'last') {
       launcher[action]();
       render(true);
-      focusSelected();
+      if (keyboard) focusSelected();
     } else if (action === 'tab-all' || action === 'tab-fav') {
       launcher.setTab(action === 'tab-all' ? 'all' : 'fav');
       render(true);
@@ -151,31 +157,31 @@ if (screen && window.NEO3DS_DB) {
     if (action) run(action);
   });
 
-  column.addEventListener('keydown', event => {
-    const view = launcher.view(lang);
-    if (event.key === 'Escape' && view.playing) {
-      event.preventDefault();
-      back();
-      return;
-    }
-    if (view.playing) return;
+  // Keyboard list navigation is scoped to the bottom screen so arrow keys on links in the
+  // info panel still scroll the page (#374).
+  screen.addEventListener('keydown', event => {
+    if (launcher.view(lang).playing) return;
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
       event.preventDefault();
-      launcher.move(event.key === 'ArrowDown' ? 1 : -1);
-      render(true);
-      focusSelected();
+      run(event.key === 'ArrowDown' ? 'down' : 'up', true);
       return;
     }
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault();
-      launcher.setTab(event.key === 'ArrowLeft' ? 'all' : 'fav');
-      render(true);
+      run(event.key === 'ArrowLeft' ? 'tab-all' : 'tab-fav', true);
       return;
     }
     if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-id]'))) {
       event.preventDefault();
-      start();
+      run('start', true);
     }
+  });
+
+  // Escape leaves the playing view from anywhere on the page, not only inside .device-col.
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !launcher.view(lang).playing) return;
+    event.preventDefault();
+    back(true);
   });
 
   render();

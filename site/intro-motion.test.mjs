@@ -5,6 +5,10 @@ import {
   clamp, logEaseOut, entranceFrame, dragTo,
 } from './intro-motion.mjs';
 
+test('rest matches the spec angle of -6deg x -14deg', () => {
+  assert.deepEqual(REST, { x: -6, y: -14 });
+});
+
 test('the logarithmic entrance starts at the wide angle and ends at rest', () => {
   const first = entranceFrame(0);
   assert.deepEqual(
@@ -33,8 +37,8 @@ test('the entrance decelerates instead of moving at a constant rate', () => {
 test('400ms lands past the midpoint of the rotation', () => {
   const frame = entranceFrame(400);
   assert.ok(!frame.done);
-  assert.ok(frame.y > -38 && frame.y < -16, `y=${frame.y}`);
-  assert.ok(frame.x < 10 && frame.x > -8, `x=${frame.x}`);
+  assert.ok(frame.y > -38 && frame.y < REST.y, `y=${frame.y}`);
+  assert.ok(frame.x < ENTRANCE_FROM.x && frame.x > REST.x, `x=${frame.x}`);
   assert.ok(frame.opacity > .35 && frame.opacity < 1);
 });
 
