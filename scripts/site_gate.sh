@@ -5,11 +5,38 @@ set -euo pipefail
 
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-for f in site/app.js site/convert.js site/feedback.js site/vendor/conv/*.js site/vendor/conv/*.mjs \
+for f in site/app.js site/convert.js site/feedback.js site/intro-device.js site/intro-launcher.mjs site/launcher-model.mjs site/vendor/conv/*.js site/vendor/conv/*.mjs \
          site/vendor/*.mjs site/vendor/bench/* scripts/gen_site_i18n.mjs; do
   node --check "$f"
 done
 echo "syntax OK"
+
+python3 - << 'EOF'
+from html.parser import HTMLParser
+from pathlib import Path
+from urllib.parse import urlsplit
+
+assets = {'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs'}
+for asset in assets:
+    assert (Path('site') / asset).is_file(), f'missing intro asset: {asset}'
+
+class References(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.urls = []
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'link' and 'href' in attrs: self.urls.append(attrs['href'])
+        if tag == 'script' and 'src' in attrs: self.urls.append(attrs['src'])
+
+for page in (Path('site/index.html'), Path('site/ko/index.html')):
+    parser = References()
+    parser.feed(page.read_text(encoding='utf-8'))
+    referenced = {(page.parent / urlsplit(url).path).resolve() for url in parser.urls}
+    missing = [asset for asset in sorted(assets) if (Path('site') / asset).resolve() not in referenced]
+    assert not missing, f'{page}: missing intro references: {missing}'
+print('intro assets + references OK')
+EOF
 
 python3 - << 'EOF'
 import html.parser

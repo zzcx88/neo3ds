@@ -47,6 +47,7 @@
 <link rel="preload" href="../fonts/Galmuri9.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../intro-device.css">
+<link rel="modulepreload" href="../launcher-model.mjs">
 <link rel="stylesheet" href="../intro-home.css">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
 </head>
@@ -91,12 +92,6 @@
         </details>
         <a class="btn btn-ghost btn-lg" href="download.html" data-i18n="cta.launcher">런처 다운로드</a>
       </div>
-      <a class="hero-stats" href="#games">
-        <span class="stat"><b>242 / 282</b><span data-i18n="hero.st1">롬셋 변환 가능</span></span>
-        <span class="stat"><b>26</b><span data-i18n="hero.st2">실기 확인</span></span>
-        <span class="stat"><b>60fps</b><span data-i18n="hero.st3">확인한 게임</span></span>
-      </a>
-      <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">릴리즈 노트</a></p>
     </div>
 
     <!-- 3DS 런처 체험 -->
@@ -157,8 +152,16 @@
         <p id="launcherDemo"></p><p data-i18n="launcher.files">선택한 게임은 전달되지 않습니다. 변환기에서 직접 파일을 선택하세요.</p>
         <a href="convert.html" data-i18n="launcher.convert">변환기로 이동 →</a>
         <p id="launcherMessage" role="status" aria-live="polite"></p>
+        <p><a href="manual.html" data-i18n="launcher.manualLink">실행 및 조작 안내 →</a> · <a href="download.html" data-i18n="launcher.installLink">전송 및 설치 안내 →</a></p>
       </figcaption>
     </figure>
+
+    <a class="hero-stats" href="#games">
+      <span class="stat"><b>242 / 282</b><span data-i18n="hero.st1">롬셋 변환 가능</span></span>
+      <span class="stat"><b>26</b><span data-i18n="hero.st2">실기 확인</span></span>
+      <span class="stat"><b>60fps</b><span data-i18n="hero.st3">확인한 게임</span></span>
+    </a>
+    <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">릴리즈 노트</a></p>
   </div>
 </section>
 

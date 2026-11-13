@@ -2,24 +2,15 @@
    SNK-inspired typographic emphasis. Target ink/paper/red/gold 70/20/7/3.
    Arcade surfaces stay square; only device screens, shells and controls round.
    All colors and type come from styles.css / the existing device palette. */
-.hero {
-  --intro-ground: var(--ink);
-  --intro-surface: var(--paper);
-  --intro-emphasis: var(--marquee);
-  --intro-accent: var(--gold);
-  --intro-title: var(--pixel);
-  --intro-label: var(--pixel-sm);
-  --intro-body: var(--text);
-}
 .hero .device-stage { max-width: 100%; perspective: 1100px; }
-.hero .device-controls { text-align: center; font: 400 11px/1.5 var(--intro-label); }
+.hero .device-controls { text-align: center; font: 400 11px/1.5 var(--pixel-sm); }
 .hero .device-controls[hidden] { display: none; }
 .hero .device-controls p { margin: 0 0 8px; color: var(--dim); }
 .hero .device-controls button {
   font: inherit; color: var(--paper); background: var(--panel); border: 1px solid var(--line);
   padding: 8px 10px; margin: 2px; cursor: pointer;
 }
-.hero .device-controls button:hover { border-color: var(--intro-accent); }
+.hero .device-controls button:hover { border-color: var(--gold); }
 .hero .launcher-marquee { display:flex; flex-direction:column; justify-content:center; gap:calc(12*var(--u)); padding:calc(24*var(--u)); background:var(--ink); color:var(--paper); border-top:calc(6*var(--u)) solid var(--marquee); }
 .hero .launcher-marquee span { color:var(--gold); font:400 calc(13*var(--u))/1 var(--pixel-sm); letter-spacing:.15em; }
 .hero .launcher-marquee strong { font:400 calc(20*var(--u))/1.2 var(--pixel); overflow-wrap:anywhere; }
@@ -30,8 +21,8 @@
 .hero .launcher-bar button[aria-selected="true"] { background:var(--paper); color:var(--ink); }
 .hero .launcher-rows { flex:1; display:flex; flex-direction:column; min-height:0; }
 .hero .launcher-row { flex:1; min-height:0; width:100%; display:flex; align-items:center; justify-content:space-between; gap:4px; border:0; border-bottom:1px solid var(--line); padding:0 calc(5*var(--u)); color:var(--ink); background:transparent; font:inherit; text-align:left; cursor:pointer; }
-.hero .launcher-row span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.hero .launcher-row span:last-child { flex:none; font-size:calc(8*var(--u)); }
+.hero .launcher-row span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:max(9px, calc(10*var(--u))); }
+.hero .launcher-row span:last-child { flex:none; font-size:max(8px, calc(8*var(--u))); }
 .hero .launcher-row[aria-pressed="true"] { background:var(--ink); color:var(--paper); }
 .hero .launcher-empty { padding:calc(8*var(--u)); }
 .hero .launcher-info { width:min(100%,480px); border-top:2px solid var(--marquee); padding:14px 0 0; font:400 13px/1.5 var(--text); }

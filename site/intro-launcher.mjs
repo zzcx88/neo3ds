@@ -39,14 +39,14 @@ if (screen && window.NEO3DS_DB) {
     $('launcherSubtitle').textContent = game ? [game.year, game.maker, game.statusLabel].filter(Boolean).join(' · ') : '';
     $('launcherInfoTitle').textContent = game?.title ?? view.messages.empty;
     $('launcherInfoDetails').textContent = game ? [game.year, game.maker, `${game.romMb} MB`].filter(Boolean).join(' · ') : '';
-    $('launcherInfoStatus').textContent = game ? [game.statusLabel, game.note].filter(Boolean).join(' — ') : '';
+    $('launcherInfoStatus').textContent = game ? (game.note?.startsWith(game.statusLabel) && game.statusLabel ? game.note : [game.statusLabel, game.note].filter(Boolean).join(' — ')) : '';
     $('launcherDemo').textContent = view.messages.demo;
     for (const favorite of favorites) {
       favorite.setAttribute('aria-pressed', String(!!game?.favorite));
       favorite.disabled = !game;
     }
     for (const tab of document.querySelectorAll('[data-launcher-tab]')) tab.setAttribute('aria-pressed', String(tab.dataset.launcherTab === view.tab));
-    if (announce) message.textContent = game ? `${game.title} · ${game.statusLabel} · ${game.favorite ? '★' : '☆'}` : view.messages.empty;
+    if (announce) message.textContent = `${view.tab === 'all' ? 'All' : 'Fav'} · ${game ? `${game.title} · ${game.statusLabel} · ${game.favorite ? '★' : '☆'}` : view.messages.empty}`;
   }
 
   screen.addEventListener('click', event => {
