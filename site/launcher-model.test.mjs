@@ -158,6 +158,8 @@ test('the in-game text state starts like a fresh launch', () => {
   assert.equal(ingame.service, 'Service');
   assert.equal(ingame.slot, 'Slot 1');
   assert.equal(ingame.load, 'Load');
+  assert.equal(ingame.list, 'Game list');
+  assert.equal(ingame.confirm, null);
   assert.equal(ingame.status, 'Loaded in 4.4s');
 });
 
@@ -239,6 +241,27 @@ test('the screens that cannot run in a browser say so', () => {
     assert.equal(instance.view().ingame.status, text);
   }
   assert.equal(instance.view().selected.id, 'kof98h');
+});
+
+test('Service needs the MVS BIOS once System is AES', () => {
+  const instance = launcher();
+  instance.play();
+  instance.press('system');
+  instance.press('system');
+  assert.equal(instance.view().ingame.system, 'System: AES');
+  instance.press('service');
+  assert.equal(instance.view().ingame.status, 'Service needs the MVS BIOS');
+});
+
+test('Game list asks for a second tap and then reports the leave', () => {
+  const instance = launcher();
+  instance.play();
+  assert.equal(instance.press('list'), false);
+  assert.equal(instance.view().ingame.list, 'Tap again');
+  assert.equal(instance.view().ingame.confirm, 'list');
+  assert.equal(instance.press('list'), true);
+  assert.equal(instance.view().ingame.confirm, null);
+  assert.equal(instance.view().mode, 'play');
 });
 
 test('the launcher and the in-game menu are English only', () => {

@@ -38,6 +38,7 @@ export function createLauncher(catalog, installed = LAUNCHER_PREVIEWS) {
     service: state.system === 'MVS' ? 'Service' : 'MVS only',
     slot: `Slot ${state.slot}`,
     load: state.confirm === 'load' ? 'Tap again' : 'Load',
+    list: state.confirm === 'list' ? 'Tap again' : 'Game list',
   });
   const view = () => {
     const list = visible();
@@ -50,7 +51,7 @@ export function createLauncher(catalog, installed = LAUNCHER_PREVIEWS) {
       page,
       rows: list.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE).map(display),
       selected: display(list[index]) ?? null,
-      ingame: { ...labels(), status: state.status, playing: mode === 'play' },
+      ingame: { ...labels(), confirm: state.confirm, status: state.status, playing: mode === 'play' },
       messages: {
         empty: 'No favorites yet.',
         preview: 'Preview: the game itself runs on a 3DS.',
@@ -64,17 +65,11 @@ export function createLauncher(catalog, installed = LAUNCHER_PREVIEWS) {
       const length = visible().length;
       if (length) index = (index + Math.sign(direction) + length) % length;
     },
-    // L and R page by one screen (eight rows), as in the launcher (launcher.c pick_row ± ROWS).
+    // L and R move the cursor by one screen (eight rows) and stop at the ends, like the
+    // launcher's pick_row(±ROWS). The demo shows the page that holds the selection.
     movePage(direction) {
       const length = visible().length;
       if (length) index = Math.max(0, Math.min(index + Math.sign(direction) * PAGE_SIZE, length - 1));
-    },
-    first() {
-      index = 0;
-    },
-    last() {
-      const length = visible().length;
-      if (length) index = length - 1;
     },
     select(id) {
       const next = visible().findIndex(game => game.id === id);
@@ -104,9 +99,18 @@ export function createLauncher(catalog, installed = LAUNCHER_PREVIEWS) {
       state.confirm = null;
     },
     // The in-game menu's touch buttons. The demo keeps the text state of the real GUI; the screens
-    // that cannot run in a browser say so in the status line.
+    // that cannot run in a browser say so in the status line. Returns true when the Game list
+    // button was tapped twice, which is the caller's signal to leave.
     press(action) {
-      if (mode !== 'play') return;
+      if (mode !== 'play') return false;
+      if (action === 'list') {
+        if (state.confirm === 'list') {
+          state.confirm = null;
+          return true;
+        }
+        state.confirm = 'list';
+        return false;
+      }
       if (action === 'turbo') state.turbo = (state.turbo + 1) % TURBO.length;
       else if (action === 'slot') state.slot = state.slot % SLOTS + 1;
       else if (action === 'system') {
@@ -122,10 +126,14 @@ export function createLauncher(catalog, installed = LAUNCHER_PREVIEWS) {
       else if (action === 'snapshot') status('Snapshot saved for the game list');
       else if (action === 'keys') status('Key config works on a real 3DS');
       else if (action === 'diagnostics') status('Diagnostics work on a real 3DS');
-      else if (action === 'service') status('The service menu opens on a real 3DS');
-      else return;
+      else if (action === 'service') {
+        status(state.system === 'MVS'
+          ? 'The service menu opens on a real 3DS'
+          : 'Service needs the MVS BIOS');
+      } else return false;
       // Anything but the button that asked "Tap again" drops that pending question.
       if (action !== 'system' && action !== 'load') state.confirm = null;
+      return false;
     },
     reset() {
       favorites.clear();

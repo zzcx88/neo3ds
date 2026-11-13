@@ -89,7 +89,7 @@
 .hero .neo-d { color:var(--d); }
 .hero .ingame-status { position:absolute; left:2.5%; top:94.5%; width:95%; margin:0; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 @keyframes ingameHold { from { width:0; } to { width:100%; } }
-.hero .ingame-btn.is-holding::after { content:""; position:absolute; left:0; bottom:0; width:0; height:2px; background:var(--gold); animation:ingameHold .8s linear forwards; }
+.hero .ingame-btn.is-holding::after { content:""; position:absolute; left:0; bottom:0; width:0; height:2px; background:var(--gold); animation:ingameHold 1s linear forwards; }
 
 /* The info panel follows its content (#361): the old fixed 315px left a large empty block.
    Only the long game note is capped, at three lines, and scrolls inside that cap. */
@@ -124,7 +124,8 @@
 .hero .dpad { position:relative; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:calc(72*var(--u)); height:calc(72*var(--u)); touch-action:manipulation; }
 .hero .shell-bottom { grid-template-columns:calc(74*var(--u)) calc(288*var(--u)) calc(74*var(--u)); padding-inline:calc(12*var(--u)); }
 .hero .dpad::before, .hero .dpad::after { content:none; }
-.hero .dpad-plate { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.hero .dpad-plate { position:absolute; left:calc(-2*var(--u)); top:calc(-2*var(--u)); width:calc(100% + 4*var(--u)); height:calc(100% + 4*var(--u)); pointer-events:none; }
+.hero .dpad-plate path { fill:#26262F; stroke:var(--pressed); }
 .hero .dpad button { position:relative; display:grid; place-items:center; min-width:0; min-height:0; margin:0; padding:0; border:0; background:transparent; color:var(--dim); cursor:pointer; touch-action:manipulation; }
 .hero .dpad button span { pointer-events:none; width:0; height:0; border-style:solid; border-color:transparent; }
 .hero .dpad-up span { border-width:0 calc(4*var(--u)) calc(5*var(--u)); border-bottom-color:currentColor; }

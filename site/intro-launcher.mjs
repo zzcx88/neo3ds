@@ -23,6 +23,7 @@ if (screen && window.NEO3DS_DB) {
     service: $('ingameService'),
     slot: $('ingameSlot'),
     load: $('ingameLoad'),
+    list: $('ingameGameList'),
   };
 
   const focusSelected = () => rows.querySelector('[aria-pressed="true"]')?.focus();
@@ -43,11 +44,12 @@ if (screen && window.NEO3DS_DB) {
   };
 
   // The catalog note repeats the status ("verified · full speed") under a fixed status line;
-  // only the part after the first separator is worth the panel space (#361).
+  // when the first segment is that status word, the rest is what the panel should show (#361).
+  const STATUS_WORDS = new Set(['verified', 'buildable', 'unsupported', 'plays fine']);
   const noteBody = game => {
     if (!game?.note) return '';
-    const parts = game.note.split('·');
-    return (parts.length > 1 ? parts.slice(1).join('·') : game.note).trim();
+    const [head, ...rest] = game.note.split('·').map(part => part.trim());
+    return rest.length && STATUS_WORDS.has(head.toLowerCase()) ? rest.join(' · ') : game.note;
   };
 
   function render(status = false) {
@@ -113,7 +115,9 @@ if (screen && window.NEO3DS_DB) {
       ingameTitle.textContent = game?.title ?? '';
       ingameStatus.textContent = view.ingame.status;
       for (const [key, label] of Object.entries(ingameLabels)) label.textContent = view.ingame[key];
-      ingameLabels.load.classList.toggle('is-confirm', view.ingame.load === 'Tap again');
+      for (const key of ['system', 'load', 'list']) {
+        ingameLabels[key].classList.toggle('is-confirm', view.ingame.confirm === key);
+      }
     }
 
     if (status) announceSelection(view);
@@ -138,14 +142,21 @@ if (screen && window.NEO3DS_DB) {
   // so on the status line, exactly where the real menu reports what happened.
   function runIngame(action) {
     if (action === 'game-list') {
-      leaveGame();
+      // The real Game list button asks for a second tap, so the demo does too.
+      if (launcher.press('list')) leaveGame();
+      else {
+        render();
+        announce('Tap again to return to the list');
+      }
       return;
     }
     const before = launcher.view().ingame.status;
     launcher.press(action);
     const after = launcher.view().ingame.status;
     render();
+    const slot = launcher.view().ingame.slot;
     if (after !== before) announce(after);
+    else if (action === 'load') announce(`Tap Load again to load ${slot.toLowerCase()}`);
     else if (['turbo', 'slot', 'system'].includes(action)) {
       // These change the button's own label; the live region carries it for screen readers.
       announce(ingamePanel.querySelector(`[data-ingame="${action}"]`).textContent);
@@ -210,6 +221,14 @@ if (screen && window.NEO3DS_DB) {
     if (row) {
       if (launcher.view().mode === 'play') return;
       notice.hidden = true;
+      // A tap on the star toggles the favorite, like t.px < STAR_W in launcher.c.
+      if (event.target.closest('.launcher-star')) {
+        launcher.select(row.dataset.id);
+        launcher.toggleFavorite();
+        render(true);
+        focusSelected();
+        return;
+      }
       if (row.dataset.id === launcher.view().selected?.id) {
         enterGame();
         return;
@@ -245,7 +264,7 @@ if (screen && window.NEO3DS_DB) {
     holdTimer = setTimeout(() => {
       stopHold();
       runIngame('reset');
-    }, 800);
+    }, 1000);
   });
   for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
     resetButton.addEventListener(type, stopHold);
@@ -254,6 +273,7 @@ if (screen && window.NEO3DS_DB) {
   // Keyboard list navigation is scoped to the bottom screen so arrow keys on links in the
   // info panel still scroll the page (#374).
   screen.addEventListener('keydown', event => {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (launcher.view().mode === 'play') return;
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
       event.preventDefault();
@@ -270,9 +290,13 @@ if (screen && window.NEO3DS_DB) {
       run(event.key === 'l' || event.key === 'L' ? 'page-up' : 'page-down', true);
       return;
     }
-    if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-id]'))) {
-      event.preventDefault();
-      run('play', true);
+    if (event.key === 'Enter') {
+      const row = event.target.closest('[data-id]');
+      if (row) launcher.select(row.dataset.id);
+      if (row || event.target === screen) {
+        event.preventDefault();
+        run('play', true);
+      }
     }
   });
 

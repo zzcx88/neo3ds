@@ -185,6 +185,18 @@ if top != version:
 print('changelog top release matches <Version>')
 EOF
 
+# The launcher demo's in-game header shows the engine version; the single source stays
+# converter/Directory.Build.props (#361).
+python3 - << 'EOF'
+import re
+from pathlib import Path
+
+version = re.search(r'<Version>([^<]+)</Version>', Path('converter/Directory.Build.props').read_text(encoding='utf-8')).group(1)
+for page in (Path('site/index.html'), Path('site/ko/index.html')):
+    assert f'v{version}' in page.read_text(encoding='utf-8'), f'{page}: in-game header is not v{version}'
+print('demo version matches <Version>')
+EOF
+
 # CHANGELOG.md at the repo root is generated from the same data (scripts/gen_changelog.py).
 python3 scripts/gen_changelog.py --check
 
