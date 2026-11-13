@@ -178,10 +178,10 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 **영어가 기본**(루트), 한국어는 `/ko/` (#141). 저작 원본은 한국어 `site/ko/*.html` + 게임 DB이고,
 루트 7페이지는 생성물이다.
 
-- `index.html` — 소개 (EN, 생성물). `ko/index.html` — 한국어 원본
+- `index.html` — 소개 및 오프라인 변환기 3종 다운로드 (EN, 생성물). `ko/index.html` — 한국어 원본
 - `convert.html` — 웹 변환기 (EN, 생성물) · per-game CIA · `.neo3ds` 팩 · 배치. `ko/convert.html` — 한국어 원본
-- `download.html` — 다운로드·설치 (EN, 생성물): 런처 CIA QR·업데이트·SD 설치, 게임별 CIA 설치,
-  오프라인 변환기 3종. `ko/download.html` — 한국어 원본
+- `download.html` — 다운로드·설치 (EN, 생성물): 런처 CIA QR·업데이트·SD 설치, 게임별 CIA 설치.
+  `ko/download.html` — 한국어 원본
 - `compat.html` — 호환 롬셋 282종 표 (EN, 생성물, JS 없이 크롤 가능). `ko/compat.html` — 한국어판
 - `privacy.html` — 사용 통계·개인정보 (EN, 생성물). `ko/privacy.html` — 한국어 원본.
   `index.html`·`convert.html`·`download.html` 푸터에서 링크한다 (#125)

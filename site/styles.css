@@ -96,8 +96,18 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 }
 .kicker{font-family:var(--pixel-sm);font-size:11px;color:var(--gold);margin:0 0 14px}
 .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 10px}
-/* ── 다운로드 페이지 (#242) ───────────────────────────────────────────── */
-.dl-list{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 8px}
+.pc-download{position:relative;max-width:100%}
+.pc-download summary{list-style:none}
+.pc-download summary::-webkit-details-marker{display:none}
+.pc-download summary::after{content:"";display:inline-block;width:6px;height:6px;margin-left:10px;
+  border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:translateY(-3px) rotate(45deg)}
+.pc-download[open] summary::after{transform:rotate(225deg)}
+.pc-download-panel{position:absolute;z-index:10;top:calc(100% + 6px);left:0;width:300px;max-width:min(300px,calc(100vw - 48px));
+  padding:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:3px}
+.pc-download-panel a{display:flex;align-items:center;min-height:44px;padding:9px 10px;font:400 13px/1.4 var(--pixel-sm);text-decoration:none}
+.pc-download-panel a:hover{background:var(--panel)}
+.pc-download-panel p{margin:8px 10px 0}
+@media (max-width:760px){.pc-download-panel{position:static;margin-top:6px}}
 .device-col{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px}
 .hero-pause{font:400 11px/1 var(--pixel-sm);color:var(--dim);background:transparent;border:0;
   cursor:pointer;padding:6px 2px;text-decoration:underline;text-underline-offset:3px}
@@ -378,10 +388,6 @@ section[id]{scroll-margin-top:64px}
 /* ── 익명 제보 폼 (#189) — 소개 페이지 ───────────────────────────────── */
 #feedback{scroll-margin-top:72px}
 .report{margin:0;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
-.report-guide{margin:0 0 18px;padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;background:var(--panel-2);max-width:720px}
-.report-guide p{margin:0;font-size:14px;line-height:1.7;color:#C9C9D2;max-width:none}
-.report-guide p + p{margin-top:8px}
-.report-guide strong{color:var(--gold)}
 .report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .report-grid>.tiny{grid-column:1/-1;margin:0}
 .report-field{display:block;margin:0 0 12px}

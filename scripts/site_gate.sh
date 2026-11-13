@@ -75,6 +75,34 @@ for (const page of ['site/index.html', 'site/convert.html', 'site/download.html'
 console.log('i18n + analytics OK');
 "
 
+# The home page owns the three PC downloads; the install page keeps the launcher.
+python3 - << 'EOF'
+import re
+
+base = 'https://github.com/zzcx88/neo3ds/releases/latest/download/'
+assets = ['neo3ds-converter.zip', 'neo3ds-converter-linux-x64.zip',
+          'neo3ds-converter-osx-arm64.zip']
+for root in ('site', 'site/ko'):
+    with open(f'{root}/index.html', encoding='utf-8') as f:
+        home = f.read()
+    row = re.search(r'<div class="cta-row">(.*?)<a class="hero-stats"', home, re.S)
+    assert row, f'{root}: missing hero actions'
+    assert re.search(r'<a\b[^>]*href="convert\.html"[^>]*>.*?</a>\s*'
+                     r'<details class="pc-download">.*?</details>\s*'
+                     r'<a\b[^>]*href="download\.html"', row.group(1), re.S), f'{root}: hero action order'
+    menu = re.search(r'<details class="pc-download">(.*?)</details>', row.group(1), re.S).group(1)
+    assert '<summary' in menu, f'{root}: missing PC menu control'
+    links = re.findall(r'<a\b[^>]*href="([^"]+)"', menu)
+    assert links == [base + asset for asset in assets], f'{root}: unexpected PC menu links: {links}'
+
+    with open(f'{root}/download.html', encoding='utf-8') as f:
+        download = f.read()
+    assert '<section id="launcher">' in download and '<section id="game-cia">' in download
+    assert '<section id="converter">' not in download, f'{root}: obsolete PC section'
+    assert not any(f'href="{base}{asset}"' in download for asset in assets), f'{root}: duplicate PC download'
+print('home PC downloads + install pages OK')
+EOF
+
 # Every series page is reachable from both home pages (#198): without this, adding a
 # series to site_series_data.py leaves the home page quietly stale.
 python3 - << 'EOF'

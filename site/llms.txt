@@ -11,7 +11,7 @@
 - [Intro](https://zzcx88.github.io/neo3ds/): what neo3ds is, the three-step set-up, and a compatibility summary.
 - [Compatibility list](https://zzcx88.github.io/neo3ds/compat.html): every one of the 282 romsets with its conversion status, generated from the game database.
 - [Web converter](https://zzcx88.github.io/neo3ds/convert.html): turns a romset zip into a CIA inside the browser tab. Nothing is uploaded.
-- [Download and install](https://zzcx88.github.io/neo3ds/download.html): launcher CIA QR, FBI install and update steps, SD card fallback, and the Windows/Linux/macOS offline converter.
+- [Download and install](https://zzcx88.github.io/neo3ds/download.html): launcher CIA QR, FBI install and update steps, SD card fallback, and per-game CIA installation. The home page links to the Windows/Linux/macOS offline converter downloads.
 - [3DS manual](https://zzcx88.github.io/neo3ds/manual.html): launcher controls, key configuration, turbo, quick saves and save paths.
 - [Changelog](https://zzcx88.github.io/neo3ds/changelog.html): every release, newest first.
 - [Korean site](https://zzcx88.github.io/neo3ds/ko/): the same pages in Korean.
