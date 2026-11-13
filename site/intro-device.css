@@ -18,67 +18,78 @@
 }
 .hero .device-controls button:hover { border-color: var(--gold); color: var(--gold); }
 .hero .launcher-screen-top { position:relative; }
-.hero .launcher-title-card { position:absolute; inset:0; }
+/* Top screen (#378): the real launcher is a dark plate with a red wordmark, the selected
+   game title and the tagline. No red top border; the hero image replaces the card. */
+.hero .launcher-title-card { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; align-items:center; padding:calc(34*var(--u)) calc(16*var(--u)) calc(18*var(--u)); background:var(--ink); color:var(--paper); text-align:center; }
 .hero .launcher-title-card[hidden] { display:none; }
-.hero .launcher-marquee { display:flex; flex-direction:column; justify-content:center; gap:calc(12*var(--u)); padding:calc(24*var(--u)); background:var(--ink); color:var(--paper); border-top:calc(6*var(--u)) solid var(--marquee); }
-.hero .launcher-marquee span { color:var(--gold); font:400 calc(13*var(--u))/1 var(--pixel-sm); letter-spacing:.15em; }
-.hero .launcher-marquee strong { font:400 calc(20*var(--u))/1.2 var(--pixel); overflow-wrap:anywhere; }
-.hero .launcher-marquee small { font:400 calc(10*var(--u))/1.4 var(--text); }
+.hero .launcher-wordmark-top { color:var(--marquee); font:700 calc(34*var(--u))/1 var(--pixel); letter-spacing:calc(2*var(--u)); }
+.hero .launcher-title-card strong { max-width:100%; font:700 calc(13*var(--u))/1.3 var(--pixel); overflow-wrap:anywhere; }
+.hero .launcher-tagline { color:var(--dim); font:400 calc(8.5*var(--u))/1.5 var(--pixel-sm); letter-spacing:.18em; }
 .hero .launcher-preview { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; }
 .hero .launcher-preview[hidden] { display:none; }
 .hero .launcher-screen { display:flex; flex-direction:column; background:var(--ink-2); color:var(--paper); font:400 calc(10*var(--u))/1.2 var(--text); }
 .hero .launcher-panel { display:flex; flex-direction:column; height:100%; min-height:0; }
-.hero .launcher-panel[hidden] { display:none; }
-.hero .launcher-bar { display:flex; justify-content:space-between; align-items:center; gap:calc(4*var(--u)); background:var(--marquee); color:var(--paper); padding:calc(3*var(--u)) calc(5*var(--u)); border-bottom:1px solid #C8151F; }
-.hero .launcher-wordmark { font:700 max(10px,calc(11*var(--u)))/1 var(--pixel); letter-spacing:.04em; color:var(--paper); }
-.hero .launcher-bar button { border:0; background:transparent; color:var(--paper); font:400 max(8px,calc(8.5*var(--u)))/1 var(--pixel-sm); padding:calc(3*var(--u)) calc(8*var(--u)); cursor:pointer; }
-.hero .launcher-bar button[aria-selected="true"] { background:var(--ink-2); color:var(--paper); border-radius:calc(2*var(--u)); }
+.hero .launcher-bar { display:flex; align-items:center; gap:calc(4*var(--u)); background:var(--marquee); color:var(--paper); padding:calc(2*var(--u)) calc(4*var(--u)); border-bottom:1px solid #C8151F; }
+.hero .launcher-wordmark { font:700 max(10px,calc(13*var(--u)))/1 var(--pixel); letter-spacing:.04em; color:var(--paper); }
+.hero .launcher-tabs { display:flex; align-items:center; gap:calc(2*var(--u)); margin-left:auto; }
+.hero .launcher-tabs button { display:flex; align-items:center; gap:calc(3*var(--u)); border:0; background:var(--marquee); color:var(--paper); font:400 max(8px,calc(9*var(--u)))/1 var(--pixel-sm); padding:calc(3*var(--u)) calc(7*var(--u)); cursor:pointer; }
+.hero .launcher-tabs button b { font:700 max(8px,calc(9*var(--u)))/1 var(--pixel); }
+.hero .launcher-tabs button[aria-selected="true"] { background:var(--ink); border-radius:calc(1*var(--u)); }
 .hero .launcher-rows { flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
-.hero .launcher-row { flex:1; min-height:0; width:100%; display:flex; align-items:center; justify-content:space-between; gap:calc(4*var(--u)); border:0; border-bottom:1px solid var(--line); padding:0 calc(5*var(--u)); color:var(--paper); background:transparent; font:inherit; text-align:left; cursor:pointer; }
-.hero .launcher-row-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:400 max(8px, calc(9*var(--u)))/1.2 var(--pixel); letter-spacing:.02em; }
-.hero .launcher-row-meta { flex:none; display:flex; align-items:center; gap:calc(3*var(--u)); font:400 max(7px, calc(7.5*var(--u)))/1 var(--pixel-sm); }
-.hero .launcher-star { color:var(--gold); }
-/* Real-launcher fidelity: gold belongs to the favorite star, so status text stays dim on
-   normal rows and brightens to --b (4.53:1) on the selected gray row. */
-.hero .launcher-status { color:var(--dim); }
+/* Real-launcher rows: a left star marker and the title, with the selected row on --pressed. */
+.hero .launcher-row { flex:0 0 calc(100% / 8); min-height:0; width:100%; display:flex; align-items:center; gap:calc(5*var(--u)); border:0; border-bottom:1px solid var(--line); padding:0 calc(6*var(--u)); color:var(--paper); background:transparent; font:inherit; text-align:left; cursor:pointer; }
+.hero .launcher-star { flex:none; width:max(9px, calc(10*var(--u))); color:var(--dim); font:400 max(7px, calc(8*var(--u)))/1 var(--pixel-sm); }
+.hero .launcher-star.is-fav { color:var(--gold); }
+.hero .launcher-row-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:400 max(8px, calc(10*var(--u)))/1.2 var(--pixel); letter-spacing:.02em; }
 .hero .launcher-row[aria-pressed="true"] { background:var(--pressed); color:var(--paper); }
-.hero .launcher-row[aria-pressed="true"] .launcher-status { color:var(--b); }
 .hero .launcher-row[aria-pressed="true"] .launcher-star { color:var(--b); }
 .hero .launcher-empty { padding:calc(8*var(--u)); color:var(--dim); }
-.hero .launcher-help { margin:0; flex:none; padding:calc(3*var(--u)) calc(5*var(--u)) calc(5*var(--u)); border-top:1px solid var(--line); background:var(--ink); color:var(--dim); font:400 max(7.5px, calc(7.5*var(--u)))/1.5 var(--pixel-sm); letter-spacing:.02em; }
-.hero .launcher-info { width:min(100%,480px); border-top:2px solid var(--marquee); padding:14px 0 0; font:400 13px/1.5 var(--text); }
-.hero .launcher-info b { display:block; color:var(--gold); font:400 11px/1.5 var(--pixel-sm); }
-.hero .launcher-info strong { display:block; font-size:16px; }
-.hero .launcher-info p { margin:6px 0; }
-.hero .launcher-info a { color:var(--gold); }
-.hero .launcher-actions { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px; }
-.hero .launcher-actions .btn { min-height:44px; }
-.hero .launcher-actions .btn[hidden] { display:none; }
-.hero .launcher-play { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:calc(6*var(--u)); height:100%; padding:calc(10*var(--u)); color:var(--paper); background:var(--ink-2); border-top:1px solid var(--line); }
-.hero .launcher-play[hidden] { display:none; }
-.hero .launcher-play-label { color:var(--gold); font:400 max(9px,calc(9*var(--u)))/1 var(--pixel-sm); letter-spacing:.16em; text-transform:uppercase; }
-.hero .launcher-play strong { color:var(--paper); font:400 max(12px,calc(15*var(--u)))/1.15 var(--pixel); overflow-wrap:anywhere; }
-.hero .launcher-play-back { width:100%; min-height:44px; margin-top:calc(4*var(--u)); padding:10px 12px; border:0; border-radius:3px; background:var(--marquee); color:var(--paper); font:400 12px/1.2 var(--pixel-sm); cursor:pointer; }
-.hero .launcher-play-back:hover { background:#C8151F; }
+.hero .launcher-help { margin:0; flex:none; padding:calc(4*var(--u)) calc(6*var(--u)) calc(5*var(--u)); border-top:1px solid var(--line); background:var(--ink); color:var(--dim); font:400 max(7.5px, calc(7.5*var(--u)))/1.5 var(--pixel-sm); letter-spacing:.02em; }
+.hero .launcher-help span { display:block; }
+/* The info panel has a fixed height (#378): only the long game note scrolls, so the label,
+   title, details, status and converter link never move as the selection changes. */
+.hero .launcher-info { display:flex; flex-direction:column; width:min(100%,480px); height:315px; border-top:2px solid var(--marquee); padding:14px 0 0; font:400 13px/1.5 var(--text); }
+.hero .launcher-info b { flex:none; display:block; color:var(--gold); font:400 11px/1.5 var(--pixel-sm); }
+.hero .launcher-info strong { flex:none; display:block; font-size:16px; }
+.hero .launcher-info p { flex:none; margin:6px 0; }
+.hero .launcher-info #launcherInfoStatus { margin-top:0; color:var(--dim); }
+.hero .launcher-info .launcher-notice { flex:none; color:var(--gold); font:400 11px/1.5 var(--pixel-sm); }
+.hero .launcher-info .launcher-notice[hidden] { display:none; }
+.hero .launcher-info .launcher-note { flex:1 1 auto; min-height:0; overflow:auto; margin-bottom:8px; padding-right:6px; }
+.hero .launcher-info > a { flex:none; margin-top:auto; color:var(--gold); }
 .hero button.shell-btn { cursor:pointer; }
 /* The device is rotated in a preserve-3d context, and Chrome then hands about half of the points
    inside a shell button to the .device container, so presses felt dead (#374). Only the real
-   controls take pointer events; every other part of the shell falls through and drags the device. */
-.hero .device { pointer-events:none; }
+   controls take pointer events; every other part of the shell falls through and drags the device.
+   Dragging must not select the mock hardware labels; page text outside .device stays selectable. */
+.hero .device {
+  pointer-events:none;
+  -webkit-user-select:none; user-select:none;
+}
 .hero .device button, .hero .device a, .hero .device .launcher-screen { pointer-events:auto; }
-.hero .dpad { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:calc(1*var(--u)); }
+/* A larger D-pad (#378): 72 units inside the widened 74-unit left column, so it never overlaps
+   the 288-unit screen or the face buttons. */
+.hero .dpad { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:calc(1*var(--u)); width:calc(72*var(--u)); height:calc(72*var(--u)); touch-action:manipulation; }
+.hero .shell-bottom { grid-template-columns:calc(74*var(--u)) calc(288*var(--u)) calc(74*var(--u)); padding-inline:calc(12*var(--u)); }
 .hero .dpad::before, .hero .dpad::after { content:none; }
-.hero .dpad button { display:grid; place-items:center; min-width:0; min-height:0; margin:0; padding:0; border:1px solid #3A3A44; border-radius:calc(2*var(--u)); background:linear-gradient(180deg,#26262F,#1C1C23); color:var(--dim); font:400 calc(7*var(--u))/1 var(--pixel-sm); cursor:pointer; box-shadow:inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.05); }
+.hero .dpad button { display:grid; place-items:center; min-width:0; min-height:0; margin:0; padding:0; border:1px solid #3A3A44; border-radius:calc(2*var(--u)); background:linear-gradient(180deg,#26262F,#1C1C23); color:var(--dim); font:400 max(7px, calc(8*var(--u)))/1 var(--pixel-sm); cursor:pointer; box-shadow:inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.05); touch-action:manipulation; }
 .hero .dpad button span { pointer-events:none; }
+/* Up and down take the empty corners of their row as touch area, so the 24-unit arm is not
+   the whole target on a phone; the strip stays inside the D-pad and never reaches the screen. */
+.hero .dpad-btn { position:relative; }
+.hero .dpad-up::before, .hero .dpad-down::before {
+  content:""; position:absolute; top:0; bottom:0;
+  left:calc(-100% - 1*var(--u)); right:calc(-100% - 1*var(--u));
+}
 .hero .dpad-up { grid-area:1 / 2 / 2 / 3; }
 .hero .dpad-left { grid-area:2 / 1 / 3 / 2; }
 .hero .dpad-right { grid-area:2 / 3 / 3 / 4; }
 .hero .dpad-down { grid-area:3 / 2 / 4 / 3; }
 .hero .shell-btn:hover, .hero .dpad button:hover { border-color:var(--gold); color:var(--gold); }
 .hero .shell-btn:active, .hero .dpad button:active { transform:translateY(calc(1*var(--u))); background:#1B1B22; color:var(--gold); box-shadow:inset 0 calc(2*var(--u)) calc(4*var(--u)) rgba(0,0,0,.6); }
-.hero .launcher-play-back:active { transform:translateY(calc(1*var(--u))); background:var(--ink); color:var(--gold); }
 .hero :is(button, a, .launcher-screen):focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
 @media (max-width: 520px) { .hero .device { --u:min(1px,calc((100vw - 70px)/480)); } }
+@media (max-width: 760px) { .hero .launcher-info { height:300px; } }
 
 /* Volume: the two shells get a back plate, four side planes and a rim, the hinge
    gets a back plate, and a ground shadow replaces the flat drop-shadow filter.
@@ -92,6 +103,16 @@
       scale3d(var(--device-scale, 1), var(--device-scale, 1), var(--device-scale, 1));
   }
   .hero .shell { transform-style: preserve-3d; }
+  /* Open to about 150 degrees (#378): the top shell swings around the fixed hinge, the bottom
+     shell stays flat, and the whole-device drag rotation still applies on top. The negative
+     margin removes the projection loss (250u * (1 - cos 29deg) ≈ 31u) so the hero stays tight. */
+  .hero .shell-top {
+    transform-origin: center bottom;
+    /* rotateX positive sends the top edge away from the viewer, which is the ~150-degree
+       clamshell pose on screen; -29 leaned the screen forward past the hinge. */
+    transform: rotateX(29deg);
+    margin-top: calc(-31 * var(--u));
+  }
   .hero .shell::before {
     content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
     background:linear-gradient(180deg,#1A1A20,#0C0C10);

@@ -9,13 +9,16 @@ test('rest matches the spec angle of -6deg x -14deg', () => {
   assert.deepEqual(REST, { x: -6, y: -14 });
 });
 
-test('the logarithmic entrance starts at the wide angle and ends at rest', () => {
+test('the 2.4s entrance starts wide at frame 0 and ends at rest at 2400ms', () => {
+  assert.equal(ENTRANCE_MS, 2400);
   const first = entranceFrame(0);
   assert.deepEqual(
     { x: first.x, y: first.y, opacity: first.opacity, scale: first.scale, done: first.done },
     { x: ENTRANCE_FROM.x, y: ENTRANCE_FROM.y, opacity: .35, scale: .94, done: false },
   );
-  const settled = entranceFrame(ENTRANCE_MS);
+  const late = entranceFrame(2399);
+  assert.equal(late.done, false);
+  const settled = entranceFrame(2400);
   assert.deepEqual(
     { x: settled.x, y: settled.y, opacity: settled.opacity, scale: settled.scale, done: settled.done },
     { x: REST.x, y: REST.y, opacity: 1, scale: 1, done: true },
@@ -34,12 +37,15 @@ test('the entrance decelerates instead of moving at a constant rate', () => {
   assert.ok(half - quarter > threeQuarters - half, 'each later quarter adds less travel');
 });
 
-test('400ms lands past the midpoint of the rotation', () => {
+test('400ms lands past the midpoint of the rotation on the way to 2400ms', () => {
   const frame = entranceFrame(400);
   assert.ok(!frame.done);
-  assert.ok(frame.y > -38 && frame.y < REST.y, `y=${frame.y}`);
-  assert.ok(frame.x < ENTRANCE_FROM.x && frame.x > REST.x, `x=${frame.x}`);
-  assert.ok(frame.opacity > .35 && frame.opacity < 1);
+  // log1p(9/6)/log(10) ≈ .398 of the travel: y ≈ -44.7deg, x ≈ 3.6deg.
+  assert.ok(frame.y > -48 && frame.y < -42, `y=${frame.y}`);
+  assert.ok(frame.x > 1 && frame.x < 6, `x=${frame.x}`);
+  assert.ok(frame.opacity > .5 && frame.opacity < .75);
+  const halfway = entranceFrame(1200);
+  assert.ok(halfway.y > frame.y && halfway.y < REST.y);
 });
 
 test('drag rotation is clamped to the widened range', () => {
