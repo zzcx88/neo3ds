@@ -52,9 +52,17 @@ if (screen && window.NEO3DS_DB) {
       button.dataset.id = row.id;
       button.setAttribute('aria-pressed', String(row.id === game?.id));
       const title = document.createElement('span');
+      title.className = 'launcher-row-title';
       title.textContent = row.title;
       const mark = document.createElement('span');
-      mark.textContent = `${row.favorite ? '★' : '☆'} · ${row.statusLabel}`;
+      mark.className = 'launcher-row-meta';
+      const star = document.createElement('span');
+      star.className = 'launcher-star';
+      star.textContent = row.favorite ? '★' : '☆';
+      const status = document.createElement('span');
+      status.className = 'launcher-status';
+      status.textContent = row.statusLabel;
+      mark.append(star, status);
       button.append(title, mark);
       rows.append(button);
     }

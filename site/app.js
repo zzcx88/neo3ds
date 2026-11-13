@@ -29,6 +29,7 @@ const EN = {
   'launcher.back': 'Back',
   'launcher.previewLabel': 'Preview',
   'launcher.playPanel': 'Preview panel',
+  'launcher.help': 'A/START start · B back · SELECT favorite',
   'launcher.dpad': 'D-pad',
   'launcher.up': 'Up',
   'launcher.down': 'Down',
