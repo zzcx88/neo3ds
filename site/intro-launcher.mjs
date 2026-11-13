@@ -59,8 +59,10 @@ if (screen && window.NEO3DS_DB) {
     if (event.target.closest('[role="tab"]')) return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
+      const rowFocused = !!event.target.closest('[data-set]');
       launcher.move(event.key === 'ArrowDown' ? 1 : -1);
       render(true);
+      if (rowFocused) rows.querySelector('[aria-pressed="true"]')?.focus();
     } else if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-set]'))) {
       event.preventDefault();
       message.textContent = launcher.view(lang).messages.launch;
