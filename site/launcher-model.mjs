@@ -1,16 +1,18 @@
 const copy = {
   en: {
     status: ['Buildable', 'Verified on hardware', 'Unsupported'],
-    demo: 'Demo: this is the full catalog. The real launcher shows only games installed on your 3DS.',
+    demo: 'Demo: five games picked from the catalog because each has a real 3DS screenshot. The real launcher lists only games installed on your 3DS.',
     launch: 'On a real 3DS, A or START launches the selected installed game.',
-    qr: 'On a real 3DS, Y or QR opens the transfer flow; this demo does not transfer files.',
+    preview: 'Preview',
+    returned: 'Back to the launcher.',
     empty: 'No favorites yet.',
   },
   ko: {
     status: ['변환 가능', '실기 확인', '변환 불가'],
-    demo: '체험용 전체 목록입니다. 실제 런처에는 3DS에 설치한 게임만 표시됩니다.',
+    demo: '체험판: 실제 3DS 스크린샷이 있는 다섯 게임만 전체 목록에서 골랐습니다. 실제 런처에는 3DS에 설치한 게임만 표시됩니다.',
     launch: '실제 3DS에서는 A 또는 START로 선택한 설치 게임을 실행합니다.',
-    qr: '실제 3DS에서는 Y 또는 QR로 전송 기능을 엽니다. 이 체험에서는 전송하지 않습니다.',
+    preview: '미리보기',
+    returned: '런처로 돌아왔습니다.',
     empty: '즐겨찾기가 없습니다.',
   },
 };
@@ -49,7 +51,7 @@ export function createLauncher(catalog, demoGames = null) {
     const playing = games.find(game => game.id === playingId) ?? null;
     return { tab, total: list.length, rows: list.slice(start, start + size).map(game => display(game, language)),
       selected: display(list[index], language) ?? null, playing: display(playing, language),
-      messages: { demo: text.demo, launch: text.launch, qr: text.qr, empty: text.empty } };
+      messages: { demo: text.demo, launch: text.launch, preview: text.preview, returned: text.returned, empty: text.empty } };
   };
   return {
     view,
@@ -57,6 +59,15 @@ export function createLauncher(catalog, demoGames = null) {
       if (playingId) return;
       const length = visible().length;
       if (length) index = (index + Math.sign(direction) + length) % length;
+    },
+    first() {
+      if (playingId) return;
+      index = 0;
+    },
+    last() {
+      if (playingId) return;
+      const length = visible().length;
+      if (length) index = length - 1;
     },
     select(id) {
       if (playingId) return;

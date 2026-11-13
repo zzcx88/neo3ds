@@ -76,6 +76,23 @@ test('moving the selection wraps and keeps the selected game on screen', () => {
   assert.equal(launcher.view().selected.title, "KOF '98");
 });
 
+test('first and last jump within the current tab and do nothing while playing', () => {
+  const launcher = demo();
+  launcher.last();
+  assert.equal(launcher.view().selected.id, 'samsh5sp');
+  launcher.first();
+  assert.equal(launcher.view().selected.id, 'kof98h');
+  launcher.select('mslug3');
+  launcher.toggleFavorite();
+  launcher.setTab('fav');
+  launcher.last();
+  assert.equal(launcher.view().selected.id, 'mslug3');
+  launcher.start();
+  launcher.first();
+  launcher.last();
+  assert.equal(launcher.view().selected.id, 'mslug3');
+});
+
 test('favorites filter immediately, stay across tabs, and reset', () => {
   const launcher = demo();
   launcher.select('sonicwi3');
@@ -154,12 +171,17 @@ test('status labels and notes follow the page language', () => {
   assert.equal(launcher.view('ko').selected.statusLabel, '변환 가능');
 });
 
-test('the demo explains installed games without transferring files', () => {
+test('the demo copy describes the five previews and the preview/back announcements', () => {
   const { messages } = demo().view('en');
-  assert.match(messages.demo, /demo/i);
+  assert.match(messages.demo, /five/i);
   assert.match(messages.demo, /installed/i);
-  assert.match(messages.launch, /real/i);
-  assert.match(messages.qr, /transfer/i);
+  assert.doesNotMatch(messages.demo, /full catalog/i);
+  assert.equal(messages.qr, undefined);
+  assert.equal(messages.preview, 'Preview');
+  assert.equal(messages.returned, 'Back to the launcher.');
+  const ko = demo().view('ko').messages;
+  assert.match(ko.demo, /다섯/);
+  assert.equal(ko.preview, '미리보기');
   assert.equal(createLauncher({ games: [] }).view().selected, null);
 });
 

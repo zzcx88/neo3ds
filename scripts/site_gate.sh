@@ -16,7 +16,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 
-assets = {'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs'}
+assets = {'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs', 'demo-games.mjs'}
 for asset in assets:
     assert (Path('site') / asset).is_file(), f'missing intro asset: {asset}'
 

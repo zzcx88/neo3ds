@@ -48,6 +48,7 @@
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../intro-device.css">
 <link rel="modulepreload" href="../launcher-model.mjs">
+<link rel="modulepreload" href="../demo-games.mjs">
 <link rel="stylesheet" href="../intro-home.css">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
 </head>
@@ -106,8 +107,15 @@
           <span class="shell-side side-b" aria-hidden="true"></span>
           <div class="cam"></div>
           <span class="speaker"></span>
-          <div class="screen-outer launcher-marquee">
-            <span>neo3ds</span><strong id="launcherTitle"></strong><small id="launcherSubtitle"></small>
+          <div class="screen-outer launcher-screen-top" id="launcherTopScreen">
+            <div class="launcher-marquee launcher-title-card" id="launcherTitleCard">
+              <span>neo3ds</span><strong id="launcherTitle"></strong><small id="launcherSubtitle"></small>
+            </div>
+            <img class="launcher-preview" data-demo-id="kof98h" src="../media/hero_kof98.jpg" alt="" hidden>
+            <img class="launcher-preview" data-demo-id="kof98h-maxres" src="../media/hero_maxres.jpg" alt="" hidden>
+            <img class="launcher-preview" data-demo-id="mslug3" src="../media/hero_mslug3.jpg" alt="" hidden>
+            <img class="launcher-preview" data-demo-id="sonicwi3" src="../media/hero_sonicwi3.jpg" alt="" hidden>
+            <img class="launcher-preview" data-demo-id="samsh5sp" src="../media/hero_samsho5.jpg" alt="" hidden>
           </div>
         </div>
         <div class="hinge"><span></span><span></span></div>
@@ -116,26 +124,38 @@
           <span class="shell-side side-r" aria-hidden="true"></span>
           <span class="shell-side side-t" aria-hidden="true"></span>
           <span class="shell-side side-b" aria-hidden="true"></span>
-          <span class="shell-btn sh-l">L</span>
-          <span class="shell-btn sh-r">R</span>
+          <button type="button" class="shell-btn sh-l" data-launcher-action="first" aria-label="처음 게임" data-i18n-attr="aria-label:launcher.first">L</button>
+          <button type="button" class="shell-btn sh-r" data-launcher-action="last" aria-label="마지막 게임" data-i18n-attr="aria-label:launcher.last">R</button>
           <div class="pad-wrap">
             <div class="circle-pad"><span></span></div>
-            <div class="dpad"></div>
+            <div class="dpad" role="group" aria-label="방향 패드" data-i18n-attr="aria-label:launcher.dpad">
+              <button type="button" class="dpad-btn dpad-up" data-launcher-action="up" aria-label="위" data-i18n-attr="aria-label:launcher.up"><span aria-hidden="true">▲</span></button>
+              <button type="button" class="dpad-btn dpad-left" data-launcher-action="tab-all" aria-label="왼쪽: 전체" data-i18n-attr="aria-label:launcher.left"><span aria-hidden="true">◀</span></button>
+              <button type="button" class="dpad-btn dpad-right" data-launcher-action="tab-fav" aria-label="오른쪽: 즐겨찾기" data-i18n-attr="aria-label:launcher.right"><span aria-hidden="true">▶</span></button>
+              <button type="button" class="dpad-btn dpad-down" data-launcher-action="down" aria-label="아래" data-i18n-attr="aria-label:launcher.down"><span aria-hidden="true">▼</span></button>
+            </div>
           </div>
           <div class="touch-outer launcher-screen" id="deviceLauncherScreen" role="group" tabindex="0" aria-label="런처 목록: 방향키로 선택" data-i18n-attr="aria-label:launcher.screen">
-            <div class="launcher-bar"><b data-i18n="launcher.demoLabel">체험판</b><div role="tablist" aria-label="목록" data-i18n-attr="aria-label:launcher.tabs"><button type="button" role="tab" data-tab="all" aria-selected="true">All</button><button type="button" role="tab" data-tab="fav" aria-selected="false">Fav</button></div></div>
-            <div class="launcher-rows" id="launcherRows"></div>
+            <div class="launcher-panel" id="launcherPanel" role="group" aria-label="런처 패널" data-i18n-attr="aria-label:launcher.panel">
+              <div class="launcher-bar"><b data-i18n="launcher.demoLabel">체험판</b><div role="tablist" aria-label="목록" data-i18n-attr="aria-label:launcher.tabs"><button type="button" role="tab" data-tab="all" aria-selected="true">All</button><button type="button" role="tab" data-tab="fav" aria-selected="false">Fav</button></div></div>
+              <div class="launcher-rows" id="launcherRows"></div>
+            </div>
+            <div class="launcher-play" id="launcherPlay" role="group" aria-live="polite" aria-label="미리보기 패널" data-i18n-attr="aria-label:launcher.playPanel" hidden>
+              <span class="launcher-play-label" data-i18n="launcher.previewLabel">미리보기</span>
+              <strong id="launcherPlayTitle"></strong>
+              <button type="button" class="launcher-play-back" id="launcherPlayBack" data-launcher-action="back" data-i18n="launcher.back">돌아가기</button>
+            </div>
           </div>
           <div class="face">
-            <button type="button" class="shell-btn face-a" data-launcher-action="launch" aria-label="게임 실행 안내" data-i18n-attr="aria-label:launcher.launch">A</button>
-            <span class="shell-btn face-b">B</span>
-            <span class="shell-btn face-x">X</span>
-            <button type="button" class="shell-btn face-y" data-launcher-action="qr" aria-label="전송 안내" data-i18n-attr="aria-label:launcher.transfer">Y</button>
+            <button type="button" class="shell-btn face-a" data-launcher-action="start" aria-label="A: 게임 시작" data-i18n-attr="aria-label:launcher.faceA">A</button>
+            <button type="button" class="shell-btn face-b" data-launcher-action="back" aria-label="B: 돌아가기" data-i18n-attr="aria-label:launcher.faceB">B</button>
+            <button type="button" class="shell-btn face-x" aria-label="X 버튼 (장식)" data-i18n-attr="aria-label:launcher.faceX">X</button>
+            <button type="button" class="shell-btn face-y" aria-label="Y 버튼 (장식)" data-i18n-attr="aria-label:launcher.faceY">Y</button>
           </div>
           <div class="strip">
-            <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="즐겨찾기 전환" data-i18n-attr="aria-label:launcher.favorite" aria-pressed="false">SELECT</button>
-            <span class="shell-btn small">HOME</span>
-            <button type="button" class="shell-btn small" data-launcher-action="launch" aria-label="게임 실행 안내" data-i18n-attr="aria-label:launcher.launch">START</button>
+            <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="SELECT: 즐겨찾기 전환" data-i18n-attr="aria-label:launcher.select" aria-pressed="false">SELECT</button>
+            <button type="button" class="shell-btn small" aria-label="HOME 버튼 (장식)" data-i18n-attr="aria-label:launcher.home">HOME</button>
+            <button type="button" class="shell-btn small" data-launcher-action="start" aria-label="START: 게임 시작" data-i18n-attr="aria-label:launcher.startBtn">START</button>
           </div>
         </div>
       </div>
@@ -144,16 +164,13 @@
         <p data-i18n="device.hint">끌어서 기기를 돌려보세요.</p>
         <button type="button" data-rotate="reset" data-i18n="device.reset">각도 초기화</button>
       </div>
-      <div class="launcher-touch-controls" role="group" aria-label="런처 조작" data-i18n-attr="aria-label:launcher.controls">
-        <button type="button" data-launcher-action="previous" data-i18n="launcher.previous">이전 게임</button>
-        <button type="button" data-launcher-action="next" data-i18n="launcher.next">다음 게임</button>
-        <button type="button" data-launcher-action="favorite" aria-pressed="false" data-i18n="launcher.favoriteText">즐겨찾기</button>
-        <button type="button" data-launcher-tab="all">All</button><button type="button" data-launcher-tab="fav">Fav</button>
-        <button type="button" data-launcher-action="launch">A / START</button><button type="button" data-launcher-action="qr">Y / QR</button>
-      </div>
       <figcaption class="launcher-info" id="launcherInfo">
         <b data-i18n="launcher.info">선택한 게임</b>
         <strong id="launcherInfoTitle"></strong><p id="launcherInfoDetails"></p><p id="launcherInfoStatus"></p>
+        <div class="launcher-actions">
+          <button type="button" class="btn btn-primary btn-lg" id="launcherStartAction" data-launcher-action="start" data-i18n="launcher.start">게임 시작</button>
+          <button type="button" class="btn btn-ghost btn-lg" id="launcherBackAction" data-launcher-action="back" data-i18n="launcher.back" hidden>돌아가기</button>
+        </div>
         <p id="launcherDemo"></p><p data-i18n="launcher.files">선택한 게임은 전달되지 않습니다. 변환기에서 직접 파일을 선택하세요.</p>
         <a href="convert.html" data-i18n="launcher.convert">변환기로 이동 →</a>
         <p id="launcherMessage" role="status" aria-live="polite"></p>
