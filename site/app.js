@@ -29,6 +29,8 @@ const EN = {
   'launcher.info': 'Selected game',
   'launcher.files': 'The selected game is not passed to the converter. Choose your own files there.',
   'launcher.convert': 'Go to converter →',
+  'launcher.manualLink': 'Launch and controls guide →',
+  'launcher.installLink': 'Transfer and installation guide →',
   'device.controls': 'Rotate the device',
   'device.hint': 'Drag or use the direction buttons to rotate the device.',
   'device.left': 'Left',

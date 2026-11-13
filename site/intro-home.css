@@ -40,6 +40,14 @@
   .page-home .hero-copy { padding-bottom: 0; }
 }
 @media (max-width: 760px) {
+  .page-home .hero-grid { gap: 0; }
+  .page-home .hero-copy { display: contents; }
+  .page-home .hero-copy h1 { order: 0; }
+  .page-home .hero-lede { order: 1; }
+  .page-home .cta-row { order: 2; }
+  .page-home .device-col { order: 3; margin-top: 24px; }
+  .page-home .hero-stats { order: 4; }
+  .page-home .hero-copy > .tiny { order: 5; }
   .page-home .sec { padding-block: 56px; }
   .page-home #steps > .wrap { padding-top: 26px; }
   .page-home #steps .out-card-launch { padding: 20px; }
