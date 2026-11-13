@@ -103,11 +103,12 @@ if (screen && window.NEO3DS_DB) {
     playBack.focus();
   }
 
-  function back(focus = false) {
+  function back() {
     const view = launcher.back(lang);
     render();
     message.textContent = view.messages.returned;
-    if (focus) focusSelected();
+    // Every back path (physical B, info Back, Escape) restores focus to the selected row.
+    focusSelected();
   }
 
   // `keyboard` only moves focus for keyboard navigation; a pointer click on the D-pad,
@@ -115,7 +116,7 @@ if (screen && window.NEO3DS_DB) {
   function run(action, keyboard = false) {
     const view = launcher.view(lang);
     if (view.playing) {
-      if (action === 'back') back(keyboard);
+      if (action === 'back') back();
       return;
     }
     if (action === 'up' || action === 'down') {
@@ -181,7 +182,7 @@ if (screen && window.NEO3DS_DB) {
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape' || !launcher.view(lang).playing) return;
     event.preventDefault();
-    back(true);
+    back();
   });
 
   render();
