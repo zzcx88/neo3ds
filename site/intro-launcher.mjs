@@ -61,7 +61,7 @@ if (screen && window.NEO3DS_DB) {
       event.preventDefault();
       launcher.move(event.key === 'ArrowDown' ? 1 : -1);
       render(true);
-    } else if (event.key === 'Enter' && event.target === screen) {
+    } else if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-set]'))) {
       event.preventDefault();
       message.textContent = launcher.view(lang).messages.launch;
     }
