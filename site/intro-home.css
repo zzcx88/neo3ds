@@ -1,6 +1,10 @@
 /* The home page pairs an arcade cabinet ground with a single paper menu. */
 .page-home .hero { border-bottom: 6px solid var(--marquee); }
-.page-home .hero-copy { align-self: center; padding-bottom: 4rem; }
+.page-home .hero-copy { align-self: center; }
+/* Keeps the left column's old breathing room now that the notes are a grid item. */
+@media (min-width: 1081px) {
+  .page-home .hero-grid > .tiny { padding-bottom: 4rem; }
+}
 .page-home .hero-stats { width: 100%; border-top: 2px solid var(--marquee); }
 .page-home .sec { padding-block: 80px; }
 .page-home .sec h2 { max-width: 24ch; }
@@ -36,18 +40,9 @@
 .page-home #feedback .report { border-radius: 0; background: var(--panel-2); }
 .page-home #legal { border-bottom: 0; }
 
-@media (max-width: 1080px) {
-  .page-home .hero-copy { padding-bottom: 0; }
-}
 @media (max-width: 760px) {
   .page-home .hero-grid { gap: 0; }
-  .page-home .hero-copy { display: contents; }
-  .page-home .hero-copy h1 { order: 0; }
-  .page-home .hero-lede { order: 1; }
-  .page-home .cta-row { order: 2; }
-  .page-home .device-col { order: 3; margin-top: 24px; }
-  .page-home .hero-stats { order: 4; }
-  .page-home .hero-copy > .tiny { order: 5; }
+  .page-home .device-col { margin-top: 24px; }
   .page-home .sec { padding-block: 56px; }
   .page-home #steps > .wrap { padding-top: 26px; }
   .page-home #steps .out-card-launch { padding: 20px; }
