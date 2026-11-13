@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   REST, ENTRANCE_FROM, ENTRANCE_MS, DRAG_LIMITS,
-  clamp, logEaseOut, entranceFrame, dragTo,
+  clamp, easeOutCirc, entranceFrame, dragTo,
 } from './intro-motion.mjs';
 
 test('rest matches the spec angle of -6deg x -14deg', () => {
@@ -26,11 +26,11 @@ test('the 2.4s entrance starts wide at frame 0 and ends at rest at 2400ms', () =
 });
 
 test('the entrance decelerates instead of moving at a constant rate', () => {
-  assert.equal(logEaseOut(0), 0);
-  assert.equal(logEaseOut(1), 1);
-  const quarter = logEaseOut(.25);
-  const half = logEaseOut(.5);
-  const threeQuarters = logEaseOut(.75);
+  assert.equal(easeOutCirc(0), 0);
+  assert.equal(easeOutCirc(1), 1);
+  const quarter = easeOutCirc(.25);
+  const half = easeOutCirc(.5);
+  const threeQuarters = easeOutCirc(.75);
   assert.ok(quarter > .25, 'the first quarter already covers a quarter of the travel');
   assert.ok(threeQuarters > .75);
   assert.ok(quarter < half && half < threeQuarters, 'the curve is monotonic');
@@ -40,10 +40,10 @@ test('the entrance decelerates instead of moving at a constant rate', () => {
 test('400ms lands past the midpoint of the rotation on the way to 2400ms', () => {
   const frame = entranceFrame(400);
   assert.ok(!frame.done);
-  // log1p(9/6)/log(10) ≈ .398 of the travel: y ≈ -44.7deg, x ≈ 3.6deg.
-  assert.ok(frame.y > -48 && frame.y < -42, `y=${frame.y}`);
-  assert.ok(frame.x > 1 && frame.x < 6, `x=${frame.x}`);
-  assert.ok(frame.opacity > .5 && frame.opacity < .75);
+  // sqrt(1 - (1/6 - 1)^2) ≈ .553 of the travel: y ≈ -36.8deg, x ≈ 1.2deg.
+  assert.ok(frame.y > -39 && frame.y < -35, `y=${frame.y}`);
+  assert.ok(frame.x > 0 && frame.x < 3, `x=${frame.x}`);
+  assert.ok(frame.opacity > .69 && frame.opacity < .73);
   const halfway = entranceFrame(1200);
   assert.ok(halfway.y > frame.y && halfway.y < REST.y);
 });

@@ -9,17 +9,18 @@ const DRAG_RATIO = .25;
 
 export const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-// Log ease-out: 28% of the travel in the first 10% of the time, then a long settle.
-export function logEaseOut(progress) {
+// Circular ease-out: sqrt(1 - (t - 1)^2). It leaves the start fast and lands with a
+// near-zero slope, so the 2.4s rotation settles without the abrupt log stop.
+export function easeOutCirc(progress) {
   const t = clamp(progress, 0, 1);
-  return Math.log1p(9 * t) / Math.log(10);
+  return Math.sqrt(1 - (t - 1) ** 2);
 }
 
 export function entranceFrame(elapsed) {
   if (elapsed >= ENTRANCE_MS) {
     return { x: REST.x, y: REST.y, opacity: 1, scale: 1, done: true };
   }
-  const eased = logEaseOut(Math.max(0, elapsed) / ENTRANCE_MS);
+  const eased = easeOutCirc(Math.max(0, elapsed) / ENTRANCE_MS);
   return {
     x: ENTRANCE_FROM.x + (REST.x - ENTRANCE_FROM.x) * eased,
     y: ENTRANCE_FROM.y + (REST.y - ENTRANCE_FROM.y) * eased,

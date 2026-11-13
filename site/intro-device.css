@@ -108,9 +108,9 @@
      margin removes the projection loss (250u * (1 - cos 29deg) ≈ 31u) so the hero stays tight. */
   .hero .shell-top {
     transform-origin: center bottom;
-    /* rotateX positive sends the top edge away from the viewer, which is the ~150-degree
-       clamshell pose on screen; -29 leaned the screen forward past the hinge. */
-    transform: rotateX(29deg);
+    /* rotateX negative brings the top edge toward the viewer, which is the ~150-degree clamshell
+       pose; positive pushed the screen away and read as folded shut (#378). */
+    transform: rotateX(-29deg);
     margin-top: calc(-31 * var(--u));
   }
   .hero .shell::before {
