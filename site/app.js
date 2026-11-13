@@ -15,7 +15,7 @@ const EN = {
   'a11y.noscript': 'This page needs JavaScript. The game list and the converter demo will not run.',
   'nav.download': 'Download', 'nav.games': 'Games', 'nav.faq': 'FAQ',
   'cta.download': 'Convert now',
-  'hero.h1': 'The arcade you remember,<br>now on your 3DS',
+  'hero.h1': 'The arcade you remember, <br>now on your 3DS',
   'launcher.screen': 'Launcher list: use arrow keys to select',
   'launcher.tabs': 'Game list',
   'launcher.controls': 'Launcher controls',

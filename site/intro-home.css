@@ -1,7 +1,6 @@
 /* The home page pairs an arcade cabinet ground with a single paper menu. */
 .page-home .hero { border-bottom: 6px solid var(--marquee); }
 .page-home .hero-copy { align-self: center; padding-bottom: 4rem; }
-.page-home .hero h1 { max-width: 13ch; }
 .page-home .hero-stats { width: 100%; border-top: 2px solid var(--marquee); }
 .page-home .sec { padding-block: 80px; }
 .page-home .sec h2 { max-width: 24ch; }
