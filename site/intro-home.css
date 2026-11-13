@@ -9,24 +9,24 @@
 .page-home .sec { padding-block: 80px; }
 .page-home .sec h2 { max-width: 24ch; }
 
-.page-home #steps { background: var(--paper); color: var(--ink); border-bottom: 0; }
+.page-home #steps { background: var(--ink-2); color: var(--paper); border-bottom: 0; }
 .page-home #steps > .wrap { border-top: 6px solid var(--marquee); padding-top: 34px; }
 .page-home #steps .lede,
 .page-home #steps .steps p,
 .page-home #steps .check li,
 .page-home #steps .out-alt p,
-.page-home #steps .prep .tiny { color: var(--panel); }
-.page-home #steps .step-no { display: inline-grid; place-items: center; width: 36px; height: 36px; background: var(--marquee); color: var(--paper); border-radius: 6px; }
-.page-home #steps .steps li { border-color: var(--ink); }
-.page-home #steps .check li { border-color: var(--pressed); }
-.page-home #steps .check b { color: var(--marquee); }
-.page-home #steps .out-alt { background: transparent; border-color: var(--pressed); border-radius: 0; }
-.page-home #steps .out-alt .btn { color: var(--ink); border-color: var(--ink); }
-.page-home #steps .out-alt .btn:hover { color: var(--marquee); border-color: var(--marquee); }
+.page-home #steps .prep .tiny { color: #C9C9D2; }
+.page-home #steps .step-no { display: inline-grid; place-items: center; width: 36px; height: 36px; background: var(--marquee); color: var(--paper); border: 1px solid #6E0A12; border-radius: 6px; }
+.page-home #steps .steps li { border-top: 1px solid var(--line); }
+.page-home #steps .check li { border-color: var(--line); }
+.page-home #steps .check b { color: var(--gold); }
+.page-home #steps .out-alt { background: transparent; border-color: var(--line); border-radius: 0; }
+.page-home #steps .out-alt .btn { color: var(--paper); border-color: var(--line); }
+.page-home #steps .out-alt .btn:hover { color: var(--gold); border-color: var(--gold); }
 .page-home #steps .out-card-launch { background: var(--ink); color: var(--paper); border: 2px solid var(--gold); border-radius: 0; padding: 26px; }
 .page-home #steps .out-card-launch p { color: #D6D6DC; }
 .page-home #steps .out-card-launch .kicker { color: var(--gold); }
-.page-home #steps :focus-visible { outline-color: var(--marquee); }
+.page-home #steps :focus-visible { outline-color: var(--gold); }
 .page-home #steps .out-card-launch :focus-visible { outline-color: var(--gold); }
 
 .page-home #games { background: var(--ink-2); }
