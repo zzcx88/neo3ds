@@ -178,9 +178,12 @@ if (screen && window.NEO3DS_DB) {
     }
   });
 
-  // Escape leaves the playing view from anywhere on the page, not only inside .device-col.
+  // Escape leaves the playing view from anywhere on the page, not only inside .device-col,
+  // but never steals Escape from a form control, editor or open dialog.
   document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape' || !launcher.view(lang).playing) return;
+    if (event.key !== 'Escape' ||
+        event.target.closest?.('input, textarea, select, [contenteditable="true"], dialog[open]')) return;
+    if (!launcher.view(lang).playing) return;
     event.preventDefault();
     back();
   });
