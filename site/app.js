@@ -80,7 +80,7 @@ const EN = {
   'faq.q1': 'Where do I get the ROMs?', 'faq.a1': 'Nowhere. You need romsets for games you own, and a built CIA contains ROM data, so don\'t share it.',
   'faq.q2': 'Is it really 60 fps on an Old 3DS?', 'faq.a2': 'These ran at full speed on hardware: KOF \'95-\'99, 2000, 2002, Metal Slug 1, X, 3 and 5, Neo Turf Masters, Neo Drift Out, SVC Chaos and Samurai Shodown V Special. Metal Slug 2, X and 3 slow down in the same scenes the original board did, and Aero Fighters 3 stays playable.',
   'faq.q3': 'No sound?', 'faq.a3': 'The SD card needs <code>/3ds/dspfirm.cdc</code>; a tool like DSP1 creates it once.',
-  'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, which leaves a lot more headroom. We haven\'t confirmed it on hardware.',
+  'faq.q5': 'What about a New 3DS?', 'faq.a5': 'The CIA asks for 804MHz and the L2 cache, and we confirmed on hardware that it runs more comfortably.',
   'faq.q6': 'Can I use it commercially?', 'faq.a6': 'No: the included CPU cores (Cyclone 68000, DrZ80) allow non-commercial use only.',
   'legal.h2': 'Legal',
   'legal.p1': 'No ROMs, BIOS or game data are included here.<br>Convert only games you own, and never distribute a CIA you build.',
