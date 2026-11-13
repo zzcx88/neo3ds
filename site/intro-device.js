@@ -40,6 +40,9 @@
     event.preventDefault();
     controls.querySelector(`[data-rotate="${action}"]`).click();
   });
+  stage.addEventListener('dragstart', (event) => {
+    if (event.target instanceof HTMLImageElement) event.preventDefault();
+  });
   stage.addEventListener('pointerdown', (event) => {
     if (motion.matches || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) || event.target.closest('button, a, input, select, textarea')) return;
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: x, startY: y };
