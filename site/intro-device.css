@@ -31,8 +31,11 @@
 .hero .launcher-play-top[hidden] { display:none; }
 .hero .launcher-preview { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; }
 .hero .launcher-preview[hidden] { display:none; }
-.hero .launcher-screen { display:flex; flex-direction:column; background:var(--ink-2); color:var(--paper); font:400 calc(10*var(--u))/1.2 var(--text); }
-.hero .launcher-panel { display:flex; flex-direction:column; height:100%; min-height:0; }
+.hero .launcher-screen { position:relative; background:var(--ink-2); color:var(--paper); font:400 calc(10*var(--u))/1.2 var(--text); }
+/* Both screens fill the same box absolutely (#361). A flex-sized column panel inside the
+   transformed shell collapsed to zero height on iOS WebKit once the in-game screen replaced the
+   launcher; a definite inset box removes that dependency. */
+.hero .launcher-panel { position:absolute; inset:0; display:flex; flex-direction:column; min-height:0; }
 .hero .launcher-panel[hidden] { display:none; }
 .hero .launcher-bar { display:flex; align-items:center; gap:calc(4*var(--u)); background:var(--marquee); color:var(--paper); padding:calc(2*var(--u)) calc(4*var(--u)); border-bottom:1px solid #C8151F; }
 .hero .launcher-wordmark { font:700 max(10px,calc(13*var(--u)))/1 var(--pixel); letter-spacing:.04em; color:var(--paper); }
@@ -55,7 +58,7 @@
    launcher mode. Rects are the engine's 320x240 pixels as percentages; the mock's screen is
    288x194, so this keeps the proportions rather than the exact pixel grid. */
 .hero .ingame-panel {
-  position:relative; flex:1; min-height:0; overflow:hidden;
+  position:absolute; inset:0; min-height:0; overflow:hidden;
   background:var(--ink); color:var(--paper);
   font:400 max(5.5px, calc(7.2*var(--u)))/1.2 var(--pixel-sm);
 }
