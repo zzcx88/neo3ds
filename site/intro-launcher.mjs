@@ -1,15 +1,38 @@
 import { createLauncher } from './launcher-model.mjs';
+import { DEMO_GAMES } from './demo-games.mjs';
 
 const screen = document.getElementById('deviceLauncherScreen');
 if (screen && window.NEO3DS_DB) {
-  const launcher = createLauncher(window.NEO3DS_DB);
+  const launcher = createLauncher(window.NEO3DS_DB, DEMO_GAMES);
   const lang = document.documentElement.lang === 'ko' ? 'ko' : 'en';
   const $ = id => document.getElementById(id);
   const rows = $('launcherRows');
   const message = $('launcherMessage');
+  const column = document.querySelector('.device-col');
+  const panel = $('launcherPanel');
+  const play = $('launcherPlay');
+  const playTitle = $('launcherPlayTitle');
+  const playBack = $('launcherPlayBack');
+  const titleCard = $('launcherTitleCard');
+  const previews = [...$('launcherTopScreen').querySelectorAll('[data-demo-id]')];
   const favorites = document.querySelectorAll('[data-launcher-action="favorite"]');
+  const startAction = $('launcherStartAction');
+  const backAction = $('launcherBackAction');
 
-  function render(announce = false) {
+  const focusSelected = () => rows.querySelector('[aria-pressed="true"]')?.focus();
+  const tabLabel = view => view.tab === 'all' ? 'All' : 'Fav';
+  const announce = view => {
+    if (view.playing) {
+      message.textContent = `${view.messages.preview}: ${view.playing.title}`;
+      return;
+    }
+    const game = view.selected;
+    message.textContent = game
+      ? `${tabLabel(view)} · ${game.title} · ${game.statusLabel} · ${game.favorite ? '★' : '☆'}`
+      : view.messages.empty;
+  };
+
+  function render(status = false) {
     const view = launcher.view(lang);
     const game = view.selected;
     for (const tab of screen.querySelectorAll('[role="tab"]')) {
@@ -26,8 +49,8 @@ if (screen && window.NEO3DS_DB) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'launcher-row';
-      button.dataset.set = row.set;
-      button.setAttribute('aria-pressed', String(row.set === game?.set));
+      button.dataset.id = row.id;
+      button.setAttribute('aria-pressed', String(row.id === game?.id));
       const title = document.createElement('span');
       title.textContent = row.title;
       const mark = document.createElement('span');
@@ -46,35 +69,106 @@ if (screen && window.NEO3DS_DB) {
       favorite.disabled = !game;
     }
     for (const tab of document.querySelectorAll('[data-launcher-tab]')) tab.setAttribute('aria-pressed', String(tab.dataset.launcherTab === view.tab));
-    if (announce) message.textContent = `${view.tab === 'all' ? 'All' : 'Fav'} · ${game ? `${game.title} · ${game.statusLabel} · ${game.favorite ? '★' : '☆'}` : view.messages.empty}`;
+
+    const playing = view.playing;
+    panel.hidden = !!playing;
+    play.hidden = !playing;
+    playTitle.textContent = playing?.title ?? '';
+    titleCard.hidden = !!playing;
+    for (const preview of previews) preview.hidden = !(playing && preview.dataset.demoId === playing.id);
+    startAction.hidden = !!playing;
+    startAction.disabled = !game;
+    backAction.hidden = !playing;
+
+    if (status) announce(view);
   }
 
-  screen.addEventListener('click', event => {
+  function start() {
+    const view = launcher.start(lang);
+    render();
+    if (!view.playing) return;
+    announce(view);
+    playBack.focus();
+  }
+
+  function back() {
+    const view = launcher.back(lang);
+    render();
+    message.textContent = view.messages.returned;
+    focusSelected();
+  }
+
+  function run(action) {
+    const view = launcher.view(lang);
+    if (view.playing) {
+      if (action === 'back') back();
+      return;
+    }
+    if (action === 'up' || action === 'down') {
+      launcher.move(action === 'down' ? 1 : -1);
+      render(true);
+      focusSelected();
+    } else if (action === 'first' || action === 'last') {
+      launcher[action]();
+      render(true);
+      focusSelected();
+    } else if (action === 'tab-all' || action === 'tab-fav') {
+      launcher.setTab(action === 'tab-all' ? 'all' : 'fav');
+      render(true);
+    } else if (action === 'favorite') {
+      launcher.toggleFavorite();
+      render(true);
+    } else if (action === 'start') {
+      start();
+    }
+  }
+
+  // One click handler for the whole device column: rows, tabs, shell buttons and the
+  // info-panel actions are all handled here so a click never fires twice.
+  column.addEventListener('click', event => {
+    const row = event.target.closest('[data-id]');
+    if (row) {
+      launcher.select(row.dataset.id);
+      render(true);
+      focusSelected();
+      return;
+    }
     const tab = event.target.closest('[data-tab]');
-    const row = event.target.closest('[data-set]');
-    if (tab) { launcher.setTab(tab.dataset.tab); render(true); }
-    if (row) { launcher.select(row.dataset.set); render(true); screen.focus(); }
+    if (tab) {
+      launcher.setTab(tab.dataset.tab);
+      render(true);
+      return;
+    }
+    const action = event.target.closest('[data-launcher-action]')?.dataset.launcherAction;
+    if (action) run(action);
   });
-  screen.addEventListener('keydown', event => {
-    if (event.target.closest('[role="tab"]')) return;
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+
+  column.addEventListener('keydown', event => {
+    const view = launcher.view(lang);
+    if (event.key === 'Escape' && view.playing) {
       event.preventDefault();
-      const rowFocused = !!event.target.closest('[data-set]');
+      back();
+      return;
+    }
+    if (view.playing) return;
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      event.preventDefault();
       launcher.move(event.key === 'ArrowDown' ? 1 : -1);
       render(true);
-      if (rowFocused) rows.querySelector('[aria-pressed="true"]')?.focus();
-    } else if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-set]'))) {
+      focusSelected();
+      return;
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault();
-      message.textContent = launcher.view(lang).messages.launch;
+      launcher.setTab(event.key === 'ArrowLeft' ? 'all' : 'fav');
+      render(true);
+      return;
+    }
+    if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-id]'))) {
+      event.preventDefault();
+      start();
     }
   });
-  document.querySelector('.device-col').addEventListener('click', event => {
-    const action = event.target.closest('[data-launcher-action]')?.dataset.launcherAction;
-    const tab = event.target.closest('[data-launcher-tab]')?.dataset.launcherTab;
-    if (tab) { launcher.setTab(tab); render(true); }
-    if (action === 'previous' || action === 'next') { launcher.move(action === 'next' ? 1 : -1); render(true); }
-    if (action === 'favorite') { launcher.toggleFavorite(); render(true); }
-    if (action === 'launch' || action === 'qr') message.textContent = launcher.view(lang).messages[action];
-  });
+
   render();
 }
