@@ -29,7 +29,7 @@
 .hero .launcher-screen { display:flex; flex-direction:column; background:var(--ink-2); color:var(--paper); font:400 calc(10*var(--u))/1.2 var(--text); }
 .hero .launcher-panel { display:flex; flex-direction:column; height:100%; min-height:0; }
 .hero .launcher-panel[hidden] { display:none; }
-.hero .launcher-bar { display:flex; justify-content:space-between; align-items:center; gap:calc(4*var(--u)); background:var(--marquee); color:var(--paper); padding:calc(3*var(--u)) calc(5*var(--u)); border-bottom:1px solid #6E0A12; }
+.hero .launcher-bar { display:flex; justify-content:space-between; align-items:center; gap:calc(4*var(--u)); background:var(--marquee); color:var(--paper); padding:calc(3*var(--u)) calc(5*var(--u)); border-bottom:1px solid #C8151F; }
 .hero .launcher-wordmark { font:700 max(10px,calc(11*var(--u)))/1 var(--pixel); letter-spacing:.04em; color:var(--paper); }
 .hero .launcher-bar button { border:0; background:transparent; color:var(--paper); font:400 max(8px,calc(8.5*var(--u)))/1 var(--pixel-sm); padding:calc(3*var(--u)) calc(8*var(--u)); cursor:pointer; }
 .hero .launcher-bar button[aria-selected="true"] { background:var(--ink-2); color:var(--paper); border-radius:calc(2*var(--u)); }
@@ -38,11 +38,11 @@
 .hero .launcher-row-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:400 max(8px, calc(9*var(--u)))/1.2 var(--pixel); letter-spacing:.02em; }
 .hero .launcher-row-meta { flex:none; display:flex; align-items:center; gap:calc(3*var(--u)); font:400 max(7px, calc(7.5*var(--u)))/1 var(--pixel-sm); }
 .hero .launcher-star { color:var(--gold); }
-.hero .launcher-status { color:var(--dim); }
+/* T4 asks for a gold status; --b is the Neo Geo B yellow at 4.53:1 on the selected gray row. */
+.hero .launcher-status { color:var(--gold); }
 .hero .launcher-row[aria-pressed="true"] { background:var(--pressed); color:var(--paper); }
-.hero .launcher-row[aria-pressed="true"] .launcher-status { color:#D6D6DC; }
-/* Gold at 4.17:1 on the selected gray row fails 4.5 for the 7.5px star, so it brightens there. */
-.hero .launcher-row[aria-pressed="true"] .launcher-star { color:#FFD23F; }
+.hero .launcher-row[aria-pressed="true"] .launcher-status { color:var(--b); }
+.hero .launcher-row[aria-pressed="true"] .launcher-star { color:var(--b); }
 .hero .launcher-empty { padding:calc(8*var(--u)); color:var(--dim); }
 .hero .launcher-help { margin:0; flex:none; padding:calc(3*var(--u)) calc(5*var(--u)) calc(5*var(--u)); border-top:1px solid var(--line); background:var(--ink); color:var(--dim); font:400 max(7.5px, calc(7.5*var(--u)))/1.5 var(--pixel-sm); letter-spacing:.02em; }
 .hero .launcher-info { width:min(100%,480px); border-top:2px solid var(--marquee); padding:14px 0 0; font:400 13px/1.5 var(--text); }
@@ -67,7 +67,7 @@
 .hero .device button, .hero .device a, .hero .device .launcher-screen { pointer-events:auto; }
 .hero .dpad { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:calc(1*var(--u)); }
 .hero .dpad::before, .hero .dpad::after { content:none; }
-.hero .dpad button { display:grid; place-items:center; min-width:0; min-height:0; margin:0; padding:0; border:1px solid #3A3A44; border-radius:calc(2*var(--u)); background:linear-gradient(180deg,#26262F,#1C1C23); color:#9A9AA6; font:400 calc(7*var(--u))/1 var(--pixel-sm); cursor:pointer; box-shadow:inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.05); }
+.hero .dpad button { display:grid; place-items:center; min-width:0; min-height:0; margin:0; padding:0; border:1px solid #3A3A44; border-radius:calc(2*var(--u)); background:linear-gradient(180deg,#26262F,#1C1C23); color:var(--dim); font:400 calc(7*var(--u))/1 var(--pixel-sm); cursor:pointer; box-shadow:inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.05); }
 .hero .dpad button span { pointer-events:none; }
 .hero .dpad-up { grid-area:1 / 2 / 2 / 3; }
 .hero .dpad-left { grid-area:2 / 1 / 3 / 2; }
@@ -87,15 +87,15 @@
   .hero .device {
     --device-depth: calc(20 * var(--u));
     filter: none; transform-style: preserve-3d;
-    transform: rotateX(var(--device-x, -8deg)) rotateY(var(--device-y, -16deg))
+    transform: rotateX(var(--device-x, -6deg)) rotateY(var(--device-y, -14deg))
       scale3d(var(--device-scale, 1), var(--device-scale, 1), var(--device-scale, 1));
   }
   .hero .shell { transform-style: preserve-3d; }
   .hero .shell::before {
     content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-    background:linear-gradient(180deg,#191920,#0C0C11);
+    background:linear-gradient(180deg,#1A1A20,#0C0C10);
     transform: translateZ(calc(-1 * var(--device-depth)));
-    box-shadow: inset 0 0 0 1px #44444F;
+    box-shadow: inset 0 0 0 1px #454550;
   }
   .hero .shell::after {
     content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
@@ -108,7 +108,7 @@
   .hero .shell-side.side-l,
   .hero .shell-side.side-r {
     top:0; bottom:0; width:var(--device-depth);
-    background:linear-gradient(180deg,#62626E,#42424E 34%,#24242C 72%,#15151B);
+    background:linear-gradient(180deg,var(--pressed),#3A3A44 34%,#24242C 72%,var(--ink-2));
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.10), inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.20), inset 0 0 calc(6*var(--u)) rgba(0,0,0,.38);
   }
   .hero .shell-side.side-l {
@@ -122,16 +122,16 @@
   .hero .shell-side.side-t,
   .hero .shell-side.side-b {
     left:0; right:0; height:var(--device-depth);
-    background:linear-gradient(90deg,#1D1D24,#4A4A56 48%,#1D1D24);
+    background:linear-gradient(90deg,#1B1B22,#454550 48%,#1B1B22);
   }
   .hero .shell-side.side-t { top:0; transform-origin:center top; transform:rotateX(-90deg); }
   .hero .shell-side.side-b { bottom:0; transform-origin:center bottom; transform:rotateX(90deg); }
   .hero .hinge { transform-style:preserve-3d; }
   .hero .hinge::before {
     content:""; position:absolute; inset:0; pointer-events:none;
-    background:#0C0C11;
+    background:#0C0C10;
     transform:translateZ(calc(-10 * var(--u)));
-    box-shadow: inset 0 0 0 1px #44444F;
+    box-shadow: inset 0 0 0 1px #454550;
   }
   .hero .device-stage.is-rotatable { touch-action:none; cursor:grab; }
   .hero .device-stage.is-dragging { cursor:grabbing; }

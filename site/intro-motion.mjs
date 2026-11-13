@@ -1,7 +1,7 @@
 // Pure maths for the device entrance and drag rotation, kept out of the DOM so it
 // can be tested with `node --test`. intro-device.js owns the rAF loop and events.
 
-export const REST = Object.freeze({ x: -8, y: -16 });
+export const REST = Object.freeze({ x: -6, y: -14 });
 export const ENTRANCE_FROM = Object.freeze({ x: 10, y: -65 });
 export const ENTRANCE_MS = 1400;
 export const DRAG_LIMITS = Object.freeze({ xMin: -40, xMax: 30, yMin: -65, yMax: 65 });

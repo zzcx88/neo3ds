@@ -16,7 +16,7 @@
 .page-home #steps .check li,
 .page-home #steps .out-alt p,
 .page-home #steps .prep .tiny { color: #C9C9D2; }
-.page-home #steps .step-no { display: inline-grid; place-items: center; width: 36px; height: 36px; background: var(--marquee); color: var(--paper); border: 1px solid #6E0A12; border-radius: 6px; }
+.page-home #steps .step-no { display: inline-grid; place-items: center; width: 36px; height: 36px; background: var(--marquee); color: var(--paper); border: 1px solid #C8151F; border-radius: 6px; }
 .page-home #steps .steps li { border-top: 1px solid var(--line); }
 .page-home #steps .check li { border-color: var(--line); }
 .page-home #steps .check b { color: var(--gold); }

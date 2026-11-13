@@ -60,7 +60,7 @@ if (!stage || !device || !controls || !window.matchMedia || !window.CSS ||
   });
   stage.addEventListener('pointerdown', (event) => {
     if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) ||
-        event.target.closest('#deviceLauncherScreen, button, a, input, select, textarea')) return;
+        event.target.closest('button, a, input, select, textarea')) return;
     stopEntrance();
     render();
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: x, startY: y };
