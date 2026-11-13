@@ -38,8 +38,9 @@
 .hero .launcher-row-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:400 max(8px, calc(9*var(--u)))/1.2 var(--pixel); letter-spacing:.02em; }
 .hero .launcher-row-meta { flex:none; display:flex; align-items:center; gap:calc(3*var(--u)); font:400 max(7px, calc(7.5*var(--u)))/1 var(--pixel-sm); }
 .hero .launcher-star { color:var(--gold); }
-/* T4 asks for a gold status; --b is the Neo Geo B yellow at 4.53:1 on the selected gray row. */
-.hero .launcher-status { color:var(--gold); }
+/* Real-launcher fidelity: gold belongs to the favorite star, so status text stays dim on
+   normal rows and brightens to --b (4.53:1) on the selected gray row. */
+.hero .launcher-status { color:var(--dim); }
 .hero .launcher-row[aria-pressed="true"] { background:var(--pressed); color:var(--paper); }
 .hero .launcher-row[aria-pressed="true"] .launcher-status { color:var(--b); }
 .hero .launcher-row[aria-pressed="true"] .launcher-star { color:var(--b); }
