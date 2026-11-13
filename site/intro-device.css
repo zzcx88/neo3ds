@@ -2,15 +2,21 @@
    SNK-inspired typographic emphasis. Target ink/paper/red/gold 70/20/7/3.
    Arcade surfaces stay square; only device screens, shells and controls round.
    All colors and type come from styles.css / the existing device palette. */
-.hero .device-stage { max-width: 100%; perspective: 1100px; }
-.hero .device-controls { text-align: center; font: 400 11px/1.5 var(--pixel-sm); }
+.hero .device-stage { position: relative; max-width: 100%; margin-bottom: 46px; perspective: 1100px; }
+.hero .device-shadow {
+  position: absolute; left: 50%; bottom: -56px; width: min(94%, 440px); height: 32px;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.85), rgba(0,0,0,.38) 46%, transparent 74%);
+  filter: blur(5px);
+}
+.hero .device-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; text-align: center; font: 400 11px/1.5 var(--pixel-sm); }
 .hero .device-controls[hidden] { display: none; }
-.hero .device-controls p { margin: 0 0 8px; color: var(--dim); }
+.hero .device-controls p { margin: 0; color: var(--dim); }
 .hero .device-controls button {
   font: inherit; color: var(--paper); background: var(--panel); border: 1px solid var(--line);
-  padding: 8px 10px; margin: 2px; cursor: pointer;
+  padding: 6px 9px; margin: 0; cursor: pointer;
 }
-.hero .device-controls button:hover { border-color: var(--gold); }
+.hero .device-controls button:hover { border-color: var(--gold); color: var(--gold); }
 .hero .launcher-marquee { display:flex; flex-direction:column; justify-content:center; gap:calc(12*var(--u)); padding:calc(24*var(--u)); background:var(--ink); color:var(--paper); border-top:calc(6*var(--u)) solid var(--marquee); }
 .hero .launcher-marquee span { color:var(--gold); font:400 calc(13*var(--u))/1 var(--pixel-sm); letter-spacing:.15em; }
 .hero .launcher-marquee strong { font:400 calc(20*var(--u))/1.2 var(--pixel); overflow-wrap:anywhere; }
@@ -36,15 +42,59 @@
 .hero .launcher-touch-controls button[aria-pressed="true"] { border-color:var(--gold); color:var(--gold); }
 .hero :is(button, a, .launcher-screen):focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
 @media (max-width: 520px) { .hero .device { --u:min(1px,calc((100vw - 70px)/480)); } }
+
+/* Volume: the two shells get a back plate, four side planes and a rim, the hinge
+   gets a back plate, and a ground shadow replaces the flat drop-shadow filter.
+   `filter` and partial `opacity` both flatten preserve-3d, so the entrance fades
+   the stage and the shadow lives beside the device. */
 @supports (transform-style: preserve-3d) and (perspective: 1px) {
-  .hero .device-stage.is-rotatable { touch-action: none; cursor: grab; }
-  .hero .device-stage.is-dragging { cursor: grabbing; }
-  .hero .device-stage.is-rotatable .device {
+  .hero .device {
+    --device-depth: calc(16 * var(--u));
     filter: none; transform-style: preserve-3d;
-    transform: rotateX(var(--device-x, -8deg)) rotateY(var(--device-y, -12deg));
+    transform: rotateX(var(--device-x, -8deg)) rotateY(var(--device-y, -16deg))
+      scale3d(var(--device-scale, 1), var(--device-scale, 1), var(--device-scale, 1));
   }
-  .hero .device-stage.is-rotatable .shell { transform-style: preserve-3d; }
-  .hero .device-stage.is-rotatable .shell-top { transform: translateZ(8px) rotateX(-5deg); transform-origin: bottom; }
-  .hero .device-stage.is-rotatable .shell-bottom { transform: translateZ(8px) rotateX(5deg); transform-origin: top; }
-  .hero .device-stage.is-rotatable .hinge { transform: translateZ(4px); }
+  .hero .shell { transform-style: preserve-3d; }
+  .hero .shell::before {
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:linear-gradient(180deg,#1D1D24,#121218);
+    transform: translateZ(calc(-1 * var(--device-depth)));
+    box-shadow: inset 0 0 0 1px #33333D;
+  }
+  .hero .shell::after {
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    box-shadow: inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.09),
+      inset 0 calc(-2*var(--u)) calc(5*var(--u)) rgba(0,0,0,.42);
+  }
+  .hero .shell-side { position:absolute; display:block; pointer-events:none; }
+  .hero .shell-side.side-l,
+  .hero .shell-side.side-r {
+    top:0; bottom:0; width:var(--device-depth);
+    background:linear-gradient(180deg,#474752,#302F3A 38%,#1D1D25);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.09);
+  }
+  .hero .shell-side.side-l {
+    left:0; transform-origin:left center; transform:rotateY(90deg);
+    border-radius:calc(10*var(--u)) 0 0 calc(10*var(--u));
+  }
+  .hero .shell-side.side-r {
+    right:0; transform-origin:right center; transform:rotateY(-90deg);
+    border-radius:0 calc(10*var(--u)) calc(10*var(--u)) 0;
+  }
+  .hero .shell-side.side-t,
+  .hero .shell-side.side-b {
+    left:0; right:0; height:var(--device-depth);
+    background:linear-gradient(90deg,#26262F,#3C3C47 48%,#24242C);
+  }
+  .hero .shell-side.side-t { top:0; transform-origin:center top; transform:rotateX(-90deg); }
+  .hero .shell-side.side-b { bottom:0; transform-origin:center bottom; transform:rotateX(90deg); }
+  .hero .hinge { transform-style:preserve-3d; }
+  .hero .hinge::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:#14141A;
+    transform:translateZ(calc(-8 * var(--u)));
+    box-shadow: inset 0 0 0 1px #33333D;
+  }
+  .hero .device-stage.is-rotatable { touch-action:none; cursor:grab; }
+  .hero .device-stage.is-dragging { cursor:grabbing; }
 }

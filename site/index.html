@@ -104,8 +104,13 @@
     
     <figure class="device-col">
       <div class="device-stage" id="deviceStage">
+      <span class="device-shadow" aria-hidden="true"></span>
       <div class="device" id="introDevice">
         <div class="shell shell-top">
+          <span class="shell-side side-l" aria-hidden="true"></span>
+          <span class="shell-side side-r" aria-hidden="true"></span>
+          <span class="shell-side side-t" aria-hidden="true"></span>
+          <span class="shell-side side-b" aria-hidden="true"></span>
           <div class="cam"></div>
           <span class="speaker"></span>
           <div class="screen-outer launcher-marquee">
@@ -114,6 +119,10 @@
         </div>
         <div class="hinge"><span></span><span></span></div>
         <div class="shell shell-bottom">
+          <span class="shell-side side-l" aria-hidden="true"></span>
+          <span class="shell-side side-r" aria-hidden="true"></span>
+          <span class="shell-side side-t" aria-hidden="true"></span>
+          <span class="shell-side side-b" aria-hidden="true"></span>
           <span class="shell-btn sh-l">L</span>
           <span class="shell-btn sh-r">R</span>
           <div class="pad-wrap">
@@ -139,11 +148,7 @@
       </div>
       </div>
       <div class="device-controls" id="deviceControls" hidden role="group" aria-label="Rotate the device">
-        <p>Drag or use the direction buttons to rotate the device.</p>
-        <button type="button" data-rotate="left">Left</button>
-        <button type="button" data-rotate="right">Right</button>
-        <button type="button" data-rotate="up">Up</button>
-        <button type="button" data-rotate="down">Down</button>
+        <p>Drag the device to look around.</p>
         <button type="button" data-rotate="reset">Reset angle</button>
       </div>
       <div class="launcher-touch-controls" role="group" aria-label="Launcher controls">
@@ -448,7 +453,7 @@
 
 <script src="games.js"></script>
 <script src="app.js"></script>
-<script src="intro-device.js" defer></script>
+<script type="module" src="intro-device.js"></script>
 <script type="module" src="intro-launcher.mjs"></script>
 <script type="module" src="feedback.js"></script>
 </body>
