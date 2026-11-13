@@ -1,208 +1,193 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { createLauncher } from './launcher-model.mjs';
-import { DEMO_GAMES } from './demo-games.mjs';
+import { LAUNCHER_PREVIEWS } from './launcher-previews.mjs';
 
 // Same row shape as site/games.js: [set, title, year, maker, ROM MB, decrypt, status, note ko, note en, sprite MB].
 const row = (set, title, status, noteKo = '', noteEn = '') =>
   [set, title, '1998', 'Maker', 12, '', status, noteKo, noteEn, 8];
 
+// Sixteen catalog sets: two full eight-row pages, with a known first and last (#378).
 const catalog = { games: [
   row('kof98h', "The King of Fighters '98 - The Slugfest", 1, '실기 확인 · 풀 스피드', 'verified · full speed'),
+  row('kof98', 'The King of Fighters 98 (MVS)', 0, '변환 가능 · 보호 칩', 'buildable · protection chip'),
   row('mslug3', 'Metal Slug 3', 1, '실기 확인 · 풀 스피드', 'verified · full speed'),
   row('sonicwi3', 'Aero Fighters 3', 2, '변환 불가 · 메모리', 'unsupported · memory'),
   row('samsh5sp', 'Samurai Shodown V Special', 0, '변환 가능', 'buildable'),
+  ...Array.from({ length: 10 }, (_, i) => row(`set${i}`, `Filler ${i}`, 0)),
   row('garou', 'Garou - Mark of the Wolves', 0, '', ''),
 ] };
 
-const demo = () => createLauncher(catalog, DEMO_GAMES);
-const ids = launcher => launcher.view().rows.map(game => game.id);
+const PAGE_ONE = ['kof98h', 'kof98', 'mslug3', 'sonicwi3', 'samsh5sp', 'set0', 'set1', 'set2'];
+const PAGE_TWO = ['set3', 'set4', 'set5', 'set6', 'set7', 'set8', 'set9', 'garou'];
+const launcher = () => createLauncher(catalog);
+const ids = instance => instance.view().rows.map(game => game.id);
 
-test('the demo list joins five curated entries with catalog status and ROM data', () => {
-  const view = demo().view('ko');
-  assert.equal(view.total, 5);
-  assert.deepEqual(view.rows.map(game => game.title),
-    ["KOF '98", "KOF '98 (Max Res)", 'Metal Slug 3', 'Aero Fighters 3', 'Samurai Shodown V Special']);
-  assert.deepEqual(view.rows.map(game => game.image),
-    ['hero_kof98.jpg', 'hero_maxres.jpg', 'hero_mslug3.jpg', 'hero_sonicwi3.jpg', 'hero_samsho5.jpg']);
+test('the full catalog is the list; there is no curated demo subset', () => {
+  const view = launcher().view('ko');
+  assert.equal(view.total, 16);
+  assert.deepEqual(view.counts, { all: 16, fav: 0 });
   assert.equal(view.selected.id, 'kof98h');
   assert.equal(view.selected.year, '1998');
   assert.equal(view.selected.maker, 'Maker');
   assert.equal(view.selected.romMb, 12);
   assert.equal(view.selected.statusLabel, '실기 확인');
   assert.equal(view.selected.note, '실기 확인 · 풀 스피드');
-  // The five-entry demo never leaks the rest of the catalog.
-  assert.ok(!ids(demo()).includes('garou'));
 });
 
-test('KOF Max Res shares the catalog set but has its own demo id and selection', () => {
-  const launcher = demo();
-  const maxres = launcher.view().rows[1];
-  assert.equal(maxres.set, 'kof98h');
-  assert.equal(maxres.id, 'kof98h-maxres');
-  assert.equal(maxres.note, 'verified · full speed');
-  launcher.select('kof98h-maxres');
-  assert.equal(launcher.view().selected.title, "KOF '98 (Max Res)");
-  launcher.toggleFavorite();
-  launcher.select('kof98h');
-  assert.equal(launcher.view().selected.favorite, false);
-  launcher.setTab('fav');
-  assert.deepEqual(ids(launcher), ['kof98h-maxres']);
-  assert.equal(launcher.view().selected.title, "KOF '98 (Max Res)");
+test('each page holds eight rows and moving past the edge turns the page', () => {
+  const instance = launcher();
+  assert.deepEqual(ids(instance), PAGE_ONE);
+  for (let step = 0; step < 7; step++) instance.move(1);
+  assert.equal(instance.view().selected.id, 'set2');
+  assert.deepEqual(ids(instance), PAGE_ONE);
+  instance.move(1);
+  assert.equal(instance.view().selected.id, 'set3');
+  assert.deepEqual(ids(instance), PAGE_TWO);
+  instance.move(1);
+  assert.equal(instance.view().selected.id, 'set4');
+  assert.deepEqual(ids(instance), PAGE_TWO);
+  instance.last();
+  assert.equal(instance.view().selected.id, 'garou');
+  assert.deepEqual(ids(instance), PAGE_TWO);
 });
 
-test('All and Fav tabs list the curated rows', () => {
-  const launcher = demo();
-  assert.equal(launcher.view().tab, 'all');
-  assert.equal(launcher.view().total, 5);
-  launcher.setTab('fav');
-  assert.equal(launcher.view().tab, 'fav');
-  assert.equal(launcher.view().total, 0);
-  assert.equal(launcher.view().selected, null);
-  launcher.setTab('all');
-  launcher.select('mslug3');
-  launcher.toggleFavorite();
-  launcher.setTab('fav');
-  assert.deepEqual(ids(launcher), ['mslug3']);
+test('moving the selection wraps around the whole catalog', () => {
+  const instance = launcher();
+  instance.move(-1);
+  assert.equal(instance.view().selected.id, 'garou');
+  assert.deepEqual(ids(instance), PAGE_TWO);
+  instance.move(1);
+  assert.equal(instance.view().selected.id, 'kof98h');
+  assert.deepEqual(ids(instance), PAGE_ONE);
 });
 
-test('moving the selection wraps and keeps the selected game on screen', () => {
-  const launcher = demo();
-  launcher.move(-1);
-  assert.equal(launcher.view().selected.title, 'Samurai Shodown V Special');
-  assert.ok(launcher.view().rows.some(game => game.title === 'Samurai Shodown V Special'));
-  launcher.move(1);
-  assert.equal(launcher.view().selected.title, "KOF '98");
+test('first and last jump within the current tab', () => {
+  const instance = launcher();
+  instance.last();
+  assert.equal(instance.view().selected.id, 'garou');
+  assert.equal(instance.view().counts.all, 16);
+  instance.first();
+  assert.equal(instance.view().selected.id, 'kof98h');
+  instance.select('mslug3');
+  instance.toggleFavorite();
+  instance.setTab('fav');
+  instance.last();
+  assert.equal(instance.view().selected.id, 'mslug3');
+  instance.first();
+  assert.equal(instance.view().selected.id, 'mslug3');
 });
 
-test('first and last jump within the current tab and do nothing while playing', () => {
-  const launcher = demo();
-  launcher.last();
-  assert.equal(launcher.view().selected.id, 'samsh5sp');
-  launcher.first();
-  assert.equal(launcher.view().selected.id, 'kof98h');
-  launcher.select('mslug3');
-  launcher.toggleFavorite();
-  launcher.setTab('fav');
-  launcher.last();
-  assert.equal(launcher.view().selected.id, 'mslug3');
-  launcher.start();
-  launcher.first();
-  launcher.last();
-  assert.equal(launcher.view().selected.id, 'mslug3');
+test('All and Fav tabs list their rows and keep the selected game', () => {
+  const instance = launcher();
+  assert.equal(instance.view().tab, 'all');
+  instance.select('mslug3');
+  instance.toggleFavorite();
+  instance.select('garou');
+  instance.toggleFavorite();
+  instance.select('mslug3');
+  instance.setTab('fav');
+  assert.equal(instance.view().tab, 'fav');
+  assert.equal(instance.view().total, 2);
+  assert.deepEqual(instance.view().counts, { all: 16, fav: 2 });
+  assert.deepEqual(ids(instance), ['mslug3', 'garou']);
+  assert.equal(instance.view().selected.id, 'mslug3');
+  instance.setTab('all');
+  assert.equal(instance.view().selected.id, 'mslug3');
 });
 
 test('favorites filter immediately, stay across tabs, and reset', () => {
-  const launcher = demo();
-  launcher.select('sonicwi3');
-  launcher.toggleFavorite();
-  assert.equal(launcher.view().selected.favorite, true);
-  launcher.setTab('fav');
-  assert.deepEqual(ids(launcher), ['sonicwi3']);
-  launcher.setTab('all');
-  assert.equal(launcher.view().total, 5);
-  launcher.toggleFavorite();
-  assert.equal(launcher.view().selected.favorite, false);
-  launcher.select('mslug3');
-  launcher.toggleFavorite();
-  launcher.reset();
-  assert.equal(launcher.view().tab, 'all');
-  assert.equal(launcher.view().selected.id, 'kof98h');
-  assert.equal(launcher.view().selected.favorite, false);
-  assert.equal(launcher.view().playing, null);
+  const instance = launcher();
+  instance.select('sonicwi3');
+  instance.toggleFavorite();
+  assert.equal(instance.view().selected.favorite, true);
+  assert.equal(instance.view().counts.fav, 1);
+  instance.setTab('fav');
+  assert.deepEqual(ids(instance), ['sonicwi3']);
+  instance.toggleFavorite();
+  assert.equal(instance.view().counts.fav, 0);
+  assert.equal(instance.view().selected, null);
+  assert.deepEqual(ids(instance), []);
+  instance.setTab('all');
+  instance.select('mslug3');
+  instance.toggleFavorite();
+  instance.reset();
+  assert.equal(instance.view().tab, 'all');
+  assert.equal(instance.view().selected.id, 'kof98h');
+  assert.equal(instance.view().selected.favorite, false);
+  assert.equal(instance.view().counts.fav, 0);
 });
 
-test('start opens the selected game and back restores the launcher selection', () => {
-  const launcher = demo();
-  launcher.select('sonicwi3');
-  launcher.toggleFavorite();
-  const started = launcher.start();
-  assert.equal(started.playing.id, 'sonicwi3');
-  assert.equal(started.playing.title, 'Aero Fighters 3');
-  assert.equal(started.playing.image, 'hero_sonicwi3.jpg');
-  assert.equal(started.selected.id, 'sonicwi3');
-  const returned = launcher.back();
-  assert.equal(returned.playing, null);
-  assert.equal(returned.tab, 'all');
-  assert.equal(returned.selected.id, 'sonicwi3');
-  assert.equal(returned.selected.favorite, true);
+test('an empty Fav tab has no selection and cannot move', () => {
+  const instance = launcher();
+  instance.setTab('fav');
+  assert.equal(instance.view().total, 0);
+  assert.equal(instance.view().rows.length, 0);
+  assert.equal(instance.view().selected, null);
+  instance.move(1);
+  instance.last();
+  instance.toggleFavorite();
+  assert.equal(instance.view().selected, null);
 });
 
-test('while playing, move, tab, favorite, select, and start change nothing', () => {
-  const launcher = demo();
-  launcher.select('mslug3');
-  launcher.start();
-  const before = launcher.view();
-  launcher.move(1);
-  launcher.move(-1);
-  launcher.setTab('fav');
-  launcher.toggleFavorite();
-  launcher.select('kof98h');
-  launcher.start();
-  const during = launcher.view();
-  assert.deepEqual(during.playing, before.playing);
-  assert.equal(during.tab, 'all');
-  assert.equal(during.selected.id, 'mslug3');
-  assert.equal(during.selected.favorite, false);
-  assert.deepEqual(during.rows.map(game => game.id), before.rows.map(game => game.id));
-});
-
-test('an empty Fav tab cannot start a game', () => {
-  const launcher = demo();
-  launcher.setTab('fav');
-  assert.equal(launcher.view().selected, null);
-  assert.equal(launcher.start().playing, null);
-  launcher.back();
-  assert.equal(launcher.view().tab, 'fav');
+test('only the five preview sets get an image; everyone else gets a title card', () => {
+  const instance = launcher();
+  const image = id => {
+    instance.select(id);
+    return instance.view().selected.image;
+  };
+  assert.equal(image('kof98h'), 'hero_kof98.jpg');
+  assert.equal(image('kof98'), 'hero_maxres.jpg');
+  assert.equal(image('mslug3'), 'hero_mslug3.jpg');
+  assert.equal(image('sonicwi3'), 'hero_sonicwi3.jpg');
+  assert.equal(image('samsh5sp'), 'hero_samsho5.jpg');
+  assert.equal(image('garou'), null);
 });
 
 test('status labels and notes follow the page language', () => {
-  const launcher = demo();
-  launcher.select('sonicwi3');
-  const ko = launcher.view('ko').selected;
+  const instance = launcher();
+  instance.select('sonicwi3');
+  const ko = instance.view('ko').selected;
   assert.equal(ko.statusLabel, '변환 불가');
   assert.equal(ko.note, '변환 불가 · 메모리');
-  const en = launcher.view('en').selected;
+  const en = instance.view('en').selected;
   assert.equal(en.statusLabel, 'Unsupported');
   assert.equal(en.note, 'unsupported · memory');
-  launcher.select('samsh5sp');
-  assert.equal(launcher.view('en').selected.statusLabel, 'Buildable');
-  assert.equal(launcher.view('ko').selected.statusLabel, '변환 가능');
+  instance.select('samsh5sp');
+  assert.equal(instance.view('en').selected.statusLabel, 'Buildable');
+  assert.equal(instance.view('ko').selected.statusLabel, '변환 가능');
 });
 
-test('the demo copy describes the five previews and the preview/back announcements', () => {
-  const { messages } = demo().view('en');
-  assert.match(messages.demo, /five/i);
-  assert.match(messages.demo, /installed/i);
-  assert.doesNotMatch(messages.demo, /full catalog/i);
-  assert.equal(messages.qr, undefined);
-  assert.equal(messages.preview, 'Preview');
-  assert.equal(messages.returned, 'Back to the launcher.');
-  const ko = demo().view('ko').messages;
-  assert.match(ko.demo, /다섯/);
-  assert.equal(ko.preview, '미리보기');
-  assert.equal(createLauncher({ games: [] }).view().selected, null);
+test('the model has no play mode: the list is always live', () => {
+  const instance = launcher();
+  assert.equal(instance.start, undefined);
+  assert.equal(instance.back, undefined);
+  const view = instance.view();
+  assert.equal(view.playing, undefined);
+  assert.equal(view.messages.preview, undefined);
+  assert.equal(view.messages.returned, undefined);
+  assert.equal(view.messages.empty, 'No favorites yet.');
+  assert.match(view.messages.launch, /3DS/);
+  assert.match(instance.view('ko').messages.launch, /3DS/);
 });
 
-test('every curated entry maps to a real catalog set and hero image', () => {
+test('an empty catalog still renders a usable launcher', () => {
+  const view = createLauncher({ games: [] }).view();
+  assert.equal(view.total, 0);
+  assert.deepEqual(view.counts, { all: 0, fav: 0 });
+  assert.deepEqual(view.rows, []);
+  assert.equal(view.selected, null);
+});
+
+test('every preview set maps to a real catalog set and hero image', async () => {
+  const fs = await import('node:fs');
   const source = fs.readFileSync(new URL('./games.js', import.meta.url), 'utf8');
   const db = JSON.parse(source.slice(source.indexOf('{'), source.lastIndexOf('}') + 1));
   const sets = new Set(db.games.map(([set]) => set));
-  for (const entry of DEMO_GAMES) {
-    assert.ok(sets.has(entry.set), `unknown catalog set: ${entry.set}`);
-    assert.ok(fs.existsSync(new URL(`./media/${entry.image}`, import.meta.url)), `missing image: ${entry.image}`);
+  for (const [set, image] of Object.entries(LAUNCHER_PREVIEWS)) {
+    assert.ok(sets.has(set), `unknown catalog set: ${set}`);
+    assert.ok(fs.existsSync(new URL(`./media/${image}`, import.meta.url)), `missing image: ${image}`);
+    assert.match(image, /^hero_.+\.jpg$/);
   }
-  assert.equal(new Set(DEMO_GAMES.map(entry => entry.id)).size, DEMO_GAMES.length);
-});
-
-test('the full catalog remains the fallback when no demo list is passed', () => {
-  const full = { games: Array.from({ length: 10 }, (_, i) => row(`set${i}`, `Game ${i}`, i % 3)) };
-  const view = createLauncher(full).view();
-  assert.equal(view.total, 10);
-  assert.equal(view.rows.length, 8);
-  assert.equal(view.selected.title, 'Game 0');
-  assert.equal(view.selected.id, 'set0');
-  assert.equal(view.selected.image, null);
-  assert.equal(createLauncher(full).view().playing, null);
+  assert.equal(Object.keys(LAUNCHER_PREVIEWS).length, 5);
 });

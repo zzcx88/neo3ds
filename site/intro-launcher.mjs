@@ -1,40 +1,44 @@
 import { createLauncher } from './launcher-model.mjs';
-import { DEMO_GAMES } from './demo-games.mjs';
 
 const screen = document.getElementById('deviceLauncherScreen');
 if (screen && window.NEO3DS_DB) {
-  const launcher = createLauncher(window.NEO3DS_DB, DEMO_GAMES);
+  const launcher = createLauncher(window.NEO3DS_DB);
   const lang = document.documentElement.lang === 'ko' ? 'ko' : 'en';
   const $ = id => document.getElementById(id);
   const rows = $('launcherRows');
   const message = $('launcherMessage');
+  const notice = $('launcherNotice');
   const column = document.querySelector('.device-col');
-  const panel = $('launcherPanel');
-  const play = $('launcherPlay');
-  const playTitle = $('launcherPlayTitle');
-  const playBack = $('launcherPlayBack');
   const titleCard = $('launcherTitleCard');
-  const previews = [...$('launcherTopScreen').querySelectorAll('[data-demo-id]')];
+  const previews = [...$('launcherTopScreen').querySelectorAll('[data-preview-set]')];
   const favorites = document.querySelectorAll('[data-launcher-action="favorite"]');
-  const startAction = $('launcherStartAction');
-  const backAction = $('launcherBackAction');
 
   const focusSelected = () => rows.querySelector('[aria-pressed="true"]')?.focus();
   const tabLabel = view => view.tab === 'all' ? 'All' : 'Fav';
-  const announce = (view, retrigger = false) => {
-    const text = view.playing
-      ? `${view.messages.preview}: ${view.playing.title}`
-      : view.selected
-        ? `${tabLabel(view)} · ${view.selected.title} · ${view.selected.statusLabel} · ${view.selected.favorite ? '★' : '☆'}`
-        : view.messages.empty;
+  const announce = (text, retrigger = false) => {
     if (!retrigger) {
       message.textContent = text;
       return;
     }
-    // Starting the same game twice produces the same string, which screen readers ignore,
+    // Pressing A/START twice produces the same string, which screen readers ignore,
     // so clear the live region and set it again on the next frame (#374).
     message.textContent = '';
     requestAnimationFrame(() => { message.textContent = text; });
+  };
+  const announceSelection = view => {
+    announce(view.selected
+      ? `${tabLabel(view)} · ${view.selected.title} · ${view.selected.statusLabel} · ${view.selected.favorite ? '★' : '☆'}`
+      : view.messages.empty);
+  };
+
+  // The catalog note repeats the status label ("Verified · full speed"); the fixed status line
+  // already says it, so only the remainder scrolls (#378).
+  const noteBody = game => {
+    if (!game?.note) return '';
+    const rest = game.statusLabel && game.note.startsWith(game.statusLabel)
+      ? game.note.slice(game.statusLabel.length)
+      : game.note;
+    return rest.replace(/^\s*·\s*/, '');
   };
 
   function render(status = false) {
@@ -43,6 +47,8 @@ if (screen && window.NEO3DS_DB) {
     for (const tab of screen.querySelectorAll('[role="tab"]')) {
       tab.setAttribute('aria-selected', String(tab.dataset.tab === view.tab));
     }
+    $('launcherCountAll').textContent = view.counts.all;
+    $('launcherCountFav').textContent = view.counts.fav;
     rows.replaceChildren();
     if (!view.rows.length) {
       const empty = document.createElement('p');
@@ -56,93 +62,76 @@ if (screen && window.NEO3DS_DB) {
       button.className = 'launcher-row';
       button.dataset.id = row.id;
       button.setAttribute('aria-pressed', String(row.id === game?.id));
+      const star = document.createElement('span');
+      star.className = row.favorite ? 'launcher-star is-fav' : 'launcher-star';
+      star.setAttribute('aria-hidden', 'true');
+      star.textContent = row.favorite ? '★' : '☆';
       const title = document.createElement('span');
       title.className = 'launcher-row-title';
       title.textContent = row.title;
-      const mark = document.createElement('span');
-      mark.className = 'launcher-row-meta';
-      const star = document.createElement('span');
-      star.className = 'launcher-star';
-      star.textContent = row.favorite ? '★' : '☆';
-      const status = document.createElement('span');
-      status.className = 'launcher-status';
-      status.textContent = row.statusLabel;
-      mark.append(star, status);
-      button.append(title, mark);
+      button.append(star, title);
       rows.append(button);
     }
     $('launcherTitle').textContent = game?.title ?? view.messages.empty;
-    $('launcherSubtitle').textContent = game ? [game.year, game.maker, game.statusLabel].filter(Boolean).join(' · ') : '';
     $('launcherInfoTitle').textContent = game?.title ?? view.messages.empty;
     $('launcherInfoDetails').textContent = game ? [game.year, game.maker, `${game.romMb} MB`].filter(Boolean).join(' · ') : '';
-    $('launcherInfoStatus').textContent = game ? (game.note?.startsWith(game.statusLabel) && game.statusLabel ? game.note : [game.statusLabel, game.note].filter(Boolean).join(' — ')) : '';
-    $('launcherDemo').textContent = view.messages.demo;
+    $('launcherInfoStatus').textContent = game?.statusLabel ?? '';
+    $('launcherNote').textContent = noteBody(game);
     for (const favorite of favorites) {
       favorite.setAttribute('aria-pressed', String(!!game?.favorite));
       favorite.disabled = !game;
     }
 
-    const playing = view.playing;
-    panel.hidden = !!playing;
-    play.hidden = !playing;
-    playTitle.textContent = playing?.title ?? '';
-    titleCard.hidden = !!playing;
-    for (const preview of previews) preview.hidden = !(playing && preview.dataset.demoId === playing.id);
-    startAction.hidden = !!playing;
-    startAction.disabled = !game;
-    backAction.hidden = !playing;
+    // The top screen shows gameplay for the five catalog sets that have a real screenshot;
+    // every other selection keeps the title card (#378).
+    titleCard.hidden = !!game?.image;
+    for (const preview of previews) preview.hidden = !(game?.image && preview.dataset.previewSet === game.id);
 
-    if (status) announce(view);
+    if (status) announceSelection(view);
   }
 
-  function start() {
-    const view = launcher.start(lang);
-    render();
-    if (!view.playing) return;
-    announce(view, true);
-    playBack.focus();
+  // A/START is the only action that cannot run in a browser: say so, in the panel and in the
+  // live region, without pretending to launch anything (#378).
+  function playNotice() {
+    const { messages } = launcher.view(lang);
+    notice.textContent = messages.launch;
+    notice.hidden = false;
+    announce(messages.launch, true);
   }
 
-  function back() {
-    const view = launcher.back(lang);
-    render();
-    message.textContent = view.messages.returned;
-    // Every back path (physical B, info Back, Escape) restores focus to the selected row.
-    focusSelected();
-  }
-
-  // `keyboard` only moves focus for keyboard navigation; a pointer click on the D-pad,
-  // L/R or the info-panel buttons must not pull focus into the row list (#374).
+  // `keyboard` only moves focus for keyboard navigation; a pointer click on the D-pad or
+  // L/R must not pull focus into the row list (#374).
   function run(action, keyboard = false) {
-    const view = launcher.view(lang);
-    if (view.playing) {
-      if (action === 'back') back();
-      return;
-    }
+    const reset = () => { notice.hidden = true; };
     if (action === 'up' || action === 'down') {
       launcher.move(action === 'down' ? 1 : -1);
+      reset();
       render(true);
       if (keyboard) focusSelected();
     } else if (action === 'first' || action === 'last') {
       launcher[action]();
+      reset();
       render(true);
       if (keyboard) focusSelected();
     } else if (action === 'tab-all' || action === 'tab-fav') {
       launcher.setTab(action === 'tab-all' ? 'all' : 'fav');
+      reset();
       render(true);
     } else if (action === 'favorite') {
       launcher.toggleFavorite();
+      reset();
       render(true);
-    } else if (action === 'start') {
-      start();
+    } else if (action === 'play') {
+      playNotice();
     }
   }
 
-  // One click handler for the whole device column: rows, tabs, shell buttons and the
-  // info-panel actions are all handled here so a click never fires twice.
+  // One click handler for the whole device column: rows, tabs and shell buttons are all
+  // handled here so a click never fires twice.
   column.addEventListener('click', event => {
     const row = event.target.closest('[data-id]');
     if (row) {
+      notice.hidden = true;
       launcher.select(row.dataset.id);
       render(true);
       focusSelected();
@@ -151,6 +140,7 @@ if (screen && window.NEO3DS_DB) {
     const tab = event.target.closest('[data-tab]');
     if (tab) {
       launcher.setTab(tab.dataset.tab);
+      notice.hidden = true;
       render(true);
       return;
     }
@@ -161,7 +151,6 @@ if (screen && window.NEO3DS_DB) {
   // Keyboard list navigation is scoped to the bottom screen so arrow keys on links in the
   // info panel still scroll the page (#374).
   screen.addEventListener('keydown', event => {
-    if (launcher.view(lang).playing) return;
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
       event.preventDefault();
       run(event.key === 'ArrowDown' ? 'down' : 'up', true);
@@ -174,18 +163,8 @@ if (screen && window.NEO3DS_DB) {
     }
     if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-id]'))) {
       event.preventDefault();
-      run('start', true);
+      run('play');
     }
-  });
-
-  // Escape leaves the playing view from anywhere on the page, not only inside .device-col,
-  // but never steals Escape from a form control, editor or open dialog.
-  document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape' ||
-        event.target.closest?.('input, textarea, select, [contenteditable="true"], dialog[open]')) return;
-    if (!launcher.view(lang).playing) return;
-    event.preventDefault();
-    back();
   });
 
   render();

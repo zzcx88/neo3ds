@@ -55,7 +55,7 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="intro-device.css">
 <link rel="modulepreload" href="launcher-model.mjs">
-<link rel="modulepreload" href="demo-games.mjs">
+<link rel="modulepreload" href="launcher-previews.mjs">
 <link rel="stylesheet" href="intro-home.css">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
 </head>
@@ -115,14 +115,16 @@
           <div class="cam"></div>
           <span class="speaker"></span>
           <div class="screen-outer launcher-screen-top" id="launcherTopScreen">
-            <div class="launcher-marquee launcher-title-card" id="launcherTitleCard">
-              <span>neo3ds</span><strong id="launcherTitle"></strong><small id="launcherSubtitle"></small>
+            <div class="launcher-title-card" id="launcherTitleCard">
+              <span class="launcher-wordmark-top">neo3ds</span>
+              <strong id="launcherTitle"></strong>
+              <small class="launcher-tagline">Nintendo 3DS Neo Geo emulator</small>
             </div>
-            <img class="launcher-preview" data-demo-id="kof98h" src="media/hero_kof98.jpg" alt="" hidden>
-            <img class="launcher-preview" data-demo-id="kof98h-maxres" src="media/hero_maxres.jpg" alt="" hidden>
-            <img class="launcher-preview" data-demo-id="mslug3" src="media/hero_mslug3.jpg" alt="" hidden>
-            <img class="launcher-preview" data-demo-id="sonicwi3" src="media/hero_sonicwi3.jpg" alt="" hidden>
-            <img class="launcher-preview" data-demo-id="samsh5sp" src="media/hero_samsho5.jpg" alt="" hidden>
+            <img class="launcher-preview" data-preview-set="kof98h" src="media/hero_kof98.jpg" alt="" hidden>
+            <img class="launcher-preview" data-preview-set="kof98" src="media/hero_maxres.jpg" alt="" hidden>
+            <img class="launcher-preview" data-preview-set="mslug3" src="media/hero_mslug3.jpg" alt="" hidden>
+            <img class="launcher-preview" data-preview-set="sonicwi3" src="media/hero_sonicwi3.jpg" alt="" hidden>
+            <img class="launcher-preview" data-preview-set="samsh5sp" src="media/hero_samsho5.jpg" alt="" hidden>
           </div>
         </div>
         <div class="hinge"><span></span><span></span></div>
@@ -144,26 +146,27 @@
           </div>
           <div class="touch-outer launcher-screen" id="deviceLauncherScreen" role="group" tabindex="0" aria-label="Launcher list: use arrow keys to select">
             <div class="launcher-panel" id="launcherPanel" role="group" aria-label="Launcher panel">
-              <div class="launcher-bar"><b class="launcher-wordmark">neo3ds</b><div role="tablist" aria-label="Game list"><button type="button" role="tab" data-tab="all" aria-selected="true">All</button><button type="button" role="tab" data-tab="fav" aria-selected="false">Fav</button></div></div>
+              <div class="launcher-bar">
+                <b class="launcher-wordmark">neo3ds</b>
+                <div class="launcher-tabs" role="tablist" aria-label="Game list">
+                  <button type="button" role="tab" data-tab="all" aria-selected="true">All <b id="launcherCountAll">0</b></button>
+                  <button type="button" role="tab" data-tab="fav" aria-selected="false">Fav <b id="launcherCountFav">0</b></button>
+                </div>
+              </div>
               <div class="launcher-rows" id="launcherRows"></div>
-              <p class="launcher-help">A/START start · B back · SELECT favorite</p>
-            </div>
-            <div class="launcher-play" id="launcherPlay" role="group" aria-label="Preview panel" hidden>
-              <span class="launcher-play-label">Preview</span>
-              <strong id="launcherPlayTitle"></strong>
-              <button type="button" class="launcher-play-back" id="launcherPlayBack" data-launcher-action="back">Back</button>
+              <p class="launcher-help"><span>A/START: play on a 3DS · SELECT: favorite</span><span>Up/Down, L/R: choose · Left/Right: tab</span></p>
             </div>
           </div>
           <div class="face">
-            <button type="button" class="shell-btn face-a" data-launcher-action="start" aria-label="A: start game">A</button>
-            <button type="button" class="shell-btn face-b" data-launcher-action="back" aria-label="B: back">B</button>
+            <button type="button" class="shell-btn face-a" data-launcher-action="play" aria-label="A: play on a 3DS">A</button>
+            <button type="button" class="shell-btn face-b" aria-label="B button (decorative)">B</button>
             <button type="button" class="shell-btn face-x" aria-label="X button (decorative)">X</button>
             <button type="button" class="shell-btn face-y" aria-label="Y button (decorative)">Y</button>
           </div>
           <div class="strip">
             <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="SELECT: toggle favorite" aria-pressed="false">SELECT</button>
             <button type="button" class="shell-btn small" aria-label="HOME button (decorative)">HOME</button>
-            <button type="button" class="shell-btn small" data-launcher-action="start" aria-label="START: start game">START</button>
+            <button type="button" class="shell-btn small" data-launcher-action="play" aria-label="START: play on a 3DS">START</button>
           </div>
         </div>
       </div>
@@ -174,15 +177,13 @@
       </div>
       <figcaption class="launcher-info" id="launcherInfo">
         <b>Selected game</b>
-        <strong id="launcherInfoTitle"></strong><p id="launcherInfoDetails"></p><p id="launcherInfoStatus"></p>
-        <div class="launcher-actions">
-          <button type="button" class="btn btn-primary btn-lg" id="launcherStartAction" data-launcher-action="start">Start game</button>
-          <button type="button" class="btn btn-ghost btn-lg" id="launcherBackAction" data-launcher-action="back" hidden>Back</button>
-        </div>
-        <p id="launcherDemo"></p><p>The selected game is not passed to the converter. Choose your own files there.</p>
+        <strong id="launcherInfoTitle"></strong>
+        <p id="launcherInfoDetails"></p>
+        <p id="launcherInfoStatus"></p>
+        <p class="launcher-notice" id="launcherNotice" hidden></p>
+        <p class="launcher-note" id="launcherNote"></p>
         <a href="convert.html">Go to converter →</a>
-        <p id="launcherMessage" role="status" aria-live="polite"></p>
-        <p><a href="manual.html">Launch and controls guide →</a> · <a href="download.html">Transfer and installation guide →</a></p>
+        <p class="sr-only" id="launcherMessage" role="status" aria-live="polite"></p>
       </figcaption>
     </figure>
 

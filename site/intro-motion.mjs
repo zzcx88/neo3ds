@@ -3,7 +3,7 @@
 
 export const REST = Object.freeze({ x: -6, y: -14 });
 export const ENTRANCE_FROM = Object.freeze({ x: 10, y: -65 });
-export const ENTRANCE_MS = 1400;
+export const ENTRANCE_MS = 2400;
 export const DRAG_LIMITS = Object.freeze({ xMin: -40, xMax: 30, yMin: -65, yMax: 65 });
 const DRAG_RATIO = .25;
 

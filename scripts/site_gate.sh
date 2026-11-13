@@ -5,20 +5,20 @@ set -euo pipefail
 
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-for f in site/app.js site/convert.js site/feedback.js site/intro-device.js site/intro-motion.mjs site/intro-launcher.mjs site/launcher-model.mjs site/demo-games.mjs site/vendor/conv/*.js site/vendor/conv/*.mjs \
+for f in site/app.js site/convert.js site/feedback.js site/intro-device.js site/intro-motion.mjs site/intro-launcher.mjs site/launcher-model.mjs site/launcher-previews.mjs site/vendor/conv/*.js site/vendor/conv/*.mjs \
          site/vendor/*.mjs site/vendor/bench/* scripts/gen_site_i18n.mjs; do
   node --check "$f"
 done
 echo "syntax OK"
 
-node --test site/launcher-model.test.mjs site/intro-motion.test.mjs site/demo-games.test.mjs
+node --test site/launcher-model.test.mjs site/intro-motion.test.mjs site/launcher-previews.test.mjs
 
 python3 - << 'EOF'
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 
-assets = {'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs', 'demo-games.mjs'}
+assets = {'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs', 'launcher-previews.mjs'}
 # intro-motion.mjs is imported by intro-device.js, so it has no link/script tag of its own.
 imported = {'intro-motion.mjs'}
 for asset in assets | imported:
@@ -42,21 +42,22 @@ for page in (Path('site/index.html'), Path('site/ko/index.html')):
 print('intro assets + references OK')
 EOF
 
-# The five demo previews are the only proof the screenshots exist; a renamed image would
-# otherwise 404 quietly on both home pages (#374).
+# The five preview images are the only proof the screenshots exist; a renamed image would
+# otherwise 404 quietly on both home pages (#378).
 python3 - << 'EOF'
 import re
 from pathlib import Path
 
+expected = {'kof98h', 'kof98', 'mslug3', 'sonicwi3', 'samsh5sp'}
 for page in (Path('site/index.html'), Path('site/ko/index.html')):
-    previews = re.findall(r'<img\b[^>]*data-demo-id="([^"]+)"[^>]*src="([^"]+)"', page.read_text(encoding='utf-8'))
-    assert len(previews) == 5, f'{page}: expected 5 demo previews, got {len(previews)}'
-    assert len({demo_id for demo_id, _ in previews}) == 5, f'{page}: duplicate demo ids'
-    for demo_id, src in previews:
+    previews = re.findall(r'<img\b[^>]*data-preview-set="([^"]+)"[^>]*src="([^"]+)"', page.read_text(encoding='utf-8'))
+    assert len(previews) == 5, f'{page}: expected 5 preview images, got {len(previews)}'
+    assert {set_id for set_id, _ in previews} == expected, f'{page}: unexpected preview sets'
+    for set_id, src in previews:
         image = (page.parent / src).resolve()
-        assert image.is_file(), f'{page}: missing demo image for {demo_id}: {src}'
-        assert re.fullmatch(r'hero_.+\.jpg', image.name), f'{page}: unexpected demo image: {src}'
-print('demo previews + images OK')
+        assert image.is_file(), f'{page}: missing preview image for {set_id}: {src}'
+        assert re.fullmatch(r'hero_.+\.jpg', image.name), f'{page}: unexpected preview image: {src}'
+print('launcher previews + images OK')
 EOF
 
 python3 - << 'EOF'

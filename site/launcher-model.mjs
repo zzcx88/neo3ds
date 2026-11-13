@@ -1,40 +1,30 @@
+import { LAUNCHER_PREVIEWS } from './launcher-previews.mjs';
+
 const copy = {
   en: {
     status: ['Buildable', 'Verified on hardware', 'Unsupported'],
-    demo: 'Demo: five games picked from the catalog because each has a real 3DS screenshot. The real launcher lists only games installed on your 3DS.',
-    launch: 'On a real 3DS, A or START launches the selected installed game.',
-    preview: 'Preview',
-    returned: 'Back to the launcher.',
+    launch: 'Actual play happens on a 3DS. This page previews the launcher list.',
     empty: 'No favorites yet.',
   },
   ko: {
     status: ['변환 가능', '실기 확인', '변환 불가'],
-    demo: '체험판: 실제 3DS 스크린샷이 있는 다섯 게임만 전체 목록에서 골랐습니다. 실제 런처에는 3DS에 설치한 게임만 표시됩니다.',
-    launch: '실제 3DS에서는 A 또는 START로 선택한 설치 게임을 실행합니다.',
-    preview: '미리보기',
-    returned: '런처로 돌아왔습니다.',
+    launch: '실제 실행은 3DS에서 이뤄집니다. 이 화면은 런처 목록만 보여줍니다.',
     empty: '즐겨찾기가 없습니다.',
   },
 };
 
-const catalogGame = ([set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb]) =>
-  ({ id: set, set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb, image: null });
+const PAGE_SIZE = 8;
 
-// Pass window.NEO3DS_DB from the page. Each instance represents a fresh session.
-// Pass the curated demo list as the second argument (site/demo-games.mjs) to show only those
-// entries; omit it to browse the full catalog, as tests and other callers do.
-export function createLauncher(catalog, demoGames = null) {
-  const full = catalog.games.map(catalogGame);
-  const games = demoGames
-    ? demoGames.map(entry => {
-      const row = full.find(game => game.set === entry.set);
-      // An entry whose set left the catalog is dropped rather than rendered without status data.
-      return row && { ...row, ...entry, id: entry.id };
-    }).filter(Boolean)
-    : full;
+const catalogGame = ([set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb]) =>
+  ({ id: set, set, title, year, maker, romMb, decrypt, status, noteKo, noteEn, spriteMb,
+    image: LAUNCHER_PREVIEWS[set] ?? null });
+
+// Pass window.NEO3DS_DB from the page. The list is always the full catalog; #378 removed the
+// curated five-game demo and the play/preview mode, so selecting a game only changes the top screen.
+export function createLauncher(catalog) {
+  const games = catalog.games.map(catalogGame);
   let index = 0;
   let tab = 'all';
-  let playingId = null;
   const favorites = new Set();
   const visible = () => tab === 'all' ? games : games.filter(game => favorites.has(game.id));
   const display = (game, language) => {
@@ -46,56 +36,43 @@ export function createLauncher(catalog, demoGames = null) {
   const view = (language = 'en') => {
     const text = copy[language] ?? copy.en;
     const list = visible();
-    const size = Math.min(8, list.length);
-    const start = Math.max(0, Math.min(index - (size - 1), list.length - size));
-    const playing = games.find(game => game.id === playingId) ?? null;
-    return { tab, total: list.length, rows: list.slice(start, start + size).map(game => display(game, language)),
-      selected: display(list[index], language) ?? null, playing: display(playing, language),
-      messages: { demo: text.demo, launch: text.launch, preview: text.preview, returned: text.returned, empty: text.empty } };
+    const page = Math.floor(index / PAGE_SIZE);
+    return { tab, total: list.length, counts: { all: games.length, fav: favorites.size },
+      page, rows: list.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+        .map(game => display(game, language)),
+      selected: display(list[index], language) ?? null,
+      messages: { empty: text.empty, launch: text.launch } };
   };
   return {
     view,
     move(direction) {
-      if (playingId) return;
       const length = visible().length;
       if (length) index = (index + Math.sign(direction) + length) % length;
     },
     first() {
-      if (playingId) return;
       index = 0;
     },
     last() {
-      if (playingId) return;
       const length = visible().length;
       if (length) index = length - 1;
     },
     select(id) {
-      if (playingId) return;
       const next = visible().findIndex(game => game.id === id);
       if (next !== -1) index = next;
     },
     setTab(next) {
-      if (playingId || (next !== 'all' && next !== 'fav')) return;
+      if (next !== 'all' && next !== 'fav') return;
       const selected = visible()[index]?.id;
       tab = next;
       index = Math.max(0, visible().findIndex(game => game.id === selected));
     },
     toggleFavorite() {
-      if (playingId) return;
       const game = visible()[index];
       if (!game) return;
       if (favorites.has(game.id)) favorites.delete(game.id);
       else favorites.add(game.id);
       index = Math.max(0, Math.min(index, visible().length - 1));
     },
-    start(language = 'en') {
-      if (!playingId) playingId = visible()[index]?.id ?? null;
-      return view(language);
-    },
-    back(language = 'en') {
-      playingId = null;
-      return view(language);
-    },
-    reset() { favorites.clear(); tab = 'all'; index = 0; playingId = null; },
+    reset() { favorites.clear(); tab = 'all'; index = 0; },
   };
 }

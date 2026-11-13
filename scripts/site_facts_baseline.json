@@ -1,5 +1,5 @@
 {
- "fingerprint": "da128063eae01740",
+ "fingerprint": "9f25142a5db188d6",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -89,6 +89,7 @@
    "acronym:README",
    "acronym:SELECT",
    "acronym:START",
+   "number:0",
    "number:16.7ms",
    "number:2.0",
    "number:20.3MB",
@@ -196,6 +197,7 @@
    "acronym:README",
    "acronym:SELECT",
    "acronym:START",
+   "number:0",
    "number:16.7ms",
    "number:2.0",
    "number:20.3MB",
