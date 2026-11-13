@@ -44,7 +44,7 @@
     if (event.target instanceof HTMLImageElement) event.preventDefault();
   });
   stage.addEventListener('pointerdown', (event) => {
-    if (motion.matches || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) || event.target.closest('button, a, input, select, textarea')) return;
+    if (motion.matches || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) || event.target.closest('#deviceLauncherScreen, button, a, input, select, textarea')) return;
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: x, startY: y };
     stage.setPointerCapture(event.pointerId);
     stage.classList.add('is-dragging');

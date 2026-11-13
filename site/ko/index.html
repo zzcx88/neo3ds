@@ -98,19 +98,15 @@
       <p class="tiny"><a class="hero-notes" href="changelog.html" data-i18n="hero.notes">릴리즈 노트</a></p>
     </div>
 
-    <!-- 3DS 본체 목업: 윗화면 게임 교대, 아랫화면 터치 UI -->
+    <!-- 3DS 런처 체험 -->
     <figure class="device-col">
       <div class="device-stage" id="deviceStage">
       <div class="device" id="introDevice">
         <div class="shell shell-top">
           <div class="cam"></div>
           <span class="speaker"></span>
-          <div class="screen-outer screen-stack">
-            <img class="screen-top hero-ph" src="../media/hero_kof98.jpg" width="400" height="240" alt="" fetchpriority="high" decoding="async">
-            <img class="screen-top hero-ph" src="../media/hero_mslug3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="../media/hero_sonicwi3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="../media/hero_samsho5.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="../media/hero_maxres.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
+          <div class="screen-outer launcher-marquee">
+            <span>neo3ds</span><strong id="launcherTitle"></strong><small id="launcherSubtitle"></small>
           </div>
         </div>
         <div class="hinge"><span></span><span></span></div>
@@ -121,20 +117,20 @@
             <div class="circle-pad"><span></span></div>
             <div class="dpad"></div>
           </div>
-<!-- Launcher UI seam: replace the placeholder inside this screen, not the device shell. -->
-          <div class="touch-outer" id="deviceLauncherScreen">
-            <img class="screen-bottom" src="../media/ui-bottom.png" width="320" height="240" alt="">
+          <div class="touch-outer launcher-screen" id="deviceLauncherScreen" tabindex="0" aria-label="런처 목록: 방향키로 선택" data-i18n-attr="aria-label:launcher.screen">
+            <div class="launcher-bar"><b data-i18n="launcher.demoLabel">체험판</b><div role="tablist" aria-label="목록" data-i18n-attr="aria-label:launcher.tabs"><button type="button" role="tab" data-tab="all" aria-selected="true">All</button><button type="button" role="tab" data-tab="fav" aria-selected="false">Fav</button></div></div>
+            <div class="launcher-rows" id="launcherRows"></div>
           </div>
           <div class="face">
-            <span class="shell-btn face-a">A</span>
+            <button type="button" class="shell-btn face-a" data-launcher-action="launch" aria-label="게임 실행 안내" data-i18n-attr="aria-label:launcher.launch">A</button>
             <span class="shell-btn face-b">B</span>
             <span class="shell-btn face-x">X</span>
-            <span class="shell-btn face-y">Y</span>
+            <button type="button" class="shell-btn face-y" data-launcher-action="qr" aria-label="전송 안내" data-i18n-attr="aria-label:launcher.transfer">Y</button>
           </div>
           <div class="strip">
-            <span class="shell-btn small">SELECT</span>
+            <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="즐겨찾기 전환" data-i18n-attr="aria-label:launcher.favorite" aria-pressed="false">SELECT</button>
             <span class="shell-btn small">HOME</span>
-            <span class="shell-btn small">START</span>
+            <button type="button" class="shell-btn small" data-launcher-action="launch" aria-label="게임 실행 안내" data-i18n-attr="aria-label:launcher.launch">START</button>
           </div>
         </div>
       </div>
@@ -147,8 +143,20 @@
         <button type="button" data-rotate="down" data-i18n="device.down">아래</button>
         <button type="button" data-rotate="reset" data-i18n="device.reset">각도 초기화</button>
       </div>
-      <button type="button" class="hero-pause" id="heroPause" aria-pressed="false" data-i18n="hero.pause">일시정지</button>
-      <figcaption class="sr-only" data-i18n="hero.mock">3DS 본체 목업에 게임 화면 합성</figcaption>
+      <div class="launcher-touch-controls" role="group" aria-label="런처 조작" data-i18n-attr="aria-label:launcher.controls">
+        <button type="button" data-launcher-action="previous" data-i18n="launcher.previous">이전 게임</button>
+        <button type="button" data-launcher-action="next" data-i18n="launcher.next">다음 게임</button>
+        <button type="button" data-launcher-action="favorite" aria-pressed="false" data-i18n="launcher.favoriteText">즐겨찾기</button>
+        <button type="button" data-launcher-tab="all">All</button><button type="button" data-launcher-tab="fav">Fav</button>
+        <button type="button" data-launcher-action="launch">A / START</button><button type="button" data-launcher-action="qr">Y / QR</button>
+      </div>
+      <figcaption class="launcher-info" id="launcherInfo">
+        <b data-i18n="launcher.info">선택한 게임</b>
+        <strong id="launcherInfoTitle"></strong><p id="launcherInfoDetails"></p><p id="launcherInfoStatus"></p>
+        <p id="launcherDemo"></p><p data-i18n="launcher.files">선택한 게임은 전달되지 않습니다. 변환기에서 직접 파일을 선택하세요.</p>
+        <a href="convert.html" data-i18n="launcher.convert">변환기로 이동 →</a>
+        <p id="launcherMessage" role="status" aria-live="polite"></p>
+      </figcaption>
     </figure>
   </div>
 </section>
@@ -430,6 +438,7 @@
 <script src="../games.js"></script>
 <script src="../app.js"></script>
 <script src="../intro-device.js" defer></script>
+<script type="module" src="../intro-launcher.mjs"></script>
 <script type="module" src="../feedback.js"></script>
 </body>
 </html>

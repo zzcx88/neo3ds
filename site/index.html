@@ -112,12 +112,8 @@
         <div class="shell shell-top">
           <div class="cam"></div>
           <span class="speaker"></span>
-          <div class="screen-outer screen-stack">
-            <img class="screen-top hero-ph" src="media/hero_kof98.jpg" width="400" height="240" alt="" fetchpriority="high" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_mslug3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_sonicwi3.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_samsho5.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
-            <img class="screen-top hero-ph" src="media/hero_maxres.jpg" width="400" height="240" alt="" loading="lazy" decoding="async">
+          <div class="screen-outer launcher-marquee">
+            <span>neo3ds</span><strong id="launcherTitle"></strong><small id="launcherSubtitle"></small>
           </div>
         </div>
         <div class="hinge"><span></span><span></span></div>
@@ -128,20 +124,20 @@
             <div class="circle-pad"><span></span></div>
             <div class="dpad"></div>
           </div>
-
-          <div class="touch-outer" id="deviceLauncherScreen">
-            <img class="screen-bottom" src="media/ui-bottom.png" width="320" height="240" alt="">
+          <div class="touch-outer launcher-screen" id="deviceLauncherScreen" tabindex="0" aria-label="Launcher list: use arrow keys to select">
+            <div class="launcher-bar"><b>Demo</b><div role="tablist" aria-label="Game list"><button type="button" role="tab" data-tab="all" aria-selected="true">All</button><button type="button" role="tab" data-tab="fav" aria-selected="false">Fav</button></div></div>
+            <div class="launcher-rows" id="launcherRows"></div>
           </div>
           <div class="face">
-            <span class="shell-btn face-a">A</span>
+            <button type="button" class="shell-btn face-a" data-launcher-action="launch" aria-label="Explain launching games">A</button>
             <span class="shell-btn face-b">B</span>
             <span class="shell-btn face-x">X</span>
-            <span class="shell-btn face-y">Y</span>
+            <button type="button" class="shell-btn face-y" data-launcher-action="qr" aria-label="Explain transfers">Y</button>
           </div>
           <div class="strip">
-            <span class="shell-btn small">SELECT</span>
+            <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="Toggle favorite" aria-pressed="false">SELECT</button>
             <span class="shell-btn small">HOME</span>
-            <span class="shell-btn small">START</span>
+            <button type="button" class="shell-btn small" data-launcher-action="launch" aria-label="Explain launching games">START</button>
           </div>
         </div>
       </div>
@@ -154,8 +150,20 @@
         <button type="button" data-rotate="down">Down</button>
         <button type="button" data-rotate="reset">Reset angle</button>
       </div>
-      <button type="button" class="hero-pause" id="heroPause" aria-pressed="false">Pause</button>
-      <figcaption class="sr-only">Game footage composited into a 3DS console mockup</figcaption>
+      <div class="launcher-touch-controls" role="group" aria-label="Launcher controls">
+        <button type="button" data-launcher-action="previous">Previous game</button>
+        <button type="button" data-launcher-action="next">Next game</button>
+        <button type="button" data-launcher-action="favorite" aria-pressed="false">Favorite</button>
+        <button type="button" data-launcher-tab="all">All</button><button type="button" data-launcher-tab="fav">Fav</button>
+        <button type="button" data-launcher-action="launch">A / START</button><button type="button" data-launcher-action="qr">Y / QR</button>
+      </div>
+      <figcaption class="launcher-info" id="launcherInfo">
+        <b>Selected game</b>
+        <strong id="launcherInfoTitle"></strong><p id="launcherInfoDetails"></p><p id="launcherInfoStatus"></p>
+        <p id="launcherDemo"></p><p>The selected game is not passed to the converter. Choose your own files there.</p>
+        <a href="convert.html">Go to converter →</a>
+        <p id="launcherMessage" role="status" aria-live="polite"></p>
+      </figcaption>
     </figure>
   </div>
 </section>
@@ -437,6 +445,7 @@
 <script src="games.js"></script>
 <script src="app.js"></script>
 <script src="intro-device.js" defer></script>
+<script type="module" src="intro-launcher.mjs"></script>
 <script type="module" src="feedback.js"></script>
 </body>
 </html>

@@ -16,8 +16,19 @@ const EN = {
   'nav.download': 'Download', 'nav.games': 'Games', 'nav.faq': 'FAQ',
   'cta.download': 'Convert now',
   'hero.h1': 'The arcade you remember,<br>now on your 3DS',
-  'hero.mock': 'Game footage composited into a 3DS console mockup',
-  'hero.pause': 'Pause',
+  'launcher.screen': 'Launcher list: use arrow keys to select',
+  'launcher.tabs': 'Game list',
+  'launcher.controls': 'Launcher controls',
+  'launcher.previous': 'Previous game',
+  'launcher.next': 'Next game',
+  'launcher.favoriteText': 'Favorite',
+  'launcher.demoLabel': 'Demo',
+  'launcher.launch': 'Explain launching games',
+  'launcher.transfer': 'Explain transfers',
+  'launcher.favorite': 'Toggle favorite',
+  'launcher.info': 'Selected game',
+  'launcher.files': 'The selected game is not passed to the converter. Choose your own files there.',
+  'launcher.convert': 'Go to converter →',
   'device.controls': 'Rotate the device',
   'device.hint': 'Drag or use the direction buttons to rotate the device.',
   'device.left': 'Left',
@@ -284,18 +295,6 @@ const LANG = document.documentElement.lang === 'en' ? 'en' : 'ko';
 
 /** 지금 언어에 맞는 문구 (en이 없으면 넘긴 한국어를 그대로 씀) */
 const t = (ko, en) => (LANG === 'en' ? en : ko);
-
-/* 히어로 화면이 25초마다 저절로 넘어간다. 멈출 수단을 둔다 (WCAG 2.2.2). */
-const heroPause = $('#heroPause');
-if (heroPause) {
-  const stack = $('.screen-stack');
-  heroPause.addEventListener('click', () => {
-    const paused = heroPause.getAttribute('aria-pressed') !== 'true';
-    heroPause.setAttribute('aria-pressed', String(paused));
-    stack.classList.toggle('paused', paused);
-    heroPause.textContent = paused ? t('재생', 'Play') : t('일시정지', 'Pause');
-  });
-}
 
 /* 반대 언어판 힌트 (#130, #141). 브라우저의 첫 선호 언어가 이 페이지 언어와 다르면
    화면 아래에 한 줄로 알린다. 리다이렉트는 하지 않는다: 구글봇은 en-US로 렌더하므로
