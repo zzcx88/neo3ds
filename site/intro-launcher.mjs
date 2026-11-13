@@ -3,27 +3,38 @@ import { createLauncher } from './launcher-model.mjs';
 const screen = document.getElementById('deviceLauncherScreen');
 if (screen && window.NEO3DS_DB) {
   const launcher = createLauncher(window.NEO3DS_DB);
-  const lang = document.documentElement.lang === 'ko' ? 'ko' : 'en';
   const $ = id => document.getElementById(id);
   const rows = $('launcherRows');
   const message = $('launcherMessage');
   const notice = $('launcherNotice');
   const column = document.querySelector('.device-col');
   const titleCard = $('launcherTitleCard');
+  const playTop = $('launcherPlayTop');
+  const panel = $('launcherPanel');
+  const ingamePanel = $('ingamePanel');
+  const back = $('launcherBack');
   const previews = [...$('launcherTopScreen').querySelectorAll('[data-preview-set]')];
   const favorites = document.querySelectorAll('[data-launcher-action="favorite"]');
+  const ingameTitle = $('ingameTitle');
+  const ingameStatus = $('ingameStatus');
+  const ingameLabels = {
+    turbo: $('ingameTurbo'),
+    system: $('ingameSystem'),
+    service: $('ingameService'),
+    slot: $('ingameSlot'),
+    load: $('ingameLoad'),
+  };
 
   const focusSelected = () => rows.querySelector('[aria-pressed="true"]')?.focus();
   const tabLabel = view => view.tab === 'all' ? 'All' : 'Fav';
-  const announce = (text, retrigger = false) => {
-    if (!retrigger) {
-      message.textContent = text;
+  const announce = (text) => {
+    if (message.textContent === text) {
+      // The same sentence twice (A, B, A) is ignored by screen readers, so clear it first (#374).
+      message.textContent = '';
+      requestAnimationFrame(() => { message.textContent = text; });
       return;
     }
-    // Pressing A/START twice produces the same string, which screen readers ignore,
-    // so clear the live region and set it again on the next frame (#374).
-    message.textContent = '';
-    requestAnimationFrame(() => { message.textContent = text; });
+    message.textContent = text;
   };
   const announceSelection = view => {
     announce(view.selected
@@ -31,19 +42,18 @@ if (screen && window.NEO3DS_DB) {
       : view.messages.empty);
   };
 
-  // The catalog note repeats the status label ("Verified · full speed"); the fixed status line
-  // already says it, so only the remainder scrolls (#378).
+  // The catalog note repeats the status ("verified · full speed") under a fixed status line;
+  // only the part after the first separator is worth the panel space (#361).
   const noteBody = game => {
     if (!game?.note) return '';
-    const rest = game.statusLabel && game.note.startsWith(game.statusLabel)
-      ? game.note.slice(game.statusLabel.length)
-      : game.note;
-    return rest.replace(/^\s*·\s*/, '');
+    const parts = game.note.split('·');
+    return (parts.length > 1 ? parts.slice(1).join('·') : game.note).trim();
   };
 
   function render(status = false) {
-    const view = launcher.view(lang);
+    const view = launcher.view();
     const game = view.selected;
+    const playing = view.mode === 'play';
     for (const tab of screen.querySelectorAll('[role="tab"]')) {
       tab.setAttribute('aria-selected', String(tab.dataset.tab === view.tab));
     }
@@ -77,34 +87,91 @@ if (screen && window.NEO3DS_DB) {
     $('launcherInfoDetails').textContent = game ? [game.year, game.maker, `${game.romMb} MB`].filter(Boolean).join(' · ') : '';
     $('launcherInfoStatus').textContent = game?.statusLabel ?? '';
     $('launcherNote').textContent = noteBody(game);
+    for (const button of column.querySelectorAll('[data-launcher-action]')) {
+      const action = button.dataset.launcherAction;
+      // The hardware keeps its place, but only B does something while a game is up.
+      button.setAttribute('aria-disabled', String(playing ? action !== 'back' : action === 'back'));
+    }
     for (const favorite of favorites) {
       favorite.setAttribute('aria-pressed', String(!!game?.favorite));
-      favorite.disabled = !game;
+      favorite.setAttribute('aria-disabled', String(!game || playing));
     }
 
-    // The top screen shows gameplay for the five catalog sets that have a real screenshot;
-    // every other selection keeps the title card (#378).
-    titleCard.hidden = !!game?.image;
-    for (const preview of previews) preview.hidden = !(game?.image && preview.dataset.previewSet === game.id);
+    // Two screens (#361): the list keeps the title card and the launcher panel; starting a game
+    // swaps in the screenshot and the in-game menu of the running game.
+    panel.hidden = playing;
+    ingamePanel.hidden = !playing;
+    titleCard.hidden = playing;
+    playTop.hidden = !playing;
+    for (const preview of previews) preview.hidden = !(playing && preview.dataset.previewSet === game?.id);
+    notice.textContent = playing ? view.messages.preview : '';
+    notice.hidden = !playing;
+    back.hidden = !playing;
+    screen.setAttribute('aria-label', playing ? 'In-game menu' : 'Launcher list: use arrow keys to select');
+
+    if (playing) {
+      ingameTitle.textContent = game?.title ?? '';
+      ingameStatus.textContent = view.ingame.status;
+      for (const [key, label] of Object.entries(ingameLabels)) label.textContent = view.ingame[key];
+      ingameLabels.load.classList.toggle('is-confirm', view.ingame.load === 'Tap again');
+    }
 
     if (status) announceSelection(view);
   }
 
-  // A/START is the only action that cannot run in a browser: say so, in the panel and in the
-  // live region, without pretending to launch anything (#378).
-  function playNotice() {
-    const { messages } = launcher.view(lang);
-    notice.textContent = messages.launch;
-    notice.hidden = false;
-    announce(messages.launch, true);
+  function enterGame(keyboard = false) {
+    launcher.play();
+    if (launcher.view().mode !== 'play') return;
+    render();
+    announce(`Playing ${launcher.view().selected.title}`);
+    $('ingameGameList').focus();
+    if (keyboard) $('ingameGameList').scrollIntoView({ block: 'nearest' });
+  }
+
+  function leaveGame() {
+    launcher.exit();
+    render(true);
+    focusSelected();
+  }
+
+  // The in-game menu's touch buttons: text state only. The screens that need real hardware say
+  // so on the status line, exactly where the real menu reports what happened.
+  function runIngame(action) {
+    if (action === 'game-list') {
+      leaveGame();
+      return;
+    }
+    const before = launcher.view().ingame.status;
+    launcher.press(action);
+    const after = launcher.view().ingame.status;
+    render();
+    if (after !== before) announce(after);
+    else if (['turbo', 'slot', 'system'].includes(action)) {
+      // These change the button's own label; the live region carries it for screen readers.
+      announce(ingamePanel.querySelector(`[data-ingame="${action}"]`).textContent);
+    }
   }
 
   // `keyboard` only moves focus for keyboard navigation; a pointer click on the D-pad or
   // L/R must not pull focus into the row list (#374).
   function run(action, keyboard = false) {
+    const view = launcher.view();
+    if (view.mode === 'play') {
+      if (action === 'back') leaveGame();
+      return;
+    }
     const reset = () => { notice.hidden = true; };
+    if (action === 'play') {
+      enterGame(keyboard);
+      return;
+    }
     if (action === 'up' || action === 'down') {
       launcher.move(action === 'down' ? 1 : -1);
+      reset();
+      render(true);
+      if (keyboard) focusSelected();
+    } else if (action === 'page-up' || action === 'page-down') {
+      launcher.movePage(action === 'page-down' ? 1 : -1);
       reset();
       render(true);
       if (keyboard) focusSelected();
@@ -117,21 +184,36 @@ if (screen && window.NEO3DS_DB) {
       launcher.setTab(action === 'tab-all' ? 'all' : 'fav');
       reset();
       render(true);
+      // An empty Fav tab has no row to hold focus, so the key-driven switch keeps it on the tab
+      // instead of dropping it to the page and stranding keyboard users (#361).
+      if (keyboard) {
+        const selected = rows.querySelector('[aria-pressed="true"]');
+        (selected ?? screen.querySelector(`[data-tab="${action === 'tab-all' ? 'all' : 'fav'}"]`))?.focus();
+      }
     } else if (action === 'favorite') {
       launcher.toggleFavorite();
       reset();
       render(true);
-    } else if (action === 'play') {
-      playNotice();
     }
   }
 
-  // One click handler for the whole device column: rows, tabs and shell buttons are all
-  // handled here so a click never fires twice.
+  // One click handler for the whole device column: rows, tabs, the in-game buttons and the
+  // shell buttons are all handled here so a click never fires twice.
   column.addEventListener('click', event => {
+    const ingame = event.target.closest('[data-ingame]');
+    if (ingame) {
+      // Hold:reset is driven by the pointer timer; a keyboard Enter has no detail.
+      if (ingame.dataset.ingame !== 'reset' || event.detail === 0) runIngame(ingame.dataset.ingame);
+      return;
+    }
     const row = event.target.closest('[data-id]');
     if (row) {
+      if (launcher.view().mode === 'play') return;
       notice.hidden = true;
+      if (row.dataset.id === launcher.view().selected?.id) {
+        enterGame();
+        return;
+      }
       launcher.select(row.dataset.id);
       render(true);
       focusSelected();
@@ -148,9 +230,31 @@ if (screen && window.NEO3DS_DB) {
     if (action) run(action);
   });
 
+  back.addEventListener('click', leaveGame);
+
+  // Hold:reset needs a full press, like the real menu; a short tap does nothing.
+  const resetButton = ingamePanel.querySelector('[data-ingame="reset"]');
+  let holdTimer = 0;
+  const stopHold = () => {
+    clearTimeout(holdTimer);
+    holdTimer = 0;
+    resetButton.classList.remove('is-holding');
+  };
+  resetButton.addEventListener('pointerdown', () => {
+    resetButton.classList.add('is-holding');
+    holdTimer = setTimeout(() => {
+      stopHold();
+      runIngame('reset');
+    }, 800);
+  });
+  for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
+    resetButton.addEventListener(type, stopHold);
+  }
+
   // Keyboard list navigation is scoped to the bottom screen so arrow keys on links in the
   // info panel still scroll the page (#374).
   screen.addEventListener('keydown', event => {
+    if (launcher.view().mode === 'play') return;
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
       event.preventDefault();
       run(event.key === 'ArrowDown' ? 'down' : 'up', true);
@@ -161,10 +265,20 @@ if (screen && window.NEO3DS_DB) {
       run(event.key === 'ArrowLeft' ? 'tab-all' : 'tab-fav', true);
       return;
     }
+    if (event.key === 'l' || event.key === 'L' || event.key === 'r' || event.key === 'R') {
+      event.preventDefault();
+      run(event.key === 'l' || event.key === 'L' ? 'page-up' : 'page-down', true);
+      return;
+    }
     if (event.key === 'Enter' && (event.target === screen || event.target.closest('[data-id]'))) {
       event.preventDefault();
-      run('play');
+      run('play', true);
     }
+  });
+
+  // Escape leaves the game screen from anywhere, including the panel's back button.
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && launcher.view().mode === 'play') leaveGame();
   });
 
   render();

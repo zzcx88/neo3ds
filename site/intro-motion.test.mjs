@@ -5,20 +5,20 @@ import {
   clamp, easeOutCirc, entranceFrame, dragTo,
 } from './intro-motion.mjs';
 
-test('rest matches the spec angle of -6deg x -14deg', () => {
-  assert.deepEqual(REST, { x: -6, y: -14 });
+test('rest faces the viewer at 0deg x 0deg', () => {
+  assert.deepEqual(REST, { x: 0, y: 0 });
 });
 
-test('the 2.4s entrance starts wide at frame 0 and ends at rest at 2400ms', () => {
-  assert.equal(ENTRANCE_MS, 2400);
+test('the 3s entrance starts wide at frame 0 and ends at rest at 3000ms', () => {
+  assert.equal(ENTRANCE_MS, 3000);
   const first = entranceFrame(0);
   assert.deepEqual(
     { x: first.x, y: first.y, opacity: first.opacity, scale: first.scale, done: first.done },
     { x: ENTRANCE_FROM.x, y: ENTRANCE_FROM.y, opacity: .35, scale: .94, done: false },
   );
-  const late = entranceFrame(2399);
+  const late = entranceFrame(2999);
   assert.equal(late.done, false);
-  const settled = entranceFrame(2400);
+  const settled = entranceFrame(3000);
   assert.deepEqual(
     { x: settled.x, y: settled.y, opacity: settled.opacity, scale: settled.scale, done: settled.done },
     { x: REST.x, y: REST.y, opacity: 1, scale: 1, done: true },
@@ -37,14 +37,14 @@ test('the entrance decelerates instead of moving at a constant rate', () => {
   assert.ok(half - quarter > threeQuarters - half, 'each later quarter adds less travel');
 });
 
-test('400ms lands past the midpoint of the rotation on the way to 2400ms', () => {
+test('400ms lands past the midpoint of the rotation on the way to 3000ms', () => {
   const frame = entranceFrame(400);
   assert.ok(!frame.done);
-  // sqrt(1 - (1/6 - 1)^2) ≈ .553 of the travel: y ≈ -36.8deg, x ≈ 1.2deg.
-  assert.ok(frame.y > -39 && frame.y < -35, `y=${frame.y}`);
-  assert.ok(frame.x > 0 && frame.x < 3, `x=${frame.x}`);
-  assert.ok(frame.opacity > .69 && frame.opacity < .73);
-  const halfway = entranceFrame(1200);
+  // sqrt(1 - (2/15 - 1)^2) ≈ .499 of the travel: y ≈ -32.6deg, x ≈ 5deg.
+  assert.ok(frame.y > -34 && frame.y < -31, `y=${frame.y}`);
+  assert.ok(frame.x > 4 && frame.x < 6, `x=${frame.x}`);
+  assert.ok(frame.opacity > .66 && frame.opacity < .69);
+  const halfway = entranceFrame(1500);
   assert.ok(halfway.y > frame.y && halfway.y < REST.y);
 });
 

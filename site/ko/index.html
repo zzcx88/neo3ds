@@ -96,7 +96,7 @@
     </div>
 
     <!-- 3DS 런처 체험 -->
-    <figure class="device-col">
+    <figure class="device-col" lang="en">
       <div class="device-stage" id="deviceStage">
       <span class="device-shadow" aria-hidden="true"></span>
       <div class="device" id="introDevice">
@@ -113,11 +113,12 @@
               <strong id="launcherTitle"></strong>
               <small class="launcher-tagline">Nintendo 3DS Neo Geo emulator</small>
             </div>
-            <img class="launcher-preview" data-preview-set="kof98h" src="../media/hero_kof98.jpg" alt="" hidden>
-            <img class="launcher-preview" data-preview-set="kof98" src="../media/hero_maxres.jpg" alt="" hidden>
-            <img class="launcher-preview" data-preview-set="mslug3" src="../media/hero_mslug3.jpg" alt="" hidden>
-            <img class="launcher-preview" data-preview-set="sonicwi3" src="../media/hero_sonicwi3.jpg" alt="" hidden>
-            <img class="launcher-preview" data-preview-set="samsh5sp" src="../media/hero_samsho5.jpg" alt="" hidden>
+            <div class="launcher-play-top" id="launcherPlayTop" hidden>
+              <img class="launcher-preview" data-preview-set="kof98h" src="../media/hero_kof98.jpg" alt="" hidden>
+              <img class="launcher-preview" data-preview-set="mslug3" src="../media/hero_mslug3.jpg" alt="" hidden>
+              <img class="launcher-preview" data-preview-set="sonicwi3" src="../media/hero_sonicwi3.jpg" alt="" hidden>
+              <img class="launcher-preview" data-preview-set="samsh5sp" src="../media/hero_samsho5.jpg" alt="" hidden>
+            </div>
           </div>
         </div>
         <div class="hinge"><span></span><span></span></div>
@@ -126,56 +127,83 @@
           <span class="shell-side side-r" aria-hidden="true"></span>
           <span class="shell-side side-t" aria-hidden="true"></span>
           <span class="shell-side side-b" aria-hidden="true"></span>
-          <button type="button" class="shell-btn sh-l" data-launcher-action="first" aria-label="처음 게임" data-i18n-attr="aria-label:launcher.first">L</button>
-          <button type="button" class="shell-btn sh-r" data-launcher-action="last" aria-label="마지막 게임" data-i18n-attr="aria-label:launcher.last">R</button>
+          <button type="button" class="shell-btn sh-l" data-launcher-action="page-up" aria-label="Page up">L</button>
+          <button type="button" class="shell-btn sh-r" data-launcher-action="page-down" aria-label="Page down">R</button>
           <div class="pad-wrap">
             <div class="circle-pad"><span></span></div>
-            <div class="dpad" role="group" aria-label="방향 패드" data-i18n-attr="aria-label:launcher.dpad">
-              <button type="button" class="dpad-btn dpad-up" data-launcher-action="up" aria-label="위" data-i18n-attr="aria-label:launcher.up"><span aria-hidden="true">▲</span></button>
-              <button type="button" class="dpad-btn dpad-left" data-launcher-action="tab-all" aria-label="왼쪽: 전체" data-i18n-attr="aria-label:launcher.left"><span aria-hidden="true">◀</span></button>
-              <button type="button" class="dpad-btn dpad-right" data-launcher-action="tab-fav" aria-label="오른쪽: 즐겨찾기" data-i18n-attr="aria-label:launcher.right"><span aria-hidden="true">▶</span></button>
-              <button type="button" class="dpad-btn dpad-down" data-launcher-action="down" aria-label="아래" data-i18n-attr="aria-label:launcher.down"><span aria-hidden="true">▼</span></button>
+            <div class="dpad" role="group" aria-label="D-pad">
+              <svg class="dpad-plate" viewBox="-2 -2 76 76" aria-hidden="true" focusable="false">
+                <path d="M24 0H48V24H72V48H48V72H24V48H0V24H24Z" fill="#26262F" stroke="#4A4A55" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              <button type="button" class="dpad-btn dpad-up" data-launcher-action="up" aria-label="Up"><span aria-hidden="true"></span></button>
+              <button type="button" class="dpad-btn dpad-left" data-launcher-action="tab-all" aria-label="Left: All"><span aria-hidden="true"></span></button>
+              <button type="button" class="dpad-btn dpad-right" data-launcher-action="tab-fav" aria-label="Right: Fav"><span aria-hidden="true"></span></button>
+              <button type="button" class="dpad-btn dpad-down" data-launcher-action="down" aria-label="Down"><span aria-hidden="true"></span></button>
             </div>
           </div>
-          <div class="touch-outer launcher-screen" id="deviceLauncherScreen" role="group" tabindex="0" aria-label="런처 목록: 방향키로 선택" data-i18n-attr="aria-label:launcher.screen">
-            <div class="launcher-panel" id="launcherPanel" role="group" aria-label="런처 패널" data-i18n-attr="aria-label:launcher.panel">
+          <div class="touch-outer launcher-screen" id="deviceLauncherScreen" role="group" tabindex="0" aria-label="Launcher list: use arrow keys to select">
+            <div class="launcher-panel" id="launcherPanel" role="group" aria-label="Launcher panel">
               <div class="launcher-bar">
                 <b class="launcher-wordmark">neo3ds</b>
-                <div class="launcher-tabs" role="tablist" aria-label="목록" data-i18n-attr="aria-label:launcher.tabs">
+                <div class="launcher-tabs" role="tablist" aria-label="Game list">
                   <button type="button" role="tab" data-tab="all" aria-selected="true">All <b id="launcherCountAll">0</b></button>
                   <button type="button" role="tab" data-tab="fav" aria-selected="false">Fav <b id="launcherCountFav">0</b></button>
                 </div>
               </div>
               <div class="launcher-rows" id="launcherRows"></div>
-              <p class="launcher-help"><span data-i18n="launcher.help1">A/START: 3DS에서 실행 · SELECT: 즐겨찾기</span><span data-i18n="launcher.help2">위/아래, L/R: 선택 · 좌/우: 탭</span></p>
+              <p class="launcher-help"><span>A/tap twice: play · SELECT/*: favorite</span><span>Up/Down, L/R: choose · Left/Right: tab</span></p>
+            </div>
+            <div class="ingame-panel" id="ingamePanel" role="group" aria-label="In-game menu" hidden>
+              <div class="ingame-head"><b>neo3ds</b><span>v1.5.0</span><span class="ingame-fps">59.8 fps</span></div>
+              <p class="ingame-title" id="ingameTitle"></p>
+              <button type="button" class="ingame-btn" data-ingame="keys">Key config</button>
+              <button type="button" class="ingame-btn" data-ingame="turbo" id="ingameTurbo">Turbo: off</button>
+              <button type="button" class="ingame-btn" data-ingame="system" id="ingameSystem">System: MVS</button>
+              <button type="button" class="ingame-btn" data-ingame="diagnostics">Diagnostics</button>
+              <button type="button" class="ingame-btn" data-ingame="reset">Hold:reset</button>
+              <button type="button" class="ingame-btn" data-ingame="service" id="ingameService">Service</button>
+              <button type="button" class="ingame-btn" data-ingame="snapshot">Snapshot</button>
+              <button type="button" class="ingame-btn" data-ingame="game-list" id="ingameGameList">Game list</button>
+              <button type="button" class="ingame-btn" data-ingame="slot" id="ingameSlot">Slot 1</button>
+              <button type="button" class="ingame-btn" data-ingame="save">Save</button>
+              <button type="button" class="ingame-btn" data-ingame="load" id="ingameLoad">Load</button>
+              <div class="ingame-keymap" role="group" aria-label="Key map">
+                <span><b>A</b><i>&gt;</i><b class="neo-b">B</b></span>
+                <span><b>B</b><i>&gt;</i><b class="neo-a">A</b></span>
+                <span><b>X</b><i>&gt;</i><b class="neo-d">D</b></span>
+                <span><b>Y</b><i>&gt;</i><b class="neo-c">C</b></span>
+                <span><b>L</b><i>&gt;</i><b class="neo-a">A</b><i>+</i><b class="neo-b">B</b></span>
+                <span><b>R</b><i>&gt;</i><b class="neo-c">C</b><i>+</i><b class="neo-d">D</b></span>
+              </div>
+              <p class="ingame-status" id="ingameStatus">Loaded in 4.4s</p>
             </div>
           </div>
           <div class="face">
-            <button type="button" class="shell-btn face-a" data-launcher-action="play" aria-label="A: 3DS에서 실행" data-i18n-attr="aria-label:launcher.faceA">A</button>
-            <button type="button" class="shell-btn face-b" aria-label="B 버튼 (장식)" data-i18n-attr="aria-label:launcher.faceB">B</button>
-            <button type="button" class="shell-btn face-x" aria-label="X 버튼 (장식)" data-i18n-attr="aria-label:launcher.faceX">X</button>
-            <button type="button" class="shell-btn face-y" aria-label="Y 버튼 (장식)" data-i18n-attr="aria-label:launcher.faceY">Y</button>
+            <button type="button" class="shell-btn face-a" data-launcher-action="play" aria-label="A: play">A</button>
+            <button type="button" class="shell-btn face-b" data-launcher-action="back" aria-label="B: back to the launcher">B</button>
+            <button type="button" class="shell-btn face-x" aria-label="X button (decorative)">X</button>
+            <button type="button" class="shell-btn face-y" aria-label="Y button (decorative)">Y</button>
           </div>
           <div class="strip">
-            <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="SELECT: 즐겨찾기 전환" data-i18n-attr="aria-label:launcher.select" aria-pressed="false">SELECT</button>
-            <button type="button" class="shell-btn small" aria-label="HOME 버튼 (장식)" data-i18n-attr="aria-label:launcher.home">HOME</button>
-            <button type="button" class="shell-btn small" data-launcher-action="play" aria-label="START: 3DS에서 실행" data-i18n-attr="aria-label:launcher.startBtn">START</button>
+            <button type="button" class="shell-btn small" data-launcher-action="favorite" aria-label="SELECT: toggle favorite" aria-pressed="false">SELECT</button>
+            <button type="button" class="shell-btn small" aria-label="HOME button (decorative)">HOME</button>
+            <button type="button" class="shell-btn small" data-launcher-action="play" aria-label="START: play">START</button>
           </div>
         </div>
       </div>
       </div>
-      <div class="device-controls" id="deviceControls" hidden role="group" aria-label="기기 회전" data-i18n-attr="aria-label:device.controls">
-        <p data-i18n="device.hint">끌어서 기기를 돌려보세요.</p>
-        <button type="button" data-rotate="reset" data-i18n="device.reset">각도 초기화</button>
+      <div class="device-controls" id="deviceControls" hidden role="group" aria-label="Rotate the device">
+        <p>Drag the device to look around.</p>
+        <button type="button" data-rotate="reset">Reset angle</button>
       </div>
       <figcaption class="launcher-info" id="launcherInfo">
-        <b data-i18n="launcher.info">선택한 게임</b>
+        <b>Selected game</b>
         <strong id="launcherInfoTitle"></strong>
         <p id="launcherInfoDetails"></p>
         <p id="launcherInfoStatus"></p>
         <p class="launcher-notice" id="launcherNotice" hidden></p>
         <p class="launcher-note" id="launcherNote"></p>
-        <a href="convert.html" data-i18n="launcher.convert">변환기로 이동 →</a>
+        <button type="button" class="launcher-back" id="launcherBack" hidden>← Back to launcher</button>
         <p class="sr-only" id="launcherMessage" role="status" aria-live="polite"></p>
       </figcaption>
     </figure>

@@ -1,5 +1,5 @@
 {
- "fingerprint": "9f25142a5db188d6",
+ "fingerprint": "db164d6c780baa66",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -90,6 +90,7 @@
    "acronym:SELECT",
    "acronym:START",
    "number:0",
+   "number:1.5",
    "number:16.7ms",
    "number:2.0",
    "number:20.3MB",
@@ -98,6 +99,7 @@
    "number:242",
    "number:26",
    "number:282",
+   "number:59.8 fps",
    "number:59.8fps",
    "number:60 fps",
    "number:60fps",
@@ -198,6 +200,7 @@
    "acronym:SELECT",
    "acronym:START",
    "number:0",
+   "number:1.5",
    "number:16.7ms",
    "number:2.0",
    "number:20.3MB",
@@ -206,6 +209,7 @@
    "number:242",
    "number:26",
    "number:282",
+   "number:59.8 fps",
    "number:59.8fps",
    "number:60fps",
    "number:64",

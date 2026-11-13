@@ -42,16 +42,16 @@ for page in (Path('site/index.html'), Path('site/ko/index.html')):
 print('intro assets + references OK')
 EOF
 
-# The five preview images are the only proof the screenshots exist; a renamed image would
-# otherwise 404 quietly on both home pages (#378).
+# The four installed games are the only proof the screenshots exist; a renamed image would
+# otherwise 404 quietly on both home pages (#361).
 python3 - << 'EOF'
 import re
 from pathlib import Path
 
-expected = {'kof98h', 'kof98', 'mslug3', 'sonicwi3', 'samsh5sp'}
+expected = {'kof98h', 'mslug3', 'sonicwi3', 'samsh5sp'}
 for page in (Path('site/index.html'), Path('site/ko/index.html')):
     previews = re.findall(r'<img\b[^>]*data-preview-set="([^"]+)"[^>]*src="([^"]+)"', page.read_text(encoding='utf-8'))
-    assert len(previews) == 5, f'{page}: expected 5 preview images, got {len(previews)}'
+    assert len(previews) == 4, f'{page}: expected 4 preview images, got {len(previews)}'
     assert {set_id for set_id, _ in previews} == expected, f'{page}: unexpected preview sets'
     for set_id, src in previews:
         image = (page.parent / src).resolve()
