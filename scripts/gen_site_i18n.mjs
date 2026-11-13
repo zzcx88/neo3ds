@@ -116,7 +116,7 @@ const PAGES = {
 };
 
 // Root-relative asset references that must gain one `../` on a page inside site/en/.
-const ASSET_PREFIXES = ['styles.css', 'intro-device.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs', 'app.js', 'feedback.js', 'games.js', 'convert.js', 'media/', 'fonts/'];
+const ASSET_PREFIXES = ['styles.css', 'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs', 'app.js', 'feedback.js', 'games.js', 'convert.js', 'media/', 'fonts/'];
 const VOID = new Set(['meta', 'link', 'input', 'br', 'img', 'hr', 'source', 'area', 'base', 'col', 'embed', 'param', 'track', 'wbr']);
 const RAW_TEXT = new Set(['script', 'style', 'textarea', 'title']);
 
