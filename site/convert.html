@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Neo Geo ROM to CIA converter — in your browser | neo3ds</title>
-<meta name="description" content="A Neo Geo game zip becomes an installable 3DS CIA inside your browser. Nothing is uploaded, nothing to install, no account. 242 of 282 romsets supported.">
+<meta name="description" content="Drop a game romset zip plus neogeo.zip (the BIOS) and the browser builds a CIA or a launcher file. Nothing is uploaded, no account. 242 of 282 romsets supported.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/convert.html">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="Neo Geo 3DS converter | neo3ds">
-<meta property="og:description" content="A romset zip becomes an installable 3DS CIA, and the conversion stays in the browser tab.">
+<meta property="og:description" content="A game zip and neogeo.zip become an installable 3DS CIA or a launcher file, and the conversion stays in the browser tab.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/convert.html">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:locale:alternate" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Neo Geo 3DS converter | neo3ds">
-<meta name="twitter:description" content="A romset zip becomes a 3DS CIA inside the browser. Nothing is uploaded.">
+<meta name="twitter:description" content="A romset zip becomes a 3DS CIA or launcher file inside the browser. Nothing is uploaded.">
 <meta name="twitter:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <script type="application/ld+json">
 {
@@ -45,7 +45,8 @@
     "priceCurrency": "KRW"
   },
   "featureList": [
-    "romset zip to CIA",
+    "romset zip to game CIA or launcher file",
+    "neogeo.zip (the BIOS) required",
     "runs entirely in the browser tab",
     "batch conversion",
     "custom icon and banner"
@@ -137,6 +138,28 @@
 .gate-alert{margin:0 0 18px;padding:12px 14px;border:1px solid var(--a);border-left:4px solid var(--a);border-radius:4px;background:rgba(240,64,56,.1);color:var(--paper);font-size:14px;line-height:1.6;max-width:640px;overflow-wrap:anywhere}
 .run-hint{margin:8px 0 0;color:var(--gold)}
 #gateReportJump{margin:0 0 18px}
+/* #375: static prerequisites, outputs and preflight blocking reasons */
+#guide h3{margin:34px 0 12px;font-size:19px;font-family:var(--text);font-weight:600}
+#guide h3:first-of-type{margin-top:26px}
+.guide-lede{margin:0 0 14px;max-width:var(--prose);font-size:15.5px;line-height:1.7;color:#C9C9D2;word-break:keep-all;overflow-wrap:anywhere}
+.guide-req{max-width:var(--prose)}
+.guide-req li code{font-size:12px}
+.guide-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 10px;max-width:var(--prose)}
+.guide-card{padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:0 3px 3px 0;background:var(--panel-2)}
+.guide-card h4{margin:0 0 6px;font:700 13px/1.4 var(--pixel);color:var(--paper)}
+.guide-card p{margin:0 0 10px;font-size:14.5px;line-height:1.65;color:#C9C9D2;word-break:keep-all;overflow-wrap:anywhere}
+.guide-card a{font-size:13.5px;color:var(--gold)}
+.guide-note{margin:0 0 4px;max-width:var(--prose)}
+.guide-table-wrap{max-width:var(--prose)}
+.guide-table{width:100%;border-collapse:collapse;font-size:14px}
+.guide-table th{font:400 10px/1.4 var(--pixel-sm);color:var(--gold);text-align:left;padding:0 0 8px;white-space:nowrap}
+.guide-table td{padding:10px 12px 10px 0;border-top:1px solid var(--line);color:#C9C9D2;line-height:1.6;vertical-align:top;word-break:keep-all;overflow-wrap:anywhere}
+.guide-table td:first-child{color:var(--paper);width:44%}
+.guide-table a{color:var(--gold)}
+@media(max-width:760px){
+  .guide-out{grid-template-columns:minmax(0,1fr)}
+  .guide-table td:first-child{width:auto}
+}
 </style>
 </head>
 <body>
@@ -300,6 +323,57 @@
         <p class="tiny">Each log line shows the elapsed time, game and stage. Outputs are usually tens of MB.</p>
       </div>
     </div>
+  </div>
+</section>
+
+
+<section class="sec" id="guide">
+  <div class="wrap">
+    <h2>What you need, what you get</h2>
+    <p class="lede narrow">A converter that turns MAME romsets you own into 3DS install files. Roms and the BIOS are not provided here.</p>
+
+    <h3>Files a conversion needs</h3>
+    <ul class="check guide-req">
+      <li><b>A game romset zip</b> <span>A zip whose name is still the MAME romset name (for example mslug3.zip). Renaming it means the romset cannot be found.</span></li>
+      <li><b>neogeo.zip (the BIOS)</b> <span>Needed for every conversion. Drop it with the game zip and leave the name alone.</span></li>
+      <li><b>Files you already own</b> <span>Both have to be yours. This site does not let you download roms or a BIOS.</span></li>
+    </ul>
+
+    <h3>Two kinds of output</h3>
+    <div class="guide-out">
+      <div class="guide-card">
+        <h4>Game CIA (.cia)</h4>
+        <p>One file per game. Install it with FBI and the game gets its own icon on the HOME menu.</p>
+        <a href="download.html#game-cia">Per-game CIA install steps</a>
+      </div>
+      <div class="guide-card">
+        <h4>Launcher file (.neo3ds)</h4>
+        <p>Many games inside one launcher app. The files go in /neo3ds/games/ on the SD card and you pick from the list.</p>
+        <a href="download.html#launcher">Launcher install steps</a>
+      </div>
+    </div>
+    <p class="tiny guide-note">The two are built separately. For the same game, the CIA copy and the launcher copy share key config, backup RAM and quick saves.</p>
+
+    <h3>Why a zip is stopped before converting</h3>
+    <p class="guide-lede">Dropping a game zip checks the romset and its chips before anything converts. With several games, each row in the list shows its own reason and only that game is skipped.</p>
+    <div class="table-scroll guide-table-wrap" tabindex="0" role="region" aria-label="Pre-conversion blocking reasons">
+      <table class="guide-table">
+        <thead><tr><th scope="col">Reason shown</th><th scope="col">What to do</th></tr></thead>
+        <tbody>
+          <tr><td>The zip name is not a romset name</td><td>Leave the original zip name as it was. If it is kof98h.zip, drop kof98h.zip.</td></tr>
+          <tr><td>A chip CRC differs from the expected version</td><td>That is a different romset version. Drop the original MAME romset zip instead.</td></tr>
+          <tr><td>ROM files are missing, or the parent romset is needed</td><td>Drop every zip of the same version. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</td></tr>
+          <tr><td>neogeo.zip (the BIOS) is missing</td><td>Drop neogeo.zip together with the game zip. Every conversion needs it.</td></tr>
+          <tr><td>neogeo.zip lacks a required chip</td><td>Use a different neogeo.zip. A file missing chips cannot be converted with.</td></tr>
+          <tr><td>A cartridge the converter does not support</td><td>The romset has a protection chip, needs a trackball, or is bootleg. Pick a convertible game from the <a href="compat.html">compatibility list</a>.</td></tr>
+          <tr><td>The zip could not be read</td><td>Check that the zip is not damaged and drop it again.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="guide-lede">A failure after the conversion starts is a different thing. It is usually the browser running out of memory or a conversion tool stopping, and the progress log shows the step. Do not swap the game: close other tabs or reload and try again, and if it keeps happening send a <a href="index.html#feedback">problem report</a> with the log.</p>
+
+    <h3>Where your files go</h3>
+    <p class="guide-lede">The game zips, neogeo.zip and the files you build are processed inside the browser tab and are not sent to a server. No account is needed. The site measures page views, conversion start, done, failure and download clicks, and report submissions; <a href="privacy.html">privacy</a> has the details.</p>
   </div>
 </section>
 

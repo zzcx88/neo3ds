@@ -41,10 +41,10 @@ const PAGES = {
     file: 'convert.html',
     url: 'convert.html',
     title: 'Neo Geo ROM to CIA converter — in your browser | neo3ds',
-    description: 'A Neo Geo game zip becomes an installable 3DS CIA inside your browser. Nothing is uploaded, nothing to install, no account. 242 of 282 romsets supported.',
+    description: 'Drop a game romset zip plus neogeo.zip (the BIOS) and the browser builds a CIA or a launcher file. Nothing is uploaded, no account. 242 of 282 romsets supported.',
     ogTitle: 'Neo Geo 3DS converter | neo3ds',
-    ogDescription: 'A romset zip becomes an installable 3DS CIA, and the conversion stays in the browser tab.',
-    twitterDescription: 'A romset zip becomes a 3DS CIA inside the browser. Nothing is uploaded.',
+    ogDescription: 'A game zip and neogeo.zip become an installable 3DS CIA or a launcher file, and the conversion stays in the browser tab.',
+    twitterDescription: 'A romset zip becomes a 3DS CIA or launcher file inside the browser. Nothing is uploaded.',
     ogImageAlt: 'neo3ds — convert roms to CIA in the browser',
     jsonld: {
       '@context': 'https://schema.org',
@@ -56,7 +56,7 @@ const PAGES = {
       isAccessibleForFree: true,
       inLanguage: ['ko', 'en'],
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
-      featureList: ['romset zip to CIA', 'runs entirely in the browser tab', 'batch conversion', 'custom icon and banner'],
+      featureList: ['romset zip to game CIA or launcher file', 'neogeo.zip (the BIOS) required', 'runs entirely in the browser tab', 'batch conversion', 'custom icon and banner'],
     },
   },
   'download.html': {

@@ -1,5 +1,5 @@
 {
- "fingerprint": "db164d6c780baa66",
+ "fingerprint": "5daf9b0de304161a",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -72,6 +72,7 @@
    "number:48",
    "zip:kof98.zip",
    "zip:kof98h.zip",
+   "zip:mslug3.zip",
    "zip:neogeo.zip"
   ],
   "site/download.html": [
@@ -183,6 +184,7 @@
    "number:48",
    "zip:kof98.zip",
    "zip:kof98h.zip",
+   "zip:mslug3.zip",
    "zip:neogeo.zip"
   ],
   "site/ko/download.html": [
