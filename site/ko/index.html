@@ -50,7 +50,7 @@
 <link rel="modulepreload" href="../launcher-model.mjs">
 <link rel="modulepreload" href="../launcher-previews.mjs">
 <link rel="stylesheet" href="../intro-home.css">
-<script defer src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
+<script async src="https://cloud.umami.is/script.js" data-website-id="cf5cd373-6021-4643-a392-c3823e8f3cdd" data-domains="zzcx88.github.io"></script>
 </head>
 <body class="page-home">
 <a class="skip" href="#main" data-i18n="a11y.skip">본문으로 건너뛰기</a>
@@ -107,8 +107,9 @@
     </div>
 
     <!-- 3DS 런처 체험 -->
-    <figure class="device-col" lang="en">
-      <div class="device-stage" id="deviceStage">
+    <figure class="device-col" id="deviceDemo" lang="en" aria-busy="true" style="position:relative;visibility:hidden">
+      <p id="deviceLoading" role="status" style="visibility:visible;position:absolute;top:40%;left:0;right:0;text-align:center">3DS demo loading or unavailable. JavaScript is required.</p>
+      <div class="device-stage" id="deviceStage" inert aria-hidden="true">
       <span class="device-shadow" aria-hidden="true"></span>
       <div class="device" id="introDevice">
         <div class="shell shell-top">
@@ -215,17 +216,25 @@
         <p>Drag the device to look around.</p>
         <button type="button" data-rotate="reset">Reset angle</button>
       </div>
-      <figcaption class="launcher-info" id="launcherInfo">
+      <figcaption class="launcher-info" id="launcherInfo" inert>
         <b>Selected game</b>
         <strong id="launcherInfoTitle"></strong>
         <p id="launcherInfoDetails"></p>
         <p id="launcherInfoStatus"></p>
-        <p class="launcher-notice" id="launcherNotice" hidden></p>
         <p class="launcher-note" id="launcherNote"></p>
+        <p class="launcher-notice" id="launcherNotice" hidden></p>
         <button type="button" class="launcher-back" id="launcherBack" hidden>← Back to launcher</button>
         <p class="sr-only" id="launcherMessage" role="status" aria-live="polite"></p>
       </figcaption>
     </figure>
+    <script>
+      // Also covers a failed or blocked module request, which cannot run its own fallback.
+      window.deviceDemoTimer = setTimeout(function () {
+        document.getElementById('deviceDemo').setAttribute('aria-busy', 'false');
+        document.getElementById('deviceLoading').textContent = '3DS demo unavailable. Reload to try again.';
+        window.deviceDemoFailed = true;
+      }, 10000);
+    </script>
 
     <a class="hero-stats" href="#games">
       <span class="stat"><b>242 / 282</b><span data-i18n="hero.st1">롬셋 변환 가능</span></span>
@@ -512,8 +521,7 @@
 
 <script src="../games.js"></script>
 <script src="../app.js"></script>
-<script type="module" src="../intro-device.js"></script>
-<script type="module" src="../intro-launcher.mjs"></script>
+<script type="module" src="../intro-ready.mjs"></script>
 <script type="module" src="../feedback.js"></script>
 </body>
 </html>
