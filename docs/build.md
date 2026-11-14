@@ -228,6 +228,12 @@ KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 7페�
 수동 실행: Actions → Pages → Run workflow.
 로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.
 
+검색 노출 기준선은 `python3 scripts/seo_baseline.py`로 배포 전후를 같은 형식으로 남긴다 (#377).
+네 랜딩 URL(`/`, `/ko/`, `/convert.html`, `/ko/convert.html`)의 HTTP 상태와 title·description·
+canonical·hreflang·JSON-LD, `sitemap.xml` 포함 여부를 JSON으로 출력하고, 하나라도 어긋나면
+종료 코드 1이다. 네트워크가 필요하므로 `site_gate.sh`에는 넣지 않는다. Search Console·Umami
+값은 계정이 필요하므로 `docs/SEO-BASELINE.md`에 사람이 적는다.
+
 ### 7.2 오프라인 변환기 패키지 (3종 GUI + 명령줄)
 
 태그(`v1.2.3`) 푸시로 GitHub Actions(`.github/workflows/build-release.yml`)가 3종 패키지를 만들고
