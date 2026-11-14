@@ -96,9 +96,9 @@
 @keyframes ingameHold { from { width:0; } to { width:100%; } }
 .hero .ingame-btn.is-holding::after { content:""; position:absolute; left:0; bottom:0; width:0; height:2px; background:var(--gold); animation:ingameHold 1s linear forwards; }
 
-/* The info panel follows its content (#361): the old fixed 315px left a large empty block.
-   Only the long game note is capped, at three lines, and scrolls inside that cap. */
-.hero .launcher-info { display:flex; flex-direction:column; width:min(100%,480px); border-top:2px solid var(--marquee); padding:14px 0 0; font:400 13px/1.5 var(--text); }
+/* The info panel keeps one height across the list, the game screen and an empty Fav tab (#361):
+   the tallest common state is the preview line + Back button + one-line note, about 15em. */
+.hero .launcher-info { display:flex; flex-direction:column; width:min(100%,480px); min-height:15em; border-top:2px solid var(--marquee); padding:14px 0 0; font:400 13px/1.5 var(--text); }
 .hero .launcher-info b { flex:none; display:block; color:var(--gold); font:400 11px/1.5 var(--pixel-sm); }
 .hero .launcher-info strong { flex:none; display:block; font-size:16px; }
 .hero .launcher-info p { flex:none; margin:6px 0; }

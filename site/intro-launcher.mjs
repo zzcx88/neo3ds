@@ -1,6 +1,7 @@
 import { createLauncher } from './launcher-model.mjs';
 
 const screen = document.getElementById('deviceLauncherScreen');
+export let launcherReady = false;
 if (screen && window.NEO3DS_DB) {
   const launcher = createLauncher(window.NEO3DS_DB);
   const $ = id => document.getElementById(id);
@@ -307,4 +308,5 @@ if (screen && window.NEO3DS_DB) {
   });
 
   render();
+  launcherReady = true;
 }

@@ -5,22 +5,22 @@ set -euo pipefail
 
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-for f in site/app.js site/convert.js site/feedback.js site/intro-device.js site/intro-motion.mjs site/intro-launcher.mjs site/launcher-model.mjs site/launcher-previews.mjs site/vendor/conv/*.js site/vendor/conv/*.mjs \
+for f in site/app.js site/convert.js site/feedback.js site/intro-ready.mjs site/intro-device.js site/intro-motion.mjs site/intro-launcher.mjs site/launcher-model.mjs site/launcher-previews.mjs site/vendor/conv/*.js site/vendor/conv/*.mjs \
          site/vendor/*.mjs site/vendor/bench/* scripts/gen_site_i18n.mjs; do
   node --check "$f"
 done
 echo "syntax OK"
 
-node --test site/launcher-model.test.mjs site/intro-motion.test.mjs site/launcher-previews.test.mjs
+node --test site/launcher-model.test.mjs site/intro-motion.test.mjs site/launcher-previews.test.mjs site/intro-ready.test.mjs
 
 python3 - << 'EOF'
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 
-assets = {'intro-device.css', 'intro-home.css', 'intro-device.js', 'intro-launcher.mjs', 'launcher-model.mjs', 'launcher-previews.mjs'}
-# intro-motion.mjs is imported by intro-device.js, so it has no link/script tag of its own.
-imported = {'intro-motion.mjs'}
+assets = {'intro-device.css', 'intro-home.css', 'intro-ready.mjs', 'launcher-model.mjs', 'launcher-previews.mjs'}
+# These modules are loaded by the device readiness coordinator.
+imported = {'intro-motion.mjs', 'intro-device.js', 'intro-launcher.mjs'}
 for asset in assets | imported:
     assert (Path('site') / asset).is_file(), f'missing intro asset: {asset}'
 
