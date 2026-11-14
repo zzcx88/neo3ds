@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>네오지오 3DS 에뮬레이터와 변환기 | neo3ds</title>
-<meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)로 바꾸는 변환기와 에뮬레이터 엔진. 확인한 게임은 구형 3DS에서도 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
+<meta name="description" content="네오지오(MAME) 롬셋 zip을 3DS 설치 파일(CIA)이나 런처용 파일로 바꾸는 변환기와 에뮬레이터 엔진. 확인한 게임은 구형 3DS에서도 60fps, 게임마다 HOME 메뉴 아이콘 하나. 롬셋 282종 중 242종 변환 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <!-- 익명 제보 엔드포인트 (#188). 배포 후 worker URL을 넣는다: docs/build.md §7.3 -->
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
 <meta property="og:title" content="네오지오 3DS 에뮬레이터와 변환기 | neo3ds">
-<meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA). 확인한 게임은 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
+<meta property="og:description" content="MAME 롬셋 zip → 3DS 설치 파일(CIA)이나 런처용 파일. 확인한 게임은 구형 3DS에서 60fps로 도는 네오지오 에뮬레이터와 설치 없는 웹 변환기.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -92,6 +92,17 @@
           </div>
         </details>
         <a class="btn btn-ghost btn-lg" href="download.html" data-i18n="cta.launcher">런처 다운로드</a>
+      </div>
+      <div class="hero-product">
+        <p data-i18n="hero.about1">네오지오는 SNK의 아케이드 기판(MVS)과 가정용 기기(AES)입니다. neo3ds는 그 롬셋을 3DS에 설치할 수 있는 파일로 바꾸는 변환기와, 3DS에서 게임을 실행하는 엔진입니다.</p>
+        <p data-i18n="hero.about2">결과물은 게임마다 따로 설치하는 CIA와, 런처 앱 하나에 여러 게임을 담는 <code>.neo3ds</code> 파일 두 가지입니다. 롬과 바이오스는 포함하지 않으며, 직접 가진 파일로만 만들 수 있습니다.</p>
+        <p data-i18n="hero.about3">호환성 목록은 롬셋마다 실기 확인, 변환 가능, 변환 불가를 구분해 표시합니다.</p>
+        <nav class="hero-links" aria-label="바로 가기" data-i18n-attr="aria-label:hero.linksLabel">
+          <a href="convert.html" data-i18n="hero.linkConvert">웹 변환기</a>
+          <a href="compat.html" data-i18n="hero.linkCompat">전체 호환성 목록</a>
+          <a href="#games" data-i18n="hero.linkSeries">시리즈별 페이지</a>
+          <a href="manual.html" data-i18n="hero.linkManual">3DS 사용 안내</a>
+        </nav>
       </div>
     </div>
 

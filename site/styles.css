@@ -98,6 +98,22 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 .hero-grid > .hero-stats{grid-area:stats}
 .hero-grid > .tiny{grid-area:notes}
 .hero-grid > .hero-copy .hero-lede span{display:block}
+/* #376: static product explanation + shortcut links, readable without JS */
+.hero-product{margin:26px 0 0;padding-top:18px;border-top:1px solid var(--line);max-width:var(--prose)}
+.hero-product p{margin:0 0 10px;font-size:15px;line-height:1.7;color:#C9C9D2}
+.hero-product p:last-of-type{margin-bottom:0}
+.hero-product code{font-size:12px}
+.hero-links{display:flex;flex-wrap:wrap;align-items:center;gap:0;margin:14px 0 0;font-size:13.5px;line-height:1.6}
+.hero-links a{padding:0 12px;color:#C9C9D2;text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--line)}
+.hero-links a:first-child{padding-left:0}
+.hero-links a + a{border-left:1px solid var(--line)}
+.hero-links a:hover{color:var(--gold);text-decoration-color:var(--gold)}
+@media (max-width:760px){
+  /* Touch targets: the links keep their size but get a 44px tap area. */
+  .hero-links{margin-top:6px}
+  .hero-links a{display:inline-flex;align-items:center;min-height:44px;padding:0 10px}
+  .hero-links a:first-child{padding-left:0}
+}
 @media (min-width:1081px){
   .hero-grid > .hero-copy h1{font-size:48px}
   .hero-grid > .hero-copy .hero-lede{font-size:19px}
