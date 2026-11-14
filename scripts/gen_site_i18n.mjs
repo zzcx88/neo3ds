@@ -40,7 +40,7 @@ const PAGES = {
   'convert.html': {
     file: 'convert.html',
     url: 'convert.html',
-    title: 'Neo Geo ROM to CIA converter — in your browser | neo3ds',
+    title: 'Neo Geo ROM to CIA or launcher file — in your browser | neo3ds',
     description: 'Drop a game romset zip plus neogeo.zip (the BIOS) and the browser builds a CIA or a launcher file. Nothing is uploaded, no account. 242 of 282 romsets supported.',
     ogTitle: 'Neo Geo 3DS converter | neo3ds',
     ogDescription: 'A game zip and neogeo.zip become an installable 3DS CIA or a launcher file, and the conversion stays in the browser tab.',
