@@ -21,6 +21,13 @@ const EN = {
   'hero.lede3': 'Install the launcher to pick games from a list.',
   'hero.st1': 'romsets convert', 'hero.st2': 'played on hardware', 'hero.st3': 'in tested games',
   'hero.notes': 'Release notes',
+  /* #376: static product explanation under the hero copy — readable without JS */
+  'hero.about1': 'Neo Geo is SNK\'s arcade board (MVS) and its home console (AES). neo3ds is a converter that turns those romsets into files a 3DS can install, plus an engine that runs the games on the 3DS.',
+  'hero.about2': 'The output comes in two shapes: a CIA installed per game, or a <code>.neo3ds</code> file that puts many games inside one launcher app. No roms or BIOS are included; you can only build from files you own.',
+  'hero.about3': 'The compatibility list marks every romset as played on real hardware, convertible, or not supported.',
+  'hero.linksLabel': 'Shortcuts',
+  'hero.linkConvert': 'Web converter', 'hero.linkCompat': 'Full compatibility list',
+  'hero.linkSeries': 'Series pages', 'hero.linkManual': '3DS manual',
   'cta.web': 'Convert online', 'cta.pc': 'Convert on PC', 'cta.launcher': 'Download launcher',
   'cta.dlWin': 'Get it for Windows x64',
   'cta.dlLin': 'Get it for Linux x64', 'cta.dlMac': 'Get it for macOS (Apple Silicon)',
