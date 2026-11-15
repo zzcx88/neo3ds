@@ -80,9 +80,11 @@ public static class CommandLine
                     var builder = new CiaBuilder(Console.WriteLine);
                     Console.WriteLine($"OK {(pack ? builder.BuildPack(job) : builder.Build(job))}");
                 }
+                // #329: the console shows the same cause+action pair as the windows; the raw
+                // exception text stays behind NEO3DS_DEBUG (the CLI has no log window).
                 catch (Exception e) when (zips.Count > 1)
                 {
-                    Console.Error.WriteLine($"FAILED {Path.GetFileName(zip)}: {e.Message}");
+                    WriteFailure(e);
                     failed++;
                 }
             }
@@ -90,10 +92,18 @@ public static class CommandLine
         }
         catch (Exception e)
         {
-            Console.Error.WriteLine($"FAILED {e.Message}");
-            if (Environment.GetEnvironmentVariable("NEO3DS_DEBUG") != null) Console.Error.WriteLine(e);
+            WriteFailure(e);
             return 1;
         }
+    }
+
+    /// <summary>The one line a script or a reader sees: 'FAILED' plus the plain cause and action.
+    /// The raw exception is diagnostic, so it needs NEO3DS_DEBUG=1 (#329).</summary>
+    static void WriteFailure(Exception e)
+    {
+        Console.Error.WriteLine("FAILED " + FailureText.Plain(e));
+        if (Environment.GetEnvironmentVariable("NEO3DS_DEBUG") != null)
+            Console.Error.WriteLine(FailureText.Raw(e) + Environment.NewLine + e);
     }
 
     /// <summary>Prints full usage (--help / -h) in the current language.</summary>

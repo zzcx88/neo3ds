@@ -285,7 +285,8 @@ public sealed class FailureTests : IDisposable
         finally { Lang.Set(saved, remember: false); }
     }
 
-    /// <summary>A missing neogeo.zip is 'bios' and the plain line says what to do.</summary>
+    /// <summary>A convertible romset with no neogeo.zip is 'bios'. A zip that is not the
+    /// romset at all is reported first, so the BIOS never hides a wrong zip (#329).</summary>
     [Fact]
     public void MissingBios_IsTaggedAsBios()
     {
@@ -293,14 +294,23 @@ public sealed class FailureTests : IDisposable
         try
         {
             Lang.Set(false, remember: false);
-            string romset = Path.Combine(root, "mslug.zip");
-            using (var z = ZipFile.Open(romset, ZipArchiveMode.Create)) z.CreateEntry("201-p1.p1");
-            var job = CiaJob.FromRomZip(romset);
-            Assert.Null(job.BiosZip);
+            string zip = Path.Combine(root, "mslug.zip");
+            using (var z = ZipFile.Open(zip, ZipArchiveMode.Create)) z.CreateEntry("readme.txt");
+            var job = new CiaJob
+            {
+                RomZip = zip, RomName = "mslug", Title = "Metal Slug", OutputDir = root,
+                Game = GameDb.Find("mslug"), BiosZip = null,
+            };
             var ex = Assert.Throws<ConverterException>(() => new CiaBuilder(_ => { }).Build(job));
             Assert.Equal(FailureKind.Bios, ex.Kind);
             Assert.Contains("neogeo.zip", Plain(ex));
             Assert.Contains("same folder", Plain(ex));
+
+            // The same zip without a picked game is the picker's verdict, not the BIOS.
+            var picked = CiaJob.FromRomZip(zip);
+            Assert.Null(picked.Game);
+            Assert.NotEqual(FailureKind.Bios, Assert.Throws<ConverterException>(
+                () => new CiaBuilder(_ => { }).Build(picked)).Kind);
         }
         finally { Lang.Set(saved, remember: false); }
     }

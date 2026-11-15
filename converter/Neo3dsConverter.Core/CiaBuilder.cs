@@ -32,6 +32,12 @@ public sealed class CiaJob
     /// <summary>The region of the BIOSes put in (language, censorship such as Metal Slug's blood).</summary>
     public Region Region { get; set; }
 
+    /// <summary>The catalog romset a batch row may name (#329): the picked game, else the job's
+    /// own verdict, else the coded failure. A zip name that is not a romset collapses to 'game'
+    /// in <see cref="FailureText"/>, so the user's file name cannot reach a summary.</summary>
+    public string? FailureSet(Exception? ex = null) =>
+        Game?.Name ?? Failure?.Set ?? (ex as ConverterException)?.Set;
+
     /// <summary>The plain cause+action line for a job that cannot be converted (#328).</summary>
     public string ProblemText => FailureText.Plain(Failure ?? new ConverterException(FailureKind.Unknown, Problem ?? ""));
 
@@ -190,12 +196,11 @@ public sealed class CiaBuilder
 
     public string Build(CiaJob job)
     {
-        // The user's inputs first: a forgotten neogeo.zip or a broken zip is the common
-        // case and its message is actionable; a missing bundled tool is an install defect.
-        OpenZip(job.RomZip); // fail early on a broken zip, tagged where it is opened (#328)
-        if (job.BiosZip == null)
-            throw new ConverterException(FailureKind.Bios,
-                L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));
+        // The same order the web converter reports in (#328/#329): what the user dropped, then
+        // the BIOS, then our own installation. A broken zip is tagged where it is opened.
+        OpenZip(job.RomZip);
+        if (job.Game == null) throw Unconvertible(job);
+        if (job.BiosZip == null) throw MissingBios();
         CheckTools(Makerom, Bannertool, "engine.elf", "neo3ds.rsf");
 
         string work = Path.Combine(Path.GetTempPath(), "neo3ds", $"{job.RomName}-{Environment.ProcessId}");
@@ -279,9 +284,8 @@ public sealed class CiaBuilder
     public string BuildPack(CiaJob job)
     {
         OpenZip(job.RomZip);
-        if (job.BiosZip == null)
-            throw new ConverterException(FailureKind.Bios,
-                L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));
+        if (job.Game == null) throw Unconvertible(job);
+        if (job.BiosZip == null) throw MissingBios();
         string work = Path.Combine(Path.GetTempPath(), "neo3ds", $"{job.RomName}-{Environment.ProcessId}");
         if (Directory.Exists(work)) Directory.Delete(work, true);
         Directory.CreateDirectory(work);
@@ -359,11 +363,23 @@ public sealed class CiaBuilder
         }
     }
 
+    /// <summary>The picker's verdict, with the catalog names it carried (#328).</summary>
+    static ConverterException Unconvertible(CiaJob job) => new(
+        job.Failure?.Kind ?? FailureKind.Unsupported,
+        job.Problem ?? L("지원하지 않는 게임입니다.", "This game is not supported."))
+    {
+        Set = job.Failure?.Set,
+        Parent = job.Failure?.Parent,
+        Chips = job.Failure?.Chips ?? Array.Empty<string>(),
+        Mismatch = job.Failure?.Mismatch ?? Array.Empty<string>(),
+    };
+
+    static ConverterException MissingBios() => new(FailureKind.Bios,
+        L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));
+
     string PrepareRomFs(CiaJob job, string work)
     {
-        var def = job.Game ?? throw new ConverterException(job.Failure?.Kind ?? FailureKind.Unsupported,
-            job.Problem ?? L("지원하지 않는 게임입니다.", "This game is not supported."))
-        { Set = job.Failure?.Set, Parent = job.Failure?.Parent, Chips = job.Failure?.Chips ?? Array.Empty<string>(), Mismatch = job.Failure?.Mismatch ?? Array.Empty<string>() };
+        var def = job.Game ?? throw Unconvertible(job);
         if (def.Name != job.RomName) log(L($"  롬셋: {def.Name} ({def.Desc})", $"  Romset: {def.Name} ({def.Desc})"));
 
         string romfs = Path.Combine(work, "romfs");

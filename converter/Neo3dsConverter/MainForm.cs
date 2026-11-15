@@ -174,7 +174,7 @@ public sealed class MainForm : Form
         }
         catch (Exception e)
         {
-            Log(L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + e.Message);
+            Log(L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + FailureText.Raw(e));
         }
     }
 
@@ -233,7 +233,7 @@ public sealed class MainForm : Form
         {
             var j = CiaJob.FromRomZip(zip);
             batch.Add(j);
-            if (j.Game == null) Log($"  ✘ {j.RomName}: {j.Problem}");
+            if (j.Game == null) { Log($"  ✘ {j.RomName}: {FailureText.Raw(j.Failure)}"); Log($"     {j.ProblemText}"); }
             else if (j.BiosZip == null) Log($"  ✘ {j.RomName}: " + L("같은 폴더에 neogeo.zip 없음", "no neogeo.zip in the same folder"));
             else Log($"  ✔ {j.RomName}: {j.Title}");
         }
@@ -283,11 +283,16 @@ public sealed class MainForm : Form
         outBox.Text = job.OutputDir;
         biosLabel.Text = job.BiosZip != null ? L("✔ neogeo.zip 발견", "✔ neogeo.zip found") : L("✘ neogeo.zip 없음 (롬과 같은 폴더에 넣어주세요)", "✘ no neogeo.zip (put it next to the game zip)");
         biosLabel.ForeColor = job.BiosZip != null ? Color.ForestGreen : Color.Firebrick;
-        setLabel.Text = job.Game != null ? $"✔ {job.Game.Name} - {job.Game.Desc}" : "✘ " + job.Problem;
+        setLabel.Text = job.Game != null ? $"✔ {job.Game.Name} - {job.Game.Desc}" : "✘ " + job.ProblemText;
         setLabel.ForeColor = job.Game != null ? Color.ForestGreen : Color.Firebrick;
         SetBuildEnabled(job.BiosZip != null && job.Game != null);
         Log(L("선택: ", "Selected: ") + $"{Path.GetFileName(zip)}  (Title ID {job.TitleId})");
-        if (job.Game == null) Log(L("변환 불가: ", "Can't convert: ") + job.Problem);
+        if (job.Game == null)
+        {
+            // #329: raw next to the plain line in the log; the state label above shows the plain one.
+            Log(L("변환 불가: ", "Can't convert: ") + (job.Failure != null ? FailureText.Raw(job.Failure) : job.Problem ?? ""));
+            Log("  " + job.ProblemText);
+        }
         UpdatePreview();
     }
 
@@ -335,8 +340,8 @@ public sealed class MainForm : Form
         }
         catch (Exception e)
         {
-            Log(L("오류: ", "Error: ") + e.Message);
-            MessageBox.Show(this, e.Message, L("실패", "Failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Log(L("오류: ", "Error: ") + FailureText.Raw(e));
+            MessageBox.Show(this, FailureText.Plain(e), L("실패", "Failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -371,8 +376,8 @@ public sealed class MainForm : Form
         }
         catch (Exception e)
         {
-            Log(L("오류: ", "Error: ") + e.Message);
-            MessageBox.Show(this, e.Message, L("실패", "Failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Log(L("오류: ", "Error: ") + FailureText.Raw(e));
+            MessageBox.Show(this, FailureText.Plain(e), L("실패", "Failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -387,7 +392,7 @@ public sealed class MainForm : Form
         var jobs = batch.Where(Buildable).ToList();
         bool? startMvs = systemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
         var done = new List<string>();
-        var failed = new List<string>();
+        var failed = new List<FailureText.BatchFailure>();
         string title = Text;
         SetBuildEnabled(false);
         UseWaitCursor = true;
@@ -411,8 +416,9 @@ public sealed class MainForm : Form
                 }
                 catch (Exception e)
                 {
-                    Log(L("오류: ", "Error: ") + e.Message);
-                    failed.Add($"{j.RomName}: {e.Message}");
+                    // #329: the summary names the catalog romset and the code; raw goes to the log.
+                    Log(L("오류: ", "Error: ") + FailureText.Raw(e));
+                    failed.Add(new FailureText.BatchFailure(j.FailureSet(e), FailureText.KindOf(e)));
                 }
             }
             Log("");
@@ -420,7 +426,7 @@ public sealed class MainForm : Form
             if (!pack) Log(L("[3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.", "Use [Send to 3DS], or copy them to the SD card and install them with FBI."));
             string msg = (pack ? L($"런처용 파일 {done.Count}개를 만들었습니다. SD카드의 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files are ready. Copy them to /neo3ds/games/ on the SD card.")
                 : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]에서 보낼 CIA를 고르세요.", $"{done.Count} CIAs are ready. Pick the CIAs to send in [Send to 3DS].")) + $"\n\n{outBox.Text}";
-            if (failed.Count > 0) msg += "\n\n" + L("실패:", "Failed:") + "\n" + string.Join("\n", failed);
+            if (failed.Count > 0) msg += "\n\n" + FailureText.Batch(failed);
             MessageBox.Show(this, msg, L("완료", "Done"), MessageBoxButtons.OK, failed.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
         }
         finally
