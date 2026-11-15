@@ -143,9 +143,11 @@ public partial class MainWindow : Window
             ? Lang.L("✔ neogeo.zip 발견", "✔ neogeo.zip found")
             : Lang.L("✘ neogeo.zip 없음 (롬과 같은 폴더에 넣어주세요)", "✘ no neogeo.zip (put it next to the game zip)");
         BiosLabel.Foreground = job.BiosZip != null ? Ok : Bad;
+        // #329: a convertible game is named by its title; a blocked one by the plain verdict
+        // only, because RomName is the user's zip file name.
         StatusText.Text = job.Game != null
             ? $"{job.RomName} — {job.Title} (Title ID {job.TitleId})"
-            : $"{job.RomName}: {job.ProblemText}";
+            : job.ProblemText;
         SetBuildLabels();
     }
 
@@ -217,12 +219,9 @@ public partial class MainWindow : Window
 
     /// <summary>#329: the log keeps the raw verdict next to the plain line, so a report can be
     /// reproduced while the window itself only shows the plain pair.</summary>
-    void LogCannotConvert(CiaJob job)
-    {
-        if (job.Failure == null) { Log(Lang.L("변환 불가: ", "Can't convert: ") + Lang.L("neogeo.zip 없음", "no neogeo.zip")); return; }
-        Log(Lang.L("변환 불가: ", "Can't convert: ") + FailureText.Raw(job.Failure));
-        Log("  " + job.ProblemText);
-    }
+    void LogCannotConvert(CiaJob job) => Log(job.Failure == null
+        ? Lang.L("변환 불가: ", "Can't convert: ") + Lang.L("neogeo.zip 없음", "no neogeo.zip")
+        : Lang.L("변환 불가: ", "Can't convert: ") + FailureText.LogLines(job.Failure));
 
     string? IconImage => string.IsNullOrEmpty(IconBox.Text) ? null : IconBox.Text;
     string? BannerImage => string.IsNullOrEmpty(BannerBox.Text) ? null : BannerBox.Text;
@@ -263,7 +262,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             // #329: the status line carries the plain pair; the raw text only reaches the log.
-            Log(Lang.L("오류: ", "Error: ") + FailureText.Raw(ex));
+            Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
             StatusText.Text = FailureText.Plain(ex);
             SetBuildEnabled(false);
             return;
@@ -285,7 +284,7 @@ public partial class MainWindow : Window
         {
             var j = CiaJob.FromRomZip(zip);
             batch.Add(j);
-            if (j.Game == null) { Log($"  ✘ {j.RomName}: {FailureText.Raw(j.Failure)}"); Log($"     {j.ProblemText}"); }
+            if (j.Game == null) Log($"  ✘ {j.ProblemText}" + (j.Failure != null ? $" ({FailureText.Raw(j.Failure)})" : ""));
             else if (j.BiosZip == null) Log($"  ✘ {j.RomName}: " + Lang.L("같은 폴더에 neogeo.zip 없음", "no neogeo.zip in the same folder"));
             else Log($"  ✔ {j.RomName}: {j.Title}");
         }
@@ -308,7 +307,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            Log(Lang.L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + FailureText.Raw(ex));
+            Log(Lang.L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + FailureText.LogLines(ex));
         }
     }
 
@@ -351,7 +350,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            Log(Lang.L($"실패: {FailureText.Raw(ex)}", $"Failed: {FailureText.Raw(ex)}"));
+            Log(Lang.L("실패: ", "Failed: ") + FailureText.LogLines(ex));
             await ShowDialog(Lang.L("실패", "Failed"), FailureText.Plain(ex));
         }
         finally
@@ -388,8 +387,8 @@ public partial class MainWindow : Window
                 catch (Exception ex)
                 {
                     // #329: the row keeps the catalog name and code; the raw line is the log's.
-                    Log(Lang.L("오류: ", "Error: ") + FailureText.Raw(ex));
-                    failed.Add(new FailureText.BatchFailure(j.FailureSet(ex), FailureText.KindOf(ex)));
+                    Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
+                    failed.Add(FailureText.BatchFailure.Of(j, ex));
                 }
             }
             Log("");
@@ -422,7 +421,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            Log(Lang.L("오류: ", "Error: ") + FailureText.Raw(ex));
+            Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
             await ShowDialog(Lang.L("실패", "Failed"), FailureText.Plain(ex));
         }
         finally

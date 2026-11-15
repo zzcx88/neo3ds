@@ -36,9 +36,11 @@ public class FailureSurfaceTests
             string romset = window.FindControl<TextBlock>("RomsetLabel")!.Text ?? "";
             string log = window.FindControl<TextBox>("LogBox")!.Text ?? "";
 
-            // The reader-facing lines never carry the user's file name.
-            Assert.DoesNotContain("My Game", status);
-            Assert.DoesNotContain("My Game", romset);
+            // The reader-facing lines never carry the user's file name — in any casing, since
+            // the window lowercases the basename into RomName.
+            Assert.DoesNotContain("my game", status, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("my game", romset, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(".zip", status);
             Assert.Contains("MAME", status);
             // The log keeps the raw verdict, so a report can reproduce it.
             Assert.Contains("notromset", log);

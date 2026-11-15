@@ -273,11 +273,7 @@ public static class RomPack
         public ZipSet(string path)
         {
             zipName = Path.GetFileName(path);
-            try { zip = ZipFile.OpenRead(path); }
-            catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
-            {
-                throw ConverterException.ForZip(path, e);
-            }
+            zip = ConverterException.OpenZip(path);
         }
 
         ZipArchiveEntry? Find(RomFile f) =>
@@ -327,12 +323,7 @@ public sealed class RomSet : IDisposable
     {
         foreach (var path in paths.Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            ZipArchive zip;
-            try { zip = ZipFile.OpenRead(path); }
-            catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
-            {
-                throw ConverterException.ForZip(path, e);
-            }
+            var zip = ConverterException.OpenZip(path);
             zips.Add(zip);
             foreach (var e in zip.Entries)
             {
@@ -348,16 +339,32 @@ public sealed class RomSet : IDisposable
     public bool Has(string name, uint? crc) => crc == null || byCrc.ContainsKey(crc.Value);
 
     /// <summary>Names of the chips of a game that none of the zips has.</summary>
-    public IEnumerable<string> Missing(MameGame g) =>
-        g.Regions.SelectMany(r => r.Ops).Where(o => o.Kind == "load" && !Has(o.File, o.Crc)).Select(o => o.File);
+    public IEnumerable<string> Missing(MameGame g) => Missing(g, out _);
 
-    /// <summary>Chips present by name but with another CRC: a different romset version, not a
-    /// missing file (#339). Same rule as site/vendor/conv/zipset.js missingDetail, and the same
-    /// name key <see cref="Read"/> uses.</summary>
-    public IEnumerable<string> Mismatch(MameGame g) =>
-        g.Regions.SelectMany(r => r.Ops)
-            .Where(o => o.Kind == "load" && o.Crc != null && !Has(o.File, o.Crc) && byName.ContainsKey(o.File))
-            .Select(o => o.File);
+    /// <summary>
+    /// The two reasons a romset does not fit, in one walk of the game DB (mirrors
+    /// site/vendor/conv/zipset.js missingDetail): chips the zips do not have at all, and chips
+    /// present by name with another CRC — a different romset version, not a missing file (#339).
+    /// The name key is the one <see cref="Read"/> uses.
+    /// </summary>
+    public (IReadOnlyList<string> Missing, IReadOnlyList<string> Mismatch) MissingDetail(MameGame g)
+    {
+        var missing = new List<string>();
+        var mismatch = new List<string>();
+        foreach (var o in g.Regions.SelectMany(r => r.Ops).Where(o => o.Kind == "load"))
+        {
+            if (Has(o.File, o.Crc)) continue;
+            (o.Crc != null && byName.ContainsKey(o.File) ? mismatch : missing).Add(o.File);
+        }
+        return (missing, mismatch);
+    }
+
+    IEnumerable<string> Missing(MameGame g, out IReadOnlyList<string> mismatch)
+    {
+        var detail = MissingDetail(g);
+        mismatch = detail.Mismatch;
+        return detail.Missing;
+    }
 
     public byte[] Read(string name, uint? crc, string game)
     {

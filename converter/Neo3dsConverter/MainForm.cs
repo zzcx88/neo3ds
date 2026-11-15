@@ -174,7 +174,7 @@ public sealed class MainForm : Form
         }
         catch (Exception e)
         {
-            Log(L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + FailureText.Raw(e));
+            Log(L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + FailureText.LogLines(e));
         }
     }
 
@@ -233,7 +233,7 @@ public sealed class MainForm : Form
         {
             var j = CiaJob.FromRomZip(zip);
             batch.Add(j);
-            if (j.Game == null) { Log($"  ✘ {j.RomName}: {FailureText.Raw(j.Failure)}"); Log($"     {j.ProblemText}"); }
+            if (j.Game == null) Log($"  ✘ {j.ProblemText}" + (j.Failure != null ? $" ({FailureText.Raw(j.Failure)})" : ""));
             else if (j.BiosZip == null) Log($"  ✘ {j.RomName}: " + L("같은 폴더에 neogeo.zip 없음", "no neogeo.zip in the same folder"));
             else Log($"  ✔ {j.RomName}: {j.Title}");
         }
@@ -287,12 +287,8 @@ public sealed class MainForm : Form
         setLabel.ForeColor = job.Game != null ? Color.ForestGreen : Color.Firebrick;
         SetBuildEnabled(job.BiosZip != null && job.Game != null);
         Log(L("선택: ", "Selected: ") + $"{Path.GetFileName(zip)}  (Title ID {job.TitleId})");
-        if (job.Game == null)
-        {
-            // #329: raw next to the plain line in the log; the state label above shows the plain one.
-            Log(L("변환 불가: ", "Can't convert: ") + (job.Failure != null ? FailureText.Raw(job.Failure) : job.Problem ?? ""));
-            Log("  " + job.ProblemText);
-        }
+        // #329: the log gets the raw verdict and the plain line; the label above shows plain only.
+        if (job.Game == null) Log(L("변환 불가: ", "Can't convert: ") + (job.Failure != null ? FailureText.LogLines(job.Failure) : job.Problem ?? ""));
         UpdatePreview();
     }
 
@@ -340,7 +336,7 @@ public sealed class MainForm : Form
         }
         catch (Exception e)
         {
-            Log(L("오류: ", "Error: ") + FailureText.Raw(e));
+            Log(L("오류: ", "Error: ") + FailureText.LogLines(e));
             MessageBox.Show(this, FailureText.Plain(e), L("실패", "Failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
@@ -376,7 +372,7 @@ public sealed class MainForm : Form
         }
         catch (Exception e)
         {
-            Log(L("오류: ", "Error: ") + FailureText.Raw(e));
+            Log(L("오류: ", "Error: ") + FailureText.LogLines(e));
             MessageBox.Show(this, FailureText.Plain(e), L("실패", "Failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
@@ -417,8 +413,8 @@ public sealed class MainForm : Form
                 catch (Exception e)
                 {
                     // #329: the summary names the catalog romset and the code; raw goes to the log.
-                    Log(L("오류: ", "Error: ") + FailureText.Raw(e));
-                    failed.Add(new FailureText.BatchFailure(j.FailureSet(e), FailureText.KindOf(e)));
+                    Log(L("오류: ", "Error: ") + FailureText.LogLines(e));
+                    failed.Add(FailureText.BatchFailure.Of(j, e));
                 }
             }
             Log("");

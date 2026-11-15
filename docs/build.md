@@ -61,7 +61,8 @@ Neo3dsConverter.exe --launcher [저장 폴더]
 - `--title`·`--icon`·`--banner`·`--set`은 zip 1개일 때만 (여러 개와 함께 쓰면 오류)
 - `--pack`: CIA 대신 런처용 `.neo3ds` 파일 생성
 - `NEO3DS_CXI=1` 환경변수: CIA와 함께 Azahar용 CXI도 생성
-- `NEO3DS_DEBUG=1`: 실패 시 스택 트레이스 출력
+- `NEO3DS_DEBUG=1`: 실패 시 원문 예외와 스택 트레이스 출력 (평소에는 쉬운 말 두 문장만 낸다)
+- 실패 문구: CLI·창 모두 `FailureText`(Core)의 원인+행동 두 문장만 보여 준다. 창은 로그에 원문(`FailureText.Raw`)을 남기고, CLI는 `NEO3DS_DEBUG=1`에서만 원문을 낸다 (#328·#329)
 
 ## 4. Azahar 테스트 (개발 루프)
 

@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.RegularExpressions;
 using static Neo3dsConverter.Lang;
 
@@ -13,6 +14,10 @@ public enum FailureKind
 {
     NoFile, Bios, NotRomset, Missing, Unsupported, Zip, Image, Oom, Wasm, Crash, Unknown,
     ZipCorrupt, CrcMismatch, BiosRead, GameDb,
+
+    /// <summary>A mistyped command line (--region xx, no zip). The message is the instruction,
+    /// so it is shown verbatim: this is not a conversion failure and not a bug report (#329).</summary>
+    Usage,
 }
 
 /// <summary>
@@ -38,8 +43,19 @@ public sealed class ConverterException : Exception
 
     public ConverterException(FailureKind kind, string detail, Exception? inner = null) : base(detail, inner) => Kind = kind;
 
-    /// <summary>A game or BIOS zip the archiver could not open, tagged where it was opened.
-    /// A damaged archive is 'zip-corrupt'; a file it cannot read at all is 'zip'.</summary>
+    /// <summary>Opens a zip, tagging an archiver failure where it happened. A damaged archive
+    /// is 'zip-corrupt'; a file that cannot be read at all is 'zip'. One helper so the same
+    /// three-type filter is not copied into every opener (#328).</summary>
+    public static ZipArchive OpenZip(string path)
+    {
+        try { return ZipFile.OpenRead(path); }
+        catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+        {
+            throw ForZip(path, e);
+        }
+    }
+
+    /// <summary>A game or BIOS zip the archiver could not open, tagged where it was opened.</summary>
     public static ConverterException ForZip(string path, Exception inner) =>
         new(inner is InvalidDataException ? FailureKind.ZipCorrupt : FailureKind.Zip,
             $"{Path.GetFileName(path)}: {inner.Message}", inner);
@@ -71,6 +87,7 @@ public static class FailureText
         FailureKind.CrcMismatch => "crc-mismatch",
         FailureKind.BiosRead => "bios-read",
         FailureKind.GameDb => "game-db",
+        FailureKind.Usage => "usage",
         _ => "unknown",
     };
 
@@ -106,10 +123,18 @@ public static class FailureText
         _ => FailureKind.Unknown,
     };
 
-    /// <summary>The raw line for the log: code + detail, never shown in a dialog (#329).</summary>
+    /// <summary>What the log gets for a failure: the raw coded line, then the same plain pair
+    /// the reader sees, so a report can reproduce the run without the dialog leaking detail.
+    /// Newline-separated and unindented; callers add their own prefix (#329).</summary>
+    public static string LogLines(Exception? ex) => Raw(ex) + Environment.NewLine + Plain(ex);
+
+    /// <summary>The raw line for the log: code + detail, never shown in a dialog (#329).
+    /// A usage error is shown as written: its message already tells the user what to type.</summary>
     public static string Raw(Exception? ex) => ex == null
         ? Code(FailureKind.Unknown)
-        : $"{Code(KindOf(ex))}: {ex.Message}";
+        : KindOf(ex) == FailureKind.Usage
+            ? ex.Message
+            : $"{Code(KindOf(ex))}: {ex.Message}";
 
     /// <summary>Cause + action for any failure, using the names its throw site carried.</summary>
     public static string Plain(Exception? ex) => ex is ConverterException c
@@ -178,6 +203,10 @@ public static class FailureText
             FailureKind.GameDb => L(
                 $"{n} 그래픽을 처리하는 중 문제가 생겼어요. 다시 시도하고, 계속되면 제보해 주세요.",
                 $"Something went wrong while processing {n} graphics. Try again; if it keeps happening, send a report."),
+            // The command-line message is already an instruction; Plain() is not used for it.
+            FailureKind.Usage => L(
+                "명령줄 사용법이 맞지 않아요. --help로 사용법을 확인해 주세요.",
+                "The command line is not right. Run --help to see the usage."),
             _ => L(
                 "확실한 원인을 찾지 못했어요. 다시 시도해 보고, 계속되면 제보해 주세요.",
                 "The exact cause could not be found. Try again; if it keeps happening, send a report."),
@@ -186,7 +215,13 @@ public static class FailureText
 
     /// <summary>One failed game of a batch: a catalog name and a code, never the user's zip
     /// file name, so a summary cannot leak it (#329).</summary>
-    public readonly record struct BatchFailure(string? Set, FailureKind Kind);
+    public readonly record struct BatchFailure(string? Set, FailureKind Kind)
+    {
+        /// <summary>The row for a job whose build threw: the picked game's romset, else the
+        /// verdict the job already carried. One place unpacks the exception (#329).</summary>
+        public static BatchFailure Of(CiaJob job, Exception ex)
+            => new(job.FailureSet(ex), KindOf(ex));
+    }
 
     /// <summary>The summary a batch dialog ends with: three failures at most, each the same
     /// cause+action pair as a single failure, plus where the rest is written.</summary>
@@ -201,8 +236,10 @@ public static class FailureText
             return IsCatalogName(f.Set) && !text.Contains(f.Set!, StringComparison.Ordinal) ? $"{f.Set} — {text}" : text;
         }).ToList();
         int rest = list.Count - shown.Count;
+        // Each entry is already two complete sentences, so join them and close only one period.
+        string body = string.Join(" / ", shown).TrimEnd('.');
         return L(
-            $"변환 실패 {list.Count}개: {string.Join(" / ", shown)}{(rest > 0 ? $" 외 {rest}개" : "")}. 게임별 이유는 로그에 있습니다.",
-            $"{list.Count} failed: {string.Join(" / ", shown)}{(rest > 0 ? $", {rest} more" : "")}. Per-game reasons are in the log.");
+            $"변환 실패 {list.Count}개: {body}{(rest > 0 ? $" 외 {rest}개" : "")}. 게임별 이유는 로그에 있습니다.",
+            $"{list.Count} failed: {body}{(rest > 0 ? $", {rest} more" : "")}. Per-game reasons are in the log.");
     }
 }

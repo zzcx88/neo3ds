@@ -31,10 +31,13 @@ public sealed class FailureTests : IDisposable
     };
 
     [Fact]
-    public void EveryKind_HasTheSameCodeAsTheWebConverter()
+    public void EveryConversionKind_HasTheSameCodeAsTheWebConverter()
     {
-        var codes = Enum.GetValues<FailureKind>().Select(Code).ToArray();
+        // 'usage' is the offline-only code for a mistyped command line: the web page has no
+        // command line, so it is deliberately outside the shared set (#329).
+        var codes = Enum.GetValues<FailureKind>().Where(k => k != FailureKind.Usage).Select(Code).ToArray();
         Assert.Equal(WebCodes.OrderBy(c => c), codes.OrderBy(c => c));
+        Assert.Equal("usage", Code(FailureKind.Usage));
         Assert.Equal(codes.Length, codes.Distinct().Count());
     }
 
@@ -170,6 +173,68 @@ public sealed class FailureTests : IDisposable
             }
         }
         finally { Lang.Set(saved, remember: false); }
+    }
+
+    /// <summary>A mistyped command line is not a conversion failure: the message is the
+    /// instruction, so it is shown as written instead of "unknown … send a report" (#329).</summary>
+    [Fact]
+    public void UsageError_KeepsItsOwnMessage()
+    {
+        var ex = new ConverterException(FailureKind.Usage, "no game zip given");
+        Assert.Equal(FailureKind.Usage, KindOf(ex));
+        Assert.Equal("no game zip given", Raw(ex));
+        Assert.DoesNotMatch("[0-9a-f]{4}", Raw(ex));
+    }
+
+    /// <summary>The zip file name never reaches a reader-facing line, only the log's raw line.
+    /// A blocked job's plain text is built from catalog names alone (review finding).</summary>
+    [Fact]
+    public void BlockedJob_PlainTextHasNoZipName()
+    {
+        bool saved = Lang.Korean;
+        try
+        {
+            Lang.Set(false, remember: false);
+            var job = new CiaJob
+            {
+                RomZip = "/tmp/My Game (1).zip",
+                RomName = "my game (1)",
+                Title = "my game (1)",
+                OutputDir = "/tmp",
+                Failure = new ConverterException(FailureKind.NotRomset, "my game (1): not a romset"),
+            };
+            Assert.DoesNotContain("my game", job.ProblemText, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("My Game", job.ProblemText);
+            Assert.Contains("MAME", job.ProblemText);
+            // The log line keeps the detail so a report reproduces the run.
+            Assert.Contains("notromset", FailureText.LogLines(job.Failure));
+            Assert.Contains("my game (1)", FailureText.LogLines(job.Failure));
+        }
+        finally { Lang.Set(saved, remember: false); }
+    }
+
+    /// <summary>The game DB's own chip list drives both details; a clone whose chips are all
+    /// present by name but with another CRC is a version mismatch, not a convertible set.</summary>
+    [Fact]
+    public void MissingDetail_ClassifiesMissingAndMismatchedChips()
+    {
+        string zip = Path.Combine(root, "kof98h.zip");
+        using (var z = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            // Every chip name the clone needs, with wrong contents (so the CRC cannot match).
+            foreach (var file in GameDb.Find("kof98h")!.Regions.SelectMany(r => r.Ops)
+                         .Where(o => o.Kind == "load").Select(o => o.File))
+            {
+                using var w = z.CreateEntry(file).Open();
+                w.Write(new byte[] { 1, 2, 3 });
+            }
+        }
+        using var rom = new RomSet(zip);
+        var (missing, mismatch) = rom.MissingDetail(GameDb.Find("kof98h")!);
+        Assert.Empty(missing);
+        Assert.NotEmpty(mismatch);
+        Assert.All(mismatch, m => Assert.Contains(m, GameDb.Find("kof98h")!.Regions
+            .SelectMany(r => r.Ops).Where(o => o.Kind == "load").Select(o => o.File)));
     }
 
     /// <summary>The generic exception keeps a raw line for the log and the same plain fallback.</summary>

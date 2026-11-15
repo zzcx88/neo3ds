@@ -39,7 +39,7 @@ public sealed class CiaJob
         Game?.Name ?? Failure?.Set ?? (ex as ConverterException)?.Set;
 
     /// <summary>The plain cause+action line for a job that cannot be converted (#328).</summary>
-    public string ProblemText => FailureText.Plain(Failure ?? new ConverterException(FailureKind.Unknown, Problem ?? ""));
+    public string ProblemText => FailureText.Plain(Failure);
 
     /// <param name="set">A romset to use instead of picking one (e.g. a clone inside a merged zip).</param>
     public static CiaJob FromRomZip(string romZip, string? set = null)
@@ -108,9 +108,8 @@ public sealed class CiaJob
                 continue;
             }
             using var open = zips;
-            var missing = zips.Missing(g).ToList();
-            if (missing.Count == 0) return (g, null, null);
-            var mismatch = zips.Mismatch(g).ToList();
+            var (missing, mismatch) = zips.MissingDetail(g);
+            if (missing.Count == 0 && mismatch.Count == 0) return (g, null, null);
             if (g == exact || failure == null)
             {
                 problem = $"{g.Name}: " + L(mismatch.Count > 0 ? "롬 파일 버전이 다릅니다" : "롬 파일이 빠졌습니다",
@@ -182,17 +181,7 @@ public sealed class CiaBuilder
 
     /// <summary>Opens the game zip only to fail early on a broken one; the tag says which
     /// plain sentence the reader gets — a damaged archive or an unreadable file (#328).</summary>
-    static void OpenZip(string path)
-    {
-        try
-        {
-            using var _ = ZipFile.OpenRead(path);
-        }
-        catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
-        {
-            throw ConverterException.ForZip(path, e);
-        }
-    }
+    static void OpenZip(string path) => ConverterException.OpenZip(path).Dispose();
 
     public string Build(CiaJob job)
     {
@@ -363,16 +352,9 @@ public sealed class CiaBuilder
         }
     }
 
-    /// <summary>The picker's verdict, with the catalog names it carried (#328).</summary>
-    static ConverterException Unconvertible(CiaJob job) => new(
-        job.Failure?.Kind ?? FailureKind.Unsupported,
-        job.Problem ?? L("지원하지 않는 게임입니다.", "This game is not supported."))
-    {
-        Set = job.Failure?.Set,
-        Parent = job.Failure?.Parent,
-        Chips = job.Failure?.Chips ?? Array.Empty<string>(),
-        Mismatch = job.Failure?.Mismatch ?? Array.Empty<string>(),
-    };
+    /// <summary>The picker's verdict, unchanged so its catalog names survive (#328).</summary>
+    static ConverterException Unconvertible(CiaJob job) => job.Failure
+        ?? new ConverterException(FailureKind.Unsupported, job.Problem ?? L("지원하지 않는 게임입니다.", "This game is not supported."));
 
     static ConverterException MissingBios() => new(FailureKind.Bios,
         L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));

@@ -55,22 +55,29 @@ public static class CommandLine
                             "jp" or "japan" => Region.Japan,
                             "us" or "usa" => Region.Usa,
                             "eu" or "europe" or "asia" => Region.Europe,
-                            var r => throw new ArgumentException($"--region {r}: use eu, jp or us"),
+                            var r => throw new ConverterException(FailureKind.Usage,
+                                Lang.L($"--region {r}: eu, jp, us 중 하나를 쓰세요.", $"--region {r}: use eu, jp or us")),
                         };
                         break;
                     default: positional.Add(args[i]); break;
                 }
             var zips = positional.Where(a => a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
             var outDir = positional.Except(zips).LastOrDefault();
-            if (zips.Count == 0) throw new ArgumentException("no game zip given");
+            if (zips.Count == 0)
+                throw new ConverterException(FailureKind.Usage,
+                    Lang.L("게임 zip이 없어요. 게임 zip 경로를 넣어 주세요.", "No game zip was given. Pass the path of a game zip."));
             if (zips.Count > 1 && (title ?? icon ?? banner ?? set) != null)
-                throw new ArgumentException("--title, --icon, --banner and --set need a single zip");
+                throw new ConverterException(FailureKind.Usage,
+                    Lang.L("--title, --icon, --banner, --set은 zip 하나일 때만 쓸 수 있어요. 이번 실행은 zip을 여러 개 받았어요.",
+                           "--title, --icon, --banner and --set need a single zip, but several were given."));
             int failed = 0;
+            var failures = new List<FailureText.BatchFailure>();
             foreach (var zip in zips)
             {
+                CiaJob? job = null;
                 try
                 {
-                    var job = CiaJob.FromRomZip(zip, set);
+                    job = CiaJob.FromRomZip(zip, set);
                     if (outDir != null) job.OutputDir = Path.GetFullPath(outDir);
                     if (title != null) job.Title = title;
                     job.IconImage = icon;
@@ -85,9 +92,11 @@ public static class CommandLine
                 catch (Exception e) when (zips.Count > 1)
                 {
                     WriteFailure(e);
+                    failures.Add(job != null ? FailureText.BatchFailure.Of(job, e) : new FailureText.BatchFailure(null, FailureText.KindOf(e)));
                     failed++;
                 }
             }
+            if (failures.Count > 0) Console.Error.WriteLine(FailureText.Batch(failures));
             return failed == 0 ? 0 : 1;
         }
         catch (Exception e)
@@ -98,10 +107,13 @@ public static class CommandLine
     }
 
     /// <summary>The one line a script or a reader sees: 'FAILED' plus the plain cause and action.
-    /// The raw exception is diagnostic, so it needs NEO3DS_DEBUG=1 (#329).</summary>
+    /// A command-line mistake prints its own message (it is the instruction); the raw exception
+    /// is diagnostic, so it needs NEO3DS_DEBUG=1 (#329).</summary>
     static void WriteFailure(Exception e)
     {
-        Console.Error.WriteLine("FAILED " + FailureText.Plain(e));
+        Console.Error.WriteLine("FAILED " + (FailureText.KindOf(e) == FailureKind.Usage
+            ? e.Message
+            : FailureText.Plain(e)));
         if (Environment.GetEnvironmentVariable("NEO3DS_DEBUG") != null)
             Console.Error.WriteLine(FailureText.Raw(e) + Environment.NewLine + e);
     }
