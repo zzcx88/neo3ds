@@ -338,9 +338,6 @@ public sealed class RomSet : IDisposable
     /// <summary>MAME marks undumped chips without a CRC; they load as empty.</summary>
     public bool Has(string name, uint? crc) => crc == null || byCrc.ContainsKey(crc.Value);
 
-    /// <summary>Names of the chips of a game that none of the zips has.</summary>
-    public IEnumerable<string> Missing(MameGame g) => Missing(g, out _);
-
     /// <summary>
     /// The two reasons a romset does not fit, in one walk of the game DB (mirrors
     /// site/vendor/conv/zipset.js missingDetail): chips the zips do not have at all, and chips
@@ -357,13 +354,6 @@ public sealed class RomSet : IDisposable
             (o.Crc != null && byName.ContainsKey(o.File) ? mismatch : missing).Add(o.File);
         }
         return (missing, mismatch);
-    }
-
-    IEnumerable<string> Missing(MameGame g, out IReadOnlyList<string> mismatch)
-    {
-        var detail = MissingDetail(g);
-        mismatch = detail.Mismatch;
-        return detail.Missing;
     }
 
     public byte[] Read(string name, uint? crc, string game)

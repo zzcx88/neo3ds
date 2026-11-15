@@ -5,10 +5,11 @@ using static Neo3dsConverter.Lang;
 namespace Neo3dsConverter;
 
 /// <summary>
-/// Why a conversion stopped (#328). One code means the same thing in the web converter
-/// (site/vendor/conv/errors.js: FAILURE_CODES) and here, so a failure reported from either
-/// surface reads the same way. The throw site tags the code where it happens; nothing
-/// parses an exception message to guess a cause, and the first throw wins.
+/// Why a conversion stopped (#328). Every conversion code means the same thing in the web
+/// converter (site/vendor/conv/errors.js: FAILURE_CODES), so a failure reported from either
+/// surface reads the same way. <see cref="FailureKind.Usage"/> is offline-only: the web page
+/// has no command line. The throw site tags the code where it happens; nothing parses an
+/// exception message to guess a cause, and the first throw wins.
 /// </summary>
 public enum FailureKind
 {
@@ -225,7 +226,7 @@ public static class FailureText
 
     /// <summary>The summary a batch dialog ends with: three failures at most, each the same
     /// cause+action pair as a single failure, plus where the rest is written.</summary>
-    public static string Batch(IEnumerable<BatchFailure> failures)
+    public static string Batch(IEnumerable<BatchFailure> failures, bool hasLog = true)
     {
         var list = failures as IReadOnlyList<BatchFailure> ?? failures.ToList();
         if (list.Count == 0) return "";
@@ -238,8 +239,11 @@ public static class FailureText
         int rest = list.Count - shown.Count;
         // Each entry is already two complete sentences, so join them and close only one period.
         string body = string.Join(" / ", shown).TrimEnd('.');
+        string where = hasLog
+            ? L("게임별 이유는 로그에 있습니다.", "Per-game reasons are in the log.")
+            : L("위 FAILED 줄에 게임별 이유가 있습니다.", "The FAILED lines above say why each game failed.");
         return L(
-            $"변환 실패 {list.Count}개: {body}{(rest > 0 ? $" 외 {rest}개" : "")}. 게임별 이유는 로그에 있습니다.",
-            $"{list.Count} failed: {body}{(rest > 0 ? $", {rest} more" : "")}. Per-game reasons are in the log.");
+            $"변환 실패 {list.Count}개: {body}{(rest > 0 ? $" 외 {rest}개" : "")}. {where}",
+            $"{list.Count} failed: {body}{(rest > 0 ? $", {rest} more" : "")}. {where}");
     }
 }

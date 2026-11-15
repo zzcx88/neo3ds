@@ -283,6 +283,9 @@ public sealed class FailureTests : IDisposable
             Assert.Contains("mslug — ", text);
             Assert.DoesNotContain("svc", text);          // capped at three
             Assert.Equal("", Batch(Array.Empty<FailureText.BatchFailure>()));
+            // The CLI has no log file, so its summary points at the FAILED lines instead.
+            Assert.Contains("in the log", text);
+            Assert.Contains("FAILED lines", Batch(new[] { new FailureText.BatchFailure("mslug", FailureKind.Bios) }, hasLog: false));
         }
         finally { Lang.Set(saved, remember: false); }
     }

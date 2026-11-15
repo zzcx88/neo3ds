@@ -38,7 +38,9 @@ public sealed class CiaJob
     public string? FailureSet(Exception? ex = null) =>
         Game?.Name ?? Failure?.Set ?? (ex as ConverterException)?.Set;
 
-    /// <summary>The plain cause+action line for a job that cannot be converted (#328).</summary>
+    /// <summary>The plain cause+action line for a job that cannot be converted (#328). A job built
+    /// outside <see cref="FromRomZip"/> may carry only <see cref="Problem"/>; that detail is the
+    /// log's, so the reader still gets the neutral line rather than a possible file name.</summary>
     public string ProblemText => FailureText.Plain(Failure);
 
     /// <param name="set">A romset to use instead of picking one (e.g. a clone inside a merged zip).</param>

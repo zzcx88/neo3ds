@@ -43,14 +43,14 @@ public static class CommandLine
             for (int i = 0; i < args.Length; i++)
                 switch (args[i])
                 {
-                    case "--title": title = args[++i]; break;
-                    case "--set": set = args[++i]; break;
-                    case "--icon": icon = Path.GetFullPath(args[++i]); break;
-                    case "--banner": banner = Path.GetFullPath(args[++i]); break;
+                    case "--title": title = Value(args, ref i); break;
+                    case "--set": set = Value(args, ref i); break;
+                    case "--icon": icon = Path.GetFullPath(Value(args, ref i)); break;
+                    case "--banner": banner = Path.GetFullPath(Value(args, ref i)); break;
                     case "--pack": pack = true; break;
-                    case "--system": startMvs = args[++i].Equals("mvs", StringComparison.OrdinalIgnoreCase); break;
+                    case "--system": startMvs = Value(args, ref i).Equals("mvs", StringComparison.OrdinalIgnoreCase); break;
                     case "--region":
-                        region = args[++i].ToLowerInvariant() switch
+                        region = Value(args, ref i).ToLowerInvariant() switch
                         {
                             "jp" or "japan" => Region.Japan,
                             "us" or "usa" => Region.Usa,
@@ -96,7 +96,7 @@ public static class CommandLine
                     failed++;
                 }
             }
-            if (failures.Count > 0) Console.Error.WriteLine(FailureText.Batch(failures));
+            if (failures.Count > 0) Console.Error.WriteLine(FailureText.Batch(failures, hasLog: false));
             return failed == 0 ? 0 : 1;
         }
         catch (Exception e)
@@ -104,6 +104,16 @@ public static class CommandLine
             WriteFailure(e);
             return 1;
         }
+    }
+
+    /// <summary>The value after a flag. A flag with nothing after it is a usage error like any
+    /// other, not an index crash that reads as "unknown … send a report" (#329).</summary>
+    static string Value(string[] args, ref int i)
+    {
+        if (i + 1 >= args.Length)
+            throw new ConverterException(FailureKind.Usage,
+                Lang.L($"{args[i]} 뒤에 값을 넣어 주세요.", $"Put a value after {args[i]}."));
+        return args[++i];
     }
 
     /// <summary>The one line a script or a reader sees: 'FAILED' plus the plain cause and action.
