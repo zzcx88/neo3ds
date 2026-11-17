@@ -115,7 +115,7 @@ def check_dates(rows, path, key, label, unique):
     for r in rows:
         date = r.get(key)
         if not (isinstance(date, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', date)):
-            sys.exit('%s: bad date %r for %s' % (path, date, label(r)))
+            sys.exit('%s: bad date %r for %s (want YYYY-MM-DD)' % (path, date, label(r)))
         try:
             datetime.date.fromisoformat(date)
         except ValueError:

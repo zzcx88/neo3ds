@@ -573,7 +573,7 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 /* 패치노트 두 구역 (#389): 웹 변환기는 날짜 카드, 릴리스는 위 타임라인 그대로. */
 .changelog-sec{margin:40px 0 0}
 .changelog-sec h2{font-size:clamp(18px,2.8vw,23px);color:var(--gold)}
-.web-list{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:12px}
+.web-list{margin:18px 0 0;display:grid;gap:12px}
 .web-day{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:0 3px 3px 0;
   background:var(--panel-2);padding:14px 16px}
 .web-date{display:block;font:400 11px/1 var(--pixel-sm);color:var(--dim);margin:0 0 9px}

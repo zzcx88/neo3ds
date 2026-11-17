@@ -196,6 +196,7 @@ from gen_site_changelog import META, WEB_DATA, load_web_updates
 # Headings come from the generator's META so a rename cannot leave this check behind.
 web_h2 = {m['lang']: m['web_h2'] for m in META.values()}
 rel_h2 = {m['lang']: m['rel_h2'] for m in META.values()}
+want_days = len(load_web_updates())
 
 for meta in META.values():
     page = meta['file']
@@ -216,9 +217,8 @@ for meta in META.values():
     if days != sorted(days, reverse=True):
         sys.exit('%s: web update dates are not newest first: %s' % (page, days))
     # The page must carry every entry the data holds, so a dropped row is not silently stale.
-    if len(days) != len(load_web_updates()):
-        sys.exit('%s: %d dated entries on the page, %d in %s'
-                 % (page, len(days), len(load_web_updates()), WEB_DATA))
+    if len(days) != want_days:
+        sys.exit('%s: %d dated entries on the page, %d in %s' % (page, len(days), want_days, WEB_DATA))
 print('changelog sections OK: web updates first, dated entries newest first')
 EOF
 # The changelog must start at the version the site builds (#166).
