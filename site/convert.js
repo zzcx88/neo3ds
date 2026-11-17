@@ -12,12 +12,12 @@ import {
 import {
   iconPng, bannerPng, ICON_SIZE, BANNER_W, BANNER_H,
 } from './vendor/conv/art.js';
-import { zipResults } from './vendor/conv/bundle.js';
+import { uniqueEntryName, splitPlan, partName, writeZip, zipBlob } from './vendor/conv/bundle.js';
 import { stageFraction, batchFraction, percentText } from './vendor/conv/progress.js';
 import { startEvent, doneEvent, failEvent, saveEvent, send as sendEvent } from './vendor/conv/analytics.js';
 import { buildReport, failuresFrom, PENDING_KEY } from './vendor/conv/report.js';
 import { batchFailureText, failureMessage } from './vendor/conv/messages.js';
-import { uniqueEntryName } from './vendor/conv/bundle.js';
+import { results as resultStore } from './vendor/conv/resultstore.js';
 
 const $ = (id) => document.getElementById(id);
 // #242: the launcher CIA is downloaded from download.html; old ?mode=launcher links land there.
@@ -221,7 +221,10 @@ let artTitle = null, artProblem = null;
 let selectedIndex = -1; // #76 batch row currently shown in #gateArt (-1 = list)
 const urls = new Set();
 let overallView = null; // #81 {fraction, kind, index, ready, end} shown in #progress
-let bundleBusy = false, bundleUrl = null, bundleSeq = 0; // #81 "download all" ZIP
+let bundleBusy = false, bundleSeq = 0; // #81 "download all" ZIP
+let bundleDone = 0; // #387 whole-bundle progress (0..1) while streaming
+let runSeq = 0; // #387 a result landing after the next run started must not publish
+let cancelled = false; // #387 the cancel button (not a finished run) drops late results
 let dlMode = null; // #175 output mode behind the single download link
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
@@ -263,17 +266,45 @@ function revokeUrl(url) {
   if (url && urls.delete(url)) URL.revokeObjectURL(url);
 }
 
-// #81: the ZIP from "download all" is also an ObjectURL in `urls`, so a new
-// run / file change revokes it. A build still running when that happens must
-// not publish its URL afterwards, hence the generation counter.
-function revokeBundleUrl() {
-  if (bundleUrl) { revokeUrl(bundleUrl); bundleUrl = null; }
+// #387: a finished result goes to the disk store first; the link is published
+// only once the bytes are readable. One game is in flight per worker, so the
+// page never holds more than a few results in memory.
+async function storeResult(index, blob, name) {
+  const file = await resultStore.put(index, blob, name);
+  return makeUrl(file);
 }
 
+// Waits for the store, then publishes the row's own link. A row that already
+// failed, a run that was superseded or cancelled, and a superseded entry must
+// not get a link; a URL that is not used is revoked on the spot.
+//
+// `running` is page-wide and `finish()` clears it in the same turn as the last
+// game's publish, so it cannot stand in for "cancelled" here — that needs its
+// own flag. `markDone` also refuses a row that is no longer running, and cancel
+// marks its running rows pending.
+function publishResult(row, blob, name, stats, run = runSeq) {
+  void storeResult(row, blob, name).then((url) => {
+    const rowModel = batch?.[row];
+    const stale = run !== runSeq // a new run owns the store now
+      || cancelled // a cancelled run has no live download surface
+      || rowModel?.status !== STATUS.DONE
+      || rowModel.result?.url;
+    if (stale) { revokeUrl(url); return; }
+    markDone(batch, row, { url, name, mb: stats.ciaMB });
+    updateRow(row);
+  }).catch((err) => {
+    logEvent(gameTag(row), t(`[결과 저장 실패] ${err?.message ?? err}`,
+      `[result save failed] ${err?.message ?? err}`), 'fail');
+  });
+}
+
+// #81/#387: a bundle is written straight to the picker or clicked immediately,
+// so there is no long-lived ZIP URL to track. A build still running when the run
+// changes must not write anything, hence the generation counter.
 function cancelBundle() {
   bundleSeq++;
   bundleBusy = false;
-  revokeBundleUrl();
+  bundleDone = 0;
 }
 
 function clearSingleLink() {
@@ -943,50 +974,161 @@ function paintBatchAll() {
   dlAllBtn.classList.toggle('hidden', !show);
   dlAllBtn.disabled = show && bundleBusy;
   if (!show) { dlAllBtn.textContent = ''; paintResult(); return; }
+  // #387: a whole-romset bundle takes minutes, so the button reports progress.
   dlAllBtn.textContent = bundleBusy
-    ? t('ZIP 만드는 중…', 'Building ZIP…')
+    ? t(`ZIP 만드는 중… ${percentText(bundleDone)}`, `Building ZIP… ${percentText(bundleDone)}`)
     : t(`전체 다운로드 (${n})`, `Download all (${n})`);
   paintResult();
 }
 
+// #387: one entry per completed row, taken from the disk store. Finished games
+// are already files there, so bundling never re-reads or copies them. Same-name
+// results (the same zip dropped twice) get " (2)"-style names.
+function bundleEntries(indexes) {
+  const used = new Set();
+  return resultStore.entries(indexes).map((entry) => ({
+    name: uniqueEntryName(entry.name, used),
+    blob: entry.blob,
+  }));
+}
+
+// The picker exists or it does not; whether its writable works is discovered on
+// the first use, which is why the caller falls back to parts instead of failing.
+const canSaveToDisk = () => typeof window?.showSaveFilePicker === 'function';
+
+// The save picker streams straight to the file the user picked, so the bundle
+// size is bounded by the disk, not by the browser's ~2 GiB Blob ceiling (#387).
+// Returns false when the picker could not be opened for a reason other than the
+// user closing it, so the caller can fall back to split parts; an abort is the
+// user's decision and is rethrown.
+async function saveBundleToDisk(entries, name, onProgress) {
+  let handle;
+  try {
+    handle = await window.showSaveFilePicker({
+      suggestedName: name,
+      types: [{ description: 'ZIP archive', accept: { 'application/zip': ['.zip'] } }],
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    return false; // no usable picker (e.g. createWritable is missing): use parts
+  }
+  let writable;
+  try {
+    writable = await handle.createWritable();
+  } catch {
+    return false; // same: the picker cannot write here
+  }
+  try {
+    await writeZip(writable, entries, { onProgress });
+    return true;
+  } catch (err) {
+    try { await writable.abort(); } catch { /* already closed */ }
+    throw err; // a write failure is a real failure, not a reason to split
+  }
+}
+
+// The split fallback builds one complete ZIP per part, hands it to the browser
+// and releases it shortly after. Part sizes are chosen to stay under the Blob
+// ceiling, and releasing them keeps the page from accumulating them. The revoke
+// is deferred: Safari has needed the blob URL to outlive the click's task for
+// large files, and this path exists mostly for the browsers without a picker.
+const RELEASE_AFTER_MS = 60_000;
+function clickDownload(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), RELEASE_AFTER_MS);
+}
+
+// Firefox and Safari have no save picker, so the bundle is split into complete
+// ZIPs that each fit a Blob. Every part opens on its own; the browser may ask
+// to allow more than one download. Progress covers the whole bundle, so a part
+// does not restart the bar.
+async function downloadParts(parts, base, seq, onProgress) {
+  const total = parts.reduce((n, part) => n + part.bytes, 0);
+  let done = 0;
+  for (let i = 0; i < parts.length; i++) {
+    if (seq !== bundleSeq) return false;
+    const name = partName(base, i, parts.length);
+    const start = done;
+    const blob = await zipBlob(parts[i].entries, {
+      onProgress: (at) => onProgress?.(start + at, total),
+    });
+    if (seq !== bundleSeq) return false;
+    done = start + parts[i].bytes;
+    clickDownload(blob, name);
+    logEvent('', `[ZIP] ${name} ${(blob.size / 1048576).toFixed(1)}MB`, 'meta');
+    // Give the browser a moment to register the first download before handing it
+    // the next one. The exact gap is untested; it only has to be short enough not
+    // to dominate a many-part bundle (8 parts cost ~2 s at 300 ms).
+    if (i + 1 < parts.length) await new Promise((resolve) => { setTimeout(resolve, 300); });
+  }
+  return true;
+}
+
 async function downloadBatchZip() {
   if (bundleBusy || !wantsBatch()) return;
-  const rows = (batch ?? []).filter((row) => row.status === STATUS.DONE && row.result?.url);
-  if (rows.length === 0) return;
-  const seq = ++bundleSeq;
   bundleBusy = true;
+  bundleDone = 0;
   paintBatchAll();
+  const seq = ++bundleSeq;
   try {
-    const entries = [];
-    const used = new Set();
-    for (const row of rows) {
-      const res = await fetch(row.result.url);
-      if (seq !== bundleSeq) return; // new run / file change revoked the blobs
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      entries.push({ name: uniqueEntryName(row.result.name, used), bytes: new Uint8Array(await res.arrayBuffer()) });
-      if (seq !== bundleSeq) return;
-    }
-    const bin = zipResults(entries);
+    // A row shows DONE as soon as the worker posts it, but its file may still be
+    // landing; waiting for the store keeps a just-finished game in the bundle.
+    await resultStore.settled();
     if (seq !== bundleSeq) return;
-    revokeBundleUrl(); // a previous click's ZIP is superseded
-    const url = makeUrl(bin);
-    bundleUrl = url;
-    const name = `neo3ds-batch-${rows.length}games.zip`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.append(a);
-    a.click();
-    a.remove();
+    // Row indexes address the disk store; `batch` order is the ZIP order (#338).
+    // The store, not the row's link, decides what is in the bundle: the link is
+    // assigned one tick later by publishResult, so it is not a reliable signal.
+    const indexes = [];
+    for (let i = 0; i < (batch ?? []).length; i++) {
+      if (batch[i].status === STATUS.DONE && resultStore.get(i)) indexes.push(i);
+    }
+    if (indexes.length === 0) return;
+    const base = `neo3ds-batch-${indexes.length}games.zip`;
+    const entries = bundleEntries(indexes);
+    const onProgress = (done, total) => {
+      if (seq !== bundleSeq) return;
+      bundleDone = total ? done / total : 0;
+      paintBatchAll();
+    };
+    if (canSaveToDisk()) {
+      try {
+        await saveBundleToDisk(entries, base, onProgress);
+        if (seq !== bundleSeq) return;
+        logEvent('', t(`[ZIP] ${indexes.length}개 결과를 ${base}로 저장했습니다`,
+          `[ZIP] Saved ${indexes.length} results into ${base}`), 'meta');
+        trackSave('batch'); // #175
+        return;
+      } catch (err) {
+        // Closing the dialog is the user's decision: stop, do not retry.
+        if (err?.name === 'AbortError') throw err;
+        // A picker that exists but cannot write (an older Safari, a locked
+        // folder) must still leave the user with a working download.
+        logEvent('', t(`[ZIP] 저장 창을 쓸 수 없어 나눠 받습니다 (${err?.message ?? err})`,
+          `[ZIP] Save dialog unavailable, downloading in parts (${err?.message ?? err})`), 'info');
+      }
+    }
+    const done = await downloadParts(splitPlan(entries), base, seq, onProgress);
+    if (!done || seq !== bundleSeq) return;
+    logEvent('', t(`[ZIP] ${indexes.length}개 결과를 ${base}로 내려받았습니다`,
+      `[ZIP] Downloaded ${indexes.length} results as ${base}`), 'meta');
     trackSave('batch'); // #175
-    logEvent('', t(`[ZIP] ${rows.length}개 결과를 ${name}로 묶었습니다`, `[ZIP] Bundled ${rows.length} results into ${name}`), 'meta');
   } catch (err) {
-    if (seq === bundleSeq) logEvent('', t(`[ZIP 실패] ${err?.message ?? err}`, `[ZIP failed] ${err?.message ?? err}`), 'fail');
+    if (seq !== bundleSeq) return;
+    // Closing the save dialog is a decision, not a failure.
+    if (err?.name === 'AbortError') logEvent('', t('[ZIP] 저장을 취소했습니다', '[ZIP] Save cancelled'), 'meta');
+    else logEvent('', t(`[ZIP 실패] ${err?.message ?? err}`, `[ZIP failed] ${err?.message ?? err}`), 'fail');
   } finally {
     if (seq === bundleSeq) {
       bundleBusy = false;
+      bundleDone = 0;
       paintBatchAll();
     }
   }
@@ -1323,6 +1465,10 @@ runBtn.addEventListener('click', () => {
   runBtn.disabled = true;
   cancelBtn.classList.remove('hidden');
   resetResults(); // #74/#143: a new run drops every previous result and download URL
+  // #387: park this run's results on disk before the first one arrives.
+  runSeq++;
+  cancelled = false;
+  void resultStore.begin();
   logEl.textContent = '';
   resetPipe();
   runT0 = performance.now();
@@ -1527,10 +1673,14 @@ function onWorkerMessage(w, m) {
   } else if (m.type === 'batch-one') {
     const name = downloadName({ ...m.stats, mode: currentMode() });
     ciaSince.delete(row); // #340: the shared ticker stops on its next tick
-    markDone(batch, row, { url: makeUrl(m.bin), name, mb: m.stats.ciaMB });
-    trackDone(m.stats.set);
+    // #387: park the result on disk before publishing the link. Chrome caps the
+    // page's total Blob size at ~2 GiB, so holding every result would make the
+    // later ones unreadable — the per-game links included.
+    markDone(batch, row, { url: null, name, mb: m.stats.ciaMB });
     updateRow(row);
     finishOverallRow(row);
+    publishResult(row, m.bin, name, m.stats, runSeq);
+    trackDone(m.stats.set);
     paintBatchHeader();
     logGameDone(row, name, m.stats.ciaMB, rowSecs(row));
     jobFinished(w, job);
@@ -1683,6 +1833,7 @@ function finish() {
 
 cancelBtn.addEventListener('click', () => {
   if (!running) return;
+  cancelled = true; // #387: results still being written to disk must not publish
   if (batch) {
     resultOrder = null; // #338: a cancelled run keeps the original zip order
     for (let i = 0; i < batch.length; i++) {

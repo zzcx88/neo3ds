@@ -886,31 +886,408 @@ await t('progress/percent-text', async () => {
 });
 
 await t('bundle/zip-roundtrip-stored', async () => {
-  const { zipResults } = await import('./bundle.js');
+  const { zipBlob } = await import('./bundle.js');
   const { unzipSync } = await import('./fflate.js');
   const a = new Uint8Array([1, 2, 3, 4, 5]);
   const b = new Uint8Array(1024).fill(7);
-  const zip = zipResults([{ name: 'a-web.cia', bytes: a }, { name: 'b.neo3ds', bytes: b }]);
-  if (!(zip instanceof Uint8Array)) throw new Error('not a Uint8Array');
+  const zip = new Uint8Array(await (await zipBlob([{ name: 'a-web.cia', bytes: a }, { name: 'b.neo3ds', bytes: b }])).arrayBuffer());
   const out = unzipSync(zip);
   if (JSON.stringify(Object.keys(out).sort()) !== '["a-web.cia","b.neo3ds"]') throw new Error('names ' + Object.keys(out));
   if (out['a-web.cia'].join(',') !== '1,2,3,4,5') throw new Error('a bytes');
   if (out['b.neo3ds'].length !== 1024 || out['b.neo3ds'][1023] !== 7) throw new Error('b bytes');
 });
 
+await t('bundle/zip-matches-system-unzip', async () => {
+  const { zipChunks } = await import('./zipwrite.js');
+  const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
+  // The whole point is to read the archive with something that is not fflate.
+  // A machine without Info-ZIP skips rather than reporting a ZIP bug.
+  try { execFileSync('unzip', ['-v'], { stdio: 'pipe' }); }
+  catch { console.log('SKIP bundle/zip-matches-system-unzip (no unzip binary)'); return; }
+  const big = new Uint8Array(200_000);
+  for (let i = 0; i < big.length; i++) big[i] = (i * 37) & 0xff;
+  const entries = [{ name: 'a-web.cia', bytes: new Uint8Array([1, 2, 3]) }, { name: 'dir/b.neo3ds', bytes: big }];
+  const chunks = [];
+  for await (const chunk of zipChunks(entries, { chunkSize: 8192 })) chunks.push(chunk);
+  const dir = mkdtempSync(join(tmpdir(), 'neo3ds-zip-'));
+  const path = join(dir, 'out.zip');
+  try {
+    writeFileSync(path, Buffer.concat(chunks.map((c) => Buffer.from(c))));
+    const listing = execFileSync('unzip', ['-Z1', path], { encoding: 'utf8' }).trim().split('\n');
+    if (listing.join(',') !== 'a-web.cia,dir/b.neo3ds') throw new Error('listing ' + listing.join(','));
+    execFileSync('unzip', ['-t', path], { encoding: 'utf8' }); // throws on a CRC mismatch
+    const got = execFileSync('unzip', ['-p', path, 'dir/b.neo3ds'], { encoding: 'buffer' });
+    if (got.length !== big.length || got[12345] !== big[12345]) throw new Error('payload differs');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// #387: past 4 GiB the 32-bit fields cannot hold the offsets, so the writer
+// must emit ZIP64 records — otherwise the archive opens but the last entries
+// read garbage. The 4 GiB payload is generated on the fly and dropped, so the
+// test costs seconds of CPU rather than 4 GiB of disk.
+await t('bundle/zip64-for-huge-bundle', async () => {
+  const { zipChunks } = await import('./zipwrite.js');
+  const HUGE = 0x1_0000_0000 + (1 << 20); // 4 GiB + 1 MiB
+  const zeros = new Uint8Array(8 << 20);
+  const source = {
+    size: HUGE,
+    stream() {
+      let left = HUGE;
+      return new ReadableStream({
+        pull(c) {
+          if (left <= 0) { c.close(); return; }
+          const n = Math.min(zeros.length, left);
+          left -= n;
+          c.enqueue(n === zeros.length ? zeros : zeros.subarray(0, n));
+        },
+      });
+    },
+  };
+  // Records are tiny; the payload is not. Keep only what the reader needs.
+  const records = [];
+  let size = 0;
+  for await (const chunk of zipChunks([
+    { name: 'first.cia', source },
+    { name: 'last.cia', bytes: new Uint8Array([1, 2, 3]) },
+  ], { chunkSize: 8 << 20 })) {
+    if (chunk.length <= 1024) records.push({ at: size, bytes: Buffer.from(chunk) });
+    size += chunk.length;
+  }
+  const buf = Buffer.concat(records.map((r) => r.bytes));
+
+  const eocd = buf.subarray(buf.length - 22);
+  if (eocd.readUInt32LE(0) !== 0x06054b50) throw new Error('no EOCD at the end');
+  if (eocd.readUInt16LE(8) !== 0xffff || eocd.readUInt16LE(10) !== 0xffff)
+    throw new Error('EOCD counts are not the ZIP64 sentinel');
+  if (eocd.readUInt32LE(12) !== 0xffffffff || eocd.readUInt32LE(16) !== 0xffffffff)
+    throw new Error('EOCD size/offset are not the ZIP64 sentinel');
+  const locator = buf.subarray(buf.length - 42, buf.length - 22);
+  if (locator.readUInt32LE(0) !== 0x07064b50) throw new Error('no ZIP64 locator');
+  if (Number(locator.readBigUInt64LE(8)) !== size - 22 - 20 - 56) throw new Error('locator points elsewhere');
+  const eocd64 = buf.subarray(buf.length - 98, buf.length - 42);
+  if (eocd64.readUInt32LE(0) !== 0x06064b50) throw new Error('no ZIP64 EOCD');
+  if (eocd64.readBigUInt64LE(4) !== 44n) throw new Error('bad ZIP64 EOCD size');
+  if (eocd64.readBigUInt64LE(24) !== 2n) throw new Error('ZIP64 EOCD count is not 2');
+  const cdSize = Number(eocd64.readBigUInt64LE(40));
+  const cdAt = Number(eocd64.readBigUInt64LE(48));
+  if (cdAt + cdSize + 56 + 20 + 22 !== size) throw new Error('central directory bounds do not add up');
+
+  const cdStart = buf.length - 98 - cdSize;
+  const cd = buf.subarray(cdStart, cdStart + cdSize);
+  const recs = [];
+  for (let p = 0; p + 46 <= cd.length;) {
+    if (cd.readUInt32LE(p) !== 0x02014b50) throw new Error(`bad central record at ${p}`);
+    const n = cd.readUInt16LE(p + 28), extra = cd.readUInt16LE(p + 30), comment = cd.readUInt16LE(p + 32);
+    recs.push({
+      name: cd.subarray(p + 46, p + 46 + n).toString(),
+      size: cd.readUInt32LE(p + 20),
+      off: cd.readUInt32LE(p + 42),
+      extra: cd.subarray(p + 46 + n, p + 46 + n + extra),
+    });
+    p += 46 + n + extra + comment;
+  }
+  if (recs.length !== 2) throw new Error(`central directory has ${recs.length} entries`);
+  if (recs[0].name !== 'first.cia' || recs[1].name !== 'last.cia') throw new Error('names ' + recs.map((r) => r.name));
+  if (recs[0].size !== 0xffffffff) throw new Error('first size is not the ZIP64 sentinel');
+  if (recs[0].extra.readUInt16LE(0) !== 0x0001) throw new Error('no ZIP64 extra on the first entry');
+  if (recs[0].extra.readBigUInt64LE(4) !== BigInt(HUGE)) throw new Error(`declared size ${recs[0].extra.readBigUInt64LE(4)}`);
+  if (recs[1].off !== 0xffffffff) throw new Error('second offset is not the ZIP64 sentinel');
+  if (recs[1].extra.readUInt16LE(0) !== 0x0001) throw new Error('no ZIP64 extra on the second entry');
+  // first.cia local header: 30 + name(9) + ZIP64 extra(20); then its payload.
+  const wantOffset = HUGE + 30 + 9 + 20;
+  if (recs[1].extra.readBigUInt64LE(4) !== BigInt(wantOffset))
+    throw new Error(`second offset ${recs[1].extra.readBigUInt64LE(4)}, want ${wantOffset}`);
+});
+
+// Below 4 GiB nothing about ZIP64 must leak in: every extractor, including old
+// ones, reads a plain archive most reliably.
+await t('bundle/plain-below-4g', async () => {
+  const { zipChunks } = await import('./zipwrite.js');
+  const chunks = [];
+  for await (const chunk of zipChunks([{ name: 'a.cia', bytes: new Uint8Array(4096).fill(3) }])) chunks.push(chunk);
+  const zip = Buffer.concat(chunks.map((c) => Buffer.from(c)));
+  const eocd = zip.subarray(zip.length - 22);
+  if (eocd.readUInt32LE(0) !== 0x06054b50) throw new Error('no EOCD');
+  if (eocd.readUInt16LE(8) !== 1 || eocd.readUInt16LE(10) !== 1) throw new Error('EOCD count is not 1');
+  if (eocd.readUInt32LE(16) === 0xffffffff) throw new Error('EOCD offset is a ZIP64 sentinel');
+  if (zip.readUInt32LE(zip.length - 42) === 0x07064b50) throw new Error('unexpected ZIP64 locator');
+});
+
+// #387: results live on disk, so a run is not bounded by the ~2 GiB of Blobs a
+// page may hold. The fake below implements the OPFS contract the store needs —
+// including a real WritableStream, because the store pipes the Blob into
+// `createWritable()` and a plain object would throw and silently fall back to
+// memory, leaving the disk path untested.
+const memoryRoot = ({ writeDelayMs = 0 } = {}) => {
+  const dirs = new Map();
+  const dirAt = (path) => {
+    if (!dirs.has(path)) dirs.set(path, { files: new Map(), gone: false });
+    return dirs.get(path);
+  };
+  const root = {
+    async getDirectoryHandle(path, { create } = {}) {
+      const d = dirAt(path);
+      if (!create && d.gone) throw new Error('NotFoundError');
+      d.gone = false;
+      return handle(path, d);
+    },
+    async removeEntry(path, { recursive } = {}) {
+      if (!dirs.has(path)) throw new Error('NotFoundError');
+      if (!recursive) throw new Error('not empty');
+      // A real removeEntry invalidates the handle an in-flight write holds.
+      for (const key of [...dirs.keys()]) {
+        if (key === path || key.startsWith(path + '/')) { dirs.get(key).gone = true; }
+      }
+    },
+  };
+  const handle = (path, dir) => ({
+    async getFileHandle(name, { create } = {}) {
+      if (dir.gone) throw new Error(`NotFoundError: ${path}/${name} is gone`);
+      if (!dir.files.has(name)) {
+        if (!create) throw new Error('NotFoundError');
+        dir.files.set(name, { chunks: [] });
+      }
+      const entry = dir.files.get(name);
+      return {
+        async createWritable() {
+          entry.chunks = [];
+          return new WritableStream({
+            async write(chunk) {
+              if (writeDelayMs) await new Promise((r) => setTimeout(r, writeDelayMs));
+              if (dir.gone) throw new Error(`NotFoundError: ${path}/${name} is gone`);
+              entry.chunks.push(Uint8Array.from(chunk));
+            },
+          });
+        },
+        async getFile() {
+          if (dir.gone) throw new Error(`NotFoundError: ${path}/${name} is gone`);
+          const bytes = new Uint8Array(entry.chunks.reduce((n, c) => n + c.length, 0));
+          let at = 0;
+          for (const c of entry.chunks) { bytes.set(c, at); at += c.length; }
+          return new File([bytes], name);
+        },
+      };
+    },
+  });
+  return root;
+};
+
+await t('resultstore/keeps-every-result-on-disk', async () => {
+  const { ResultStore } = await import('./resultstore.js');
+  const root = memoryRoot();
+  const store = new ResultStore({ root });
+  await store.begin();
+  if (store.mode !== 'disk') throw new Error('mode ' + store.mode);
+  const payloads = [[1, 2, 3], [9, 9, 9, 9], [0xff]];
+  for (let i = 0; i < payloads.length; i++) {
+    const blob = new Blob([new Uint8Array(payloads[i])]);
+    await store.put(i, blob, `game${i}.cia`);
+  }
+  await store.settled();
+  // The disk path must have been used for every write, not the memory fallback.
+  if (store.mode !== 'disk') throw new Error(`fell back to ${store.mode}`);
+  for (let i = 0; i < payloads.length; i++) {
+    const hit = store.get(i);
+    if (!hit || hit.name !== `game${i}.cia`) throw new Error('missing ' + i);
+    if (!(hit.file instanceof File)) throw new Error(`result ${i} is a ${hit.file?.constructor?.name}, not a File`);
+    const bytes = new Uint8Array(await hit.file.arrayBuffer());
+    if (bytes.join(',') !== payloads[i].join(',')) throw new Error(`payload ${i}: ${bytes.join(',')}`);
+  }
+  // Bundle order and names come from the stored files, not the request order.
+  const entries = store.entries([2, 0]);
+  if (entries.map((e) => e.name).join(',') !== 'game2.cia,game0.cia') throw new Error('entries ' + entries.map((e) => e.name));
+  // A new run supersedes the old directory.
+  await store.begin();
+  await store.settled();
+  if (store.get(0) !== null) throw new Error('old results survived begin()');
+  if ((await entries[0].blob.arrayBuffer()).byteLength !== 1) throw new Error('old file lost its bytes');
+  // …and the new run keeps writing to disk.
+  await store.put(0, new Blob([new Uint8Array([5, 6])]), 'new.cia');
+  await store.settled();
+  if (store.mode !== 'disk') throw new Error(`second run fell back to ${store.mode}`);
+  const fresh = new Uint8Array(await store.get(0).file.arrayBuffer());
+  if (fresh.join(',') !== '5,6') throw new Error('second run payload ' + fresh.join(','));
+});
+
+// A result may arrive while the directory is still being prepared: both must
+// wait, and the write must land in the new run's directory.
+await t('resultstore/serializes-begin-and-put', async () => {
+  const { ResultStore } = await import('./resultstore.js');
+  const store = new ResultStore({ root: memoryRoot() });
+  const pending = store.put(0, new Blob([new Uint8Array([7, 7])]), 'fast.cia');
+  await store.begin();
+  await store.settled();
+  const file = await pending;
+  if (file.size !== 2) throw new Error('size ' + file.size);
+  const hit = store.get(0);
+  if (!hit) throw new Error('result lost');
+  const bytes = new Uint8Array(await hit.file.arrayBuffer());
+  if (bytes.join(',') !== '7,7') throw new Error('payload ' + bytes.join(','));
+});
+
+// A write left over from the previous run must not knock the new run off the
+// disk: that would bring the 2 GiB Blob ceiling back for the rest of the run.
+// The previous directory is really gone, so the stale write's own open fails —
+// exactly what a removed OPFS directory does.
+await t('resultstore/stale-write-keeps-the-new-run-on-disk', async () => {
+  const { ResultStore } = await import('./resultstore.js');
+  const store = new ResultStore({ root: memoryRoot({ writeDelayMs: 5 }) });
+  await store.begin();
+  const stale = store.put(0, new Blob([new Uint8Array(64).fill(1)]), 'old.cia');
+  // Supersede while that write is mid-flight, then let the new run write.
+  store.begin();
+  const fresh = store.put(0, new Blob([new Uint8Array([4, 2])]), 'new.cia');
+  const results = await Promise.allSettled([stale, fresh]);
+  await store.settled();
+  if (results[0].status !== 'fulfilled' || results[1].status !== 'fulfilled')
+    throw new Error('a write rejected: ' + JSON.stringify(results.map((r) => r.reason?.message)));
+  // The stale write landed in memory (its directory is gone), but the new run
+  // must still be on disk, and its own result must be the one that is served.
+  if (store.mode !== 'disk') throw new Error(`new run fell back to ${store.mode}`);
+  const bytes = new Uint8Array(await store.get(0).file.arrayBuffer());
+  if (bytes.join(',') !== '4,2') throw new Error('new run payload ' + bytes.join(','));
+});
+
+// No OPFS (private window, old browser, storage disabled) must degrade to the
+// Blob the worker posted instead of failing the run.
+await t('resultstore/falls-back-when-disk-is-gone', async () => {
+  const { ResultStore } = await import('./resultstore.js');
+  const root = {
+    async getDirectoryHandle() { throw new Error('QuotaExceededError'); },
+    async removeEntry() { throw new Error('NotFoundError'); },
+  };
+  const store = new ResultStore({ root });
+  await store.begin();
+  if (store.mode !== 'memory') throw new Error('mode ' + store.mode);
+  const blob = new Blob([new Uint8Array([4, 5, 6])]);
+  const file = await store.put(0, blob, 'x.cia');
+  if (file.size !== 3) throw new Error('size ' + file.size);
+  const bytes = new Uint8Array(await store.get(0).file.arrayBuffer());
+  if (bytes.join(',') !== '4,5,6') throw new Error('payload ' + bytes.join(','));
+  // A completely absent navigator.storage behaves the same way.
+  const bare = new ResultStore({ root: {} });
+  await bare.begin();
+  if (bare.mode !== 'memory') throw new Error('bare mode ' + bare.mode);
+});
+
 await t('bundle/rejects-empty-duplicate-unsafe', async () => {
-  const { zipResults } = await import('./bundle.js');
+  const { zipBlob } = await import('./bundle.js');
   const one = () => new Uint8Array([1]);
-  const err = (fn) => { try { fn(); } catch (e) { return String(e.message); } return ''; };
-  if (!/at least one/.test(err(() => zipResults([])))) throw new Error('empty accepted');
-  if (!/duplicate/.test(err(() => zipResults([{ name: 'x.cia', bytes: one() }, { name: 'x.cia', bytes: one() }]))))
+  const err = async (fn) => { try { await fn(); } catch (e) { return String(e.message); } return ''; };
+  if (!/at least one/.test(await err(() => zipBlob([])))) throw new Error('empty accepted');
+  if (!/duplicate/.test(await err(() => zipBlob([{ name: 'x.cia', bytes: one() }, { name: 'x.cia', bytes: one() }]))))
     throw new Error('duplicate accepted');
   for (const name of ['', '../x.cia', '/abs.cia', 'a/../b.cia', 'a\\b.cia', 'a//b.cia', 'dir/', 'bad\u0000.cia']) {
-    if (!/name/.test(err(() => zipResults([{ name, bytes: one() }]))))
+    if (!/name/.test(await err(() => zipBlob([{ name, bytes: one() }]))))
       throw new Error('unsafe name accepted: ' + JSON.stringify(name));
   }
-  if (!/Uint8Array/.test(err(() => zipResults([{ name: 'x.cia', bytes: [1, 2] }]))))
+  if (!/Blob/.test(await err(() => zipBlob([{ name: 'x.cia', bytes: [1, 2] }]))))
     throw new Error('non-byte payload accepted');
+});
+
+// #387: a Blob is streamed, never copied whole: the writer reads every chunk
+// twice (CRC, then payload) and reports progress over the real byte count.
+await t('bundle/streams-a-blob-twice', async () => {
+  const { zipChunks } = await import('./zipwrite.js');
+  const payload = new Uint8Array(300_000);
+  for (let i = 0; i < payload.length; i++) payload[i] = (i * 91) & 0xff;
+  let reads = 0;
+  const source = {
+    size: payload.length,
+    stream() {
+      reads++;
+      return new Blob([payload]).stream();
+    },
+  };
+  const progress = [];
+  const chunks = [];
+  for await (const chunk of zipChunks([{ name: 'game.cia', source }], {
+    chunkSize: 64 * 1024,
+    onProgress: (done, total) => progress.push([done, total]),
+  })) chunks.push(chunk);
+  if (reads !== 2) throw new Error(`streamed ${reads} times, want 2 (CRC then payload)`);
+  const zip = Buffer.concat(chunks.map((c) => Buffer.from(c)));
+  // The stored payload must be present verbatim (level 0, no deflate).
+  if (zip.indexOf(Buffer.from(payload.subarray(0, 64))) < 0) throw new Error('payload not stored as-is');
+  const last = progress.at(-1);
+  if (last[0] !== payload.length || last[1] !== payload.length) throw new Error('progress ' + JSON.stringify(last));
+  for (let i = 1; i < progress.length; i++)
+    if (progress[i][0] < progress[i - 1][0]) throw new Error('progress went backwards');
+});
+
+// Firefox and Safari have no save picker, so the bundle is split into complete
+// ZIPs that each fit a Blob. Every part must be openable on its own.
+await t('bundle/split-parts-are-complete-zips', async () => {
+  const { splitPlan, partName, zipBlob } = await import('./bundle.js');
+  const { unzipSync } = await import('./fflate.js');
+  const entries = [1, 2, 3, 4].map((n) => ({ name: `g${n}.cia`, bytes: new Uint8Array(1000).fill(n) }));
+  // Split by the writer's own per-entry estimate, so the test pins behaviour
+  // rather than a byte count: two entries per part must fit the limit.
+  const { entrySize } = await import('./zipwrite.js');
+  const perEntry = entrySize(entries[0]);
+  const plan = splitPlan(entries, perEntry * 2);
+  if (plan.length !== 2) throw new Error('expected 2 parts, got ' + plan.length);
+  if (plan.flatMap((p) => p.entries).length !== entries.length) throw new Error('entries lost while splitting');
+  if (plan.some((p) => p.entries.length === 0)) throw new Error('empty part');
+  const names = [];
+  for (let i = 0; i < plan.length; i++) {
+    const blob = await zipBlob(plan[i].entries, { chunkSize: 0 });
+    const out = unzipSync(new Uint8Array(await blob.arrayBuffer()));
+    const got = Object.keys(out);
+    if (got.length !== plan[i].entries.length) throw new Error(`part ${i} has ${got.length} entries`);
+    names.push(...got);
+    const name = partName('neo3ds-batch-4games.zip', i, plan.length);
+    if (!name.endsWith(`-part${i + 1}of${plan.length}.zip`)) throw new Error('part name ' + name);
+  }
+  if (names.join(',') !== 'g1.cia,g2.cia,g3.cia,g4.cia') throw new Error('order ' + names.join(','));
+  // #387: writeZip is what the save-picker path calls. It must stream every chunk
+// into the writable, close it, and report the byte count — nothing buffered.
+await t('bundle/writeZip-streams-into-a-writable', async () => {
+  const { writeZip } = await import('./bundle.js');
+  const { unzipSync } = await import('./fflate.js');
+  const a = new Uint8Array(50_000).fill(3);
+  const b = new Uint8Array([9, 8, 7]);
+  const chunks = [];
+  let closed = false;
+  const writable = {
+    write: async (chunk) => { chunks.push(chunk); },
+    close: async () => { closed = true; },
+  };
+  const written = await writeZip(writable, [{ name: 'a.cia', bytes: a }, { name: 'b.cia', bytes: b }]);
+  if (!closed) throw new Error('writable not closed');
+  if (written !== chunks.reduce((n, c) => n + c.length, 0)) throw new Error('reported size differs');
+  const zip = Buffer.concat(chunks.map((c) => Buffer.from(c)));
+  if (zip.length !== written) throw new Error('archive size differs from the reported count');
+  const out = unzipSync(new Uint8Array(zip));
+  if (Object.keys(out).sort().join(',') !== 'a.cia,b.cia') throw new Error('names ' + Object.keys(out));
+  if (out['a.cia'].length !== a.length || out['a.cia'][49_999] !== 3) throw new Error('a payload');
+  if (out['b.cia'].join(',') !== '9,8,7') throw new Error('b payload');
+});
+
+// A write failure must surface, not be swallowed: the page needs to know so it
+// can fall back or report it.
+await t('bundle/writeZip-propagates-write-failure', async () => {
+  const { writeZip } = await import('./bundle.js');
+  let n = 0;
+  const writable = {
+    write: async () => { if (++n > 1) throw new Error('disk full'); },
+    close: async () => { throw new Error('should not close after a failed write'); },
+  };
+  let message = '';
+  try {
+    await writeZip(writable, [{ name: 'big.cia', bytes: new Uint8Array(200_000) }]);
+  } catch (e) { message = String(e.message); }
+  if (!/disk full/.test(message)) throw new Error('failure lost: ' + JSON.stringify(message));
+});
+
+
+  const solo = splitPlan([{ name: 'huge.cia', bytes: new Uint8Array(0x300000) }], 1024);
+  if (solo.length !== 1 || solo[0].entries.length !== 1) throw new Error('oversized entry dropped');
 });
 
 // Duplicate result names (same zip dropped twice) must still bundle: the page

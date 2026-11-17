@@ -1,15 +1,12 @@
 // CiaJob selection port (converter/Neo3dsConverter.Core/CiaBuilder.cs:10-101).
 // RomName/TitleId/PickGame. Zip paths become in-memory file lists in the browser.
 import { L } from './lang.js';
+// #387: one CRC32 implementation for the ZIP reader, the ZIP writer and the
+// title-ID derivation (crc32.js is the table version of the loop that used to
+// live here; the bit-wise form ran at ~65 MB/s over a whole romset bundle).
+import { crc32Bytes } from './crc32.js';
 
-export function crc32Bytes(data) {
-  let crc = 0xFFFFFFFF;
-  for (let i = 0; i < data.length; i++) {
-    crc ^= data[i];
-    for (let k = 0; k < 8; k++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
-  }
-  return (~crc) >>> 0;
-}
+export { crc32Bytes };
 
 export function crc32Ascii(s) {
   const b = new Uint8Array(s.length);

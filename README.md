@@ -41,7 +41,7 @@ Works in Chrome, Edge, Firefox and Safari. Converting KOF '98 took about 7 secon
    - **System** is the BIOS the game starts on. Automatic picks the home (AES) BIOS; arcade (MVS) is only for games changed for arcade boards. It can be switched on the 3DS too.
    - **Region** is the console region the game sees (Europe/Asia by default). **Japan** gives content only the Japanese versions have, such as the blood in Metal Slug.
 5. For CIAs you can replace the generated **icon and banner** before converting (select a game row to edit that game). Pictures are centre-cropped to 48×48 / 256×128.
-6. Press the build button and save the results, one by one or with **[Download all (N)]** as one ZIP.
+6. Press the build button and save the results, one by one or with **[Download all (N)]** as one ZIP. The dialog asks where to save, because a whole-romset bundle runs to several GB; browsers without a save dialog (Firefox, Safari) get the ZIP in 1 GB parts that each open on their own.
 
 <img src="docs/images/art_examples.png" width="760" alt="Generated icon and banner examples">
 

@@ -301,7 +301,7 @@
       <p class="result-line" id="gateResultLine"></p>
       <div class="result-actions">
         <a class="btn btn-ghost btn-lg hidden" id="gateDl">Download</a>
-        <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll"></button>
+        <button type="button" class="btn btn-ghost btn-lg hidden" id="gateBatchAll" aria-live="polite"></button>
       </div>
       <p class="tiny" id="gateResultNote"></p>
     </div>
@@ -353,6 +353,7 @@
       </div>
     </div>
     <p class="tiny guide-note">The two are built separately. For the same game, the CIA copy and the launcher copy share key config, backup RAM and quick saves.</p>
+    <p class="tiny guide-note">“Download all” asks where to save, because the bundle can be large. A browser without a save dialog (Firefox, Safari) downloads the ZIP in 1 GB parts instead; each part opens on its own.</p>
 
     <h3>Why a zip is stopped before converting</h3>
     <p class="guide-lede">Dropping a game zip checks the romset and its chips before anything converts. With several games, each row in the list shows its own reason and only that game is skipped.</p>
