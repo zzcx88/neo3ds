@@ -175,6 +175,7 @@ const EN = {
   'gate.outPackD': 'Many games inside one launcher app. The files go in /neo3ds/games/ on the SD card and you pick from the list.',
   'gate.outPackLink': 'Launcher install steps',
   'gate.outNote': 'The two are built separately. For the same game, the CIA copy and the launcher copy share key config, backup RAM and quick saves.',
+  'gate.saveNote': '“Download all” asks where to save, because the bundle can be large. A browser without a save dialog (Firefox, Safari) downloads the ZIP in 1 GB parts instead; each part opens on its own.',
   'gate.blockH3': 'Why a zip is stopped before converting',
   'gate.blockLede': 'Dropping a game zip checks the romset and its chips before anything converts. With several games, each row in the list shows its own reason and only that game is skipped.',
   'gate.blockLabel': 'Pre-conversion blocking reasons',

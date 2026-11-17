@@ -1,5 +1,5 @@
 {
- "fingerprint": "5daf9b0de304161a",
+ "fingerprint": "e730039e8660f1f2",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -66,6 +66,7 @@
    "acronym:BIOS",
    "acronym:HOME",
    "acronym:MAME",
+   "number:1 GB",
    "number:128",
    "number:16KB",
    "number:256",
@@ -180,6 +181,7 @@
    "acronym:MAME",
    "number:128",
    "number:16KB",
+   "number:1GB",
    "number:256",
    "number:48",
    "zip:kof98.zip",
