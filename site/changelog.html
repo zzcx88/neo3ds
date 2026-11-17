@@ -289,27 +289,21 @@
           <span class="rel-v">Large full-set downloads</span>
           <time class="rel-date" datetime="2026-11-17">2026-11-17</time>
         </div>
-        <ul class="rel-items">
-            <li><b>Full-romset ZIP download no longer fails at 2 GB</b>: Even with all 159 games converted, downloading them together failed at the browser's 2 GB Blob limit. Results now stay on disk (OPFS) and the ZIP is streamed, so the ~7.4 GB full romset comes down as one file or as 1 GB parts. Files over 4 GB are written as ZIP64. (<a href="https://github.com/zzcx88/neo3ds/issues/388">#388</a>)</li>
-        </ul>
+        <p class="rel-desc">Even with all 159 games converted, downloading them together failed at the browser's 2 GB Blob limit. Results now stay on disk (OPFS) and the ZIP is streamed, so the ~7.4 GB full romset comes down as one file or as 1 GB parts. Files over 4 GB are written as ZIP64. (<a href="https://github.com/zzcx88/neo3ds/issues/388">#388</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">What you need, and blocked reasons</span>
           <time class="rel-date" datetime="2026-11-14">2026-11-14</time>
         </div>
-        <ul class="rel-items">
-            <li><b>What a conversion needs, and why a game is blocked</b>: The converter page now has a static guide: the game romset zip and neogeo.zip (the BIOS) you need, the difference between a game CIA (.cia) and a launcher file (.neo3ds), the seven reasons a game is blocked before conversion with the next step for each, and how that differs from a failure during conversion. It also says how to send a report with the log attached. (<a href="https://github.com/zzcx88/neo3ds/issues/375">#375</a>)</li>
-        </ul>
+        <p class="rel-desc">The converter page now has a static guide: the game romset zip and neogeo.zip (the BIOS) you need, the difference between a game CIA (.cia) and a launcher file (.neo3ds), the seven reasons a game is blocked before conversion with the next step for each, and how that differs from a failure during conversion. It also says how to send a report with the log attached. (<a href="https://github.com/zzcx88/neo3ds/issues/375">#375</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">Clearer converter wording</span>
           <time class="rel-date" datetime="2026-11-12">2026-11-12</time>
         </div>
-        <ul class="rel-items">
-            <li><b>Clearer wording on the converter page</b>: Removed sentences that said the same thing two or three times, reworded negative-first copy, and fixed descriptions that did not match what the converter does. Icon and banner labels now read "icon/banner" throughout and log separators are consistent. (<a href="https://github.com/zzcx88/neo3ds/issues/349">#349</a> <a href="https://github.com/zzcx88/neo3ds/issues/352">#352</a> <a href="https://github.com/zzcx88/neo3ds/issues/354">#354</a>)</li>
-        </ul>
+        <p class="rel-desc">Removed sentences that said the same thing two or three times, reworded negative-first copy, and fixed descriptions that did not match what the converter does. Icon and banner labels now read "icon/banner" throughout and log separators are consistent. (<a href="https://github.com/zzcx88/neo3ds/issues/349">#349</a> <a href="https://github.com/zzcx88/neo3ds/issues/352">#352</a> <a href="https://github.com/zzcx88/neo3ds/issues/354">#354</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -326,12 +320,10 @@
       </li>
       <li class="rel web-day">
         <div class="rel-head">
-          <span class="rel-v">Plain-language failure text</span>
+          <span class="rel-v">Damaged and oversized zips refused</span>
           <time class="rel-date" datetime="2026-11-10">2026-11-10</time>
         </div>
-        <ul class="rel-items">
-            <li><b>Failure messages rewritten in Korean and English</b>: Preflight and conversion failures now read as one sentence about the cause and one about the next action. The wording uses only public catalog romset names, never the dropped zip's file name. Damaged or oversized zips are refused before conversion. (<a href="https://github.com/zzcx88/neo3ds/issues/330">#330</a>)</li>
-        </ul>
+        <p class="rel-desc">Before unpacking, a zip with more than 4096 entries, a single entry over 64 MB, or more than 512 MB of data is refused instead of converted. A forged size header can no longer push the heap. Preflight shows it as "the zip could not be read". (<a href="https://github.com/zzcx88/neo3ds/issues/330">#330</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -349,9 +341,7 @@
           <span class="rel-v">BIOS choice in the log</span>
           <time class="rel-date" datetime="2026-10-30">2026-10-30</time>
         </div>
-        <ul class="rel-items">
-            <li><b>The conversion log shows the BIOS choice</b>: The log now states which BIOS (AES/MVS) and system each game converts with, before the work starts, so the choice is visible even when reading the game data fails. (<a href="https://github.com/zzcx88/neo3ds/issues/208">#208</a>)</li>
-        </ul>
+        <p class="rel-desc">The log now states which BIOS (AES/MVS) and system each game converts with, before the work starts, so the choice is visible even when reading the game data fails. (<a href="https://github.com/zzcx88/neo3ds/issues/208">#208</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -368,9 +358,7 @@
           <span class="rel-v">Faster, smaller conversions</span>
           <time class="rel-date" datetime="2026-10-26">2026-10-26</time>
         </div>
-        <ul class="rel-items">
-            <li><b>Faster conversions and smaller output</b>: Sprites are now compressed in 16 KB blocks, which makes conversion faster and the output a little smaller: 64 MB of KOF '98 sprites went from 22.2 MB to 20.3 MB. Existing CIAs made with 4 KB blocks keep working. (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</li>
-        </ul>
+        <p class="rel-desc">Sprites are now compressed in 16 KB blocks, which makes conversion faster and the output a little smaller: 64 MB of KOF '98 sprites went from 22.2 MB to 20.3 MB. Existing CIAs made with 4 KB blocks keep working. (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">

@@ -112,10 +112,15 @@ def check_items(items, path, label):
 
 
 def check_dates(rows, path, key, label, unique):
-    """ISO dates, newest first. `key` names the row's date field; `unique` forbids repeat dates."""
+    """ISO dates, newest first. `key` names the row's date field; `unique` forbids repeat dates.
+
+    Malformed rows (not an object, missing/ambiguous date) exit with a message rather than
+    raising, so a bad edit reports the offending entry instead of a traceback."""
     seen = set()
     last = None
-    for r in rows:
+    for i, r in enumerate(rows):
+        if not isinstance(r, dict):
+            sys.exit('%s: entry %d is %r, want an object with a date' % (path, i + 1, r))
         date = r.get(key)
         if not (isinstance(date, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', date)):
             sys.exit('%s: bad date %r for %s (want YYYY-MM-DD)' % (path, date, label(r)))
@@ -197,16 +202,22 @@ def entry(r, meta, latest):
 
 def web_entry(u, meta):
     """One dated row in the release timeline's shape: the day's one-line summary where a
-    version would sit, then its bullets. The web converter has no version numbers (#389)."""
-    return '''      <li class="rel web-day">
+    version would sit, then the change itself. A single change prints its description
+    directly (its bold title would only repeat the summary); several changes stay a list."""
+    head = '''      <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">%s</span>
           <time class="rel-date" datetime="%s">%s</time>
-        </div>
+        </div>''' % (esc(u['summary'][meta['lang']]), u['date'], u['date'])
+    if len(u['items']) == 1:
+        return head + '''
+        <p class="rel-desc">%s</p>
+      </li>''' % with_issue_links(u['items'][0]['d'][meta['lang']])
+    return head + '''
         <ul class="rel-items">
 %s
         </ul>
-      </li>''' % (esc(u['summary'][meta['lang']]), u['date'], u['date'], item_rows(u['items'], meta))
+      </li>''' % item_rows(u['items'], meta)
 
 
 def page(meta, releases, updates):

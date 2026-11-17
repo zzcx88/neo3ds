@@ -586,6 +586,8 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 .tab-panel{display:none}
 #tab-releases:checked ~ #releases,
 #tab-web:checked ~ #web-updates{display:block}
+.rel-desc{margin:10px 0 0;max-width:var(--prose);font-size:15px;line-height:1.65;color:#C9C9D2}
+.rel-desc a{color:var(--gold)}
 .changelog-sec{margin:26px 0 0}
 .web-day .rel-v{color:var(--paper)}
 

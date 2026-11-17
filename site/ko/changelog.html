@@ -289,27 +289,21 @@
           <span class="rel-v">대용량 전체 다운로드 지원</span>
           <time class="rel-date" datetime="2026-11-17">2026-11-17</time>
         </div>
-        <ul class="rel-items">
-            <li><b>전체 롬셋 ZIP 다운로드가 2GB에서 실패하던 문제</b>: 게임 159개를 모두 변환해도 전체 다운로드가 브라우저의 Blob 2GB 한도에서 실패했습니다. 결과 파일을 디스크(OPFS)에 두고 ZIP을 흐르는 대로 만들어, 약 7.4GB 전체 롬셋을 한 파일이나 1GB 분할로 받을 수 있습니다. 4GB가 넘는 ZIP은 ZIP64로 기록합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/388">#388</a>)</li>
-        </ul>
+        <p class="rel-desc">게임 159개를 모두 변환해도 전체 다운로드가 브라우저의 Blob 2GB 한도에서 실패했습니다. 결과 파일을 디스크(OPFS)에 두고 ZIP을 흐르는 대로 만들어, 약 7.4GB 전체 롬셋을 한 파일이나 1GB 분할로 받을 수 있습니다. 4GB가 넘는 ZIP은 ZIP64로 기록합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/388">#388</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">변환 전 준비물·차단 이유 안내</span>
           <time class="rel-date" datetime="2026-11-14">2026-11-14</time>
         </div>
-        <ul class="rel-items">
-            <li><b>변환 전에 필요한 것과 막히는 이유</b>: 변환기 페이지에 정적 안내를 더했습니다. 게임 롬셋 zip과 neogeo.zip(바이오스)이 필요하다는 점, 게임 CIA(.cia)와 런처용 파일(.neo3ds)의 차이, 변환 전에 막히는 이유 7가지와 각각의 다음 행동, 변환 중 실패와의 구분을 표로 정리했습니다. 로그를 첨부해 제보하는 방법도 함께 안내합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/375">#375</a>)</li>
-        </ul>
+        <p class="rel-desc">변환기 페이지에 정적 안내를 더했습니다. 게임 롬셋 zip과 neogeo.zip(바이오스)이 필요하다는 점, 게임 CIA(.cia)와 런처용 파일(.neo3ds)의 차이, 변환 전에 막히는 이유 7가지와 각각의 다음 행동, 변환 중 실패와의 구분을 표로 정리했습니다. 로그를 첨부해 제보하는 방법도 함께 안내합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/375">#375</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">변환 페이지 문구 정리</span>
           <time class="rel-date" datetime="2026-11-12">2026-11-12</time>
         </div>
-        <ul class="rel-items">
-            <li><b>변환 페이지 문구 정리</b>: 같은 안내를 두세 번 반복하던 문장, 부정문을 먼저 내세우던 문장, 실제 동작과 다른 설명을 고쳤습니다. 아이콘·배너 표기를 '아이콘/배너'로 통일하고 로그 구분자도 정리했습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/349">#349</a> <a href="https://github.com/zzcx88/neo3ds/issues/352">#352</a> <a href="https://github.com/zzcx88/neo3ds/issues/354">#354</a>)</li>
-        </ul>
+        <p class="rel-desc">같은 안내를 두세 번 반복하던 문장, 부정문을 먼저 내세우던 문장, 실제 동작과 다른 설명을 고쳤습니다. 아이콘·배너 표기를 '아이콘/배너'로 통일하고 로그 구분자도 정리했습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/349">#349</a> <a href="https://github.com/zzcx88/neo3ds/issues/352">#352</a> <a href="https://github.com/zzcx88/neo3ds/issues/354">#354</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -326,12 +320,10 @@
       </li>
       <li class="rel web-day">
         <div class="rel-head">
-          <span class="rel-v">실패 문구를 쉬운 말로</span>
+          <span class="rel-v">손상·대용량 zip 거부</span>
           <time class="rel-date" datetime="2026-11-10">2026-11-10</time>
         </div>
-        <ul class="rel-items">
-            <li><b>실패 안내 문구를 한국어·영어로 정리</b>: 변환 전 확인과 변환 중 실패의 문구를 원인 1문장과 다음 행동 1문장으로 다시 썼습니다. 게임 이름은 공개 롬셋 이름만 쓰고 올린 zip 파일 이름은 표시하지 않습니다. 손상되거나 비정상적으로 큰 zip은 변환 전에 거부합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/330">#330</a>)</li>
-        </ul>
+        <p class="rel-desc">zip을 풀기 전에 항목 수 4096개, 항목 하나 64MB, 전체 512MB를 넘으면 변환하지 않고 거부합니다. 위조된 크기 헤더로 메모리를 밀어내는 zip도 막습니다. 변환 전 확인 단계에서 “zip을 읽지 못함”으로 표시됩니다. (<a href="https://github.com/zzcx88/neo3ds/issues/330">#330</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -349,9 +341,7 @@
           <span class="rel-v">로그에 바이오스 표시</span>
           <time class="rel-date" datetime="2026-10-30">2026-10-30</time>
         </div>
-        <ul class="rel-items">
-            <li><b>변환 로그에 바이오스 선택 표시</b>: 게임마다 어떤 바이오스(AES/MVS)와 시스템으로 변환하는지 로그에 먼저 남깁니다. 게임 정보를 읽지 못해 실패해도 선택 상태를 확인할 수 있습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/208">#208</a>)</li>
-        </ul>
+        <p class="rel-desc">게임마다 어떤 바이오스(AES/MVS)와 시스템으로 변환하는지 로그에 먼저 남깁니다. 게임 정보를 읽지 못해 실패해도 선택 상태를 확인할 수 있습니다. (<a href="https://github.com/zzcx88/neo3ds/issues/208">#208</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -368,9 +358,7 @@
           <span class="rel-v">더 빠른 변환, 작은 파일</span>
           <time class="rel-date" datetime="2026-10-26">2026-10-26</time>
         </div>
-        <ul class="rel-items">
-            <li><b>변환 속도와 파일 크기 개선</b>: 그래픽을 16KB 단위로 묶어 압축해 변환 시간이 줄고 파일도 조금 작아졌습니다. KOF '98 스프라이트 64MB가 22.2MB에서 20.3MB로 줄었습니다. 4KB 블록으로 만든 기존 CIA도 그대로 동작합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</li>
-        </ul>
+        <p class="rel-desc">그래픽을 16KB 단위로 묶어 압축해 변환 시간이 줄고 파일도 조금 작아졌습니다. KOF '98 스프라이트 64MB가 22.2MB에서 20.3MB로 줄었습니다. 4KB 블록으로 만든 기존 CIA도 그대로 동작합니다. (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</p>
       </li>
       <li class="rel web-day">
         <div class="rel-head">

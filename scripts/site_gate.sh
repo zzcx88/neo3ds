@@ -217,7 +217,8 @@ for meta in META.values():
     if '<h2 class="sr-only" id="releases-h">%s</h2>' % rel_h2[meta['lang']] not in html:
         sys.exit('%s: missing the release tab label %r' % (page, rel_h2[meta['lang']]))
     # Every web day is one row with its one-line summary in place of a version.
-    days = re.findall(r'<li class="rel web-day">.*?<time class="rel-date" datetime="(\d{4}-\d{2}-\d{2})">', html, re.S)
+    days = re.findall(r'<li class="rel web-day">.*?<time class="rel-date" datetime="(\d{4}-\d{2}-\d{2})">',
+                      html, re.S)
     if not days:
         sys.exit('%s: no dated web update rows' % page)
     if days != sorted(days, reverse=True):

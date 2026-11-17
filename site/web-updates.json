@@ -120,18 +120,18 @@
     "items": [
       {
         "t": {
-          "ko": "실패 안내 문구를 한국어·영어로 정리",
-          "en": "Failure messages rewritten in Korean and English"
+          "ko": "손상되거나 비정상적으로 큰 zip 거부",
+          "en": "Damaged and oversized zips refused"
         },
         "d": {
-          "ko": "변환 전 확인과 변환 중 실패의 문구를 원인 1문장과 다음 행동 1문장으로 다시 썼습니다. 게임 이름은 공개 롬셋 이름만 쓰고 올린 zip 파일 이름은 표시하지 않습니다. 손상되거나 비정상적으로 큰 zip은 변환 전에 거부합니다. (#330)",
-          "en": "Preflight and conversion failures now read as one sentence about the cause and one about the next action. The wording uses only public catalog romset names, never the dropped zip's file name. Damaged or oversized zips are refused before conversion. (#330)"
+          "ko": "zip을 풀기 전에 항목 수 4096개, 항목 하나 64MB, 전체 512MB를 넘으면 변환하지 않고 거부합니다. 위조된 크기 헤더로 메모리를 밀어내는 zip도 막습니다. 변환 전 확인 단계에서 “zip을 읽지 못함”으로 표시됩니다. (#330)",
+          "en": "Before unpacking, a zip with more than 4096 entries, a single entry over 64 MB, or more than 512 MB of data is refused instead of converted. A forged size header can no longer push the heap. Preflight shows it as \"the zip could not be read\". (#330)"
         }
       }
     ],
     "summary": {
-      "ko": "실패 문구를 쉬운 말로",
-      "en": "Plain-language failure text"
+      "ko": "손상·대용량 zip 거부",
+      "en": "Damaged and oversized zips refused"
     }
   },
   {
