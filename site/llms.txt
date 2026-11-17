@@ -13,7 +13,7 @@
 - [Web converter](https://zzcx88.github.io/neo3ds/convert.html): turns a game romset zip plus neogeo.zip into a CIA or a launcher (.neo3ds) file inside the browser tab. Nothing is uploaded; the page also lists which zips are stopped before converting and why.
 - [Download and install](https://zzcx88.github.io/neo3ds/download.html): launcher CIA QR, FBI install and update steps, SD card fallback, and per-game CIA installation. The home page links to the Windows/Linux/macOS offline converter downloads.
 - [3DS manual](https://zzcx88.github.io/neo3ds/manual.html): launcher controls, key configuration, turbo, quick saves and save paths.
-- [Changelog](https://zzcx88.github.io/neo3ds/changelog.html): every release, newest first.
+- [Changelog](https://zzcx88.github.io/neo3ds/changelog.html): every engine, launcher and offline converter release, newest first, with dated web converter updates in the second tab.
 - [Korean site](https://zzcx88.github.io/neo3ds/ko/): the same pages in Korean.
 
 ## Series pages

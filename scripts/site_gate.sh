@@ -174,6 +174,63 @@ python3 scripts/gen_site_series.py > /dev/null
 python3 scripts/gen_site_changelog.py > /dev/null
 node scripts/gen_site_i18n.mjs --check
 python3 scripts/gen_site_seo.py --check
+
+# The web converter update log is a second changelog source (#389): ISO dates, newest
+# first, one entry per date, a non-empty item list and both languages. The generator
+# reads the same loader, so a bad date names itself here instead of on the live site.
+python3 - << 'EOF'
+import sys
+sys.path.insert(0, 'scripts')
+from gen_site_changelog import load_web_updates
+updates = load_web_updates()
+print('web updates OK: %d dates, newest %s' % (len(updates), updates[0]['date']))
+EOF
+
+# Both tab panels must be present and the offline release timeline must be the tab that
+# opens by default (#389). A template edit that drops a panel or flips the default fails
+# here rather than shipping.
+python3 - << 'EOF'
+import re, sys
+sys.path.insert(0, 'scripts')
+from gen_site_changelog import META, WEB_DATA, load_web_updates
+
+# Headings come from the generator's META so a rename cannot leave this check behind.
+web_h2 = {m['lang']: m['web_h2'] for m in META.values()}
+rel_h2 = {m['lang']: m['rel_h2'] for m in META.values()}
+want_days = len(load_web_updates())
+
+for meta in META.values():
+    page = meta['file']
+    html = open(page, encoding='utf-8').read()
+    web_at = html.find('id="web-updates-h"')
+    rel_at = html.find('id="releases-h"')
+    if web_at < 0 or rel_at < 0:
+        sys.exit('%s: missing a changelog tab panel (web %s, releases %s)' % (page, web_at >= 0, rel_at >= 0))
+    if html.find('id="releases"') > html.find('id="web-updates"'):
+        sys.exit('%s: the offline release tab must come before the web tab' % page)
+    if not re.search(r'<input[^>]*id="tab-releases"[^>]*\bchecked\b', html):
+        sys.exit('%s: the offline release tab must open by default' % page)
+    if re.search(r'<input[^>]*id="tab-web"[^>]*\bchecked\b', html):
+        sys.exit('%s: only one changelog tab may open by default' % page)
+    if '<h2 class="sr-only" id="web-updates-h">%s</h2>' % web_h2[meta['lang']] not in html:
+        sys.exit('%s: missing the web tab label %r' % (page, web_h2[meta['lang']]))
+    if '<h2 class="sr-only" id="releases-h">%s</h2>' % rel_h2[meta['lang']] not in html:
+        sys.exit('%s: missing the release tab label %r' % (page, rel_h2[meta['lang']]))
+    # Every web day is one row with its one-line summary in place of a version.
+    days = re.findall(r'<li class="rel web-day">.*?<time class="rel-date" datetime="(\d{4}-\d{2}-\d{2})">',
+                      html, re.S)
+    if not days:
+        sys.exit('%s: no dated web update rows' % page)
+    if days != sorted(days, reverse=True):
+        sys.exit('%s: web update dates are not newest first: %s' % (page, days))
+    if len(days) != want_days:
+        sys.exit('%s: %d dated rows on the page, %d in %s' % (page, len(days), want_days, WEB_DATA))
+    for u in load_web_updates():
+        want = '<span class="rel-v">%s</span>' % u['summary'][meta['lang']]
+        if want not in html:
+            sys.exit('%s: %s summary missing on the page: %r' % (page, u['date'], u['summary'][meta['lang']]))
+print('changelog tabs OK: offline tab default, dated web rows newest first')
+EOF
 # The changelog must start at the version the site builds (#166).
 python3 - << 'EOF'
 import json, re, sys

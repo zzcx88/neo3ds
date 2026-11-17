@@ -44,6 +44,7 @@ NeoGeo 롬을 3DS CIA로 바꾸는 변환기 + 3DS 엔진. 릴리스 패키징�
 - 버전 규칙: MAJOR = 기존 사용이 깨짐(저장된 설정·명령줄 옵션·데이터 형식 비호환) 또는 지원 기종이 늘어나는 큰 변경, MINOR = 새 기능·같은 기종의 새 게임·눈에 띄는 성능, PATCH = 수정만. 지난 태그는 고치지 않는다
 - 버전 단일 출처: `converter/Directory.Build.props`의 `<Version>` (릴리스 시 여기서 올린다). 웹용 `site/vendor/conv/version.js`는 `scripts/build_wasm.sh`가 여기서 생성 (git 제외)
 - 릴리스 절차: `docs/build.md` §7.2. 릴리스는 AI가 진행하므로 `<Version>` 범프와 같은 커밋에 `site/releases.json` 최상단 항목 + `python3 scripts/gen_site_changelog.py`·`python3 scripts/gen_changelog.py` 산출물을 포함한다. 빠뜨리면 `site_gate.sh`의 `<Version>`·`CHANGELOG.md` 대조에서 실패해 Pages 배포가 막힌다
+- 웹 변환기 기록: 사용자가 체감하는 웹 변환기 변경(변환 페이지·진행·결과·실패 안내)은 그 변경을 넣는 커밋에서 `site/web-updates.json`의 해당 날짜 항목에 KO/EN 한 줄 요약과 변경 사항을 추가하고 `python3 scripts/gen_site_changelog.py`를 돌린다. 릴리스 버전·`<Version>`과 무관하며, 엔진·런처·오프라인 변환기나 홈·다운로드·문서·SEO 전용 변경은 넣지 않는다 (#389)
 - `site/` 색·폰트·수치는 실제 코드에서만(`ui.h` 팔레트, `ui.c` 좌표, 진단 화면 값) — 창작 금지
 - 문서 전용 변경은 `docs/`·`site/`·README 범위 유지
 
