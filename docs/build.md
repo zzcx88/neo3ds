@@ -165,6 +165,8 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
 웹용 `site/vendor/conv/version.js`는 `build_wasm.sh`가 `<Version>`에서 자동 생성한다.
 `site/releases.json` 최상단에 새 항목을 넣고 `python3 scripts/gen_site_changelog.py`(사이트 패치노트)와 `python3 scripts/gen_changelog.py`(루트 `CHANGELOG.md`)를 같은 커밋에 넣는다. `scripts/site_gate.sh`가 `<Version>`·`site/releases.json`·`CHANGELOG.md`를 대조한다.
 
+웹 변환기 업데이트(`site/web-updates.json`)는 릴리스와 별개다: 사용자가 체감하는 웹 변환기 변경을 넣는 커밋에서 날짜 항목에 KO/EN 한 줄씩 추가하고 `python3 scripts/gen_site_changelog.py`를 다시 돌린다. `<Version>`은 올리지 않는다 (#389).
+
 ### 7.1 웹 변환기 (Pages)
 
 `main` 푸시 1회로 GitHub Actions(`.github/workflows/pages.yml`)가 `site/`를 빌드·검증 후 Pages에 배포한다.
@@ -188,8 +190,10 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
   `index.html`·`convert.html`·`download.html` 푸터에서 링크한다 (#125)
 - `manual.html` — 3DS 사용 안내: 런처·조작·아래 화면·키 설정·세이브 경로 (EN, 생성물).
   `ko/manual.html` — 한국어 원본. 조작 표는 README와 같아야 하고 `site_gate.sh`가 대조한다 (#162)
-- `changelog.html` — 패치노트: 릴리스 타임라인 (EN·KO 둘 다 생성물, 출처 `site/releases.json`).
-  릴리스마다 JSON 항목 하나를 추가하고 생성기를 돌린다. 최상단 버전이 `<Version>`과 다르면 게이트 실패 (#166)
+- `changelog.html` — 패치노트: 두 구역 (EN·KO 둘 다 생성물).
+  **웹 변환기 업데이트**는 `site/web-updates.json`(날짜별 KO/EN 목록, 최신순)에서, **오프라인 변환기·런처·엔진 릴리스 타임라인**은 `site/releases.json`에서 나온다 (#389).
+  웹 변환기에서 사용자가 체감하는 변경은 그 변경을 넣는 커밋에서 웹 업데이트 항목 하나를 함께 추가한다 — 웹 전용 변경은 `<Version>`을 올리지 않는다.
+  릴리스마다 `site/releases.json` 항목 하나를 추가하고 `python3 scripts/gen_site_changelog.py`를 돌린다. 최상단 버전이 `<Version>`과 다르면 게이트 실패 (#166)
 - `sitemap.xml`, `media/og.png`(EN 카드), `media/og-ko.png`(KO 카드), `media/favicon.svg` — 색인·공유 (#130).
   카드 아트를 다시 만들면 `og:image` URL의 `?v=N`을 올린다 — 스크래퍼가 URL로 캐시하므로 그대로면 옛 그림이 계속 보인다 (#213)
 - `vendor/` — WASM 3종 + `engine.elf` + `neogeo_games.json` (CI가 빌드·스테이징, git 제외)
@@ -206,7 +210,7 @@ romfs 실패 사유 분해도 `stage` 한 속성에 접는 것이라 이벤트·
 
 ```bash
 python3 scripts/gen_site_games.py    # site/games.js + compat.html (EN) + ko/compat.html
-python3 scripts/gen_site_changelog.py  # site/changelog.html + ko/changelog.html (출처: site/releases.json)
+python3 scripts/gen_site_changelog.py  # site/changelog.html + ko/changelog.html (출처: site/releases.json + site/web-updates.json)
 node scripts/gen_site_i18n.mjs       # site/{index,convert,download,privacy,manual}.html (EN 문자열 출처: site/app.js 의 EN 표)
 python3 scripts/gen_site_seo.py      # site/sitemap.xml
 ```

@@ -1,0 +1,291 @@
+[
+  {
+    "date": "2026-11-17",
+    "items": [
+      {
+        "t": { "ko": "전체 롬셋 ZIP 다운로드가 2GB에서 실패하던 문제", "en": "Full-romset ZIP download no longer fails at 2 GB" },
+        "d": {
+          "ko": "게임 159개를 모두 변환해도 전체 다운로드가 브라우저의 Blob 2GB 한도에서 실패했습니다. 결과 파일을 디스크(OPFS)에 두고 ZIP을 흐르는 대로 만들어, 약 7.4GB 전체 롬셋을 한 파일이나 1GB 분할로 받을 수 있습니다. 4GB가 넘는 ZIP은 ZIP64로 기록합니다. (#388)",
+          "en": "Even with all 159 games converted, downloading them together failed at the browser's 2 GB Blob limit. Results now stay on disk (OPFS) and the ZIP is streamed, so the ~7.4 GB full romset comes down as one file or as 1 GB parts. Files over 4 GB are written as ZIP64. (#388)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-11-14",
+    "items": [
+      {
+        "t": { "ko": "변환 전에 필요한 것과 막히는 이유", "en": "What a conversion needs, and why a game is blocked" },
+        "d": {
+          "ko": "변환기 페이지에 정적 안내를 더했습니다. 게임 롬셋 zip과 neogeo.zip(바이오스)이 필요하다는 점, 게임 CIA(.cia)와 런처용 파일(.neo3ds)의 차이, 변환 전에 막히는 이유 7가지와 각각의 다음 행동, 변환 중 실패와의 구분을 표로 정리했습니다. 로그를 첨부해 제보하는 방법도 함께 안내합니다. (#375)",
+          "en": "The converter page now has a static guide: the game romset zip and neogeo.zip (the BIOS) you need, the difference between a game CIA (.cia) and a launcher file (.neo3ds), the seven reasons a game is blocked before conversion with the next step for each, and how that differs from a failure during conversion. It also says how to send a report with the log attached. (#375)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-11-12",
+    "items": [
+      {
+        "t": { "ko": "변환 페이지 문구 정리", "en": "Clearer wording on the converter page" },
+        "d": {
+          "ko": "같은 안내를 두세 번 반복하던 문장, 부정문을 먼저 내세우던 문장, 실제 동작과 다른 설명을 고쳤습니다. 아이콘·배너 표기를 '아이콘/배너'로 통일하고 로그 구분자도 정리했습니다. (#349 #352 #354)",
+          "en": "Removed sentences that said the same thing two or three times, reworded negative-first copy, and fixed descriptions that did not match what the converter does. Icon and banner labels now read \"icon/banner\" throughout and log separators are consistent. (#349 #352 #354)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-11-11",
+    "items": [
+      {
+        "t": { "ko": "실패 알림과 목록을 쉬운 말로", "en": "Plain-language failure alerts and game rows" },
+        "d": {
+          "ko": "변환에 실패하면 알림과 게임 줄에 원인 1문장과 다음 행동 1문장만 보여 줍니다. 기술적인 원문은 로그와 제보 내용에 그대로 남습니다. (#337)",
+          "en": "When a conversion fails, the alert and the game row now show one sentence about the cause and one about what to do. The technical message stays unchanged in the log and in the report payload. (#337)"
+        }
+      },
+      {
+        "t": { "ko": "실패 사유를 메모리·도구·게임 DB로 구분", "en": "Failure reasons split into memory, tool and game DB" },
+        "d": {
+          "ko": "'확실한 원인을 찾지 못했어요'로 뭉뚱그리던 그래픽 단계 실패를 브라우저 메모리 부족, 변환 도구 중단, 게임 DB 문제로 나눠 안내하고, 로그와 제보에도 같은 구분을 남깁니다. (#342)",
+          "en": "A graphics-stage failure that used to read \"the exact cause could not be found\" is now reported as one of three things: the browser ran out of memory, a conversion tool stopped, or the game DB failed. The log and report carry the same split. (#342)"
+        }
+      },
+      {
+        "t": { "ko": "빠진 롬 파일과 부모 롬셋 안내", "en": "Missing chips and parent romset are named" },
+        "d": {
+          "ko": "롬셋이 빠졌을 때 어떤 칩이 없는지 최대 4개까지 이름으로 보여 주고, 부모 롬셋이 필요하면 함께 올리라고 안내합니다. 칩은 있는데 CRC가 다르면 다른 버전이라고 알려 줍니다. (#343)",
+          "en": "When a romset is incomplete, the message names up to four missing chips and says to add the parent romset when one is needed. If the chips are present but their CRCs differ, it says the romset is a different version. (#343)"
+        }
+      },
+      {
+        "t": { "ko": "배치 결과를 완료 우선으로 정렬", "en": "Batch results sort completed games first" },
+        "d": {
+          "ko": "배치 변환이 끝나면 목록을 완료, 실패, 대기, 변환 불가 순으로 다시 배치하고 목록을 맨 위로 돌립니다. 그룹 안의 순서는 올린 zip 순서 그대로입니다. (#344)",
+          "en": "When a batch finishes, the list now reorders completed games, then failures, waiting games and unsupported games, and scrolls back to the top. Within each group the original zip order is kept. (#344)"
+        }
+      },
+      {
+        "t": { "ko": "결과물 묶기 단계가 멈춘 것처럼 보이던 문제", "en": "The packing step no longer looks frozen" },
+        "d": {
+          "ko": "마지막 결과물 묶기 단계에서 진행 표시가 2~4초 멈춰 보였습니다. 이제 경과 시간을 표시하고, 완성된 CIA를 Blob으로 바로 넘겨 도착 순간의 끊김도 줄였습니다. (#345)",
+          "en": "The last packing step used to leave the progress display silent for 2-4 s, which looked like a freeze. It now shows elapsed time, and the finished CIA arrives as a Blob, which also removes a hitch when the result lands. (#345)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-11-10",
+    "items": [
+      {
+        "t": { "ko": "실패 안내 문구를 한국어·영어로 정리", "en": "Failure messages rewritten in Korean and English" },
+        "d": {
+          "ko": "변환 전 확인과 변환 중 실패의 문구를 원인 1문장과 다음 행동 1문장으로 다시 썼습니다. 게임 이름은 공개 롬셋 이름만 쓰고 올린 zip 파일 이름은 표시하지 않습니다. 손상되거나 비정상적으로 큰 zip은 변환 전에 거부합니다. (#330)",
+          "en": "Preflight and conversion failures now read as one sentence about the cause and one about the next action. The wording uses only public catalog romset names, never the dropped zip's file name. Damaged or oversized zips are refused before conversion. (#330)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-11-02",
+    "items": [
+      {
+        "t": { "ko": "변환 결과의 문제 보고 버튼 제거", "en": "Report button removed from the result" },
+        "d": {
+          "ko": "다운로드 버튼 옆의 문제 보고 버튼을 없앴습니다. 변환에 실패하면 진행 구역의 알림과 하단 문제 신고 안내는 그대로 남습니다. (#240)",
+          "en": "The report button next to the download button is gone. After a failure, the alert in the progress section and the report guidance further down still remain. (#240)"
+        }
+      },
+      {
+        "t": { "ko": "런처 CIA 설치를 다운로드 페이지로", "en": "Launcher CIA install moved to the download page" },
+        "d": {
+          "ko": "변환기는 게임 CIA와 런처용 파일(.neo3ds) 두 가지를 만들고, 런처 CIA 설치·업데이트는 다운로드 페이지에서 안내합니다. 예전 런처 모드 주소로 들어오면 다운로드 페이지로 이동합니다. (#242)",
+          "en": "The converter now makes two things, a game CIA and a launcher file (.neo3ds); installing and updating the launcher CIA is explained on the download page. An old launcher-mode link redirects there. (#242)"
+        }
+      },
+      {
+        "t": { "ko": "변환기 화면 자잘한 정리", "en": "Small converter layout cleanups" },
+        "d": {
+          "ko": "팩 모드의 '런처가 없다면?' 안내를 변환하기 버튼 위로 옮기고, 빈 드롭 안내가 두 번 나오던 것을 고쳤습니다. (#244 #246)",
+          "en": "The \"no launcher yet?\" link in pack mode moved above the Convert button, and the empty drop panel no longer repeats its prompt twice. (#244 #246)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-10-30",
+    "items": [
+      {
+        "t": { "ko": "변환 로그에 바이오스 선택 표시", "en": "The conversion log shows the BIOS choice" },
+        "d": {
+          "ko": "게임마다 어떤 바이오스(AES/MVS)와 시스템으로 변환하는지 로그에 먼저 남깁니다. 게임 정보를 읽지 못해 실패해도 선택 상태를 확인할 수 있습니다. (#208)",
+          "en": "The log now states which BIOS (AES/MVS) and system each game converts with, before the work starts, so the choice is visible even when reading the game data fails. (#208)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-10-28",
+    "items": [
+      {
+        "t": { "ko": "배치 변환과 neogeo.zip 필수 안내", "en": "Batch conversion and the neogeo.zip requirement" },
+        "d": {
+          "ko": "드롭 영역 위에 변환 전 확인 상자를 두어 neogeo.zip(바이오스)이 모든 변환에 필요하고, 여러 게임을 한 번에 올릴 수 있고, MAME 롬셋 zip만 변환된다는 점을 먼저 보여 줍니다. 배치 변환이 실패하면 이유를 최대 3개까지 요약합니다. (#173)",
+          "en": "A \"before you convert\" box above the drop area now says that neogeo.zip (the BIOS) is required for every conversion, that several games can be dropped at once, and that only MAME romset zips convert. A failed batch summarises up to three reasons. (#173)"
+        }
+      },
+      {
+        "t": { "ko": "모바일에서 변환 페이지 제목이 먼저 보이게", "en": "On phones the page title comes first" },
+        "d": {
+          "ko": "휴대폰 폭에서 제목이 드롭 패널 아래로 밀리던 순서를 고쳐, 화면을 열면 무엇을 하는 페이지인지 먼저 보입니다. (#174)",
+          "en": "On phone widths the title used to be pushed below the drop panel; it now comes first, so the page says what it does before the form. (#174)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-10-26",
+    "items": [
+      {
+        "t": { "ko": "변환 속도와 파일 크기 개선", "en": "Faster conversions and smaller output" },
+        "d": {
+          "ko": "그래픽을 16KB 단위로 묶어 압축해 변환 시간이 줄고 파일도 조금 작아졌습니다. KOF '98 스프라이트 64MB가 22.2MB에서 20.3MB로 줄었습니다. 4KB 블록으로 만든 기존 CIA도 그대로 동작합니다. (#123)",
+          "en": "Sprites are now compressed in 16 KB blocks, which makes conversion faster and the output a little smaller: 64 MB of KOF '98 sprites went from 22.2 MB to 20.3 MB. Existing CIAs made with 4 KB blocks keep working. (#123)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-10-25",
+    "items": [
+      {
+        "t": { "ko": "영문이 기본 페이지, 한국어는 /ko/", "en": "English is the default page, Korean lives at /ko/" },
+        "d": {
+          "ko": "루트 페이지가 영어, 한국어판은 /ko/로 바뀌었습니다. 한국어 사용자가 영문 페이지에서 한국어판을 찾을 수 있도록 안내도 함께 바꿨습니다. (#141)",
+          "en": "The root pages are now English and the Korean edition sits at /ko/. A hint on the English page points Korean readers to it. (#141)"
+        }
+      },
+      {
+        "t": { "ko": "변환 완료 흐름을 진행 구역 하나로", "en": "The finished flow now lives in one progress section" },
+        "d": {
+          "ko": "다운로드와 전체 다운로드 버튼이 진행 구역의 결과 블록으로 모였습니다. 완료되면 스크롤 없이 바로 받고, 변환할 수 없는 이유는 버튼 옆에 표시하며, 실패는 알림으로 알려 줍니다. (#143)",
+          "en": "Download and download-all now sit in a result block inside the progress section, so you can download without scrolling. The reason a game cannot convert shows next to the button, and a failure raises an alert. (#143)"
+        }
+      },
+      {
+        "t": { "ko": "내려받는 CIA 파일 이름 정리", "en": "Cleaner CIA file names" },
+        "d": {
+          "ko": "게임 CIA 파일 이름에서 -web을 뺐습니다(kof98h.cia). 게임을 바꾸면 진행 표시도 초기화됩니다. (#145)",
+          "en": "Game CIA files dropped the -web suffix (kof98h.cia). Switching games resets the progress values. (#145)"
+        }
+      },
+      {
+        "t": { "ko": "병렬 변환 로그를 게임·단계·시간으로", "en": "Parallel logs show game, stage and elapsed time" },
+        "d": {
+          "ko": "로그 한 줄마다 경과 시간과 게임, [n/4] 단계를 붙여 여러 게임을 동시에 변환할 때 어느 게임의 어느 단계인지 바로 보이게 했습니다. (#152)",
+          "en": "Each log line now carries the elapsed time, the game and its [n/4] stage, so a parallel batch shows at a glance which game is at which stage. (#152)"
+        }
+      },
+      {
+        "t": { "ko": "진행·목록 UI 다듬기", "en": "Progress and list touch-ups" },
+        "d": {
+          "ko": "병렬 워커에서 의미 없던 단계별 진행 값을 없애고, 게임 목록 스크롤 상한을 3줄로 줄였습니다. 전체 다운로드 버튼을 변환하기 아래로 옮기고 취소 버튼은 회색 톤으로 바꿨습니다. (#134 #139 #147 #150)",
+          "en": "Removed per-stage progress values that meant nothing with parallel workers, and capped the game list at three visible rows. Download-all moved below the Convert button, and Cancel took on a neutral grey tone. (#134 #139 #147 #150)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-10-24",
+    "items": [
+      {
+        "t": { "ko": "변환 시간 절반 — 스프라이트 압축 설정", "en": "Half the conversion time: sprite compression" },
+        "d": {
+          "ko": "웹 워커는 코어 하나로 도는데 19레벨 압축이 병목이었습니다. 12레벨로 낮춰 kof98h 변환이 13.9초에서 7.0초로 줄었고, 압축 결과는 0.9%만 커졌습니다. (#120)",
+          "en": "A web worker runs on one core, and level-19 compression was the bottleneck. Dropping to level 12 cut a kof98h conversion from 13.9 s to 7.0 s while the output grew by only 0.9%. (#120)"
+        }
+      },
+      {
+        "t": { "ko": "롬 zip 분석 1.8초 → 0.03초", "en": "Rom zip analysis: 1.8 s to 0.03 s" },
+        "d": {
+          "ko": "zip 중앙 디렉터리만 읽어 이름·CRC·크기를 먼저 확인하고 필요한 항목만 나중에 풉니다. 40.8MB zip에서 실제로 읽는 바이트가 0.13MB로 줄었습니다. (#121)",
+          "en": "The converter reads only the zip's central directory to learn names, CRCs and sizes, then unpacks entries when they are needed. A 40.8 MB zip now reads 0.13 MB up front. (#121)"
+        }
+      },
+      {
+        "t": { "ko": "여러 게임 배치 변환 병렬화 — 3게임 13.7초 → 5.5초", "en": "Batch conversion in parallel: 3 games 13.7 s to 5.5 s" },
+        "d": {
+          "ko": "게임마다 워커를 하나씩 배정하고 끝난 워커가 다음 게임을 가져갑니다. 메모리가 작은 기기에서는 워커를 1개로 제한합니다. (#122)",
+          "en": "Each game gets a worker and a finished worker takes the next game. Devices with little memory are held to a single worker. (#122)"
+        }
+      },
+      {
+        "t": { "ko": "모바일 메모리 게이트와 배치 실패 정리", "en": "Mobile memory gate and batch failure handling" },
+        "d": {
+          "ko": "deviceMemory를 보고하는 8GB 안드로이드는 병렬 워커를 그대로 쓰고, 메모리를 알 수 없을 때만 1개로 제한합니다. 배치 실패 경로도 한 곳으로 모아 같은 실패를 한 번만 표시합니다. (#128)",
+          "en": "An 8 GB Android device that reports deviceMemory now keeps the parallel workers; only an unknown memory size falls back to one. Batch failure paths were unified so a failure is reported once. (#128)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-10-22",
+    "items": [
+      {
+        "t": { "ko": "여러 롬을 한 번에 — 변환 전 목록과 게임별 실패 격리", "en": "Many roms at once, listed before conversion" },
+        "d": {
+          "ko": "게임 zip을 여러 개 올리면 변환 전에 인식 결과를 목록으로 보여 주고, 한 게임이 실패해도 나머지는 계속 변환합니다. (#74)",
+          "en": "Drop several game zips and the converter lists what it recognised before starting; if one game fails, the rest keep converting. (#74)"
+        }
+      },
+      {
+        "t": { "ko": "게임별 아이콘·배너 지정", "en": "Pick an icon and banner per game" },
+        "d": {
+          "ko": "게임마다 아이콘(48×48)과 배너(256×128)로 쓸 그림을 직접 고르고, 배치 목록에서 게임별로 바꿀 수 있습니다. (#75 #76)",
+          "en": "Choose the picture used as each game's icon (48×48) and banner (256×128), and change it per game from the batch list. (#75 #76)"
+        }
+      },
+      {
+        "t": { "ko": "진행 표시 개선 — 인식·전체 진행 로딩바와 전체 다운로드", "en": "Progress bars for recognition and the whole run" },
+        "d": {
+          "ko": "인식 단계와 전체 진행을 로딩바로 보여 주고, 진행 구역으로 포커스를 옮겨 스크롤 없이 상태를 봅니다. 끝나면 전체 다운로드로 한 번에 받습니다. (#81)",
+          "en": "Loading bars now show the recognition step and the whole run, the page moves focus to the progress section, and a download-all button collects every result at the end. (#81)"
+        }
+      },
+      {
+        "t": { "ko": "MAME 롬셋만 지원한다는 안내와 차단 사유", "en": "MAME-only notice and preflight blocking reasons" },
+        "d": {
+          "ko": "MAME 네오지오 롬셋 zip만 변환된다는 점과, 변환 전에 막힐 때 그 이유를 한국어·영어로 보여 줍니다. (#79)",
+          "en": "The converter states that only MAME Neo Geo romset zips convert, and shows why a game is blocked before conversion, in Korean and English. (#79)"
+        }
+      }
+    ]
+  },
+  {
+    "date": "2026-10-21",
+    "items": [
+      {
+        "t": { "ko": "웹 변환기 공개", "en": "The web converter opens" },
+        "d": {
+          "ko": "롬 zip과 neogeo.zip을 올리면 브라우저 안에서 3DS CIA를 만드는 웹 변환기를 공개했습니다. 보호 스킴 6종, 게임 CIA·런처용 파일·런처 CIA, 여러 게임 배치 변환을 지원하고 파일은 외부로 전송되지 않습니다. (#39 #40)",
+          "en": "The web converter opened: drop a rom zip and neogeo.zip and the browser builds a 3DS CIA. It covers six protection schemes, game CIAs, launcher files, the launcher CIA and batch conversion, and no file leaves the tab. (#39 #40)"
+        }
+      },
+      {
+        "t": { "ko": "변환 모드 카드와 문구", "en": "Output mode cards" },
+        "d": {
+          "ko": "게임 CIA, 런처용 파일(.neo3ds), 런처 CIA를 카드로 나누고 결과 형식을 함께 표시했습니다. 진행과 로그 문구도 모드에 맞게 정리했습니다. (#45)",
+          "en": "Game CIA, launcher file (.neo3ds) and launcher CIA became separate cards with their output format on each. Progress and log wording follow the chosen mode. (#45)"
+        }
+      },
+      {
+        "t": { "ko": "런처 업데이트 안내", "en": "Launcher update notice" },
+        "d": {
+          "ko": "업데이트는 런처 CIA만 새로 설치하면 되고, 이미 만든 .neo3ds 파일은 그대로 실행된다는 안내를 변환기에 넣었습니다. (#61)",
+          "en": "The converter notes that updating means installing just the new launcher CIA, and that existing .neo3ds files keep running on it. (#61)"
+        }
+      }
+    ]
+  }
+]

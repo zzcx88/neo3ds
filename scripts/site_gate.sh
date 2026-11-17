@@ -174,6 +174,43 @@ python3 scripts/gen_site_series.py > /dev/null
 python3 scripts/gen_site_changelog.py > /dev/null
 node scripts/gen_site_i18n.mjs --check
 python3 scripts/gen_site_seo.py --check
+
+# The web converter update log is a second changelog source (#389): ISO dates, newest
+# first, one entry per date, a non-empty item list and both languages. The generator
+# reads the same loader, so a bad date names itself here instead of on the live site.
+python3 - << 'EOF'
+import sys
+sys.path.insert(0, 'scripts')
+from gen_site_changelog import load_web_updates
+updates = load_web_updates()
+print('web updates OK: %d dates, newest %s' % (len(updates), updates[0]['date']))
+EOF
+
+# Both sections must be present and the web updates must come first (#389). A template
+# edit that drops a section or flips the order fails here rather than shipping.
+python3 - << 'EOF'
+import re, sys
+WEB = {'site/changelog.html': ('Web converter updates', 'Offline converter · launcher · engine'),
+       'site/ko/changelog.html': ('웹 변환기 업데이트', '오프라인 변환기 · 런처 · 엔진')}
+for page, (web_h2, rel_h2) in WEB.items():
+    html = open(page, encoding='utf-8').read()
+    web_at = html.find('id="web-updates"')
+    rel_at = html.find('id="releases"')
+    if web_at < 0 or rel_at < 0:
+        sys.exit('%s: missing a changelog section (web %s, releases %s)' % (page, web_at >= 0, rel_at >= 0))
+    if web_at > rel_at:
+        sys.exit('%s: web updates must come before the release timeline' % page)
+    if '<h2 id="web-updates-h">%s</h2>' % web_h2 not in html:
+        sys.exit('%s: missing the web section heading %r' % (page, web_h2))
+    if '<h2 id="releases-h">%s</h2>' % rel_h2 not in html:
+        sys.exit('%s: missing the release section heading %r' % (page, rel_h2))
+    days = re.findall(r'<time class="web-date" datetime="(\d{4}-\d{2}-\d{2})">', html)
+    if not days:
+        sys.exit('%s: no dated web update entries' % page)
+    if days != sorted(days, reverse=True):
+        sys.exit('%s: web update dates are not newest first: %s' % (page, days))
+print('changelog sections OK: web updates first, dated entries newest first')
+EOF
 # The changelog must start at the version the site builds (#166).
 python3 - << 'EOF'
 import json, re, sys

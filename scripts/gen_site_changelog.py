@@ -1,11 +1,20 @@
-"""Builds the changelog pages from site/releases.json (#166).
+"""Builds the changelog pages from site/releases.json and site/web-updates.json (#166, #389).
 
 usage: python3 scripts/gen_site_changelog.py
 
-One JSON entry per release, in both languages, so a release is one edit and one
-generator run. Both locale pages are generated (like compat.html); neither is a
-hand-written source. site_gate.sh checks the top entry against <Version>.
+Two sections, one page, both languages:
+
+  - web converter updates: dated entries from site/web-updates.json, newest first.
+    These are independent of version releases: the web converter ships often and
+    without a <Version> bump, so the user needs a dated record of what changed.
+  - version releases: the v1.x timeline from site/releases.json, generated exactly
+    as before (badge, GitHub release link, item text).
+
+Both locale pages are generated (like compat.html); neither is a hand-written source.
+site_gate.sh checks the top release against <Version>, validates the web update
+data and checks the section order of the generated pages.
 """
+import datetime
 import html
 import json
 import os
@@ -14,6 +23,7 @@ import sys
 
 SITE = 'https://zzcx88.github.io/neo3ds/'
 DATA = 'site/releases.json'
+WEB_DATA = 'site/web-updates.json'
 RELEASES = 'https://github.com/zzcx88/neo3ds/releases'
 ISSUES = 'https://github.com/zzcx88/neo3ds/issues/'
 
@@ -27,11 +37,14 @@ META = {
         'og': 'media/og-ko.png?v=2',
         'og_locale': 'ko_KR',
         'og_alt': 'en_US',
-        'title': '패치노트 — neo3ds 릴리스 기록 | neo3ds',
+        'title': '패치노트 — 웹 변환기 업데이트와 neo3ds 릴리스 | neo3ds',
         'og_title': 'neo3ds 패치노트 | neo3ds',
-        'desc': 'neo3ds %(first)s부터 %(top)s까지 릴리스 %(n)d개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.',
-        'tw_desc': '%(first)s부터 %(top)s까지, 버전별 새 기능과 수정.',
+        'desc': '웹 변환기의 날짜별 업데이트 %(web)d개와 neo3ds %(first)s부터 %(top)s까지 '
+                '릴리스 %(n)d개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.',
+        'tw_desc': '웹 변환기 업데이트와 %(first)s부터 %(top)s까지, 버전별 새 기능과 수정.',
         'h1': '패치노트',
+        'web_h2': '웹 변환기 업데이트',
+        'rel_h2': '오프라인 변환기 · 런처 · 엔진',
         'latest': '최신',
         'link': 'GitHub 릴리스',
         'note': '전체 릴리스와 다운로드 파일은 <a href="%s">GitHub 릴리스</a>에 있습니다.' % RELEASES,
@@ -50,11 +63,14 @@ META = {
         'og': 'media/og.png?v=2',
         'og_locale': 'en_US',
         'og_alt': 'ko_KR',
-        'title': 'Changelog — every neo3ds release | neo3ds',
+        'title': 'Changelog — web converter updates and every neo3ds release | neo3ds',
         'og_title': 'neo3ds changelog | neo3ds',
-        'desc': 'Every neo3ds release from %(first)s to %(top)s, newest first: engine, launcher and converter features and fixes.',
-        'tw_desc': 'Every release from %(first)s to %(top)s, newest first.',
+        'desc': 'Dated updates to the web converter (%(web)d entries), and every neo3ds release '
+                'from %(first)s to %(top)s, newest first: engine, launcher and converter features and fixes.',
+        'tw_desc': 'Web converter updates and every release from %(first)s to %(top)s, newest first.',
         'h1': 'Changelog',
+        'web_h2': 'Web converter updates',
+        'rel_h2': 'Offline converter · launcher · engine',
         'latest': 'Latest',
         'link': 'GitHub release',
         'note': 'All releases and download files are on <a href="%s">GitHub releases</a>.' % RELEASES,
@@ -108,6 +124,41 @@ def load():
     return releases
 
 
+def load_web_updates():
+    """Validates the dated web converter log (#389); exits non-zero naming the bad date."""
+    try:
+        updates = json.load(open(WEB_DATA, encoding='utf-8'))
+    except FileNotFoundError:
+        sys.exit('%s: missing; it holds the web converter update log' % WEB_DATA)
+    seen = set()
+    last = None
+    for u in updates:
+        date, items = u.get('date'), u.get('items')
+        if not (isinstance(date, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', date)):
+            sys.exit('%s: bad date %r (want YYYY-MM-DD)' % (WEB_DATA, date))
+        try:
+            datetime.date.fromisoformat(date)
+        except ValueError:
+            sys.exit('%s: %s is not a real date' % (WEB_DATA, date))
+        if date in seen:
+            sys.exit('%s: duplicate date %s' % (WEB_DATA, date))
+        seen.add(date)
+        if last and date > last:
+            sys.exit('%s: %s is newer than the entry above it' % (WEB_DATA, date))
+        last = date
+        if not (isinstance(items, list) and items):
+            sys.exit('%s: %s has no items' % (WEB_DATA, date))
+        for it in items:
+            for side in ('t', 'd'):
+                pair = it.get(side) or {}
+                for lang in ('ko', 'en'):
+                    if not (isinstance(pair.get(lang), str) and pair[lang].strip()):
+                        sys.exit('%s: %s item %r needs both ko and en' % (WEB_DATA, date, it))
+    if not updates:
+        sys.exit('%s: no web updates' % WEB_DATA)
+    return updates
+
+
 def entry(r, meta, latest):
     rows = '\n'.join(
         '            <li><b>%s</b>: %s</li>' % (with_issue_links(it['t'][meta['lang']]), with_issue_links(it['d'][meta['lang']]))
@@ -126,13 +177,26 @@ def entry(r, meta, latest):
                    r['date'], r['date'], rows, RELEASES, r['version'], meta['link'])
 
 
-def page(meta, releases):
+def web_entry(u, meta):
+    rows = '\n'.join(
+        '            <li><b>%s</b>: %s</li>' % (with_issue_links(it['t'][meta['lang']]), with_issue_links(it['d'][meta['lang']]))
+        for it in u['items'])
+    return '''      <li class="web-day">
+        <time class="web-date" datetime="%s">%s</time>
+        <ul class="web-items">
+%s
+        </ul>
+      </li>''' % (u['date'], u['date'], rows)
+
+
+def page(meta, releases, updates):
     nav = '\n'.join('    <a href="%s">%s</a>' % (href, esc(label))
                     for href, label in zip(['index.html', 'convert.html', 'compat.html'], meta['nav']))
     foot = '\n'.join(
         '      <a href="%s"%s>%s</a>' % (href, ' aria-current="page"' if href == 'changelog.html' else '', esc(label))
         for href, label in zip(FOOT_HREF, meta['foot']))
     entries = '\n'.join(entry(r, meta, i == 0) for i, r in enumerate(releases))
+    web_entries = '\n'.join(web_entry(u, meta) for u in updates)
     jsonld = json.dumps({
         '@context': 'https://schema.org',
         '@type': 'WebPage',
@@ -194,9 +258,18 @@ def page(meta, releases):
 <main id="main" class="changelog">
   <div class="changelog-wrap">
     <h1>{h1}</h1>
-    <ol class="rel-list">
+    <section class="changelog-sec" id="web-updates" aria-labelledby="web-updates-h">
+      <h2 id="web-updates-h">{web_h2}</h2>
+      <ol class="web-list">
+{web_entries}
+      </ol>
+    </section>
+    <section class="changelog-sec" id="releases" aria-labelledby="releases-h">
+      <h2 id="releases-h">{rel_h2}</h2>
+      <ol class="rel-list">
 {entries}
-    </ol>
+      </ol>
+    </section>
     <p class="tiny end-note">{note}</p>
   </div>
 </main>
@@ -219,20 +292,24 @@ def page(meta, releases):
         tw_desc=esc(meta['tw_desc']), jsonld=jsonld, icon=meta['icon'], css=meta['css'],
         sections=meta['sections'], nav=nav, lang_label=meta['lang_label'],
         ko_switch=ko_switch, cta='변환하기' if meta['lang'] == 'ko' else 'Convert now',
-        h1=esc(meta['h1']), entries=entries, note=meta['note'],
+        h1=esc(meta['h1']), web_h2=esc(meta['web_h2']), rel_h2=esc(meta['rel_h2']),
+        web_entries=web_entries, entries=entries, note=meta['note'],
         foot=foot, foot_note=esc(meta['foot_note']))
 
 
 def main():
     releases = load()
-    span = {'first': releases[-1]['version'], 'top': releases[0]['version'], 'n': len(releases)}
+    updates = load_web_updates()
+    span = {'first': releases[-1]['version'], 'top': releases[0]['version'],
+            'n': len(releases), 'web': len(updates)}
     for meta in META.values():
         meta = dict(meta, desc=meta['desc'] % span, tw_desc=meta['tw_desc'] % span)
-        out = page(meta, releases)
+        out = page(meta, releases, updates)
         os.makedirs(os.path.dirname(meta['file']), exist_ok=True)
         with open(meta['file'], 'w', encoding='utf-8') as f:
             f.write(out)
-        print('%s: %d releases, %d bytes' % (meta['file'], len(releases), len(out)))
+        print('%s: %d web updates, %d releases, %d bytes'
+              % (meta['file'], len(updates), len(releases), len(out)))
 
 
 if __name__ == '__main__':
