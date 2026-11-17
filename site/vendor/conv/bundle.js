@@ -102,9 +102,9 @@ export async function* zipBundle(entries, { chunkSize, onProgress, mtime } = {})
   yield* zipChunks(normalize(entries), { chunkSize, onProgress, mtime });
 }
 
-// The whole bundle as one Blob. `new Blob(parts)` copies references, not bytes,
-// so this is only the browser's own blob storage: fine up to PART_BYTES, which
-// is why the page asks for `splitPlan` first. Kept small and pure for tests.
+// The whole bundle as one Blob, used only by the split fallback where a part is
+// already sized to stay under the browser ceiling. It holds the part's chunks
+// and the Blob at once, so callers must not hand it a whole-romset bundle.
 export async function zipBlob(entries, options = {}) {
   const chunks = [];
   for await (const chunk of zipBundle(entries, options)) chunks.push(chunk);

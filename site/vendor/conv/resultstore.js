@@ -25,6 +25,9 @@ export class ResultStore {
     this.root = root;
     this.dirName = dirName;
     this.state = { dir: null, files: new Map(), mode: root ? 'disk' : 'memory' };
+    // Which run owns the directory. A write from an older run must not read or
+    // report failures against a newer one.
+    this.generation = 0;
     // Serializes begin() against put(): a result can arrive while the directory
     // is still being prepared, and the old directory must be gone by then.
     this.ready = Promise.resolve(this);
@@ -36,6 +39,7 @@ export class ResultStore {
   // Starts a fresh run: drops the previous directory and everything tracked.
   begin() {
     this.state.files.clear();
+    this.generation++;
     this.ready = this.#open();
     return this.ready;
   }
@@ -72,7 +76,7 @@ export class ResultStore {
   async put(index, blob, name) {
     const run = this.queue.then(async () => {
       await this.ready;
-      const file = await this.#write(index, blob);
+      const file = await this.#write(index, blob, this.generation);
       this.state.files.set(index, { file, name });
       return file;
     });
@@ -80,7 +84,12 @@ export class ResultStore {
     return run;
   }
 
-  async #write(index, blob) {
+  // `generation` is the run this write belongs to. begin() bumps it, so a write
+  // left over from the previous run must not read the new run's directory — and,
+  // more importantly, must not fall back to memory mode: one stale write would
+  // otherwise cost the whole new run its disk backing (and bring back the 2 GiB
+  // ceiling for every game after it).
+  async #write(index, blob, generation = this.generation) {
     const dir = this.state.dir;
     if (!dir) return blob;
     try {
@@ -89,11 +98,11 @@ export class ResultStore {
       await blob.stream().pipeTo(writable);
       return await handle.getFile();
     } catch (err) {
+      if (generation !== this.generation) return blob; // stale run: retrying is pointless
       // A full disk must not lose the result the user just waited for: fall back
-      // to the Blob the worker posted and record why.
+      // to the Blob the worker posted. The next run tries the disk again.
       this.state.mode = 'memory';
       this.state.dir = null;
-      this.state.error = String(err?.message ?? err);
       return blob;
     }
   }
@@ -120,6 +129,17 @@ export class ResultStore {
     await this.ready;
     await this.queue;
   }
+
+  // Leaves nothing behind: used when the tab goes away, where preparing a fresh
+  // directory (begin) would be pointless.
+  async dispose() {
+    this.state.generation++;
+    this.state.files.clear();
+    this.state.dir = null;
+    const root = await this.#root();
+    if (!root) return;
+    try { await root.removeEntry(this.dirName, { recursive: true }); } catch { /* already gone */ }
+  }
 }
 
 // OPFS file names must be safe segments; the row index is all we need and the
@@ -130,3 +150,10 @@ function fileName(index) {
 
 // One store per page; a run starts a fresh directory on it.
 export const results = new ResultStore();
+
+// A finished run's files must not outlive the tab: a 7.5 GB directory would stay
+// in origin storage until the browser evicts it, and only the next run's
+// begin() would clean it. pagehide covers close, reload and back/forward.
+if (typeof window !== 'undefined' && window.addEventListener) {
+  window.addEventListener('pagehide', () => { void results.dispose(); });
+}

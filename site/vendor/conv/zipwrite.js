@@ -66,7 +66,7 @@ function sourceOf(entry) {
   if (bytes instanceof Uint8Array) {
     return { size: bytes.length, chunks: () => single(bytes) };
   }
-  const source = entry.blob ?? entry.file ?? entry.source;
+  const source = entry.blob ?? entry.source;
   if (source && Number.isSafeInteger(source.size) && typeof source.stream === 'function')
     return { size: source.size, chunks: () => streamOf(source) };
   throw new ZipSourceError(
@@ -164,7 +164,9 @@ function centralRecord({ name, size, crc, offset, zip64Size, zip64Offset, stamp 
   const extra = centralExtra({ size, offset, zip64Size, zip64Offset });
   const rec = new Uint8Array(46 + name.length + (extra ? extra.length : 0));
   w32(rec, 0, SIG_CENTRAL);
-  w16(rec, 4, VERSION_ZIP64); // made by: 4.5
+  // "Made by" stays a plain 2.0 writer: the archive is produced by the simplest
+  // implementation that can express it, and ZIP64 is only claimed where needed.
+  w16(rec, 4, VERSION_PLAIN);
   w16(rec, 6, zip64Size || zip64Offset ? VERSION_ZIP64 : VERSION_PLAIN);
   w16(rec, 8, FLAG_UTF8);
   w16(rec, 10, 0);
@@ -222,17 +224,20 @@ function endRecord({ count, cdSize, cdOffset, zip64 }) {
   return rec;
 }
 
+// Entry names are UTF-8 and the header says so in both records. CP437 is a
+// subset of UTF-8 for the names in play, so the flag is always safe to set.
 function nameBytes(name) {
-  const bytes = new TextEncoder().encode(name);
-  return bytes.some((b) => b > 0x7f) ? { bytes, utf8: true } : { bytes, utf8: false };
+  return new TextEncoder().encode(name);
 }
 
-// estimated archive bytes for one entry: headers + payload. `splitEntries`
-// uses it to keep each part under a browser's Blob ceiling.
+// Estimated archive bytes for one entry: local header + payload + central
+// record, plus a little slack for the end records. `splitPlan` uses it to keep
+// each part under a Blob ceiling, so over-estimating is the safe direction.
+const END_SLACK = 98; // ZIP64 EOCD (56) + locator (20) + EOCD (22)
 export function entrySize(entry) {
   const { size } = sourceOf(entry);
-  const name = nameBytes(String(entry.name ?? '')).bytes.length;
-  return size + 30 + name + 46 + name + 22 + 56 + 20;
+  const name = nameBytes(String(entry.name ?? '')).length;
+  return size + 30 + name + 46 + name + END_SLACK;
 }
 
 // entries: [{ name, blob|file|source|bytes }] -> async iterable of Uint8Array.
@@ -253,13 +258,13 @@ export async function* zipChunks(entries, {
 
   for (const entry of entries) {
     const name = nameBytes(String(entry.name ?? ''));
-    if (name.bytes.length === 0) throw new ZipSourceError('zip entry name must not be empty');
-    if (name.bytes.length > 0xffff) throw new ZipSourceError(`zip entry name is too long: ${name.bytes.length} bytes`);
+    if (name.length === 0) throw new ZipSourceError('zip entry name must not be empty');
+    if (name.length > 0xffff) throw new ZipSourceError(`zip entry name is too long: ${name.length} bytes`);
     const src = sourceOf(entry);
     const size = src.size;
     const crc = await crcOf(src.chunks());
     const zip64Size = size > U32_MAX;
-    const head = localHeader({ name: name.bytes, size, crc, zip64Size, stamp });
+    const head = localHeader({ name, size, crc, zip64Size, stamp });
     const start = offset;
     yield head;
     offset += head.length;
@@ -269,7 +274,7 @@ export async function* zipChunks(entries, {
       done += chunk.length;
       if (onProgress) onProgress(done, total);
     }
-    records.push({ name: name.bytes, size, crc, start, zip64Size });
+    records.push({ name, size, crc, start, zip64Size });
     if (onProgress) onProgress(done, total);
   }
 

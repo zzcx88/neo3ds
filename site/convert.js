@@ -224,6 +224,7 @@ let overallView = null; // #81 {fraction, kind, index, ready, end} shown in #pro
 let bundleBusy = false, bundleSeq = 0; // #81 "download all" ZIP
 let bundleDone = 0; // #387 whole-bundle progress (0..1) while streaming
 let runSeq = 0; // #387 a result landing after the next run started must not publish
+let cancelled = false; // #387 the cancel button (not a finished run) drops late results
 let dlMode = null; // #175 output mode behind the single download link
 
 const drop = $('gateDrop'), input = $('gateZips'), runBtn = $('gateRun'), cancelBtn = $('gateCancel');
@@ -274,13 +275,18 @@ async function storeResult(index, blob, name) {
 }
 
 // Waits for the store, then publishes the row's own link. A row that already
-// failed, a run that was cancelled or superseded, and a superseded entry must
+// failed, a run that was superseded or cancelled, and a superseded entry must
 // not get a link; a URL that is not used is revoked on the spot.
+//
+// `running` is page-wide and `finish()` clears it in the same turn as the last
+// game's publish, so it cannot stand in for "cancelled" here — that needs its
+// own flag. `markDone` also refuses a row that is no longer running, and cancel
+// marks its running rows pending.
 function publishResult(row, blob, name, stats, run = runSeq) {
   void storeResult(row, blob, name).then((url) => {
     const rowModel = batch?.[row];
     const stale = run !== runSeq // a new run owns the store now
-      || !running // cancelled: the list is no longer a live download surface
+      || cancelled // a cancelled run has no live download surface
       || rowModel?.status !== STATUS.DONE
       || rowModel.result?.url;
     if (stale) { revokeUrl(url); return; }
@@ -986,31 +992,47 @@ function bundleEntries(indexes) {
   }));
 }
 
-// Both halves matter: showSaveFilePicker exists without a working writable in
-// some browsers, and writing needs the latter.
-const canSaveToDisk = () => typeof window?.showSaveFilePicker === 'function'
-  && typeof globalThis.FileSystemFileHandle?.prototype?.createWritable === 'function';
+// The picker exists or it does not; whether its writable works is discovered on
+// the first use, which is why the caller falls back to parts instead of failing.
+const canSaveToDisk = () => typeof window?.showSaveFilePicker === 'function';
 
 // The save picker streams straight to the file the user picked, so the bundle
 // size is bounded by the disk, not by the browser's ~2 GiB Blob ceiling (#387).
+// Returns false when the picker could not be opened for a reason other than the
+// user closing it, so the caller can fall back to split parts; an abort is the
+// user's decision and is rethrown.
 async function saveBundleToDisk(entries, name, onProgress) {
-  const handle = await window.showSaveFilePicker({
-    suggestedName: name,
-    types: [{ description: 'ZIP archive', accept: { 'application/zip': ['.zip'] } }],
-  });
-  const writable = await handle.createWritable();
+  let handle;
   try {
-    return await writeZip(writable, entries, { onProgress });
+    handle = await window.showSaveFilePicker({
+      suggestedName: name,
+      types: [{ description: 'ZIP archive', accept: { 'application/zip': ['.zip'] } }],
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    return false; // no usable picker (e.g. createWritable is missing): use parts
+  }
+  let writable;
+  try {
+    writable = await handle.createWritable();
+  } catch {
+    return false; // same: the picker cannot write here
+  }
+  try {
+    await writeZip(writable, entries, { onProgress });
+    return true;
   } catch (err) {
     try { await writable.abort(); } catch { /* already closed */ }
-    throw err;
+    throw err; // a write failure is a real failure, not a reason to split
   }
 }
 
 // The split fallback builds one complete ZIP per part, hands it to the browser
-// and releases it at once. Part sizes are chosen to stay under the Blob ceiling,
-// and revoking immediately keeps the page from accumulating them: the download
-// has already started by the time click() returns.
+// and releases it shortly after. Part sizes are chosen to stay under the Blob
+// ceiling, and releasing them keeps the page from accumulating them. The revoke
+// is deferred: Safari has needed the blob URL to outlive the click's task for
+// large files, and this path exists mostly for the browsers without a picker.
+const RELEASE_AFTER_MS = 60_000;
 function clickDownload(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1021,7 +1043,7 @@ function clickDownload(blob, name) {
   document.body.append(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), RELEASE_AFTER_MS);
 }
 
 // Firefox and Safari have no save picker, so the bundle is split into complete
@@ -1041,10 +1063,11 @@ async function downloadParts(parts, base, seq, onProgress) {
     if (seq !== bundleSeq) return false;
     done = start + parts[i].bytes;
     clickDownload(blob, name);
-    logEvent('', t(`[ZIP] ${name} ${(blob.size / 1048576).toFixed(1)}MB`,
-      `[ZIP] ${name} ${(blob.size / 1048576).toFixed(1)}MB`), 'meta');
-    // Give the browser a beat to start the save before the next one arrives.
-    if (i + 1 < parts.length) await new Promise((resolve) => { setTimeout(resolve, 500); });
+    logEvent('', `[ZIP] ${name} ${(blob.size / 1048576).toFixed(1)}MB`, 'meta');
+    // Give the browser a moment to register the first download before handing it
+    // the next one. The exact gap is untested; it only has to be short enough not
+    // to dominate a many-part bundle (8 parts cost ~2 s at 300 ms).
+    if (i + 1 < parts.length) await new Promise((resolve) => { setTimeout(resolve, 300); });
   }
   return true;
 }
@@ -1061,9 +1084,11 @@ async function downloadBatchZip() {
     await resultStore.settled();
     if (seq !== bundleSeq) return;
     // Row indexes address the disk store; `batch` order is the ZIP order (#338).
+    // The store, not the row's link, decides what is in the bundle: the link is
+    // assigned one tick later by publishResult, so it is not a reliable signal.
     const indexes = [];
     for (let i = 0; i < (batch ?? []).length; i++) {
-      if (batch[i].status === STATUS.DONE && batch[i].result?.url) indexes.push(i);
+      if (batch[i].status === STATUS.DONE && resultStore.get(i)) indexes.push(i);
     }
     if (indexes.length === 0) return;
     const base = `neo3ds-batch-${indexes.length}games.zip`;
@@ -1074,16 +1099,26 @@ async function downloadBatchZip() {
       paintBatchAll();
     };
     if (canSaveToDisk()) {
-      await saveBundleToDisk(entries, base, onProgress);
-      if (seq !== bundleSeq) return;
-      logEvent('', t(`[ZIP] ${indexes.length}개 결과를 ${base}로 저장했습니다`,
-        `[ZIP] Saved ${indexes.length} results into ${base}`), 'meta');
-    } else {
-      const done = await downloadParts(splitPlan(entries), base, seq, onProgress);
-      if (!done || seq !== bundleSeq) return;
-      logEvent('', t(`[ZIP] ${indexes.length}개 결과를 ${base}로 묶었습니다`,
-        `[ZIP] Bundled ${indexes.length} results into ${base}`), 'meta');
+      try {
+        await saveBundleToDisk(entries, base, onProgress);
+        if (seq !== bundleSeq) return;
+        logEvent('', t(`[ZIP] ${indexes.length}개 결과를 ${base}로 저장했습니다`,
+          `[ZIP] Saved ${indexes.length} results into ${base}`), 'meta');
+        trackSave('batch'); // #175
+        return;
+      } catch (err) {
+        // Closing the dialog is the user's decision: stop, do not retry.
+        if (err?.name === 'AbortError') throw err;
+        // A picker that exists but cannot write (an older Safari, a locked
+        // folder) must still leave the user with a working download.
+        logEvent('', t(`[ZIP] 저장 창을 쓸 수 없어 나눠 받습니다 (${err?.message ?? err})`,
+          `[ZIP] Save dialog unavailable, downloading in parts (${err?.message ?? err})`), 'info');
+      }
     }
+    const done = await downloadParts(splitPlan(entries), base, seq, onProgress);
+    if (!done || seq !== bundleSeq) return;
+    logEvent('', t(`[ZIP] ${indexes.length}개 결과를 ${base}로 내려받았습니다`,
+      `[ZIP] Downloaded ${indexes.length} results as ${base}`), 'meta');
     trackSave('batch'); // #175
   } catch (err) {
     if (seq !== bundleSeq) return;
@@ -1432,6 +1467,7 @@ runBtn.addEventListener('click', () => {
   resetResults(); // #74/#143: a new run drops every previous result and download URL
   // #387: park this run's results on disk before the first one arrives.
   runSeq++;
+  cancelled = false;
   void resultStore.begin();
   logEl.textContent = '';
   resetPipe();
@@ -1640,7 +1676,7 @@ function onWorkerMessage(w, m) {
     // #387: park the result on disk before publishing the link. Chrome caps the
     // page's total Blob size at ~2 GiB, so holding every result would make the
     // later ones unreadable — the per-game links included.
-    markDone(batch, row, { url: null, name, mb: m.stats.ciaMB, pending: true });
+    markDone(batch, row, { url: null, name, mb: m.stats.ciaMB });
     updateRow(row);
     finishOverallRow(row);
     publishResult(row, m.bin, name, m.stats, runSeq);
@@ -1797,6 +1833,7 @@ function finish() {
 
 cancelBtn.addEventListener('click', () => {
   if (!running) return;
+  cancelled = true; // #387: results still being written to disk must not publish
   if (batch) {
     resultOrder = null; // #338: a cancelled run keeps the original zip order
     for (let i = 0; i < batch.length; i++) {

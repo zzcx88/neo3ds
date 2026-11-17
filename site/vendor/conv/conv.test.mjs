@@ -897,15 +897,16 @@ await t('bundle/zip-roundtrip-stored', async () => {
   if (out['b.neo3ds'].length !== 1024 || out['b.neo3ds'][1023] !== 7) throw new Error('b bytes');
 });
 
-// #387: the writer must agree with a real extractor, not just fflate. The
-// system `unzip` reads the local headers, the CRCs and the central directory,
-// which is what the user's OS does with the downloaded archive.
 await t('bundle/zip-matches-system-unzip', async () => {
   const { zipChunks } = await import('./zipwrite.js');
   const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
   const { execFileSync } = await import('node:child_process');
+  // The whole point is to read the archive with something that is not fflate.
+  // A machine without Info-ZIP skips rather than reporting a ZIP bug.
+  try { execFileSync('unzip', ['-v'], { stdio: 'pipe' }); }
+  catch { console.log('SKIP bundle/zip-matches-system-unzip (no unzip binary)'); return; }
   const big = new Uint8Array(200_000);
   for (let i = 0; i < big.length; i++) big[i] = (i * 37) & 0xff;
   const entries = [{ name: 'a-web.cia', bytes: new Uint8Array([1, 2, 3]) }, { name: 'dir/b.neo3ds', bytes: big }];
@@ -1018,47 +1019,57 @@ await t('bundle/plain-below-4g', async () => {
 });
 
 // #387: results live on disk, so a run is not bounded by the ~2 GiB of Blobs a
-// page may hold. The in-memory root below is the OPFS contract the store needs.
-const memoryRoot = () => {
+// page may hold. The fake below implements the OPFS contract the store needs —
+// including a real WritableStream, because the store pipes the Blob into
+// `createWritable()` and a plain object would throw and silently fall back to
+// memory, leaving the disk path untested.
+const memoryRoot = ({ writeDelayMs = 0 } = {}) => {
   const dirs = new Map();
   const dirAt = (path) => {
-    if (!dirs.has(path)) dirs.set(path, { files: new Map(), dirs: new Map() });
+    if (!dirs.has(path)) dirs.set(path, { files: new Map(), gone: false });
     return dirs.get(path);
   };
   const root = {
     async getDirectoryHandle(path, { create } = {}) {
       const d = dirAt(path);
-      if (!create && !d.seen) throw new Error('NotFoundError');
-      d.seen = true;
+      if (!create && d.gone) throw new Error('NotFoundError');
+      d.gone = false;
       return handle(path, d);
     },
     async removeEntry(path, { recursive } = {}) {
       if (!dirs.has(path)) throw new Error('NotFoundError');
       if (!recursive) throw new Error('not empty');
-      for (const key of [...dirs.keys()]) if (key === path || key.startsWith(path + '/')) dirs.delete(key);
+      // A real removeEntry invalidates the handle an in-flight write holds.
+      for (const key of [...dirs.keys()]) {
+        if (key === path || key.startsWith(path + '/')) { dirs.get(key).gone = true; }
+      }
     },
   };
   const handle = (path, dir) => ({
     async getFileHandle(name, { create } = {}) {
+      if (dir.gone) throw new Error(`NotFoundError: ${path}/${name} is gone`);
       if (!dir.files.has(name)) {
         if (!create) throw new Error('NotFoundError');
-        dir.files.set(name, { chunks: [], closed: false });
+        dir.files.set(name, { chunks: [] });
       }
       const entry = dir.files.get(name);
       return {
         async createWritable() {
           entry.chunks = [];
-          return {
-            write: async (chunk) => { entry.chunks.push(Uint8Array.from(chunk)); },
-            close: async () => { entry.closed = true; },
-            abort: async () => { entry.chunks = []; },
-          };
+          return new WritableStream({
+            async write(chunk) {
+              if (writeDelayMs) await new Promise((r) => setTimeout(r, writeDelayMs));
+              if (dir.gone) throw new Error(`NotFoundError: ${path}/${name} is gone`);
+              entry.chunks.push(Uint8Array.from(chunk));
+            },
+          });
         },
         async getFile() {
+          if (dir.gone) throw new Error(`NotFoundError: ${path}/${name} is gone`);
           const bytes = new Uint8Array(entry.chunks.reduce((n, c) => n + c.length, 0));
           let at = 0;
           for (const c of entry.chunks) { bytes.set(c, at); at += c.length; }
-          return new Blob([bytes]);
+          return new File([bytes], name);
         },
       };
     },
@@ -1078,9 +1089,12 @@ await t('resultstore/keeps-every-result-on-disk', async () => {
     await store.put(i, blob, `game${i}.cia`);
   }
   await store.settled();
+  // The disk path must have been used for every write, not the memory fallback.
+  if (store.mode !== 'disk') throw new Error(`fell back to ${store.mode}`);
   for (let i = 0; i < payloads.length; i++) {
     const hit = store.get(i);
     if (!hit || hit.name !== `game${i}.cia`) throw new Error('missing ' + i);
+    if (!(hit.file instanceof File)) throw new Error(`result ${i} is a ${hit.file?.constructor?.name}, not a File`);
     const bytes = new Uint8Array(await hit.file.arrayBuffer());
     if (bytes.join(',') !== payloads[i].join(',')) throw new Error(`payload ${i}: ${bytes.join(',')}`);
   }
@@ -1092,6 +1106,12 @@ await t('resultstore/keeps-every-result-on-disk', async () => {
   await store.settled();
   if (store.get(0) !== null) throw new Error('old results survived begin()');
   if ((await entries[0].blob.arrayBuffer()).byteLength !== 1) throw new Error('old file lost its bytes');
+  // …and the new run keeps writing to disk.
+  await store.put(0, new Blob([new Uint8Array([5, 6])]), 'new.cia');
+  await store.settled();
+  if (store.mode !== 'disk') throw new Error(`second run fell back to ${store.mode}`);
+  const fresh = new Uint8Array(await store.get(0).file.arrayBuffer());
+  if (fresh.join(',') !== '5,6') throw new Error('second run payload ' + fresh.join(','));
 });
 
 // A result may arrive while the directory is still being prepared: both must
@@ -1108,6 +1128,29 @@ await t('resultstore/serializes-begin-and-put', async () => {
   if (!hit) throw new Error('result lost');
   const bytes = new Uint8Array(await hit.file.arrayBuffer());
   if (bytes.join(',') !== '7,7') throw new Error('payload ' + bytes.join(','));
+});
+
+// A write left over from the previous run must not knock the new run off the
+// disk: that would bring the 2 GiB Blob ceiling back for the rest of the run.
+// The previous directory is really gone, so the stale write's own open fails —
+// exactly what a removed OPFS directory does.
+await t('resultstore/stale-write-keeps-the-new-run-on-disk', async () => {
+  const { ResultStore } = await import('./resultstore.js');
+  const store = new ResultStore({ root: memoryRoot({ writeDelayMs: 5 }) });
+  await store.begin();
+  const stale = store.put(0, new Blob([new Uint8Array(64).fill(1)]), 'old.cia');
+  // Supersede while that write is mid-flight, then let the new run write.
+  store.begin();
+  const fresh = store.put(0, new Blob([new Uint8Array([4, 2])]), 'new.cia');
+  const results = await Promise.allSettled([stale, fresh]);
+  await store.settled();
+  if (results[0].status !== 'fulfilled' || results[1].status !== 'fulfilled')
+    throw new Error('a write rejected: ' + JSON.stringify(results.map((r) => r.reason?.message)));
+  // The stale write landed in memory (its directory is gone), but the new run
+  // must still be on disk, and its own result must be the one that is served.
+  if (store.mode !== 'disk') throw new Error(`new run fell back to ${store.mode}`);
+  const bytes = new Uint8Array(await store.get(0).file.arrayBuffer());
+  if (bytes.join(',') !== '4,2') throw new Error('new run payload ' + bytes.join(','));
 });
 
 // No OPFS (private window, old browser, storage disabled) must degrade to the
@@ -1202,7 +1245,47 @@ await t('bundle/split-parts-are-complete-zips', async () => {
     if (!name.endsWith(`-part${i + 1}of${plan.length}.zip`)) throw new Error('part name ' + name);
   }
   if (names.join(',') !== 'g1.cia,g2.cia,g3.cia,g4.cia') throw new Error('order ' + names.join(','));
-  // A single entry larger than the limit must not loop or vanish.
+  // #387: writeZip is what the save-picker path calls. It must stream every chunk
+// into the writable, close it, and report the byte count — nothing buffered.
+await t('bundle/writeZip-streams-into-a-writable', async () => {
+  const { writeZip } = await import('./bundle.js');
+  const { unzipSync } = await import('./fflate.js');
+  const a = new Uint8Array(50_000).fill(3);
+  const b = new Uint8Array([9, 8, 7]);
+  const chunks = [];
+  let closed = false;
+  const writable = {
+    write: async (chunk) => { chunks.push(chunk); },
+    close: async () => { closed = true; },
+  };
+  const written = await writeZip(writable, [{ name: 'a.cia', bytes: a }, { name: 'b.cia', bytes: b }]);
+  if (!closed) throw new Error('writable not closed');
+  if (written !== chunks.reduce((n, c) => n + c.length, 0)) throw new Error('reported size differs');
+  const zip = Buffer.concat(chunks.map((c) => Buffer.from(c)));
+  if (zip.length !== written) throw new Error('archive size differs from the reported count');
+  const out = unzipSync(new Uint8Array(zip));
+  if (Object.keys(out).sort().join(',') !== 'a.cia,b.cia') throw new Error('names ' + Object.keys(out));
+  if (out['a.cia'].length !== a.length || out['a.cia'][49_999] !== 3) throw new Error('a payload');
+  if (out['b.cia'].join(',') !== '9,8,7') throw new Error('b payload');
+});
+
+// A write failure must surface, not be swallowed: the page needs to know so it
+// can fall back or report it.
+await t('bundle/writeZip-propagates-write-failure', async () => {
+  const { writeZip } = await import('./bundle.js');
+  let n = 0;
+  const writable = {
+    write: async () => { if (++n > 1) throw new Error('disk full'); },
+    close: async () => { throw new Error('should not close after a failed write'); },
+  };
+  let message = '';
+  try {
+    await writeZip(writable, [{ name: 'big.cia', bytes: new Uint8Array(200_000) }]);
+  } catch (e) { message = String(e.message); }
+  if (!/disk full/.test(message)) throw new Error('failure lost: ' + JSON.stringify(message));
+});
+
+
   const solo = splitPlan([{ name: 'huge.cia', bytes: new Uint8Array(0x300000) }], 1024);
   if (solo.length !== 1 || solo[0].entries.length !== 1) throw new Error('oversized entry dropped');
 });

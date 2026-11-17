@@ -1,7 +1,7 @@
 // CRC32 (IEEE 802.3) shared by the zip index reader and the ZIP writer (#387).
-// The bitwise loop in job.js ran at ~65 MB/s; bundling a whole romset (~7.5 GB)
-// re-reads every byte, so this table version (slicing-by-4, ~1 GB/s) keeps the
-// "download all" path from dominating the conversion time.
+// The bit-wise loop in job.js ran at ~75 MB/s; a whole-romset bundle re-reads
+// every byte once for the CRC, so that alone would cost ~100 s of the download.
+// This table version (slicing-by-4, ~1 GB/s) brings it to a few seconds.
 //
 // Both functions are pure and incremental: `crc32Update(prev, chunk)` may be
 // called with consecutive chunks, starting from 0, and returns the same value
