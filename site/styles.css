@@ -560,24 +560,34 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 .rel-v{font:700 15px/1 var(--pixel);color:var(--gold)}
 .rel-latest{font:400 10px/1 var(--pixel-sm);color:#000;background:var(--gold);padding:4px 6px;border-radius:2px}
 .rel-date{font:400 11px/1 var(--pixel-sm);color:var(--dim)}
-.rel-items,.web-items{padding-left:18px;max-width:var(--prose)}
-.rel-items{margin:10px 0 0}
-.web-items{margin:0}
-.rel-items li,.web-items li{margin:0 0 6px;font-size:15px;line-height:1.65;color:#C9C9D2}
-.rel-items b,.web-items b{color:var(--paper);font-weight:600}
-.rel-items a,.web-items a{color:var(--gold)}
+.rel-items{padding-left:18px;max-width:var(--prose);margin:10px 0 0}
+.rel-items li{margin:0 0 6px;font-size:15px;line-height:1.65;color:#C9C9D2}
+.rel-items b{color:var(--paper);font-weight:600}
+.rel-items a{color:var(--gold)}
 .rel-link{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--dim);text-decoration:none}
 .rel-link:hover{color:var(--gold)}
 .rel-link::after{content:" ↗"}
 .changelog .end-note{margin:6px 0 0;max-width:var(--prose)}
-/* 패치노트 두 구역 (#389): 웹 변환기는 날짜 카드, 릴리스는 위 타임라인 그대로. */
-.changelog-sec{margin:40px 0 0}
-.changelog-sec h2{font-size:clamp(18px,2.8vw,23px);color:var(--gold)}
-.web-list{margin:18px 0 0;display:grid;gap:12px}
-.web-day{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:0 3px 3px 0;
-  background:var(--panel-2);padding:14px 16px}
-.web-date{display:block;font:400 11px/1 var(--pixel-sm);color:var(--dim);margin:0 0 9px}
-.web-items li:last-child{margin-bottom:0}
+/* 패치노트 두 구역 (#389): CSS 전용 라디오 탭. 오프라인 타임라인이 기본 선택이고,
+   웹 변환기 구역은 같은 타임라인 모양에 버전 대신 날짜당 한 줄 요약을 쓴다. */
+.tab-in{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.tab-row{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 0;border-bottom:1px solid var(--line)}
+.tab{font:400 12px/1 var(--pixel-sm);color:var(--dim);padding:11px 14px;cursor:pointer;
+  border:1px solid transparent;border-bottom:2px solid transparent;border-radius:3px 3px 0 0}
+.tab:hover{color:var(--paper)}
+#tab-releases:checked ~ .tab-row label[for="tab-releases"],
+#tab-web:checked ~ .tab-row label[for="tab-web"]{color:var(--gold);border-bottom-color:var(--gold)}
+/* The radios are visually hidden, so the focus ring has to land on the matching label.
+   `:focus-within` also works when the window itself is not the active one. */
+#tab-releases:focus ~ .tab-row label[for="tab-releases"],
+#tab-web:focus ~ .tab-row label[for="tab-web"],
+#tab-releases:focus-within ~ .tab-row label[for="tab-releases"],
+#tab-web:focus-within ~ .tab-row label[for="tab-web"]{outline:2px solid var(--gold);outline-offset:2px}
+.tab-panel{display:none}
+#tab-releases:checked ~ #releases,
+#tab-web:checked ~ #web-updates{display:block}
+.changelog-sec{margin:26px 0 0}
+.web-day .rel-v{color:var(--paper)}
 
 /* ── 반대 언어판 힌트 (#130): 흐름 밖 고정이라 CLS 없음 ───────────────── */
 .lang-note{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;align-items:center;gap:12px;

@@ -190,8 +190,8 @@ py scripts/gen_gamedb.py neogeo.cpp converter/assets/neogeo_games.json
   `index.html`·`convert.html`·`download.html` 푸터에서 링크한다 (#125)
 - `manual.html` — 3DS 사용 안내: 런처·조작·아래 화면·키 설정·세이브 경로 (EN, 생성물).
   `ko/manual.html` — 한국어 원본. 조작 표는 README와 같아야 하고 `site_gate.sh`가 대조한다 (#162)
-- `changelog.html` — 패치노트: 두 구역 (EN·KO 둘 다 생성물).
-  **웹 변환기 업데이트**는 `site/web-updates.json`(날짜별 KO/EN 목록, 최신순)에서, **오프라인 변환기·런처·엔진 릴리스 타임라인**은 `site/releases.json`에서 나온다 (#389).
+- `changelog.html` — 패치노트: 두 탭 (EN·KO 둘 다 생성물, CSS 전용 탭이라 JS 없음).
+  **오프라인 변환기·런처·엔진 릴리스 타임라인**이 기본 탭이고 출처는 `site/releases.json`, **웹 변환기 업데이트** 탭은 `site/web-updates.json`(날짜별 KO/EN 한 줄 요약 + 변경 목록, 최신순)이다. 웹 탭은 버전이 없으므로 버전 자리에 날짜당 한 줄 요약을 쓰고 타임라인 모양은 같다 (#389).
   웹 변환기에서 사용자가 체감하는 변경은 그 변경을 넣는 커밋에서 웹 업데이트 항목 하나를 함께 추가한다 — 웹 전용 변경은 `<Version>`을 올리지 않는다.
   릴리스마다 `site/releases.json` 항목 하나를 추가하고 `python3 scripts/gen_site_changelog.py`를 돌린다. 최상단 버전이 `<Version>`과 다르면 게이트 실패 (#166)
 - `sitemap.xml`, `media/og.png`(EN 카드), `media/og-ko.png`(KO 카드), `media/favicon.svg` — 색인·공유 (#130).

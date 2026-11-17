@@ -86,7 +86,7 @@ python3 -m py_compile scripts/*.py
 | `site/ko/{index,convert,privacy,manual}.html` + `site/app.js`(EN 표) | `node scripts/gen_site_i18n.mjs` → 영어 페이지 생성 |
 | `converter/assets/neogeo_games.json` | `python3 scripts/gen_site_games.py` → `site/games.js` |
 | `site/releases.json` | `python3 scripts/gen_site_changelog.py` → 사이트 changelog, `python3 scripts/gen_changelog.py` → `CHANGELOG.md` |
-| `site/web-updates.json` (웹 변환기 사용자 체감 변경, 날짜별) | `python3 scripts/gen_site_changelog.py` → 사이트 changelog 웹 구역 |
+| `site/web-updates.json` (웹 변환기 사용자 체감 변경, 날짜별 요약 + 목록) | `python3 scripts/gen_site_changelog.py` → 사이트 changelog 웹 탭 |
 | `<Version>` (`converter/Directory.Build.props`) | `site/releases.json` 최상단 항목 + 위 생성기 2개 |
 
 생성 파일은 손으로 고치지 않는다: `site/games.js`, `site/compat.html`, `site/ko/compat.html`, `site/changelog.html`, `site/ko/changelog.html`, `CHANGELOG.md`, `site/vendor/conv/version.js`.

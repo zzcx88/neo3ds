@@ -2,17 +2,18 @@
 
 usage: python3 scripts/gen_site_changelog.py
 
-Two sections, one page, both languages:
+One page, two CSS-only tabs (no JS), both languages:
 
-  - web converter updates: dated entries from site/web-updates.json, newest first.
-    These are independent of version releases: the web converter ships often and
-    without a <Version> bump, so the user needs a dated record of what changed.
-  - version releases: the v1.x timeline from site/releases.json, generated exactly
-    as before (badge, GitHub release link, item text).
+  - offline converter · launcher · engine: the v1.x timeline from site/releases.json,
+    generated exactly as before (badge, GitHub release link, item text) and opened by
+    default. Installed tools are what most visitors look for first.
+  - web converter updates: dated rows from site/web-updates.json, newest first. The web
+    converter ships often and without a <Version> bump, so each row carries a one-line
+    summary where a version would sit, then its bullets in the same timeline shape.
 
 Both locale pages are generated (like compat.html); neither is a hand-written source.
-site_gate.sh checks the top release against <Version>, validates the web update
-data and checks the section order of the generated pages.
+site_gate.sh checks the top release against <Version>, validates the web update data and
+checks the tab order, the default tab and the dated rows of the generated pages.
 """
 import datetime
 import html
@@ -37,14 +38,15 @@ META = {
         'og': 'media/og-ko.png?v=2',
         'og_locale': 'ko_KR',
         'og_alt': 'en_US',
-        'title': '패치노트 — 웹 변환기 업데이트와 neo3ds 릴리스 | neo3ds',
+        'title': '패치노트 — neo3ds 릴리스와 웹 변환기 업데이트 | neo3ds',
         'og_title': 'neo3ds 패치노트 | neo3ds',
-        'desc': '웹 변환기의 날짜별 업데이트 %(web)d개와 neo3ds %(first)s부터 %(top)s까지 '
-                '릴리스 %(n)d개의 변경 사항을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.',
-        'tw_desc': '웹 변환기 업데이트와 %(first)s부터 %(top)s까지, 버전별 새 기능과 수정.',
+        'desc': 'neo3ds %(first)s부터 %(top)s까지 릴리스 %(n)d개의 변경 사항과 웹 변환기의 날짜별 업데이트 '
+                '%(web)d건을 최신순으로 정리했습니다. 엔진·런처·변환기의 새 기능과 수정.',
+        'tw_desc': '%(first)s부터 %(top)s까지 버전별 새 기능과 수정, 그리고 웹 변환기 업데이트.',
         'h1': '패치노트',
         'web_h2': '웹 변환기 업데이트',
         'rel_h2': '오프라인 변환기 · 런처 · 엔진',
+        'tabs_label': '패치노트 구역',
         'latest': '최신',
         'link': 'GitHub 릴리스',
         'note': '전체 릴리스와 다운로드 파일은 <a href="%s">GitHub 릴리스</a>에 있습니다.' % RELEASES,
@@ -63,14 +65,15 @@ META = {
         'og': 'media/og.png?v=2',
         'og_locale': 'en_US',
         'og_alt': 'ko_KR',
-        'title': 'Changelog — web converter updates and every neo3ds release | neo3ds',
+        'title': 'Changelog — every neo3ds release and web converter update | neo3ds',
         'og_title': 'neo3ds changelog | neo3ds',
-        'desc': 'Dated updates to the web converter (%(web)d entries), and every neo3ds release '
-                'from %(first)s to %(top)s, newest first: engine, launcher and converter features and fixes.',
-        'tw_desc': 'Web converter updates and every release from %(first)s to %(top)s, newest first.',
+        'desc': 'Every neo3ds release from %(first)s to %(top)s and the web converter\'s dated updates '
+                '(%(web)d entries), newest first: engine, launcher and converter features and fixes.',
+        'tw_desc': 'Every release from %(first)s to %(top)s, then web converter updates, newest first.',
         'h1': 'Changelog',
         'web_h2': 'Web converter updates',
         'rel_h2': 'Offline converter · launcher · engine',
+        'tabs_label': 'Changelog sections',
         'latest': 'Latest',
         'link': 'GitHub release',
         'note': 'All releases and download files are on <a href="%s">GitHub releases</a>.' % RELEASES,
@@ -148,6 +151,15 @@ def load():
     return releases
 
 
+def check_summaries(updates, path):
+    """Each date needs a one-line summary in both languages; it replaces the version label."""
+    for u in updates:
+        pair = u.get('summary') or {}
+        for lang in ('ko', 'en'):
+            if not (isinstance(pair.get(lang), str) and pair[lang].strip()):
+                sys.exit('%s: %s needs a %s summary' % (path, u.get('date'), lang))
+
+
 def load_web_updates():
     """Validates the dated web converter log (#389); exits non-zero naming the bad date."""
     try:
@@ -157,6 +169,7 @@ def load_web_updates():
     check_dates(updates, WEB_DATA, 'date', lambda u: u.get('date'), unique=True)
     for u in updates:
         check_items(u.get('items'), WEB_DATA, u.get('date'))
+    check_summaries(updates, WEB_DATA)
     return updates
 
 
@@ -183,12 +196,17 @@ def entry(r, meta, latest):
 
 
 def web_entry(u, meta):
-    return '''      <li class="web-day">
-        <time class="web-date" datetime="%s">%s</time>
-        <ul class="web-items">
+    """One dated row in the release timeline's shape: the day's one-line summary where a
+    version would sit, then its bullets. The web converter has no version numbers (#389)."""
+    return '''      <li class="rel web-day">
+        <div class="rel-head">
+          <span class="rel-v">%s</span>
+          <time class="rel-date" datetime="%s">%s</time>
+        </div>
+        <ul class="rel-items">
 %s
         </ul>
-      </li>''' % (u['date'], u['date'], item_rows(u['items'], meta))
+      </li>''' % (esc(u['summary'][meta['lang']]), u['date'], u['date'], item_rows(u['items'], meta))
 
 
 def page(meta, releases, updates):
@@ -260,18 +278,26 @@ def page(meta, releases, updates):
 <main id="main" class="changelog">
   <div class="changelog-wrap">
     <h1>{h1}</h1>
-    <section class="changelog-sec" id="web-updates" aria-labelledby="web-updates-h">
-      <h2 id="web-updates-h">{web_h2}</h2>
-      <ol class="web-list">
-{web_entries}
-      </ol>
-    </section>
-    <section class="changelog-sec" id="releases" aria-labelledby="releases-h">
-      <h2 id="releases-h">{rel_h2}</h2>
-      <ol class="rel-list">
+    <div class="tabs">
+      <input class="tab-in" type="radio" name="changelog-tab" id="tab-releases" checked>
+      <input class="tab-in" type="radio" name="changelog-tab" id="tab-web">
+      <div class="tab-row" role="group" aria-label="{tabs_label}">
+        <label class="tab" for="tab-releases">{rel_h2}</label>
+        <label class="tab" for="tab-web">{web_h2}</label>
+      </div>
+      <section class="changelog-sec tab-panel" id="releases" aria-labelledby="releases-h">
+        <h2 class="sr-only" id="releases-h">{rel_h2}</h2>
+        <ol class="rel-list">
 {entries}
-      </ol>
-    </section>
+        </ol>
+      </section>
+      <section class="changelog-sec tab-panel" id="web-updates" aria-labelledby="web-updates-h">
+        <h2 class="sr-only" id="web-updates-h">{web_h2}</h2>
+        <ol class="rel-list">
+{web_entries}
+        </ol>
+      </section>
+    </div>
     <p class="tiny end-note">{note}</p>
   </div>
 </main>
@@ -295,6 +321,7 @@ def page(meta, releases, updates):
         sections=meta['sections'], nav=nav, lang_label=meta['lang_label'],
         ko_switch=ko_switch, cta='변환하기' if meta['lang'] == 'ko' else 'Convert now',
         h1=esc(meta['h1']), web_h2=esc(meta['web_h2']), rel_h2=esc(meta['rel_h2']),
+        tabs_label=esc(meta['tabs_label']),
         web_entries=web_entries, entries=entries, note=meta['note'],
         foot=foot, foot_note=esc(meta['foot_note']))
 
