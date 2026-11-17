@@ -1,5 +1,5 @@
 {
- "fingerprint": "ff3530bafb485082",
+ "fingerprint": "850ea07ff05807b4",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -99,6 +99,7 @@
    "number:345",
    "number:349",
    "number:352",
+   "number:354",
    "number:375",
    "number:388",
    "number:39",
@@ -283,6 +284,7 @@
    "number:345",
    "number:349",
    "number:352",
+   "number:354",
    "number:375",
    "number:388",
    "number:39",

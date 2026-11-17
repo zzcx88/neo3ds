@@ -190,9 +190,15 @@ EOF
 # edit that drops a section or flips the order fails here rather than shipping.
 python3 - << 'EOF'
 import re, sys
-WEB = {'site/changelog.html': ('Web converter updates', 'Offline converter · launcher · engine'),
-       'site/ko/changelog.html': ('웹 변환기 업데이트', '오프라인 변환기 · 런처 · 엔진')}
-for page, (web_h2, rel_h2) in WEB.items():
+sys.path.insert(0, 'scripts')
+from gen_site_changelog import META, WEB_DATA, load_web_updates
+
+# Headings come from the generator's META so a rename cannot leave this check behind.
+web_h2 = {m['lang']: m['web_h2'] for m in META.values()}
+rel_h2 = {m['lang']: m['rel_h2'] for m in META.values()}
+
+for meta in META.values():
+    page = meta['file']
     html = open(page, encoding='utf-8').read()
     web_at = html.find('id="web-updates"')
     rel_at = html.find('id="releases"')
@@ -200,15 +206,19 @@ for page, (web_h2, rel_h2) in WEB.items():
         sys.exit('%s: missing a changelog section (web %s, releases %s)' % (page, web_at >= 0, rel_at >= 0))
     if web_at > rel_at:
         sys.exit('%s: web updates must come before the release timeline' % page)
-    if '<h2 id="web-updates-h">%s</h2>' % web_h2 not in html:
-        sys.exit('%s: missing the web section heading %r' % (page, web_h2))
-    if '<h2 id="releases-h">%s</h2>' % rel_h2 not in html:
-        sys.exit('%s: missing the release section heading %r' % (page, rel_h2))
+    if '<h2 id="web-updates-h">%s</h2>' % web_h2[meta['lang']] not in html:
+        sys.exit('%s: missing the web section heading %r' % (page, web_h2[meta['lang']]))
+    if '<h2 id="releases-h">%s</h2>' % rel_h2[meta['lang']] not in html:
+        sys.exit('%s: missing the release section heading %r' % (page, rel_h2[meta['lang']]))
     days = re.findall(r'<time class="web-date" datetime="(\d{4}-\d{2}-\d{2})">', html)
     if not days:
         sys.exit('%s: no dated web update entries' % page)
     if days != sorted(days, reverse=True):
         sys.exit('%s: web update dates are not newest first: %s' % (page, days))
+    # The page must carry every entry the data holds, so a dropped row is not silently stale.
+    if len(days) != len(load_web_updates()):
+        sys.exit('%s: %d dated entries on the page, %d in %s'
+                 % (page, len(days), len(load_web_updates()), WEB_DATA))
 print('changelog sections OK: web updates first, dated entries newest first')
 EOF
 # The changelog must start at the version the site builds (#166).

@@ -560,10 +560,12 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 .rel-v{font:700 15px/1 var(--pixel);color:var(--gold)}
 .rel-latest{font:400 10px/1 var(--pixel-sm);color:#000;background:var(--gold);padding:4px 6px;border-radius:2px}
 .rel-date{font:400 11px/1 var(--pixel-sm);color:var(--dim)}
-.rel-items{margin:10px 0 0;padding-left:18px;max-width:var(--prose)}
-.rel-items li{margin:0 0 6px;font-size:15px;line-height:1.65;color:#C9C9D2}
-.rel-items b{color:var(--paper);font-weight:600}
-.rel-items a{color:var(--gold)}
+.rel-items,.web-items{padding-left:18px;max-width:var(--prose)}
+.rel-items{margin:10px 0 0}
+.web-items{margin:0}
+.rel-items li,.web-items li{margin:0 0 6px;font-size:15px;line-height:1.65;color:#C9C9D2}
+.rel-items b,.web-items b{color:var(--paper);font-weight:600}
+.rel-items a,.web-items a{color:var(--gold)}
 .rel-link{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--dim);text-decoration:none}
 .rel-link:hover{color:var(--gold)}
 .rel-link::after{content:" ↗"}
@@ -575,11 +577,7 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 .web-day{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:0 3px 3px 0;
   background:var(--panel-2);padding:14px 16px}
 .web-date{display:block;font:400 11px/1 var(--pixel-sm);color:var(--dim);margin:0 0 9px}
-.web-items{padding-left:18px;max-width:var(--prose)}
-.web-items li{margin:0 0 6px;font-size:15px;line-height:1.65;color:#C9C9D2}
 .web-items li:last-child{margin-bottom:0}
-.web-items b{color:var(--paper);font-weight:600}
-.web-items a{color:var(--gold)}
 
 /* ── 반대 언어판 힌트 (#130): 흐름 밖 고정이라 CLS 없음 ───────────────── */
 .lang-note{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;align-items:center;gap:12px;

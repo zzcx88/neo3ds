@@ -96,31 +96,55 @@ def with_issue_links(s):
     return re.sub(r'#(\d+)', lambda m: '<a href="%s%s">#%s</a>' % (ISSUES, m.group(1), m.group(1)), esc(s))
 
 
+def check_items(items, path, label):
+    """Every change needs a non-empty Korean and English title and description."""
+    if not (isinstance(items, list) and items):
+        sys.exit('%s: %s has no items' % (path, label))
+    for it in items:
+        for side in ('t', 'd'):
+            pair = it.get(side) or {}
+            for lang in ('ko', 'en'):
+                if not (isinstance(pair.get(lang), str) and pair[lang].strip()):
+                    sys.exit('%s: %s item %r needs both ko and en' % (path, label, it))
+
+
+def check_dates(rows, path, key, label, unique):
+    """ISO dates, newest first. `key` names the row's date field; `unique` forbids repeat dates."""
+    seen = set()
+    last = None
+    for r in rows:
+        date = r.get(key)
+        if not (isinstance(date, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', date)):
+            sys.exit('%s: bad date %r for %s' % (path, date, label(r)))
+        try:
+            datetime.date.fromisoformat(date)
+        except ValueError:
+            sys.exit('%s: %s is not a real date' % (path, date))
+        # Two releases may ship on one day; the web log is one entry per date (#389).
+        if unique and date in seen:
+            sys.exit('%s: duplicate date %s' % (path, date))
+        seen.add(date)
+        if last and date > last:
+            sys.exit('%s: %s is newer than the entry above it' % (path, label(r)))
+        last = date
+    if not rows:
+        sys.exit('%s: no entries' % path)
+
+
 def load():
     releases = json.load(open(DATA, encoding='utf-8'))
     seen = set()
-    last = None
     for r in releases:
-        version, date, items = r.get('version'), r.get('date'), r.get('items')
+        version = r.get('version')
         if not (isinstance(version, str) and re.fullmatch(r'\d+\.\d+\.\d+', version)):
             sys.exit('%s: bad version %r' % (DATA, version))
         if version in seen:
             sys.exit('%s: duplicate version %s' % (DATA, version))
         seen.add(version)
-        if not (isinstance(date, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', date)):
-            sys.exit('%s: bad date %r for %s' % (DATA, date, version))
-        if last and date > last:
-            sys.exit('%s: %s is newer than the entry above it' % (DATA, version))
-        last = date
-        if not items:
-            sys.exit('%s: %s has no items' % (DATA, version))
-        for it in items:
-            for side in ('t', 'd'):
-                pair = it.get(side) or {}
-                if not (pair.get('ko') and pair.get('en')):
-                    sys.exit('%s: %s item %r needs both ko and en' % (DATA, version, it))
-    if not releases:
-        sys.exit('%s: no releases' % DATA)
+    # Releases carry a version; the shared date check reports the version in its messages.
+    check_dates(releases, DATA, 'date', lambda r: r.get('version'), unique=False)
+    for r in releases:
+        check_items(r.get('items'), DATA, r.get('version'))
     return releases
 
 
@@ -130,39 +154,20 @@ def load_web_updates():
         updates = json.load(open(WEB_DATA, encoding='utf-8'))
     except FileNotFoundError:
         sys.exit('%s: missing; it holds the web converter update log' % WEB_DATA)
-    seen = set()
-    last = None
+    check_dates(updates, WEB_DATA, 'date', lambda u: u.get('date'), unique=True)
     for u in updates:
-        date, items = u.get('date'), u.get('items')
-        if not (isinstance(date, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', date)):
-            sys.exit('%s: bad date %r (want YYYY-MM-DD)' % (WEB_DATA, date))
-        try:
-            datetime.date.fromisoformat(date)
-        except ValueError:
-            sys.exit('%s: %s is not a real date' % (WEB_DATA, date))
-        if date in seen:
-            sys.exit('%s: duplicate date %s' % (WEB_DATA, date))
-        seen.add(date)
-        if last and date > last:
-            sys.exit('%s: %s is newer than the entry above it' % (WEB_DATA, date))
-        last = date
-        if not (isinstance(items, list) and items):
-            sys.exit('%s: %s has no items' % (WEB_DATA, date))
-        for it in items:
-            for side in ('t', 'd'):
-                pair = it.get(side) or {}
-                for lang in ('ko', 'en'):
-                    if not (isinstance(pair.get(lang), str) and pair[lang].strip()):
-                        sys.exit('%s: %s item %r needs both ko and en' % (WEB_DATA, date, it))
-    if not updates:
-        sys.exit('%s: no web updates' % WEB_DATA)
+        check_items(u.get('items'), WEB_DATA, u.get('date'))
     return updates
 
 
-def entry(r, meta, latest):
-    rows = '\n'.join(
+def item_rows(items, meta):
+    """The bold-title bullets both sections share; `#123` becomes an issue link."""
+    return '\n'.join(
         '            <li><b>%s</b>: %s</li>' % (with_issue_links(it['t'][meta['lang']]), with_issue_links(it['d'][meta['lang']]))
-        for it in r['items'])
+        for it in items)
+
+
+def entry(r, meta, latest):
     badge = '\n          <span class="rel-latest">%s</span>' % meta['latest'] if latest else ''
     return '''      <li class="rel%s" id="v%s">
         <div class="rel-head">
@@ -174,19 +179,16 @@ def entry(r, meta, latest):
         </ul>
         <a class="rel-link" href="%s/tag/v%s">%s</a>
       </li>''' % (' is-latest' if latest else '', r['version'].replace('.', '-'), r['version'], badge,
-                   r['date'], r['date'], rows, RELEASES, r['version'], meta['link'])
+                   r['date'], r['date'], item_rows(r['items'], meta), RELEASES, r['version'], meta['link'])
 
 
 def web_entry(u, meta):
-    rows = '\n'.join(
-        '            <li><b>%s</b>: %s</li>' % (with_issue_links(it['t'][meta['lang']]), with_issue_links(it['d'][meta['lang']]))
-        for it in u['items'])
     return '''      <li class="web-day">
         <time class="web-date" datetime="%s">%s</time>
         <ul class="web-items">
 %s
         </ul>
-      </li>''' % (u['date'], u['date'], rows)
+      </li>''' % (u['date'], u['date'], item_rows(u['items'], meta))
 
 
 def page(meta, releases, updates):

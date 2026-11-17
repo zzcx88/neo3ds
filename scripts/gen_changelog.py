@@ -2,14 +2,13 @@
 
 usage: python3 scripts/gen_changelog.py [--check]
 
-site/releases.json is the single source of release notes. scripts/gen_site_changelog.py
-turns it into site/changelog.html and site/ko/changelog.html; this script turns the same
-data into the repository CHANGELOG.md. `--check` exits non-zero when the file on disk
-differs from the data, so a release that forgot to regenerate fails site_gate.sh instead
-of drifting.
+site/releases.json is the source of version release notes, and this file turns it into
+the repository CHANGELOG.md. It deliberately does NOT include the web converter update
+log (site/web-updates.json): that one ships without a version and belongs to the site
+changelog only (#389). `--check` exits non-zero when the file on disk differs from the
+data, so a release that forgot to regenerate fails site_gate.sh instead of drifting.
 
-Both generators share one validator: importing load() from gen_site_changelog keeps the
-version/date/ko+en rules in one place.
+The version/date/ko+en rules live in gen_site_changelog.py, which imports them here too.
 """
 import re
 import sys
