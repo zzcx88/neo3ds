@@ -725,9 +725,30 @@ public class MainWindowTests
                 new LanAddress("127.000.000.001", "long loopback"),
                 new LanAddress("127.0.0.1", "loopback"),
             };
-            using var dialog = new SendDialog([], addresses);
-            dialog.Window.Show();
-            dialog.ChooseMany(packs);
+            // #328 flake fix: whether six packs fit depends on the random token and port the
+            // sender picks, so these 14-character names let the long address refuse six in only
+            // ~99.3% of runs and the test flaked on CI. Rebuild the dialog until both halves of
+            // the premise are observed facts. The capacity rule itself is pinned in
+            // SendBatchTests, so this test only cares about what the dialog does with it.
+            SendDialog? built = null;
+            for (int attempt = 0; attempt < 50 && built == null; attempt++)
+            {
+                var candidate = new SendDialog([], addresses);
+                candidate.Window.Show();
+                candidate.ChooseMany(packs);
+                bool refusedLong = candidate.BatchResult is SendBatchResult.Refused { Refusal: BatchRefusal.QrTooLarge };
+                candidate.SelectAddress(1);
+                bool fitsShort = candidate.Sender != null;
+                if (refusedLong && fitsShort)
+                {
+                    candidate.SelectAddress(0);
+                    built = candidate;
+                    break;
+                }
+                candidate.Window.Close();
+            }
+            Assert.NotNull(built);
+            using var dialog = built!;
 
             Assert.Null(dialog.Sender);
             var tooLarge = Assert.IsType<BatchRefusal.QrTooLarge>(

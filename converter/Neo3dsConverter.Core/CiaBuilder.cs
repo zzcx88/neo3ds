@@ -15,8 +15,11 @@ public sealed class CiaJob
     public required string RomName { get; init; }
     /// <summary>The MAME romset converted (may be a clone found inside a merged zip), or null if none fits.</summary>
     public MameGame? Game { get; init; }
-    /// <summary>Why no romset could be used, when <see cref="Game"/> is null.</summary>
+    /// <summary>Why no romset could be used, when <see cref="Game"/> is null: raw detail for the log.</summary>
     public string? Problem { get; init; }
+    /// <summary>The coded failure behind <see cref="Problem"/>; null when the job is convertible (#328).
+    /// The windows show <see cref="FailureText.Plain(Exception)"/> instead of <see cref="Problem"/>.</summary>
+    public ConverterException? Failure { get; init; }
     public required string Title { get; set; }
     public string Publisher { get; set; } = "SNK";
     public required string OutputDir { get; set; }
@@ -29,6 +32,17 @@ public sealed class CiaJob
     /// <summary>The region of the BIOSes put in (language, censorship such as Metal Slug's blood).</summary>
     public Region Region { get; set; }
 
+    /// <summary>The catalog romset a batch row may name (#329): the picked game, else the job's
+    /// own verdict, else the coded failure. A zip name that is not a romset collapses to 'game'
+    /// in <see cref="FailureText"/>, so the user's file name cannot reach a summary.</summary>
+    public string? FailureSet(Exception? ex = null) =>
+        Game?.Name ?? Failure?.Set ?? (ex as ConverterException)?.Set;
+
+    /// <summary>The plain cause+action line for a job that cannot be converted (#328). A job built
+    /// outside <see cref="FromRomZip"/> may carry only <see cref="Problem"/>; that detail is the
+    /// log's, so the reader still gets the neutral line rather than a possible file name.</summary>
+    public string ProblemText => FailureText.Plain(Failure);
+
     /// <param name="set">A romset to use instead of picking one (e.g. a clone inside a merged zip).</param>
     public static CiaJob FromRomZip(string romZip, string? set = null)
     {
@@ -36,7 +50,7 @@ public sealed class CiaJob
         string dir = Path.GetDirectoryName(full)!;
         string name = Path.GetFileNameWithoutExtension(full).ToLowerInvariant();
         string bios = Path.Combine(dir, "neogeo.zip");
-        var (game, problem) = PickGame(name, dir, set);
+        var (game, problem, failure) = PickGame(name, dir, set);
         return new CiaJob
         {
             RomZip = full,
@@ -44,6 +58,7 @@ public sealed class CiaJob
             RomName = name,
             Game = game,
             Problem = problem,
+            Failure = failure,
             Title = game?.Title ?? GameDb.Find(name)?.Title ?? name.ToUpperInvariant(),
             Publisher = game?.Maker ?? "SNK",
             OutputDir = dir,
@@ -61,23 +76,69 @@ public sealed class CiaJob
     /// <summary>
     /// The romset named like the zip when the engine supports it and its chips are all there;
     /// otherwise a supported clone whose chips the (merged) zip holds, e.g. kof98.zip -> kof98h.
+    /// Returns the raw detail for the log and the coded failure for the plain text (#328).
     /// </summary>
-    static (MameGame?, string?) PickGame(string name, string dir, string? set)
+    static (MameGame?, string?, ConverterException?) PickGame(string name, string dir, string? set)
     {
         var exact = GameDb.Find(set ?? name);
-        if (exact == null) return (null, L($"'{name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. MAME 롬셋 zip만 지원합니다. zip 파일 이름을 바꾸지 마세요.", $"'{name}' is not a MAME Neo Geo romset name. Only MAME romset zips are supported; keep the zip's original file name."));
+        if (exact == null)
+        {
+            string detail = L($"'{name}'은(는) MAME 네오지오 롬셋 이름이 아닙니다. MAME 롬셋 zip만 지원합니다. zip 파일 이름을 바꾸지 마세요.",
+                $"'{name}' is not a MAME Neo Geo romset name. Only MAME romset zips are supported; keep the zip's original file name.");
+            return (null, detail, new ConverterException(FailureKind.NotRomset, detail));
+        }
+        ConverterException? failure = null;
         string? problem = null;
         foreach (var g in set != null ? new[] { exact } : new[] { exact }.Concat(GameDb.ClonesOf(exact.Name)))
         {
             string? why = GameDb.Unsupported(g);
-            if (why != null) { problem ??= $"{exact.Title}: {why}"; continue; }
-            using var zips = new RomSet(ZipsFor(g, dir, name));
-            var missing = zips.Missing(g).ToList();
-            if (missing.Count == 0) return (g, null);
-            if (g == exact || problem == null)
-                problem = $"{g.Name}: " + L("롬 파일이 빠졌습니다", "ROM files are missing") + $" ({string.Join(", ", missing.Take(4))}{(missing.Count > 4 ? " ..." : "")})";
+            if (why != null)
+            {
+                if (failure == null)
+                {
+                    problem = $"{exact.Title}: {why}";
+                    failure = new ConverterException(FailureKind.Unsupported, problem) { Set = exact.Name };
+                }
+                continue;
+            }
+            RomSet zips;
+            try { zips = new RomSet(ZipsFor(g, dir, name)); }
+            catch (ConverterException e)
+            {
+                // A zip the archiver cannot open is the failure itself; keep the first verdict.
+                if (failure == null) { problem = e.Message; failure = e; }
+                continue;
+            }
+            using var open = zips;
+            var (missing, mismatch) = zips.MissingDetail(g);
+            if (missing.Count == 0 && mismatch.Count == 0) return (g, null, null);
+            if (g == exact || failure == null)
+            {
+                problem = $"{g.Name}: " + L(mismatch.Count > 0 ? "롬 파일 버전이 다릅니다" : "롬 파일이 빠졌습니다",
+                                                  mismatch.Count > 0 ? "ROM files are a different version" : "ROM files are missing")
+                          + $" ({string.Join(", ", mismatch.Concat(missing).Take(4))}{(mismatch.Count + missing.Count > 4 ? " ..." : "")})";
+                failure = new ConverterException(mismatch.Count > 0 ? FailureKind.CrcMismatch : FailureKind.Missing, problem)
+                {
+                    Set = g.Name,
+                    Parent = ParentHint(exact, g, mismatch.Concat(missing)),
+                    Mismatch = mismatch,
+                    Chips = missing,
+                };
+            }
         }
-        return (null, problem);
+        return (null, problem, failure);
+    }
+
+    /// <summary>The parent romset a reader should also drop: only when a chip the game needs is a
+    /// load op of that parent (a clone's split set). Mirrors site/vendor/conv/job.js (#339).</summary>
+    static string? ParentHint(MameGame exact, MameGame g, IEnumerable<string> names)
+    {
+        if (g.Parent == null) return null;
+        var parent = GameDb.Find(g.Parent);
+        if (parent == null) return null;
+        var wanted = new HashSet<string>(names, StringComparer.Ordinal);
+        return parent.Regions.SelectMany(r => r.Ops)
+            .Any(o => o.Kind == "load" && wanted.Contains(o.File)) ? parent.Name : null;
     }
 
     /// <summary>
@@ -120,13 +181,18 @@ public sealed class CiaBuilder
 
     public CiaBuilder(Action<string> log) => this.log = log;
 
+    /// <summary>Opens the game zip only to fail early on a broken one; the tag says which
+    /// plain sentence the reader gets — a damaged archive or an unreadable file (#328).</summary>
+    static void OpenZip(string path) => ConverterException.OpenZip(path).Dispose();
+
     public string Build(CiaJob job)
     {
+        // The same order the web converter reports in (#328/#329): what the user dropped, then
+        // the BIOS, then our own installation. A broken zip is tagged where it is opened.
+        OpenZip(job.RomZip);
+        if (job.Game == null) throw Unconvertible(job);
+        if (job.BiosZip == null) throw MissingBios();
         CheckTools(Makerom, Bannertool, "engine.elf", "neo3ds.rsf");
-
-        using var _ = ZipFile.OpenRead(job.RomZip); // fail early on a broken zip
-        if (job.BiosZip == null)
-            throw new FileNotFoundException(L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));
 
         string work = Path.Combine(Path.GetTempPath(), "neo3ds", $"{job.RomName}-{Environment.ProcessId}");
         if (Directory.Exists(work)) Directory.Delete(work, true);
@@ -174,7 +240,8 @@ public sealed class CiaBuilder
         {
             string path = ToolPath(tool);
             if (!File.Exists(path))
-                throw new FileNotFoundException(L($"{path} 파일이 없습니다. 변환기 폴더를 통째로 옮겼는지 확인하세요.", $"{path} is missing. Keep the converter folder together when moving it."));
+                throw new ConverterException(FailureKind.Wasm,
+                    L($"{path} 파일이 없습니다. 변환기 폴더를 통째로 옮겼는지 확인하세요.", $"{path} is missing. Keep the converter folder together when moving it."));
         }
     }
 
@@ -207,9 +274,9 @@ public sealed class CiaBuilder
     /// Layout read by the engine's loader.c: "NEO3DSPK", version, count, {name[24], offset, size}.</summary>
     public string BuildPack(CiaJob job)
     {
-        using var _ = ZipFile.OpenRead(job.RomZip);
-        if (job.BiosZip == null)
-            throw new FileNotFoundException(L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));
+        OpenZip(job.RomZip);
+        if (job.Game == null) throw Unconvertible(job);
+        if (job.BiosZip == null) throw MissingBios();
         string work = Path.Combine(Path.GetTempPath(), "neo3ds", $"{job.RomName}-{Environment.ProcessId}");
         if (Directory.Exists(work)) Directory.Delete(work, true);
         Directory.CreateDirectory(work);
@@ -233,7 +300,7 @@ public sealed class CiaBuilder
                 foreach (var f in files)
                 {
                     var name = Encoding.ASCII.GetBytes(Path.GetFileName(f));
-                    if (name.Length > 23) throw new InvalidDataException($"{Path.GetFileName(f)}: name too long");
+                    if (name.Length > 23) throw new ConverterException(FailureKind.GameDb, $"{Path.GetFileName(f)}: name too long");
                     w.Write(name);
                     w.Write(new byte[24 - name.Length]);
                     long size = new FileInfo(f).Length;
@@ -287,9 +354,16 @@ public sealed class CiaBuilder
         }
     }
 
+    /// <summary>The picker's verdict, unchanged so its catalog names survive (#328).</summary>
+    static ConverterException Unconvertible(CiaJob job) => job.Failure
+        ?? new ConverterException(FailureKind.Unsupported, job.Problem ?? L("지원하지 않는 게임입니다.", "This game is not supported."));
+
+    static ConverterException MissingBios() => new(FailureKind.Bios,
+        L("neogeo.zip(바이오스)을 찾을 수 없습니다. 롬 zip과 같은 폴더에 넣어주세요.", "neogeo.zip (BIOS) not found. Put it in the same folder as the game zip."));
+
     string PrepareRomFs(CiaJob job, string work)
     {
-        var def = job.Game ?? throw new NotSupportedException(job.Problem ?? L("지원하지 않는 게임입니다.", "This game is not supported."));
+        var def = job.Game ?? throw Unconvertible(job);
         if (def.Name != job.RomName) log(L($"  롬셋: {def.Name} ({def.Desc})", $"  Romset: {def.Name} ({def.Desc})"));
 
         string romfs = Path.Combine(work, "romfs");
@@ -350,6 +424,7 @@ public sealed class CiaBuilder
         p.WaitForExit();
         string output = (stdout.Result + stderr).Trim();
         if (p.ExitCode != 0)
-            throw new Exception(L($"{exe} 실패 (코드 {p.ExitCode}):\n{output}", $"{exe} failed (code {p.ExitCode}):\n{output}"));
+            throw new ConverterException(FailureKind.Wasm,
+                L($"{exe} 실패 (코드 {p.ExitCode}):\n{output}", $"{exe} failed (code {p.ExitCode}):\n{output}"));
     }
 }

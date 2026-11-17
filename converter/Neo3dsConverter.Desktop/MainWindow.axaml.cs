@@ -137,15 +137,17 @@ public partial class MainWindow : Window
             return;
         }
         RomPathBox.Text = job.RomZip;
-        RomsetLabel.Text = job.Game != null ? $"✔ {job.Game.Name} - {job.Game.Desc}" : "✘ " + job.Problem;
+        RomsetLabel.Text = job.Game != null ? $"✔ {job.Game.Name} - {job.Game.Desc}" : "✘ " + job.ProblemText;
         RomsetLabel.Foreground = job.Game != null ? Ok : Bad;
         BiosLabel.Text = job.BiosZip != null
             ? Lang.L("✔ neogeo.zip 발견", "✔ neogeo.zip found")
             : Lang.L("✘ neogeo.zip 없음 (롬과 같은 폴더에 넣어주세요)", "✘ no neogeo.zip (put it next to the game zip)");
         BiosLabel.Foreground = job.BiosZip != null ? Ok : Bad;
+        // #329: a convertible game is named by its title; a blocked one by the plain verdict
+        // only, because RomName is the user's zip file name.
         StatusText.Text = job.Game != null
             ? $"{job.RomName} — {job.Title} (Title ID {job.TitleId})"
-            : $"{job.RomName}: {job.Problem}";
+            : job.ProblemText;
         SetBuildLabels();
     }
 
@@ -215,6 +217,12 @@ public partial class MainWindow : Window
     static bool IsBios(string zip) => Path.GetFileName(zip).Equals("neogeo.zip", StringComparison.OrdinalIgnoreCase);
     static bool Buildable(CiaJob j) => j.Game != null && j.BiosZip != null;
 
+    /// <summary>#329: the log keeps the raw verdict next to the plain line, so a report can be
+    /// reproduced while the window itself only shows the plain pair.</summary>
+    void LogCannotConvert(CiaJob job) => Log(job.Failure == null
+        ? Lang.L("변환 불가: ", "Can't convert: ") + Lang.L("neogeo.zip 없음", "no neogeo.zip")
+        : Lang.L("변환 불가: ", "Can't convert: ") + FailureText.LogLines(job.Failure));
+
     string? IconImage => string.IsNullOrEmpty(IconBox.Text) ? null : IconBox.Text;
     string? BannerImage => string.IsNullOrEmpty(BannerBox.Text) ? null : BannerBox.Text;
     string CurrentTitle => string.IsNullOrWhiteSpace(TitleBox.Text) ? job?.Title ?? "" : TitleBox.Text.Trim();
@@ -253,7 +261,9 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            StatusText.Text = Lang.L($"오류: {ex.Message}", $"Error: {ex.Message}");
+            // #329: the status line carries the plain pair; the raw text only reaches the log.
+            Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
+            StatusText.Text = FailureText.Plain(ex);
             SetBuildEnabled(false);
             return;
         }
@@ -261,7 +271,7 @@ public partial class MainWindow : Window
         SetBuildEnabled(Buildable(job));
         RefreshState();
         Log(Lang.L("선택: ", "Selected: ") + $"{Path.GetFileName(path)}  (Title ID {job.TitleId})");
-        if (!Buildable(job)) Log(Lang.L("변환 불가: ", "Can't convert: ") + (job.Problem ?? Lang.L("neogeo.zip 없음", "no neogeo.zip")));
+        if (!Buildable(job)) LogCannotConvert(job);
         RefreshPreview();
     }
 
@@ -274,7 +284,7 @@ public partial class MainWindow : Window
         {
             var j = CiaJob.FromRomZip(zip);
             batch.Add(j);
-            if (j.Game == null) Log($"  ✘ {j.RomName}: {j.Problem}");
+            if (j.Game == null) Log($"  ✘ {j.ProblemText}" + (j.Failure != null ? $" ({FailureText.Raw(j.Failure)})" : ""));
             else if (j.BiosZip == null) Log($"  ✘ {j.RomName}: " + Lang.L("같은 폴더에 neogeo.zip 없음", "no neogeo.zip in the same folder"));
             else Log($"  ✔ {j.RomName}: {j.Title}");
         }
@@ -297,7 +307,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            Log(Lang.L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + ex.Message);
+            Log(Lang.L("이미지를 읽을 수 없습니다: ", "Can't read the picture: ") + FailureText.LogLines(ex));
         }
     }
 
@@ -340,8 +350,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            Log(Lang.L($"실패: {ex.Message}", $"Failed: {ex.Message}"));
-            await ShowDialog(Lang.L("실패", "Failed"), ex.Message);
+            Log(Lang.L("실패: ", "Failed: ") + FailureText.LogLines(ex));
+            await ShowDialog(Lang.L("실패", "Failed"), FailureText.Plain(ex));
         }
         finally
         {
@@ -355,7 +365,7 @@ public partial class MainWindow : Window
         string outDir = OutDir();
         string baseTitle = Title ?? "";
         var done = new List<string>();
-        var failed = new List<string>();
+        var failed = new List<FailureText.BatchFailure>();
         SetBusy(true);
         try
         {
@@ -376,8 +386,9 @@ public partial class MainWindow : Window
                 }
                 catch (Exception ex)
                 {
-                    Log(Lang.L("오류: ", "Error: ") + ex.Message);
-                    failed.Add($"{j.RomName}: {ex.Message}");
+                    // #329: the row keeps the catalog name and code; the raw line is the log's.
+                    Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
+                    failed.Add(FailureText.BatchFailure.Of(j, ex));
                 }
             }
             Log("");
@@ -386,7 +397,8 @@ public partial class MainWindow : Window
                 ? Lang.L($"런처용 파일 {done.Count}개: SD카드 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files: copy to /neo3ds/games/ on the SD card.")
                 : Lang.L($"CIA {done.Count}개. [3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.", $"{done.Count} CIAs. Use [Send to 3DS], or copy them to the SD card and install with FBI."))
                 + $"\n\n{outDir}";
-            if (failed.Count > 0) msg += "\n\n" + Lang.L("실패:", "Failed:") + "\n" + string.Join("\n", failed);
+            // #329: catalog names and plain words only; the per-game raw text is in the log.
+            if (failed.Count > 0) msg += "\n\n" + FailureText.Batch(failed);
             await ShowDialog(Lang.L("완료", "Done"), msg);
         }
         finally
@@ -409,8 +421,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            Log(Lang.L("오류: ", "Error: ") + ex.Message);
-            await ShowDialog(Lang.L("실패", "Failed"), ex.Message);
+            Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
+            await ShowDialog(Lang.L("실패", "Failed"), FailureText.Plain(ex));
         }
         finally
         {

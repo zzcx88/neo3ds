@@ -28,7 +28,7 @@ public static class RomPack
 
         var regions = BuildRegions(game, rom);
         byte[] Need(string name) => regions.TryGetValue(name, out var r) ? r
-            : throw new InvalidDataException($"{game.Name}: " + L($"{name} 영역이 없습니다.", $"no {name} region."));
+            : throw new ConverterException(FailureKind.GameDb, $"{game.Name}: " + L($"{name} 영역이 없습니다.", $"no {name} region.")) { Set = game.Name };
 
         // MAME keeps the 68k program big-endian; the engine wants the dump's little-endian words.
         var program = Need("maincpu");
@@ -190,7 +190,7 @@ public static class RomPack
                 for (int i = 0; i < size; i++) buf[offset + (i >> 1) * 4 + ((i & 1) ^ 1)] = data[pos + i];
                 break;
             default:
-                throw new InvalidDataException("unknown load flag " + flag);
+                throw new ConverterException(FailureKind.GameDb, "unknown load flag " + flag);
         }
         pos += size;
     }
@@ -272,8 +272,8 @@ public static class RomPack
 
         public ZipSet(string path)
         {
-            zip = ZipFile.OpenRead(path);
             zipName = Path.GetFileName(path);
+            zip = ConverterException.OpenZip(path);
         }
 
         ZipArchiveEntry? Find(RomFile f) =>
@@ -282,11 +282,12 @@ public static class RomPack
 
         public byte[] Read(RomFile f)
         {
-            var e = Find(f) ?? throw new FileNotFoundException(
+            var e = Find(f) ?? throw new ConverterException(FailureKind.BiosRead,
                 L($"{zipName}에 {f.Name} (CRC {f.Crc:x8}) 파일이 없습니다.", $"{zipName} has no {f.Name} (CRC {f.Crc:x8})."));
-            var buf = RomSet.ReadEntry(e);
+            var buf = RomSet.ReadEntry(e, FailureKind.BiosRead);
             if (e.Crc32 != f.Crc)
-                throw new InvalidDataException(L($"{e.Name}의 CRC가 다릅니다 ({e.Crc32:x8}, 기대값 {f.Crc:x8}). 다른 버전의 롬셋입니다.", $"{e.Name} has CRC {e.Crc32:x8}, expected {f.Crc:x8}: a different romset version."));
+                throw new ConverterException(FailureKind.BiosRead,
+                    L($"{e.Name}의 CRC가 다릅니다 ({e.Crc32:x8}, 기대값 {f.Crc:x8}). 다른 버전의 롬셋입니다.", $"{e.Name} has CRC {e.Crc32:x8}, expected {f.Crc:x8}: a different romset version."));
             return buf;
         }
 
@@ -297,7 +298,8 @@ public static class RomPack
         {
             foreach (var f in candidates)
                 if (Find(f) != null) return f;
-            throw new FileNotFoundException(L("바이오스 파일이 없습니다: ", "No BIOS file: ") + string.Join(", ", candidates.Select(c => c.Name)));
+            throw new ConverterException(FailureKind.BiosRead,
+                L("바이오스 파일이 없습니다: ", "No BIOS file: ") + string.Join(", ", candidates.Select(c => c.Name)));
         }
 
         public void Dispose() => zip.Dispose();
@@ -321,7 +323,7 @@ public sealed class RomSet : IDisposable
     {
         foreach (var path in paths.Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            var zip = ZipFile.OpenRead(path);
+            var zip = ConverterException.OpenZip(path);
             zips.Add(zip);
             foreach (var e in zip.Entries)
             {
@@ -336,25 +338,52 @@ public sealed class RomSet : IDisposable
     /// <summary>MAME marks undumped chips without a CRC; they load as empty.</summary>
     public bool Has(string name, uint? crc) => crc == null || byCrc.ContainsKey(crc.Value);
 
-    /// <summary>Names of the chips of a game that none of the zips has.</summary>
-    public IEnumerable<string> Missing(MameGame g) =>
-        g.Regions.SelectMany(r => r.Ops).Where(o => o.Kind == "load" && !Has(o.File, o.Crc)).Select(o => o.File);
+    /// <summary>
+    /// The two reasons a romset does not fit, in one walk of the game DB (mirrors
+    /// site/vendor/conv/zipset.js missingDetail): chips the zips do not have at all, and chips
+    /// present by name with another CRC — a different romset version, not a missing file (#339).
+    /// The name key is the one <see cref="Read"/> uses.
+    /// </summary>
+    public (IReadOnlyList<string> Missing, IReadOnlyList<string> Mismatch) MissingDetail(MameGame g)
+    {
+        var missing = new List<string>();
+        var mismatch = new List<string>();
+        foreach (var o in g.Regions.SelectMany(r => r.Ops).Where(o => o.Kind == "load"))
+        {
+            if (Has(o.File, o.Crc)) continue;
+            (o.Crc != null && byName.ContainsKey(o.File) ? mismatch : missing).Add(o.File);
+        }
+        return (missing, mismatch);
+    }
 
     public byte[] Read(string name, uint? crc, string game)
     {
-        if (crc == null) return byName.TryGetValue(name, out var n) ? ReadEntry(n) : Array.Empty<byte>();
-        if (byCrc.TryGetValue(crc.Value, out var e)) return ReadEntry(e);
+        if (crc == null) return byName.TryGetValue(name, out var n) ? ReadEntry(n, FailureKind.ZipCorrupt) : Array.Empty<byte>();
+        if (byCrc.TryGetValue(crc.Value, out var e)) return ReadEntry(e, FailureKind.ZipCorrupt);
         if (byName.TryGetValue(name, out var wrong))
-            throw new InvalidDataException(L($"{wrong.Name}의 CRC가 다릅니다 ({wrong.Crc32:x8}, 기대값 {crc:x8}). {game}과(와) 다른 버전의 롬셋입니다.", $"{wrong.Name} has CRC {wrong.Crc32:x8}, expected {crc:x8}: not the {game} romset version."));
-        throw new FileNotFoundException(L($"{Description}에 {name} (CRC {crc:x8}) 파일이 없습니다.", $"{Description} has no {name} (CRC {crc:x8})."));
+            throw new ConverterException(FailureKind.CrcMismatch,
+                L($"{wrong.Name}의 CRC가 다릅니다 ({wrong.Crc32:x8}, 기대값 {crc:x8}). {game}과(와) 다른 버전의 롬셋입니다.", $"{wrong.Name} has CRC {wrong.Crc32:x8}, expected {crc:x8}: not the {game} romset version."))
+            { Set = game };
+        throw new ConverterException(FailureKind.Missing,
+            L($"{Description}에 {name} (CRC {crc:x8}) 파일이 없습니다.", $"{Description} has no {name} (CRC {crc:x8})."))
+        { Set = game };
     }
 
-    internal static byte[] ReadEntry(ZipArchiveEntry e)
+    /// <summary>A damaged entry is a zip defect, not a missing chip (#328): the tag decides
+    /// which sentence the reader gets, so the read site says what it was reading.</summary>
+    internal static byte[] ReadEntry(ZipArchiveEntry e, FailureKind badZip)
     {
-        using var s = e.Open();
-        var buf = new byte[e.Length];
-        s.ReadExactly(buf);
-        return buf;
+        try
+        {
+            using var s = e.Open();
+            var buf = new byte[e.Length];
+            s.ReadExactly(buf);
+            return buf;
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException)
+        {
+            throw new ConverterException(badZip, $"{e.FullName}: {ex.Message}", ex);
+        }
     }
 
     public void Dispose()

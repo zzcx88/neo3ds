@@ -29,8 +29,14 @@ public static class Art
     /// <summary>Scales a picture to cover w x h and crops the overflow evenly from both sides.</summary>
     static SKBitmap Fit(string path, int w, int h)
     {
-        using var src = SKBitmap.Decode(path)
-            ?? throw new InvalidDataException($"Cannot decode image: {path}");
+        SKBitmap src;
+        try { src = SKBitmap.Decode(path); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            throw new ConverterException(FailureKind.Image, $"Cannot decode image: {path}: {e.Message}", e);
+        }
+        if (src == null) throw new ConverterException(FailureKind.Image, $"Cannot decode image: {path}");
+        using var decoded = src;
         var bmp = new SKBitmap(w, h);
         using var canvas = new SKCanvas(bmp);
         canvas.Clear(SKColors.Transparent);

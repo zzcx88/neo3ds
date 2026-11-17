@@ -70,7 +70,7 @@ public static class GameDb
     static IReadOnlyList<MameGame> Load()
     {
         using var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("neogeo_games.json")
-                      ?? throw new InvalidOperationException("neogeo_games.json resource missing");
+                      ?? throw new ConverterException(FailureKind.Crash, "neogeo_games.json resource missing");
         using var doc = JsonDocument.Parse(s);
         var list = new List<MameGame>();
         foreach (var g in doc.RootElement.EnumerateArray())
@@ -92,7 +92,7 @@ public static class GameDb
                         "ignore" => new RomOp(kind, "", "", null, a[1].GetInt32(), 0, 0, ""),
                         "fill" => new RomOp(kind, "", "", null, a[1].GetInt32(), a[2].GetInt32(), a[3].GetInt32(), ""),
                         "copy" => new RomOp(kind, "", "", null, a[2].GetInt32(), a[3].GetInt32(), a[4].GetInt32(), a[1].GetString()!),
-                        _ => throw new InvalidDataException("unknown ROM op " + kind),
+                        _ => throw new ConverterException(FailureKind.GameDb, "unknown ROM op " + kind),
                     });
                 }
                 regions.Add(new RomRegion(r.Name, r.Value.GetProperty("size").GetInt32(), ops.ToArray()));

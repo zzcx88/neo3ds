@@ -43,34 +43,41 @@ public static class CommandLine
             for (int i = 0; i < args.Length; i++)
                 switch (args[i])
                 {
-                    case "--title": title = args[++i]; break;
-                    case "--set": set = args[++i]; break;
-                    case "--icon": icon = Path.GetFullPath(args[++i]); break;
-                    case "--banner": banner = Path.GetFullPath(args[++i]); break;
+                    case "--title": title = Value(args, ref i); break;
+                    case "--set": set = Value(args, ref i); break;
+                    case "--icon": icon = Path.GetFullPath(Value(args, ref i)); break;
+                    case "--banner": banner = Path.GetFullPath(Value(args, ref i)); break;
                     case "--pack": pack = true; break;
-                    case "--system": startMvs = args[++i].Equals("mvs", StringComparison.OrdinalIgnoreCase); break;
+                    case "--system": startMvs = Value(args, ref i).Equals("mvs", StringComparison.OrdinalIgnoreCase); break;
                     case "--region":
-                        region = args[++i].ToLowerInvariant() switch
+                        region = Value(args, ref i).ToLowerInvariant() switch
                         {
                             "jp" or "japan" => Region.Japan,
                             "us" or "usa" => Region.Usa,
                             "eu" or "europe" or "asia" => Region.Europe,
-                            var r => throw new ArgumentException($"--region {r}: use eu, jp or us"),
+                            var r => throw new ConverterException(FailureKind.Usage,
+                                Lang.L($"--region {r}: eu, jp, us 중 하나를 쓰세요.", $"--region {r}: use eu, jp or us")),
                         };
                         break;
                     default: positional.Add(args[i]); break;
                 }
             var zips = positional.Where(a => a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
             var outDir = positional.Except(zips).LastOrDefault();
-            if (zips.Count == 0) throw new ArgumentException("no game zip given");
+            if (zips.Count == 0)
+                throw new ConverterException(FailureKind.Usage,
+                    Lang.L("게임 zip이 없어요. 게임 zip 경로를 넣어 주세요.", "No game zip was given. Pass the path of a game zip."));
             if (zips.Count > 1 && (title ?? icon ?? banner ?? set) != null)
-                throw new ArgumentException("--title, --icon, --banner and --set need a single zip");
+                throw new ConverterException(FailureKind.Usage,
+                    Lang.L("--title, --icon, --banner, --set은 zip 하나일 때만 쓸 수 있어요. 이번 실행은 zip을 여러 개 받았어요.",
+                           "--title, --icon, --banner and --set need a single zip, but several were given."));
             int failed = 0;
+            var failures = new List<FailureText.BatchFailure>();
             foreach (var zip in zips)
             {
+                CiaJob? job = null;
                 try
                 {
-                    var job = CiaJob.FromRomZip(zip, set);
+                    job = CiaJob.FromRomZip(zip, set);
                     if (outDir != null) job.OutputDir = Path.GetFullPath(outDir);
                     if (title != null) job.Title = title;
                     job.IconImage = icon;
@@ -80,20 +87,45 @@ public static class CommandLine
                     var builder = new CiaBuilder(Console.WriteLine);
                     Console.WriteLine($"OK {(pack ? builder.BuildPack(job) : builder.Build(job))}");
                 }
+                // #329: the console shows the same cause+action pair as the windows; the raw
+                // exception text stays behind NEO3DS_DEBUG (the CLI has no log window).
                 catch (Exception e) when (zips.Count > 1)
                 {
-                    Console.Error.WriteLine($"FAILED {Path.GetFileName(zip)}: {e.Message}");
+                    WriteFailure(e);
+                    failures.Add(job != null ? FailureText.BatchFailure.Of(job, e) : new FailureText.BatchFailure(null, FailureText.KindOf(e)));
                     failed++;
                 }
             }
+            if (failures.Count > 0) Console.Error.WriteLine(FailureText.Batch(failures, hasLog: false));
             return failed == 0 ? 0 : 1;
         }
         catch (Exception e)
         {
-            Console.Error.WriteLine($"FAILED {e.Message}");
-            if (Environment.GetEnvironmentVariable("NEO3DS_DEBUG") != null) Console.Error.WriteLine(e);
+            WriteFailure(e);
             return 1;
         }
+    }
+
+    /// <summary>The value after a flag. A flag with nothing after it is a usage error like any
+    /// other, not an index crash that reads as "unknown … send a report" (#329).</summary>
+    static string Value(string[] args, ref int i)
+    {
+        if (i + 1 >= args.Length)
+            throw new ConverterException(FailureKind.Usage,
+                Lang.L($"{args[i]} 뒤에 값을 넣어 주세요.", $"Put a value after {args[i]}."));
+        return args[++i];
+    }
+
+    /// <summary>The one line a script or a reader sees: 'FAILED' plus the plain cause and action.
+    /// A command-line mistake prints its own message (it is the instruction); the raw exception
+    /// is diagnostic, so it needs NEO3DS_DEBUG=1 (#329).</summary>
+    static void WriteFailure(Exception e)
+    {
+        Console.Error.WriteLine("FAILED " + (FailureText.KindOf(e) == FailureKind.Usage
+            ? e.Message
+            : FailureText.Plain(e)));
+        if (Environment.GetEnvironmentVariable("NEO3DS_DEBUG") != null)
+            Console.Error.WriteLine(FailureText.Raw(e) + Environment.NewLine + e);
     }
 
     /// <summary>Prints full usage (--help / -h) in the current language.</summary>
