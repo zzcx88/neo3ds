@@ -429,6 +429,16 @@
           "ko": "업데이트는 런처 CIA만 새로 설치하면 되고, 이미 만든 .neo3ds 파일은 그대로 실행된다는 안내를 변환기에 넣었습니다. (#61)",
           "en": "The converter notes that updating means installing just the new launcher CIA, and that existing .neo3ds files keep running on it. (#61)"
         }
+      },
+      {
+        "t": {
+          "ko": "상단 버튼을 오프라인 다운로드에서 변환으로",
+          "en": "Header button converts instead of downloading"
+        },
+        "d": {
+          "ko": "변환기 페이지 오른쪽 위 버튼이 오프라인 변환기 zip을 내려받던 것에서, 지금 보고 있는 페이지에서 바로 변환을 시작하는 “변환하기”로 바뀌었습니다. 오프라인 3종 다운로드는 소개·다운로드 페이지가 맡습니다. (#41)",
+          "en": "The button in the converter page header used to download the offline converter zip. It now reads \"Convert now\" and starts a conversion on the page you are already on; the offline downloads live on the intro and download pages. (#41)"
+        }
       }
     ],
     "summary": {
