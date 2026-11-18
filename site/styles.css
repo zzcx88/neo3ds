@@ -565,6 +565,18 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 .rel-items li{margin:0 0 6px;font-size:15px;line-height:1.65;color:#C9C9D2}
 .rel-items b{color:var(--paper);font-weight:600}
 .rel-items a{color:var(--gold)}
+/* 패치노트 항목의 점 목록 (#398): 제목이 자기 줄을 차지하고 점이 그 아래에 붙는다.
+   점은 한 줄에 하나이고, 상위 목록의 줄 간격을 이어받지 않도록 위 여백만 준다. */
+.rel-points{list-style:disc;padding-left:20px;margin:6px 0 0;max-width:var(--prose)}
+.rel-points li{margin:0 0 3px;font-size:15px;line-height:1.6;color:#C9C9D2}
+.rel-points li:last-child{margin-bottom:0}
+.rel-points a{color:var(--gold)}
+/* 항목 하나(제목 + 점 목록)가 끝나면 다음 항목과 눈에 띄게 떨어져야 제목이 앞 항목의
+   마지막 점처럼 읽히지 않는다. 점끼리는 촘촘하게, 항목끼리는 넉넉하게. */
+.rel-items > li{margin:0 0 20px}
+.rel-items > li:last-child{margin-bottom:0}
+/* 웹 탭에서 변경이 한 건인 날짜는 제목 없이 점만 나오므로, 위 요약 줄과의 간격만 준다. */
+.web-points{margin:10px 0 0}
 .rel-link{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--dim);text-decoration:none}
 .rel-link:hover{color:var(--gold)}
 .rel-link::after{content:" ↗"}
@@ -587,8 +599,6 @@ kbd{display:inline-block;font:400 11px/1 var(--pixel-sm);color:var(--paper);back
 .tab-panel{display:none}
 #tab-releases:checked ~ #releases,
 #tab-web:checked ~ #web-updates{display:block}
-.rel-desc{margin:10px 0 0;max-width:var(--prose);font-size:15px;line-height:1.65;color:#C9C9D2}
-.rel-desc a{color:var(--gold)}
 .changelog-sec{margin:26px 0 0}
 .web-day .rel-v{color:var(--paper)}
 
