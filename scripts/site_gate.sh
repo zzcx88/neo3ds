@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
 for f in site/app.js site/convert.js site/feedback.js site/intro-ready.mjs site/intro-device.js site/intro-motion.mjs site/intro-launcher.mjs site/launcher-model.mjs site/launcher-previews.mjs site/vendor/conv/*.js site/vendor/conv/*.mjs \
-         site/vendor/*.mjs site/vendor/bench/* scripts/gen_site_i18n.mjs; do
+         site/vendor/*.mjs site/vendor/bench/* scripts/gen_site_i18n.mjs scripts/test_intro_device_render.mjs; do
   node --check "$f"
 done
 echo "syntax OK"
