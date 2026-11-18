@@ -37,12 +37,19 @@ def link_issues(s):
     return re.sub(r'(?<![\w/.-])#(\d+)', lambda m: '[#%s](%s/issues/%s)' % (m.group(1), REPO, m.group(1)), s)
 
 
+def points(text):
+    """The terse points, one per line; see gen_site_changelog.py (#398)."""
+    return text.split('\n')
+
+
 def render(releases):
     out = [HEADER % {'data': DATA, 'releases': REPO + '/releases'}]
     for r in releases:
         out.append('## [%s](%s/releases/tag/v%s) - %s\n' % (r['version'], REPO, r['version'], r['date']))
         for it in r['items']:
-            out.append('- **%s** — %s' % (link_issues(it['t']['en']), link_issues(it['d']['en'])))
+            out.append('- **%s**' % link_issues(it['t']['en']))
+            for p in points(it['d']['en']):
+                out.append('  - %s' % link_issues(p))
         out.append('')
     return '\n'.join(out)
 

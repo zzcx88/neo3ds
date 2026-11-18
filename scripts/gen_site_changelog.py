@@ -153,6 +153,7 @@ def load():
     check_dates(releases, DATA, 'date', lambda r: r.get('version'), unique=False)
     for r in releases:
         check_items(r.get('items'), DATA, r.get('version'))
+        check_points(r.get('items'), DATA, r.get('version'))
     return releases
 
 
@@ -174,14 +175,52 @@ def load_web_updates():
     check_dates(updates, WEB_DATA, 'date', lambda u: u.get('date'), unique=True)
     for u in updates:
         check_items(u.get('items'), WEB_DATA, u.get('date'))
+        check_points(u.get('items'), WEB_DATA, u.get('date'))
     check_summaries(updates, WEB_DATA)
     return updates
 
 
+def points(text):
+    """The item's terse points, one per line of the data (#398).
+
+    Descriptions in `site/releases.json` and `site/web-updates.json` carry their structure
+    as newlines, so the renderers below never have to guess where a point ends."""
+    return text.split('\n')
+
+
+def check_points(items, path, label):
+    """Every description is a non-empty list of points with no sentence ending left.
+
+    Newlines are the only structure the data has, so a blank line would print an empty
+    bullet; the sentence check keeps the prose from drifting back to the old long form."""
+    for it in items:
+        for lang in ('ko', 'en'):
+            text = it['d'][lang]
+            lines = text.split('\n')
+            if any(not line.strip() for line in lines):
+                sys.exit('%s: %s item %r has a blank point in %s'
+                         % (path, label, it['t'].get(lang), lang))
+            if re.search(r'습니다\.["\']?$', text.strip()):
+                sys.exit('%s: %s item %r still ends a sentence in %s; the changelog uses '
+                         'terse points (#398)' % (path, label, it['t'].get(lang), lang))
+
+
+def point_list(text, indent):
+    return '\n'.join('%s<li>%s</li>' % (indent, with_issue_links(p)) for p in points(text))
+
+
 def item_rows(items, meta):
-    """The bold-title bullets both sections share; `#123` becomes an issue link."""
+    """The bold-title bullets both sections share; `#123` becomes an issue link.
+
+    The title owns its line and the points hang under it, so a title never shares a line
+    with a point and the old "title: sentence" form cannot come back (#398)."""
     return '\n'.join(
-        '            <li><b>%s</b>: %s</li>' % (with_issue_links(it['t'][meta['lang']]), with_issue_links(it['d'][meta['lang']]))
+        '            <li><b>%s</b>\n'
+        '              <ul class="rel-points">\n'
+        '%s\n'
+        '              </ul>\n'
+        '            </li>' % (with_issue_links(it['t'][meta['lang']]),
+                                  point_list(it['d'][meta['lang']], '                '))
         for it in items)
 
 
@@ -202,8 +241,8 @@ def entry(r, meta, latest):
 
 def web_entry(u, meta):
     """One dated row in the release timeline's shape: the day's one-line summary where a
-    version would sit, then the change itself. A single change prints its description
-    directly (its bold title would only repeat the summary); several changes stay a list."""
+    version would sit, then the change's points. A single change prints its points without
+    a title, which would only repeat the summary (#389, #398)."""
     head = '''      <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">%s</span>
@@ -211,8 +250,10 @@ def web_entry(u, meta):
         </div>''' % (esc(u['summary'][meta['lang']]), u['date'], u['date'])
     if len(u['items']) == 1:
         return head + '''
-        <p class="rel-desc">%s</p>
-      </li>''' % with_issue_links(u['items'][0]['d'][meta['lang']])
+        <ul class="rel-points web-points">
+%s
+        </ul>
+      </li>''' % point_list(u['items'][0]['d'][meta['lang']], '          ')
     return head + '''
         <ul class="rel-items">
 %s

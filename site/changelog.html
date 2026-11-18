@@ -83,10 +83,34 @@
           <time class="rel-date" datetime="2026-11-06">2026-11-06</time>
         </div>
         <ul class="rel-items">
-            <li><b>Get games over Wi-Fi in the launcher</b>: Press Y in the launcher and scan the QR code from the offline converter to get .neo3ds files without taking out the SD card. One QR holds up to six files; with two or more, the launcher shows their names, sizes and the free space first. The web converter cannot send, but the offline converter can send files made on the web. (<a href="https://github.com/zzcx88/neo3ds/issues/254">#254</a> <a href="https://github.com/zzcx88/neo3ds/issues/261">#261</a>)</li>
-            <li><b>Send to 3DS window in the converter</b>: The offline converter sends CIAs to FBI and .neo3ds files to the launcher by QR code. Pick files from this session or drop others, and send 2 to 6 of one kind in one QR code. The window can stay open while you keep converting. (<a href="https://github.com/zzcx88/neo3ds/issues/235">#235</a> <a href="https://github.com/zzcx88/neo3ds/issues/255">#255</a> <a href="https://github.com/zzcx88/neo3ds/issues/257">#257</a> <a href="https://github.com/zzcx88/neo3ds/issues/264">#264</a> <a href="https://github.com/zzcx88/neo3ds/issues/306">#306</a>)</li>
-            <li><b>Game pictures in the launcher list</b>: The top screen shows a saved picture of the game under the cursor. (<a href="https://github.com/zzcx88/neo3ds/issues/224">#224</a>)</li>
-            <li><b>Spin Master graphics glitches fixed</b>: Fixed misplaced graphics while scrolling and white rectangles when hit. In a game that rewrites its sprites near the end of a frame, the lines above were drawn with new tiles at the old positions. Installing the new launcher is enough. (<a href="https://github.com/zzcx88/neo3ds/issues/318">#318</a>)</li>
+            <li><b>Get games over Wi-Fi in the launcher</b>
+              <ul class="rel-points">
+                <li>Press Y in the launcher and scan the offline converter QR to receive .neo3ds files without removing the SD card</li>
+                <li>One QR holds up to six files; with two or more, names, sizes and free space shown before receiving</li>
+                <li>Files made on the web can be sent with the offline converter</li>
+                <li>The web converter cannot send (<a href="https://github.com/zzcx88/neo3ds/issues/254">#254</a> <a href="https://github.com/zzcx88/neo3ds/issues/261">#261</a>)</li>
+              </ul>
+            </li>
+            <li><b>Send to 3DS window in the converter</b>
+              <ul class="rel-points">
+                <li>Offline converter sends CIAs to FBI and .neo3ds files to the launcher by QR</li>
+                <li>Pick files from this session or drop others</li>
+                <li>2 to 6 of one kind in a single QR code</li>
+                <li>Window can stay open while converting continues (<a href="https://github.com/zzcx88/neo3ds/issues/235">#235</a> <a href="https://github.com/zzcx88/neo3ds/issues/255">#255</a> <a href="https://github.com/zzcx88/neo3ds/issues/257">#257</a> <a href="https://github.com/zzcx88/neo3ds/issues/264">#264</a> <a href="https://github.com/zzcx88/neo3ds/issues/306">#306</a>)</li>
+              </ul>
+            </li>
+            <li><b>Game pictures in the launcher list</b>
+              <ul class="rel-points">
+                <li>Top screen shows the saved picture of the game under the cursor (<a href="https://github.com/zzcx88/neo3ds/issues/224">#224</a>)</li>
+              </ul>
+            </li>
+            <li><b>Spin Master graphics glitches fixed</b>
+              <ul class="rel-points">
+                <li>Scrolling graphics misaligned and white rectangles on hit fixed</li>
+                <li>Games that rewrite sprites near the end of a frame drew the lines above with new tiles at old positions</li>
+                <li>Launcher reinstall only (<a href="https://github.com/zzcx88/neo3ds/issues/318">#318</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.5.0">GitHub release</a>
       </li>
@@ -96,7 +120,14 @@
           <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
         </div>
         <ul class="rel-items">
-            <li><b>MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen</b>: Started on the arcade (MVS) BIOS, these games seemed to freeze on the green check screen for about a minute. In games where the BIOS runs some game code before the check, 1.4.0's fast start ended too early and each frame of the check screen took close to a second to draw. They now start within 2-3 s (measured in Azahar). Installing the new launcher is enough. (<a href="https://github.com/zzcx88/neo3ds/issues/215">#215</a>)</li>
+            <li><b>MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen</b>
+              <ul class="rel-points">
+                <li>Arcade (MVS) BIOS start: green check screen looks frozen for about a minute</li>
+                <li>Games that run some game code before the check: 1.4.0 fast start ended too early, so a check-screen frame took close to a second</li>
+                <li>Starts within 2-3 s (measured in Azahar)</li>
+                <li>Launcher reinstall only (<a href="https://github.com/zzcx88/neo3ds/issues/215">#215</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.4.1">GitHub release</a>
       </li>
@@ -106,7 +137,14 @@
           <time class="rel-date" datetime="2026-10-31">2026-10-31</time>
         </div>
         <ul class="rel-items">
-            <li><b>Faster start on the MVS BIOS</b>: The arcade (MVS) BIOS checks the board before the game (the green screen); that part now runs fast without drawing. Measured in Azahar it went from about 6 s to about 1 s, and games with more graphics gain more. The check itself still runs, so games behave the same. Installing the new launcher is enough. (<a href="https://github.com/zzcx88/neo3ds/issues/209">#209</a>)</li>
+            <li><b>Faster start on the MVS BIOS</b>
+              <ul class="rel-points">
+                <li>Arcade (MVS) BIOS board check before the game (the green screen) now runs fast without drawing</li>
+                <li>About 6 s to about 1 s (measured in Azahar), more for games with larger graphics</li>
+                <li>Check itself still runs, so games behave the same</li>
+                <li>Launcher reinstall only (<a href="https://github.com/zzcx88/neo3ds/issues/209">#209</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.4.0">GitHub release</a>
       </li>
@@ -116,8 +154,18 @@
           <time class="rel-date" datetime="2026-10-29">2026-10-29</time>
         </div>
         <ul class="rel-items">
-            <li><b>macOS: run it where you unzipped it</b>: The app converts even when you launch it from where you unzipped it. Up to v1.3.1 Gatekeeper ran it from a read-only copy and every build failed with "Read-only file system : .../bannertool"; the README also covers moving the app to ~/Applications. (<a href="https://github.com/zzcx88/neo3ds/issues/177">#177</a>)</li>
-            <li><b>Linux: runnable after unzip</b>: The Linux zip ships makerom and bannertool as executable (0755), so conversion works as soon as you unzip. (<a href="https://github.com/zzcx88/neo3ds/issues/179">#179</a>)</li>
+            <li><b>macOS: run it where you unzipped it</b>
+              <ul class="rel-points">
+                <li>App converts even when launched from where it was unzipped</li>
+                <li>Up to v1.3.1, Gatekeeper ran it from a read-only copy and every build failed with "Read-only file system : .../bannertool"</li>
+                <li>Moving the app to ~/Applications covered in the README (<a href="https://github.com/zzcx88/neo3ds/issues/177">#177</a>)</li>
+              </ul>
+            </li>
+            <li><b>Linux: runnable after unzip</b>
+              <ul class="rel-points">
+                <li>Linux zip ships makerom and bannertool executable (0755), so conversion works right after unzip (<a href="https://github.com/zzcx88/neo3ds/issues/179">#179</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.3.2">GitHub release</a>
       </li>
@@ -127,7 +175,11 @@
           <time class="rel-date" datetime="2026-10-27">2026-10-27</time>
         </div>
         <ul class="rel-items">
-            <li><b>macOS app signing</b>: The macOS converter was blocked as damaged by Gatekeeper; it is now ad-hoc signed and opens. (<a href="https://github.com/zzcx88/neo3ds/issues/164">#164</a>)</li>
+            <li><b>macOS app signing</b>
+              <ul class="rel-points">
+                <li>macOS converter ad-hoc signed, so Gatekeeper no longer blocks it as damaged (<a href="https://github.com/zzcx88/neo3ds/issues/164">#164</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.3.1">GitHub release</a>
       </li>
@@ -137,10 +189,29 @@
           <time class="rel-date" datetime="2026-10-26">2026-10-26</time>
         </div>
         <ul class="rel-items">
-            <li><b>Launcher favorites</b>: Press SELECT or tap the * at the left of a game; All and Fav plus the last tab are remembered. (<a href="https://github.com/zzcx88/neo3ds/issues/135">#135</a>)</li>
-            <li><b>Windowed converter on Linux and macOS</b>: Build CIAs, launcher files and the launcher CIA in a window, as on Windows; the command line stays.</li>
-            <li><b>Faster conversion</b>: Graphics are compressed in 16KB blocks, so conversion is faster and files are a little smaller. (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</li>
-            <li><b>Raster effects</b>: Neo Turf Masters water and grass, plus Neo Drift Out stage-start edges and curve backgrounds, are fixed. (<a href="https://github.com/zzcx88/neo3ds/issues/131">#131</a>)</li>
+            <li><b>Launcher favorites</b>
+              <ul class="rel-points">
+                <li>Add or remove favorites with SELECT or the * at the left of a game</li>
+                <li>All and Fav tabs plus the last tab are remembered (<a href="https://github.com/zzcx88/neo3ds/issues/135">#135</a>)</li>
+              </ul>
+            </li>
+            <li><b>Windowed converter on Linux and macOS</b>
+              <ul class="rel-points">
+                <li>Window builds CIAs, launcher files and the launcher CIA as on Windows</li>
+                <li>Command line included</li>
+              </ul>
+            </li>
+            <li><b>Faster conversion</b>
+              <ul class="rel-points">
+                <li>Graphics compressed in 16KB blocks: faster conversion, slightly smaller files (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</li>
+              </ul>
+            </li>
+            <li><b>Raster effects</b>
+              <ul class="rel-points">
+                <li>Neo Turf Masters water and grass fixed</li>
+                <li>Neo Drift Out stage-start edges and curve backgrounds fixed (<a href="https://github.com/zzcx88/neo3ds/issues/131">#131</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.3.0">GitHub release</a>
       </li>
@@ -150,7 +221,12 @@
           <time class="rel-date" datetime="2026-10-22">2026-10-22</time>
         </div>
         <ul class="rel-items">
-            <li><b>Korean and Japanese icons</b>: Offline converter icons and banners no longer show □ for Korean or Japanese titles; the web converter was not affected. (<a href="https://github.com/zzcx88/neo3ds/issues/86">#86</a>)</li>
+            <li><b>Korean and Japanese icons</b>
+              <ul class="rel-points">
+                <li>Offline converter icons and banners no longer show □ for Korean or Japanese titles</li>
+                <li>Web converter unaffected (<a href="https://github.com/zzcx88/neo3ds/issues/86">#86</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.2.1">GitHub release</a>
       </li>
@@ -160,10 +236,28 @@
           <time class="rel-date" datetime="2026-10-21">2026-10-21</time>
         </div>
         <ul class="rel-items">
-            <li><b>Fullscreen</b>: Screen &gt; Full stretches the top screen, saved per game.</li>
-            <li><b>Bottom screen off</b>: ⏻ at the top right of the bottom screen turns the backlight off; touch anywhere to turn it back on.</li>
-            <li><b>Faster drawing</b>: Banded rendering split across two cores cuts frame drops in fullscreen and heavy scenes.</li>
-            <li><b>Linux and macOS command-line converter</b>: Linux x64 and macOS (Apple Silicon) command-line builds join Windows.</li>
+            <li><b>Fullscreen</b>
+              <ul class="rel-points">
+                <li>Key config Screen stretches the top screen full</li>
+                <li>Saved per game</li>
+              </ul>
+            </li>
+            <li><b>Bottom screen off</b>
+              <ul class="rel-points">
+                <li>⏻ at the top right of the bottom screen turns the backlight off</li>
+                <li>Touch anywhere to turn it back on</li>
+              </ul>
+            </li>
+            <li><b>Faster drawing</b>
+              <ul class="rel-points">
+                <li>Banded rendering split across two cores cuts frame drops in fullscreen and heavy scenes</li>
+              </ul>
+            </li>
+            <li><b>Linux and macOS command-line converter</b>
+              <ul class="rel-points">
+                <li>Linux x64 and macOS (Apple Silicon) command-line builds join Windows</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.2.0">GitHub release</a>
       </li>
@@ -173,11 +267,35 @@
           <time class="rel-date" datetime="2026-10-18">2026-10-18</time>
         </div>
         <ul class="rel-items">
-            <li><b>Launcher</b>: Install one CIA and drop .neo3ds files in /neo3ds/games/ to pick games in one app. (<a href="https://github.com/zzcx88/neo3ds/issues/11">#11</a>)</li>
-            <li><b>Quick saves</b>: Three slots per game, via the bottom-screen [Slot] [Save] [Load] (tap twice) or SELECT+L / SELECT+R. (<a href="https://github.com/zzcx88/neo3ds/issues/10">#10</a>)</li>
-            <li><b>Service menu and backup RAM</b>: Opens the MVS BIOS service menu and saves board settings and high scores to the SD card. (<a href="https://github.com/zzcx88/neo3ds/issues/9">#9</a>)</li>
-            <li><b>Region and batch conversion</b>: Pick Europe-Asia (default), Japan or USA, and convert several zips in a row. (<a href="https://github.com/zzcx88/neo3ds/issues/8">#8</a>, <a href="https://github.com/zzcx88/neo3ds/issues/12">#12</a>)</li>
-            <li><b>Sound fixes</b>: Metal Slug 1 BGM slowdown and Sonic Wings 2/3 music stopping are fixed. (<a href="https://github.com/zzcx88/neo3ds/issues/7">#7</a>, <a href="https://github.com/zzcx88/neo3ds/issues/6">#6</a>)</li>
+            <li><b>Launcher</b>
+              <ul class="rel-points">
+                <li>Install one CIA and drop .neo3ds files in /neo3ds/games/ to pick games in one app (<a href="https://github.com/zzcx88/neo3ds/issues/11">#11</a>)</li>
+              </ul>
+            </li>
+            <li><b>Quick saves</b>
+              <ul class="rel-points">
+                <li>Three slots per game</li>
+                <li>Bottom-screen [Slot] [Save] [Load] (tap twice) or SELECT+L / SELECT+R (<a href="https://github.com/zzcx88/neo3ds/issues/10">#10</a>)</li>
+              </ul>
+            </li>
+            <li><b>Service menu and backup RAM</b>
+              <ul class="rel-points">
+                <li>Opens the MVS BIOS service menu</li>
+                <li>Board settings and high scores saved to the SD card (<a href="https://github.com/zzcx88/neo3ds/issues/9">#9</a>)</li>
+              </ul>
+            </li>
+            <li><b>Region and batch conversion</b>
+              <ul class="rel-points">
+                <li>Pick Europe-Asia (default), Japan or USA</li>
+                <li>Several zips convert in a row (<a href="https://github.com/zzcx88/neo3ds/issues/8">#8</a>, <a href="https://github.com/zzcx88/neo3ds/issues/12">#12</a>)</li>
+              </ul>
+            </li>
+            <li><b>Sound fixes</b>
+              <ul class="rel-points">
+                <li>Metal Slug 1 BGM slowdown fixed</li>
+                <li>Sonic Wings 2/3 music stopping fixed (<a href="https://github.com/zzcx88/neo3ds/issues/7">#7</a>, <a href="https://github.com/zzcx88/neo3ds/issues/6">#6</a>)</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.1.0">GitHub release</a>
       </li>
@@ -187,8 +305,18 @@
           <time class="rel-date" datetime="2026-10-12">2026-10-12</time>
         </div>
         <ul class="rel-items">
-            <li><b>Heavy scenes</b>: A slightly late frame no longer costs a whole frame, so Metal Slug 3's heavy machine gun and explosions drop far less.</li>
-            <li><b>Sound CPU and timing</b>: Idle time of the sound driver is skipped in Metal Slug 2/X/3, and register changes play at their place within the frame.</li>
+            <li><b>Heavy scenes</b>
+              <ul class="rel-points">
+                <li>A slightly late frame no longer costs a whole frame</li>
+                <li>Metal Slug 3 heavy machine gun and explosion frame drops fall sharply</li>
+              </ul>
+            </li>
+            <li><b>Sound CPU and timing</b>
+              <ul class="rel-points">
+                <li>Metal Slug 2/X/3 sound driver idle time skipped</li>
+                <li>Register changes play at their place within the frame</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.8">GitHub release</a>
       </li>
@@ -198,8 +326,18 @@
           <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>Bottom screen GUI</b>: Touch buttons for Key config, Turbo, System, Diagnostics and Restart, plus title, fps and the key layout; redrawn only on change.</li>
-            <li><b>Key config arrows</b>: Every line of the key config screen now has &lt; &gt; buttons.</li>
+            <li><b>Bottom screen GUI</b>
+              <ul class="rel-points">
+                <li>Touch buttons for Key config, Turbo, System, Diagnostics and Restart</li>
+                <li>Title, fps and key layout shown</li>
+                <li>Redrawn only on change</li>
+              </ul>
+            </li>
+            <li><b>Key config arrows</b>
+              <ul class="rel-points">
+                <li>&lt; &gt; buttons added to every line of the key config screen</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.7">GitHub release</a>
       </li>
@@ -209,8 +347,16 @@
           <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>SVC Chaos Plus</b>: The svcplus bootleg set Fightcade players use runs at full speed on an Old 3DS.</li>
-            <li><b>AES/MVS switch</b>: Switch between the home and arcade BIOS with the converter's System option or the System line in key config.</li>
+            <li><b>SVC Chaos Plus</b>
+              <ul class="rel-points">
+                <li>The svcplus bootleg set Fightcade players use runs at full speed on an Old 3DS</li>
+              </ul>
+            </li>
+            <li><b>AES/MVS switch</b>
+              <ul class="rel-points">
+                <li>Home (AES) and arcade (MVS) BIOS switch via the converter System option or the System line in key config</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.6">GitHub release</a>
       </li>
@@ -220,8 +366,17 @@
           <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>Zoomed sprites</b>: Shrunk sprite rows are unrolled per zoom step, so Samurai Shodown V Special runs at full speed.</li>
-            <li><b>Compatibility</b>: Samurai Shodown V Special verified on hardware; KOF2003, Metal Slug 5 and Garou reported at 60 fps.</li>
+            <li><b>Zoomed sprites</b>
+              <ul class="rel-points">
+                <li>Shrunk sprite rows unrolled per zoom step: Samurai Shodown V Special at full speed</li>
+              </ul>
+            </li>
+            <li><b>Compatibility</b>
+              <ul class="rel-points">
+                <li>Samurai Shodown V Special verified on hardware</li>
+                <li>KOF2003, Metal Slug 5 and Garou 60 fps reports reflected</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.5">GitHub release</a>
       </li>
@@ -231,8 +386,17 @@
           <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>Key config</b>: Map each 3DS button to a Neo Geo button, a combination, Start or Coin; saved per game.</li>
-            <li><b>Restart</b>: Hold SELECT + START for a second to restart the game.</li>
+            <li><b>Key config</b>
+              <ul class="rel-points">
+                <li>A/B/X/Y/L/R/ZL/ZR/START/SELECT mapped to a Neo Geo button, a combination, Start or Coin</li>
+                <li>Saved per game</li>
+              </ul>
+            </li>
+            <li><b>Restart</b>
+              <ul class="rel-points">
+                <li>Hold SELECT + START for a second to restart the game</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.4">GitHub release</a>
       </li>
@@ -242,8 +406,17 @@
           <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>PVC carts</b>: PVC-chip games convert, including SNK vs. Capcom: SVC Chaos. Metal Slug 5 and KOF2003 are not verified on hardware yet.</li>
-            <li><b>Includes the KOF2002 fix</b>: The 1.0.2 KOF2002 crash fix is included.</li>
+            <li><b>PVC carts</b>
+              <ul class="rel-points">
+                <li>PVC-chip games convert, including SNK vs. Capcom: SVC Chaos</li>
+                <li>Metal Slug 5 and KOF2003 not verified on hardware yet</li>
+              </ul>
+            </li>
+            <li><b>Includes the KOF2002 fix</b>
+              <ul class="rel-points">
+                <li>Includes the 1.0.2 KOF2002 crash fix</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.3">GitHub release</a>
       </li>
@@ -253,7 +426,11 @@
           <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>KOF2002 crash</b>: A read of the odd byte of a video register used the wrong pointer and read far outside the ROM; fixed.</li>
+            <li><b>KOF2002 crash</b>
+              <ul class="rel-points">
+                <li>Reading the odd byte of a video register used a pointer outside the ROM; fixed</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.2">GitHub release</a>
       </li>
@@ -263,8 +440,17 @@
           <time class="rel-date" datetime="2026-10-11">2026-10-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>Fix layer banking</b>: Fix ROMs past 128KB are banked as MAME does, fixing the HUD in Metal Slug 3, KOF2000, Garou, Metal Slug 4 and Matrimelee.</li>
-            <li><b>Full speed</b>: KOF2000 and KOF2002 verified at full speed on an Old 3DS.</li>
+            <li><b>Fix layer banking</b>
+              <ul class="rel-points">
+                <li>Fix ROMs past 128KB banked as MAME does</li>
+                <li>HUD fixed in Metal Slug 3, KOF2000, Garou, Metal Slug 4 and Matrimelee</li>
+              </ul>
+            </li>
+            <li><b>Full speed</b>
+              <ul class="rel-points">
+                <li>KOF2000 and KOF2002 verified at full speed on an Old 3DS</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.1">GitHub release</a>
       </li>
@@ -274,8 +460,20 @@
           <time class="rel-date" datetime="2026-10-10">2026-10-10</time>
         </div>
         <ul class="rel-items">
-            <li><b>First release</b>: Full speed on an Old 3DS (KOF '98/'99, Metal Slug X/3), 235 of 282 romsets convert, CMC42/50, SMA, PCM2 and KOF2002 decryption.</li>
-            <li><b>Converter</b>: Windows window converter, turbo (hold R + button), Korean and English UI.</li>
+            <li><b>First release</b>
+              <ul class="rel-points">
+                <li>Full speed on an Old 3DS (KOF '98/'99, Metal Slug X/3)</li>
+                <li>235 of 282 romsets convert</li>
+                <li>CMC42/50, SMA, PCM2 and KOF2002 decryption</li>
+              </ul>
+            </li>
+            <li><b>Converter</b>
+              <ul class="rel-points">
+                <li>Windows window converter</li>
+                <li>Turbo (hold R + button)</li>
+                <li>Korean and English UI</li>
+              </ul>
+            </li>
         </ul>
         <a class="rel-link" href="https://github.com/zzcx88/neo3ds/releases/tag/v1.0.0">GitHub release</a>
       </li>
@@ -289,28 +487,45 @@
           <span class="rel-v">A clearer converter guide</span>
           <time class="rel-date" datetime="2026-11-18">2026-11-18</time>
         </div>
-        <p class="rel-desc">The prerequisites, outputs and pre-conversion blocking reasons now use more space on wide screens, with shorter guide headings and reporting text. (<a href="https://github.com/zzcx88/neo3ds/issues/395">#395</a>)</p>
+        <ul class="rel-points web-points">
+          <li>Prerequisites, outputs and pre-conversion blocking reasons use more space on wide screens</li>
+          <li>Shorter guide headings and reporting text (<a href="https://github.com/zzcx88/neo3ds/issues/395">#395</a>)</li>
+        </ul>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">Large full-set downloads</span>
           <time class="rel-date" datetime="2026-11-17">2026-11-17</time>
         </div>
-        <p class="rel-desc">Even with all 159 games converted, downloading them together failed at the browser's 2 GB Blob limit. Results now stay on disk (OPFS) and the ZIP is streamed, so the ~7.4 GB full romset comes down as one file or as 1 GB parts. Files over 4 GB are written as ZIP64. (<a href="https://github.com/zzcx88/neo3ds/issues/388">#388</a>)</p>
+        <ul class="rel-points web-points">
+          <li>Full download of all 159 games failed at the browser 2 GB Blob limit</li>
+          <li>Results stay on disk (OPFS) and the ZIP is streamed: the ~7.4 GB full romset arrives as one file or in 1 GB parts</li>
+          <li>ZIPs over 4 GB written as ZIP64 (<a href="https://github.com/zzcx88/neo3ds/issues/388">#388</a>)</li>
+        </ul>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">What you need, and blocked reasons</span>
           <time class="rel-date" datetime="2026-11-14">2026-11-14</time>
         </div>
-        <p class="rel-desc">The converter page now has a static guide: the game romset zip and neogeo.zip (the BIOS) you need, the difference between a game CIA (.cia) and a launcher file (.neo3ds), the seven reasons a game is blocked before conversion with the next step for each, and how that differs from a failure during conversion. It also says how to send a report with the log attached. (<a href="https://github.com/zzcx88/neo3ds/issues/375">#375</a>)</p>
+        <ul class="rel-points web-points">
+          <li>Static guide added to the converter page</li>
+          <li>Covers the game romset zip and neogeo.zip (the BIOS), and how a game CIA (.cia) differs from a launcher file (.neo3ds)</li>
+          <li>Table of the seven pre-conversion blocking reasons with the next step for each, kept apart from failures during conversion</li>
+          <li>How to send a report with the log attached (<a href="https://github.com/zzcx88/neo3ds/issues/375">#375</a>)</li>
+        </ul>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
           <span class="rel-v">Clearer converter wording</span>
           <time class="rel-date" datetime="2026-11-12">2026-11-12</time>
         </div>
-        <p class="rel-desc">Removed sentences that said the same thing two or three times, reworded negative-first copy, and fixed descriptions that did not match what the converter does. Icon and banner labels now read "icon/banner" throughout and log separators are consistent. (<a href="https://github.com/zzcx88/neo3ds/issues/349">#349</a> <a href="https://github.com/zzcx88/neo3ds/issues/352">#352</a> <a href="https://github.com/zzcx88/neo3ds/issues/354">#354</a>)</p>
+        <ul class="rel-points web-points">
+          <li>Sentences that repeated the same guidance two or three times removed</li>
+          <li>Negative-first copy reworded</li>
+          <li>Descriptions that did not match the converter fixed</li>
+          <li>Icon and banner labels read "icon/banner" throughout; log separators consistent (<a href="https://github.com/zzcx88/neo3ds/issues/349">#349</a> <a href="https://github.com/zzcx88/neo3ds/issues/352">#352</a> <a href="https://github.com/zzcx88/neo3ds/issues/354">#354</a>)</li>
+        </ul>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -318,11 +533,37 @@
           <time class="rel-date" datetime="2026-11-11">2026-11-11</time>
         </div>
         <ul class="rel-items">
-            <li><b>Plain-language failure alerts and game rows</b>: When a conversion fails, the alert and the game row now show one sentence about the cause and one about what to do. The technical message stays unchanged in the log and in the report payload. (<a href="https://github.com/zzcx88/neo3ds/issues/337">#337</a>)</li>
-            <li><b>Failure reasons split into memory, tool and game DB</b>: A graphics-stage failure that used to read "the exact cause could not be found" is now reported as one of three things: the browser ran out of memory, a conversion tool stopped, or the game DB failed. The log and report carry the same split. (<a href="https://github.com/zzcx88/neo3ds/issues/342">#342</a>)</li>
-            <li><b>Missing chips and parent romset are named</b>: When a romset is incomplete, the message names up to four missing chips and says to add the parent romset when one is needed. If the chips are present but their CRCs differ, it says the romset is a different version. (<a href="https://github.com/zzcx88/neo3ds/issues/343">#343</a>)</li>
-            <li><b>Batch results sort completed games first</b>: When a batch finishes, the list now reorders completed games, then failures, waiting games and unsupported games, and scrolls back to the top. Within each group the original zip order is kept. (<a href="https://github.com/zzcx88/neo3ds/issues/344">#344</a>)</li>
-            <li><b>The packing step no longer looks frozen</b>: The last packing step used to leave the progress display silent for 2-4 s, which looked like a freeze. It now shows elapsed time, and the finished CIA arrives as a Blob, which also removes a hitch when the result lands. (<a href="https://github.com/zzcx88/neo3ds/issues/345">#345</a>)</li>
+            <li><b>Plain-language failure alerts and game rows</b>
+              <ul class="rel-points">
+                <li>On failure, the alert and game row show one sentence on the cause and one on what to do</li>
+                <li>Technical message stays as written in the log and the report payload (<a href="https://github.com/zzcx88/neo3ds/issues/337">#337</a>)</li>
+              </ul>
+            </li>
+            <li><b>Failure reasons split into memory, tool and game DB</b>
+              <ul class="rel-points">
+                <li>Graphics-stage failures no longer read "the exact cause could not be found": they name browser memory exhaustion, a stopped conversion tool or a game DB failure</li>
+                <li>Log and report carry the same split (<a href="https://github.com/zzcx88/neo3ds/issues/342">#342</a>)</li>
+              </ul>
+            </li>
+            <li><b>Missing chips and parent romset are named</b>
+              <ul class="rel-points">
+                <li>Incomplete romset: up to four missing chips named</li>
+                <li>Says to add the parent romset when one is needed</li>
+                <li>Chips present but CRCs different: reported as a different version (<a href="https://github.com/zzcx88/neo3ds/issues/343">#343</a>)</li>
+              </ul>
+            </li>
+            <li><b>Batch results sort completed games first</b>
+              <ul class="rel-points">
+                <li>Finished batch reorders the list as completed, failures, waiting and unsupported, then scrolls to the top</li>
+                <li>Original zip order kept within each group (<a href="https://github.com/zzcx88/neo3ds/issues/344">#344</a>)</li>
+              </ul>
+            </li>
+            <li><b>The packing step no longer looks frozen</b>
+              <ul class="rel-points">
+                <li>Last packing step no longer leaves the progress display silent for 2-4 s</li>
+                <li>Elapsed time shown, and the finished CIA handed over as a Blob, removing a hitch when the result lands (<a href="https://github.com/zzcx88/neo3ds/issues/345">#345</a>)</li>
+              </ul>
+            </li>
         </ul>
       </li>
       <li class="rel web-day">
@@ -330,7 +571,11 @@
           <span class="rel-v">Damaged and oversized zips refused</span>
           <time class="rel-date" datetime="2026-11-10">2026-11-10</time>
         </div>
-        <p class="rel-desc">Before unpacking, a zip with more than 4096 entries, a single entry over 64 MB, or more than 512 MB of data is refused instead of converted. A forged size header can no longer push the heap. Preflight shows it as "the zip could not be read". (<a href="https://github.com/zzcx88/neo3ds/issues/330">#330</a>)</p>
+        <ul class="rel-points web-points">
+          <li>Before unpacking, a zip with over 4096 entries, a single entry over 64 MB or over 512 MB of data is refused instead of converted</li>
+          <li>Forged size headers can no longer push the heap</li>
+          <li>Preflight shows it as "the zip could not be read" (<a href="https://github.com/zzcx88/neo3ds/issues/330">#330</a>)</li>
+        </ul>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -338,9 +583,25 @@
           <time class="rel-date" datetime="2026-11-02">2026-11-02</time>
         </div>
         <ul class="rel-items">
-            <li><b>Report button removed from the result</b>: The report button next to the download button is gone. After a failure, the alert in the progress section and the report guidance further down still remain. (<a href="https://github.com/zzcx88/neo3ds/issues/240">#240</a>)</li>
-            <li><b>Launcher CIA install moved to the download page</b>: The converter now makes two things, a game CIA and a launcher file (.neo3ds); installing and updating the launcher CIA is explained on the download page. An old launcher-mode link redirects there. (<a href="https://github.com/zzcx88/neo3ds/issues/242">#242</a>)</li>
-            <li><b>Small converter layout cleanups</b>: The "no launcher yet?" link in pack mode moved above the Convert button, and the empty drop panel no longer repeats its prompt twice. (<a href="https://github.com/zzcx88/neo3ds/issues/244">#244</a> <a href="https://github.com/zzcx88/neo3ds/issues/246">#246</a>)</li>
+            <li><b>Report button removed from the result</b>
+              <ul class="rel-points">
+                <li>Report button next to the download button removed</li>
+                <li>On failure, the alert in the progress section and the report guidance below remain (<a href="https://github.com/zzcx88/neo3ds/issues/240">#240</a>)</li>
+              </ul>
+            </li>
+            <li><b>Launcher CIA install moved to the download page</b>
+              <ul class="rel-points">
+                <li>The converter makes two outputs: a game CIA and a launcher file (.neo3ds)</li>
+                <li>Installing and updating the launcher CIA is covered on the download page</li>
+                <li>Old launcher-mode links redirect there (<a href="https://github.com/zzcx88/neo3ds/issues/242">#242</a>)</li>
+              </ul>
+            </li>
+            <li><b>Small converter layout cleanups</b>
+              <ul class="rel-points">
+                <li>Pack-mode "no launcher yet?" link moved above the Convert button</li>
+                <li>Empty drop panel no longer repeats its prompt twice (<a href="https://github.com/zzcx88/neo3ds/issues/244">#244</a> <a href="https://github.com/zzcx88/neo3ds/issues/246">#246</a>)</li>
+              </ul>
+            </li>
         </ul>
       </li>
       <li class="rel web-day">
@@ -348,7 +609,10 @@
           <span class="rel-v">BIOS choice in the log</span>
           <time class="rel-date" datetime="2026-10-30">2026-10-30</time>
         </div>
-        <p class="rel-desc">The log now states which BIOS (AES/MVS) and system each game converts with, before the work starts, so the choice is visible even when reading the game data fails. (<a href="https://github.com/zzcx88/neo3ds/issues/208">#208</a>)</p>
+        <ul class="rel-points web-points">
+          <li>The log states the BIOS (AES/MVS) and system each game converts with before work starts</li>
+          <li>Choice stays visible even when reading the game data fails (<a href="https://github.com/zzcx88/neo3ds/issues/208">#208</a>)</li>
+        </ul>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -356,8 +620,18 @@
           <time class="rel-date" datetime="2026-10-28">2026-10-28</time>
         </div>
         <ul class="rel-items">
-            <li><b>Batch conversion and the neogeo.zip requirement</b>: A "before you convert" box above the drop area now says that neogeo.zip (the BIOS) is required for every conversion, that several games can be dropped at once, and that only MAME romset zips convert. A failed batch summarises up to three reasons. (<a href="https://github.com/zzcx88/neo3ds/issues/173">#173</a>)</li>
-            <li><b>On phones the page title comes first</b>: On phone widths the title used to be pushed below the drop panel; it now comes first, so the page says what it does before the form. (<a href="https://github.com/zzcx88/neo3ds/issues/174">#174</a>)</li>
+            <li><b>Batch conversion and the neogeo.zip requirement</b>
+              <ul class="rel-points">
+                <li>"Before you convert" box above the drop area</li>
+                <li>Says neogeo.zip (the BIOS) is required for every conversion, that several games can be dropped at once, and that only MAME romset zips convert</li>
+                <li>A failed batch summarises up to three reasons (<a href="https://github.com/zzcx88/neo3ds/issues/173">#173</a>)</li>
+              </ul>
+            </li>
+            <li><b>On phones the page title comes first</b>
+              <ul class="rel-points">
+                <li>On phone widths the title no longer drops below the drop panel: the page says what it does first (<a href="https://github.com/zzcx88/neo3ds/issues/174">#174</a>)</li>
+              </ul>
+            </li>
         </ul>
       </li>
       <li class="rel web-day">
@@ -365,7 +639,11 @@
           <span class="rel-v">Faster, smaller conversions</span>
           <time class="rel-date" datetime="2026-10-26">2026-10-26</time>
         </div>
-        <p class="rel-desc">Sprites are now compressed in 16 KB blocks, which makes conversion faster and the output a little smaller: 64 MB of KOF '98 sprites went from 22.2 MB to 20.3 MB. Existing CIAs made with 4 KB blocks keep working. (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</p>
+        <ul class="rel-points web-points">
+          <li>Sprites compressed in 16 KB blocks: faster conversion, slightly smaller output</li>
+          <li>64 MB of KOF '98 sprites went from 22.2 MB to 20.3 MB</li>
+          <li>Existing CIAs made with 4 KB blocks keep working (<a href="https://github.com/zzcx88/neo3ds/issues/123">#123</a>)</li>
+        </ul>
       </li>
       <li class="rel web-day">
         <div class="rel-head">
@@ -373,11 +651,38 @@
           <time class="rel-date" datetime="2026-10-25">2026-10-25</time>
         </div>
         <ul class="rel-items">
-            <li><b>English is the default page, Korean lives at /ko/</b>: The root pages are now English and the Korean edition sits at /ko/. A hint on the English page points Korean readers to it. (<a href="https://github.com/zzcx88/neo3ds/issues/141">#141</a>)</li>
-            <li><b>The finished flow now lives in one progress section</b>: Download and download-all now sit in a result block inside the progress section, so you can download without scrolling. The reason a game cannot convert shows next to the button, and a failure raises an alert. (<a href="https://github.com/zzcx88/neo3ds/issues/143">#143</a>)</li>
-            <li><b>Cleaner CIA file names</b>: Game CIA files dropped the -web suffix (kof98h.cia). Switching games resets the progress values. (<a href="https://github.com/zzcx88/neo3ds/issues/145">#145</a>)</li>
-            <li><b>Parallel logs show game, stage and elapsed time</b>: Each log line now carries the elapsed time, the game and its [n/4] stage, so a parallel batch shows at a glance which game is at which stage. (<a href="https://github.com/zzcx88/neo3ds/issues/152">#152</a>)</li>
-            <li><b>Progress and list touch-ups</b>: Removed per-stage progress values that meant nothing with parallel workers, and capped the game list at three visible rows. Download-all moved below the Convert button, and Cancel took on a neutral grey tone. (<a href="https://github.com/zzcx88/neo3ds/issues/134">#134</a> <a href="https://github.com/zzcx88/neo3ds/issues/139">#139</a> <a href="https://github.com/zzcx88/neo3ds/issues/147">#147</a> <a href="https://github.com/zzcx88/neo3ds/issues/150">#150</a>)</li>
+            <li><b>English is the default page, Korean lives at /ko/</b>
+              <ul class="rel-points">
+                <li>Root pages now English; the Korean edition at /ko/</li>
+                <li>A hint on the English page points Korean readers to it (<a href="https://github.com/zzcx88/neo3ds/issues/141">#141</a>)</li>
+              </ul>
+            </li>
+            <li><b>The finished flow now lives in one progress section</b>
+              <ul class="rel-points">
+                <li>Download and download-all moved into a result block inside the progress section, so no scrolling is needed</li>
+                <li>The reason a game cannot convert shows next to the button</li>
+                <li>A failure raises an alert (<a href="https://github.com/zzcx88/neo3ds/issues/143">#143</a>)</li>
+              </ul>
+            </li>
+            <li><b>Cleaner CIA file names</b>
+              <ul class="rel-points">
+                <li>Game CIA files dropped the -web suffix (kof98h.cia)</li>
+                <li>Switching games resets the progress values (<a href="https://github.com/zzcx88/neo3ds/issues/145">#145</a>)</li>
+              </ul>
+            </li>
+            <li><b>Parallel logs show game, stage and elapsed time</b>
+              <ul class="rel-points">
+                <li>Every log line carries elapsed time, the game and its [n/4] stage, so a parallel batch shows which game is at which stage (<a href="https://github.com/zzcx88/neo3ds/issues/152">#152</a>)</li>
+              </ul>
+            </li>
+            <li><b>Progress and list touch-ups</b>
+              <ul class="rel-points">
+                <li>Per-stage progress values removed from the parallel workers</li>
+                <li>Game list capped at three visible rows</li>
+                <li>Download-all moved below the Convert button</li>
+                <li>Cancel took on a neutral grey tone (<a href="https://github.com/zzcx88/neo3ds/issues/134">#134</a> <a href="https://github.com/zzcx88/neo3ds/issues/139">#139</a> <a href="https://github.com/zzcx88/neo3ds/issues/147">#147</a> <a href="https://github.com/zzcx88/neo3ds/issues/150">#150</a>)</li>
+              </ul>
+            </li>
         </ul>
       </li>
       <li class="rel web-day">
@@ -386,10 +691,30 @@
           <time class="rel-date" datetime="2026-10-24">2026-10-24</time>
         </div>
         <ul class="rel-items">
-            <li><b>Half the conversion time: sprite compression</b>: A web worker runs on one core, and level-19 compression was the bottleneck. Dropping to level 12 cut a kof98h conversion from 13.9 s to 7.0 s while the output grew by only 0.9%. (<a href="https://github.com/zzcx88/neo3ds/issues/120">#120</a>)</li>
-            <li><b>Rom zip analysis: 1.8 s to 0.03 s</b>: The converter reads only the zip's central directory to learn names, CRCs and sizes, then unpacks entries when they are needed. A 40.8 MB zip now reads 0.13 MB up front. (<a href="https://github.com/zzcx88/neo3ds/issues/121">#121</a>)</li>
-            <li><b>Batch conversion in parallel: 3 games 13.7 s to 5.5 s</b>: Each game gets a worker and a finished worker takes the next game. Devices with little memory are held to a single worker. (<a href="https://github.com/zzcx88/neo3ds/issues/122">#122</a>)</li>
-            <li><b>Mobile memory gate and batch failure handling</b>: An 8 GB Android device that reports deviceMemory now keeps the parallel workers; only an unknown memory size falls back to one. Batch failure paths were unified so a failure is reported once. (<a href="https://github.com/zzcx88/neo3ds/issues/128">#128</a>)</li>
+            <li><b>Half the conversion time: sprite compression</b>
+              <ul class="rel-points">
+                <li>A web worker runs on one core and level-19 compression was the bottleneck</li>
+                <li>Level 12 cut a kof98h conversion from 13.9 s to 7.0 s while the output grew by only 0.9% (<a href="https://github.com/zzcx88/neo3ds/issues/120">#120</a>)</li>
+              </ul>
+            </li>
+            <li><b>Rom zip analysis: 1.8 s to 0.03 s</b>
+              <ul class="rel-points">
+                <li>Reads only the zip central directory to learn names, CRCs and sizes, then unpacks entries when needed</li>
+                <li>A 40.8 MB zip now reads 0.13 MB up front (<a href="https://github.com/zzcx88/neo3ds/issues/121">#121</a>)</li>
+              </ul>
+            </li>
+            <li><b>Batch conversion in parallel: 3 games 13.7 s to 5.5 s</b>
+              <ul class="rel-points">
+                <li>Each game gets a worker, and a finished worker takes the next game</li>
+                <li>Devices with little memory held to a single worker (<a href="https://github.com/zzcx88/neo3ds/issues/122">#122</a>)</li>
+              </ul>
+            </li>
+            <li><b>Mobile memory gate and batch failure handling</b>
+              <ul class="rel-points">
+                <li>An 8 GB Android device that reports deviceMemory keeps the parallel workers; only an unknown memory size falls back to one</li>
+                <li>Batch failure paths unified so a failure is reported once (<a href="https://github.com/zzcx88/neo3ds/issues/128">#128</a>)</li>
+              </ul>
+            </li>
         </ul>
       </li>
       <li class="rel web-day">
@@ -398,10 +723,30 @@
           <time class="rel-date" datetime="2026-10-22">2026-10-22</time>
         </div>
         <ul class="rel-items">
-            <li><b>Many roms at once, listed before conversion</b>: Drop several game zips and the converter lists what it recognised before starting; if one game fails, the rest keep converting. (<a href="https://github.com/zzcx88/neo3ds/issues/74">#74</a>)</li>
-            <li><b>Pick an icon and banner per game</b>: Choose the picture used as each game's icon (48×48) and banner (256×128), and change it per game from the batch list. (<a href="https://github.com/zzcx88/neo3ds/issues/75">#75</a> <a href="https://github.com/zzcx88/neo3ds/issues/76">#76</a>)</li>
-            <li><b>Progress bars for recognition and the whole run</b>: Loading bars now show the recognition step and the whole run, the page moves focus to the progress section, and a download-all button collects every result at the end. (<a href="https://github.com/zzcx88/neo3ds/issues/81">#81</a>)</li>
-            <li><b>MAME-only notice and preflight blocking reasons</b>: The converter states that only MAME Neo Geo romset zips convert, and shows why a game is blocked before conversion, in Korean and English. (<a href="https://github.com/zzcx88/neo3ds/issues/79">#79</a>)</li>
+            <li><b>Many roms at once, listed before conversion</b>
+              <ul class="rel-points">
+                <li>Several game zips dropped at once are listed before conversion starts</li>
+                <li>If one game fails, the rest keep converting (<a href="https://github.com/zzcx88/neo3ds/issues/74">#74</a>)</li>
+              </ul>
+            </li>
+            <li><b>Pick an icon and banner per game</b>
+              <ul class="rel-points">
+                <li>Pick the picture used as each game icon (48×48) and banner (256×128)</li>
+                <li>Changeable per game from the batch list (<a href="https://github.com/zzcx88/neo3ds/issues/75">#75</a> <a href="https://github.com/zzcx88/neo3ds/issues/76">#76</a>)</li>
+              </ul>
+            </li>
+            <li><b>Progress bars for recognition and the whole run</b>
+              <ul class="rel-points">
+                <li>Loading bars show the recognition step and the whole run; focus moves to the progress section so no scrolling is needed</li>
+                <li>A download-all button collects every result at the end (<a href="https://github.com/zzcx88/neo3ds/issues/81">#81</a>)</li>
+              </ul>
+            </li>
+            <li><b>MAME-only notice and preflight blocking reasons</b>
+              <ul class="rel-points">
+                <li>States that only MAME Neo Geo romset zips convert</li>
+                <li>Blocking reasons shown before conversion in Korean and English (<a href="https://github.com/zzcx88/neo3ds/issues/79">#79</a>)</li>
+              </ul>
+            </li>
         </ul>
       </li>
       <li class="rel web-day">
@@ -410,10 +755,32 @@
           <time class="rel-date" datetime="2026-10-21">2026-10-21</time>
         </div>
         <ul class="rel-items">
-            <li><b>The web converter opens</b>: The web converter opened: drop a rom zip and neogeo.zip and the browser builds a 3DS CIA. It covers six protection schemes, game CIAs, launcher files, the launcher CIA and batch conversion, and no file leaves the tab. (<a href="https://github.com/zzcx88/neo3ds/issues/39">#39</a> <a href="https://github.com/zzcx88/neo3ds/issues/40">#40</a>)</li>
-            <li><b>Output mode cards</b>: Game CIA, launcher file (.neo3ds) and launcher CIA became separate cards with their output format on each. Progress and log wording follow the chosen mode. (<a href="https://github.com/zzcx88/neo3ds/issues/45">#45</a>)</li>
-            <li><b>Launcher update notice</b>: The converter notes that updating means installing just the new launcher CIA, and that existing .neo3ds files keep running on it. (<a href="https://github.com/zzcx88/neo3ds/issues/61">#61</a>)</li>
-            <li><b>Header button converts instead of downloading</b>: The button in the converter page header used to download the offline converter zip. It now reads "Convert now" and starts a conversion on the page you are already on; the offline downloads live on the intro and download pages. (<a href="https://github.com/zzcx88/neo3ds/issues/41">#41</a>)</li>
+            <li><b>The web converter opens</b>
+              <ul class="rel-points">
+                <li>The web converter opened: drop a rom zip and neogeo.zip and the browser builds a 3DS CIA</li>
+                <li>Covers six protection schemes, game CIAs, launcher files, the launcher CIA and batch conversion</li>
+                <li>No file leaves the tab (<a href="https://github.com/zzcx88/neo3ds/issues/39">#39</a> <a href="https://github.com/zzcx88/neo3ds/issues/40">#40</a>)</li>
+              </ul>
+            </li>
+            <li><b>Output mode cards</b>
+              <ul class="rel-points">
+                <li>Game CIA, launcher file (.neo3ds) and launcher CIA became separate cards with their output format on each</li>
+                <li>Progress and log wording follow the chosen mode (<a href="https://github.com/zzcx88/neo3ds/issues/45">#45</a>)</li>
+              </ul>
+            </li>
+            <li><b>Launcher update notice</b>
+              <ul class="rel-points">
+                <li>Updating means installing just the new launcher CIA</li>
+                <li>Existing .neo3ds files keep running on it (<a href="https://github.com/zzcx88/neo3ds/issues/61">#61</a>)</li>
+              </ul>
+            </li>
+            <li><b>Header button converts instead of downloading</b>
+              <ul class="rel-points">
+                <li>The converter page header button no longer downloads the offline converter zip</li>
+                <li>It reads "Convert now" and starts a conversion on the page you are on</li>
+                <li>Offline downloads live on the intro and download pages (<a href="https://github.com/zzcx88/neo3ds/issues/41">#41</a>)</li>
+              </ul>
+            </li>
         </ul>
       </li>
         </ol>

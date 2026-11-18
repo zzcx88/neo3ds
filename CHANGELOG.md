@@ -11,94 +11,172 @@ Korean text for every release: [site/ko/changelog.html](site/ko/changelog.html).
 
 ## [1.5.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.5.0) - 2026-11-06
 
-- **Get games over Wi-Fi in the launcher** — Press Y in the launcher and scan the QR code from the offline converter to get .neo3ds files without taking out the SD card. One QR holds up to six files; with two or more, the launcher shows their names, sizes and the free space first. The web converter cannot send, but the offline converter can send files made on the web. ([#254](https://github.com/zzcx88/neo3ds/issues/254) [#261](https://github.com/zzcx88/neo3ds/issues/261))
-- **Send to 3DS window in the converter** — The offline converter sends CIAs to FBI and .neo3ds files to the launcher by QR code. Pick files from this session or drop others, and send 2 to 6 of one kind in one QR code. The window can stay open while you keep converting. ([#235](https://github.com/zzcx88/neo3ds/issues/235) [#255](https://github.com/zzcx88/neo3ds/issues/255) [#257](https://github.com/zzcx88/neo3ds/issues/257) [#264](https://github.com/zzcx88/neo3ds/issues/264) [#306](https://github.com/zzcx88/neo3ds/issues/306))
-- **Game pictures in the launcher list** — The top screen shows a saved picture of the game under the cursor. ([#224](https://github.com/zzcx88/neo3ds/issues/224))
-- **Spin Master graphics glitches fixed** — Fixed misplaced graphics while scrolling and white rectangles when hit. In a game that rewrites its sprites near the end of a frame, the lines above were drawn with new tiles at the old positions. Installing the new launcher is enough. ([#318](https://github.com/zzcx88/neo3ds/issues/318))
+- **Get games over Wi-Fi in the launcher**
+  - Press Y in the launcher and scan the offline converter QR to receive .neo3ds files without removing the SD card
+  - One QR holds up to six files; with two or more, names, sizes and free space shown before receiving
+  - Files made on the web can be sent with the offline converter
+  - The web converter cannot send ([#254](https://github.com/zzcx88/neo3ds/issues/254) [#261](https://github.com/zzcx88/neo3ds/issues/261))
+- **Send to 3DS window in the converter**
+  - Offline converter sends CIAs to FBI and .neo3ds files to the launcher by QR
+  - Pick files from this session or drop others
+  - 2 to 6 of one kind in a single QR code
+  - Window can stay open while converting continues ([#235](https://github.com/zzcx88/neo3ds/issues/235) [#255](https://github.com/zzcx88/neo3ds/issues/255) [#257](https://github.com/zzcx88/neo3ds/issues/257) [#264](https://github.com/zzcx88/neo3ds/issues/264) [#306](https://github.com/zzcx88/neo3ds/issues/306))
+- **Game pictures in the launcher list**
+  - Top screen shows the saved picture of the game under the cursor ([#224](https://github.com/zzcx88/neo3ds/issues/224))
+- **Spin Master graphics glitches fixed**
+  - Scrolling graphics misaligned and white rectangles on hit fixed
+  - Games that rewrite sprites near the end of a frame drew the lines above with new tiles at old positions
+  - Launcher reinstall only ([#318](https://github.com/zzcx88/neo3ds/issues/318))
 
 ## [1.4.1](https://github.com/zzcx88/neo3ds/releases/tag/v1.4.1) - 2026-10-31
 
-- **MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen** — Started on the arcade (MVS) BIOS, these games seemed to freeze on the green check screen for about a minute. In games where the BIOS runs some game code before the check, 1.4.0's fast start ended too early and each frame of the check screen took close to a second to draw. They now start within 2-3 s (measured in Azahar). Installing the new launcher is enough. ([#215](https://github.com/zzcx88/neo3ds/issues/215))
+- **MVS: Metal Slug 2 and Last Blade 2 stuck on the green screen**
+  - Arcade (MVS) BIOS start: green check screen looks frozen for about a minute
+  - Games that run some game code before the check: 1.4.0 fast start ended too early, so a check-screen frame took close to a second
+  - Starts within 2-3 s (measured in Azahar)
+  - Launcher reinstall only ([#215](https://github.com/zzcx88/neo3ds/issues/215))
 
 ## [1.4.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.4.0) - 2026-10-31
 
-- **Faster start on the MVS BIOS** — The arcade (MVS) BIOS checks the board before the game (the green screen); that part now runs fast without drawing. Measured in Azahar it went from about 6 s to about 1 s, and games with more graphics gain more. The check itself still runs, so games behave the same. Installing the new launcher is enough. ([#209](https://github.com/zzcx88/neo3ds/issues/209))
+- **Faster start on the MVS BIOS**
+  - Arcade (MVS) BIOS board check before the game (the green screen) now runs fast without drawing
+  - About 6 s to about 1 s (measured in Azahar), more for games with larger graphics
+  - Check itself still runs, so games behave the same
+  - Launcher reinstall only ([#209](https://github.com/zzcx88/neo3ds/issues/209))
 
 ## [1.3.2](https://github.com/zzcx88/neo3ds/releases/tag/v1.3.2) - 2026-10-29
 
-- **macOS: run it where you unzipped it** — The app converts even when you launch it from where you unzipped it. Up to v1.3.1 Gatekeeper ran it from a read-only copy and every build failed with "Read-only file system : .../bannertool"; the README also covers moving the app to ~/Applications. ([#177](https://github.com/zzcx88/neo3ds/issues/177))
-- **Linux: runnable after unzip** — The Linux zip ships makerom and bannertool as executable (0755), so conversion works as soon as you unzip. ([#179](https://github.com/zzcx88/neo3ds/issues/179))
+- **macOS: run it where you unzipped it**
+  - App converts even when launched from where it was unzipped
+  - Up to v1.3.1, Gatekeeper ran it from a read-only copy and every build failed with "Read-only file system : .../bannertool"
+  - Moving the app to ~/Applications covered in the README ([#177](https://github.com/zzcx88/neo3ds/issues/177))
+- **Linux: runnable after unzip**
+  - Linux zip ships makerom and bannertool executable (0755), so conversion works right after unzip ([#179](https://github.com/zzcx88/neo3ds/issues/179))
 
 ## [1.3.1](https://github.com/zzcx88/neo3ds/releases/tag/v1.3.1) - 2026-10-27
 
-- **macOS app signing** — The macOS converter was blocked as damaged by Gatekeeper; it is now ad-hoc signed and opens. ([#164](https://github.com/zzcx88/neo3ds/issues/164))
+- **macOS app signing**
+  - macOS converter ad-hoc signed, so Gatekeeper no longer blocks it as damaged ([#164](https://github.com/zzcx88/neo3ds/issues/164))
 
 ## [1.3.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.3.0) - 2026-10-26
 
-- **Launcher favorites** — Press SELECT or tap the * at the left of a game; All and Fav plus the last tab are remembered. ([#135](https://github.com/zzcx88/neo3ds/issues/135))
-- **Windowed converter on Linux and macOS** — Build CIAs, launcher files and the launcher CIA in a window, as on Windows; the command line stays.
-- **Faster conversion** — Graphics are compressed in 16KB blocks, so conversion is faster and files are a little smaller. ([#123](https://github.com/zzcx88/neo3ds/issues/123))
-- **Raster effects** — Neo Turf Masters water and grass, plus Neo Drift Out stage-start edges and curve backgrounds, are fixed. ([#131](https://github.com/zzcx88/neo3ds/issues/131))
+- **Launcher favorites**
+  - Add or remove favorites with SELECT or the * at the left of a game
+  - All and Fav tabs plus the last tab are remembered ([#135](https://github.com/zzcx88/neo3ds/issues/135))
+- **Windowed converter on Linux and macOS**
+  - Window builds CIAs, launcher files and the launcher CIA as on Windows
+  - Command line included
+- **Faster conversion**
+  - Graphics compressed in 16KB blocks: faster conversion, slightly smaller files ([#123](https://github.com/zzcx88/neo3ds/issues/123))
+- **Raster effects**
+  - Neo Turf Masters water and grass fixed
+  - Neo Drift Out stage-start edges and curve backgrounds fixed ([#131](https://github.com/zzcx88/neo3ds/issues/131))
 
 ## [1.2.1](https://github.com/zzcx88/neo3ds/releases/tag/v1.2.1) - 2026-10-22
 
-- **Korean and Japanese icons** — Offline converter icons and banners no longer show □ for Korean or Japanese titles; the web converter was not affected. ([#86](https://github.com/zzcx88/neo3ds/issues/86))
+- **Korean and Japanese icons**
+  - Offline converter icons and banners no longer show □ for Korean or Japanese titles
+  - Web converter unaffected ([#86](https://github.com/zzcx88/neo3ds/issues/86))
 
 ## [1.2.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.2.0) - 2026-10-21
 
-- **Fullscreen** — Screen > Full stretches the top screen, saved per game.
-- **Bottom screen off** — ⏻ at the top right of the bottom screen turns the backlight off; touch anywhere to turn it back on.
-- **Faster drawing** — Banded rendering split across two cores cuts frame drops in fullscreen and heavy scenes.
-- **Linux and macOS command-line converter** — Linux x64 and macOS (Apple Silicon) command-line builds join Windows.
+- **Fullscreen**
+  - Key config Screen stretches the top screen full
+  - Saved per game
+- **Bottom screen off**
+  - ⏻ at the top right of the bottom screen turns the backlight off
+  - Touch anywhere to turn it back on
+- **Faster drawing**
+  - Banded rendering split across two cores cuts frame drops in fullscreen and heavy scenes
+- **Linux and macOS command-line converter**
+  - Linux x64 and macOS (Apple Silicon) command-line builds join Windows
 
 ## [1.1.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.1.0) - 2026-10-18
 
-- **Launcher** — Install one CIA and drop .neo3ds files in /neo3ds/games/ to pick games in one app. ([#11](https://github.com/zzcx88/neo3ds/issues/11))
-- **Quick saves** — Three slots per game, via the bottom-screen [Slot] [Save] [Load] (tap twice) or SELECT+L / SELECT+R. ([#10](https://github.com/zzcx88/neo3ds/issues/10))
-- **Service menu and backup RAM** — Opens the MVS BIOS service menu and saves board settings and high scores to the SD card. ([#9](https://github.com/zzcx88/neo3ds/issues/9))
-- **Region and batch conversion** — Pick Europe-Asia (default), Japan or USA, and convert several zips in a row. ([#8](https://github.com/zzcx88/neo3ds/issues/8), [#12](https://github.com/zzcx88/neo3ds/issues/12))
-- **Sound fixes** — Metal Slug 1 BGM slowdown and Sonic Wings 2/3 music stopping are fixed. ([#7](https://github.com/zzcx88/neo3ds/issues/7), [#6](https://github.com/zzcx88/neo3ds/issues/6))
+- **Launcher**
+  - Install one CIA and drop .neo3ds files in /neo3ds/games/ to pick games in one app ([#11](https://github.com/zzcx88/neo3ds/issues/11))
+- **Quick saves**
+  - Three slots per game
+  - Bottom-screen [Slot] [Save] [Load] (tap twice) or SELECT+L / SELECT+R ([#10](https://github.com/zzcx88/neo3ds/issues/10))
+- **Service menu and backup RAM**
+  - Opens the MVS BIOS service menu
+  - Board settings and high scores saved to the SD card ([#9](https://github.com/zzcx88/neo3ds/issues/9))
+- **Region and batch conversion**
+  - Pick Europe-Asia (default), Japan or USA
+  - Several zips convert in a row ([#8](https://github.com/zzcx88/neo3ds/issues/8), [#12](https://github.com/zzcx88/neo3ds/issues/12))
+- **Sound fixes**
+  - Metal Slug 1 BGM slowdown fixed
+  - Sonic Wings 2/3 music stopping fixed ([#7](https://github.com/zzcx88/neo3ds/issues/7), [#6](https://github.com/zzcx88/neo3ds/issues/6))
 
 ## [1.0.8](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.8) - 2026-10-12
 
-- **Heavy scenes** — A slightly late frame no longer costs a whole frame, so Metal Slug 3's heavy machine gun and explosions drop far less.
-- **Sound CPU and timing** — Idle time of the sound driver is skipped in Metal Slug 2/X/3, and register changes play at their place within the frame.
+- **Heavy scenes**
+  - A slightly late frame no longer costs a whole frame
+  - Metal Slug 3 heavy machine gun and explosion frame drops fall sharply
+- **Sound CPU and timing**
+  - Metal Slug 2/X/3 sound driver idle time skipped
+  - Register changes play at their place within the frame
 
 ## [1.0.7](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.7) - 2026-10-11
 
-- **Bottom screen GUI** — Touch buttons for Key config, Turbo, System, Diagnostics and Restart, plus title, fps and the key layout; redrawn only on change.
-- **Key config arrows** — Every line of the key config screen now has < > buttons.
+- **Bottom screen GUI**
+  - Touch buttons for Key config, Turbo, System, Diagnostics and Restart
+  - Title, fps and key layout shown
+  - Redrawn only on change
+- **Key config arrows**
+  - < > buttons added to every line of the key config screen
 
 ## [1.0.6](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.6) - 2026-10-11
 
-- **SVC Chaos Plus** — The svcplus bootleg set Fightcade players use runs at full speed on an Old 3DS.
-- **AES/MVS switch** — Switch between the home and arcade BIOS with the converter's System option or the System line in key config.
+- **SVC Chaos Plus**
+  - The svcplus bootleg set Fightcade players use runs at full speed on an Old 3DS
+- **AES/MVS switch**
+  - Home (AES) and arcade (MVS) BIOS switch via the converter System option or the System line in key config
 
 ## [1.0.5](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.5) - 2026-10-11
 
-- **Zoomed sprites** — Shrunk sprite rows are unrolled per zoom step, so Samurai Shodown V Special runs at full speed.
-- **Compatibility** — Samurai Shodown V Special verified on hardware; KOF2003, Metal Slug 5 and Garou reported at 60 fps.
+- **Zoomed sprites**
+  - Shrunk sprite rows unrolled per zoom step: Samurai Shodown V Special at full speed
+- **Compatibility**
+  - Samurai Shodown V Special verified on hardware
+  - KOF2003, Metal Slug 5 and Garou 60 fps reports reflected
 
 ## [1.0.4](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.4) - 2026-10-11
 
-- **Key config** — Map each 3DS button to a Neo Geo button, a combination, Start or Coin; saved per game.
-- **Restart** — Hold SELECT + START for a second to restart the game.
+- **Key config**
+  - A/B/X/Y/L/R/ZL/ZR/START/SELECT mapped to a Neo Geo button, a combination, Start or Coin
+  - Saved per game
+- **Restart**
+  - Hold SELECT + START for a second to restart the game
 
 ## [1.0.3](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.3) - 2026-10-11
 
-- **PVC carts** — PVC-chip games convert, including SNK vs. Capcom: SVC Chaos. Metal Slug 5 and KOF2003 are not verified on hardware yet.
-- **Includes the KOF2002 fix** — The 1.0.2 KOF2002 crash fix is included.
+- **PVC carts**
+  - PVC-chip games convert, including SNK vs. Capcom: SVC Chaos
+  - Metal Slug 5 and KOF2003 not verified on hardware yet
+- **Includes the KOF2002 fix**
+  - Includes the 1.0.2 KOF2002 crash fix
 
 ## [1.0.2](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.2) - 2026-10-11
 
-- **KOF2002 crash** — A read of the odd byte of a video register used the wrong pointer and read far outside the ROM; fixed.
+- **KOF2002 crash**
+  - Reading the odd byte of a video register used a pointer outside the ROM; fixed
 
 ## [1.0.1](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.1) - 2026-10-11
 
-- **Fix layer banking** — Fix ROMs past 128KB are banked as MAME does, fixing the HUD in Metal Slug 3, KOF2000, Garou, Metal Slug 4 and Matrimelee.
-- **Full speed** — KOF2000 and KOF2002 verified at full speed on an Old 3DS.
+- **Fix layer banking**
+  - Fix ROMs past 128KB banked as MAME does
+  - HUD fixed in Metal Slug 3, KOF2000, Garou, Metal Slug 4 and Matrimelee
+- **Full speed**
+  - KOF2000 and KOF2002 verified at full speed on an Old 3DS
 
 ## [1.0.0](https://github.com/zzcx88/neo3ds/releases/tag/v1.0.0) - 2026-10-10
 
-- **First release** — Full speed on an Old 3DS (KOF '98/'99, Metal Slug X/3), 235 of 282 romsets convert, CMC42/50, SMA, PCM2 and KOF2002 decryption.
-- **Converter** — Windows window converter, turbo (hold R + button), Korean and English UI.
+- **First release**
+  - Full speed on an Old 3DS (KOF '98/'99, Metal Slug X/3)
+  - 235 of 282 romsets convert
+  - CMC42/50, SMA, PCM2 and KOF2002 decryption
+- **Converter**
+  - Windows window converter
+  - Turbo (hold R + button)
+  - Korean and English UI
