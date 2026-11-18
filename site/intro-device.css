@@ -127,7 +127,7 @@
    one stroke has no hairline to lose. The arrows are CSS triangles, not text glyphs, for the
    same reason. */
 .hero .dpad { position:relative; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:calc(72*var(--u)); height:calc(72*var(--u)); touch-action:manipulation; }
-.hero .shell-bottom { grid-template-columns:calc(74*var(--u)) calc(288*var(--u)) calc(74*var(--u)); padding-inline:calc(12*var(--u)); }
+.hero .shell-front-bottom { grid-template-columns:calc(74*var(--u)) calc(288*var(--u)) calc(74*var(--u)); padding-inline:calc(12*var(--u)); }
 .hero .dpad::before, .hero .dpad::after { content:none; }
 .hero .dpad-plate { position:absolute; left:calc(-2*var(--u)); top:calc(-2*var(--u)); width:calc(100% + 4*var(--u)); height:calc(100% + 4*var(--u)); pointer-events:none; }
 .hero .dpad-plate path { fill:#26262F; stroke:var(--pressed); }
@@ -166,6 +166,10 @@
       scale3d(var(--device-scale, 1), var(--device-scale, 1), var(--device-scale, 1));
   }
   .hero .shell { transform-style: preserve-3d; }
+  /* 본체 배경이 버튼을 덮거나 회전 중 앞면이 사라지지 않도록, 배경·화면·버튼을
+     한 장의 평면으로 그린다. 이 면만 두께가 있는 외곽과 함께 회전한다 (#394).
+     앞면 내부까지 3D로 펼치면 WebKit이 같은 깊이의 요소를 서로 가릴 수 있다. */
+  .hero .shell-front { transform:translateZ(0); transform-style:flat; }
   /* Open to about 150 degrees (#378): the top shell swings around the fixed hinge, the bottom
      shell stays flat, and the whole-device drag rotation still applies on top. The negative
      margin removes the projection loss (250u * (1 - cos 29deg) ≈ 31u) so the hero stays tight. */
@@ -182,7 +186,7 @@
     transform: translateZ(calc(-1 * var(--device-depth)));
     box-shadow: inset 0 0 0 1px #454550;
   }
-  .hero .shell::after {
+  .hero .shell-front::after {
     content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.07),
       inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.10),
