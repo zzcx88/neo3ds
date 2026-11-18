@@ -95,14 +95,6 @@
       </div>
       <div class="hero-product">
         <p data-i18n="hero.about1">네오지오는 SNK의 아케이드 기판(MVS)과 가정용 기기(AES)입니다. neo3ds는 그 롬셋을 3DS에 설치할 수 있는 파일로 바꾸는 변환기와, 3DS에서 게임을 실행하는 엔진입니다.</p>
-        <p data-i18n="hero.about2">결과물은 게임마다 따로 설치하는 CIA와, 런처 앱 하나에 여러 게임을 담는 <code>.neo3ds</code> 파일 두 가지입니다. 롬과 바이오스는 포함하지 않으며, 직접 가진 파일로만 만들 수 있습니다.</p>
-        <p data-i18n="hero.about3">호환성 목록은 롬셋마다 실기 확인, 변환 가능, 변환 불가를 구분해 표시합니다.</p>
-        <nav class="hero-links" aria-label="바로 가기" data-i18n-attr="aria-label:hero.linksLabel">
-          <a href="convert.html" data-i18n="hero.linkConvert">웹 변환기</a>
-          <a href="compat.html" data-i18n="hero.linkCompat">전체 호환성 목록</a>
-          <a href="#games" data-i18n="hero.linkSeries">시리즈별 페이지</a>
-          <a href="manual.html" data-i18n="hero.linkManual">3DS 사용 안내</a>
-        </nav>
       </div>
     </div>
 
@@ -269,16 +261,7 @@
       </li>
     </ol>
 
-    <h3 class="outputs-h" data-i18n="ways.h3">게임별 CIA, 아니면 런처</h3>
     <div class="outputs">
-      <div class="out-alt">
-        <div>
-          <h3 data-i18n="out.ciaH">게임 CIA</h3>
-          <p data-i18n="out.ciaP">게임 하나에 파일 하나. HOME 메뉴에 그 게임 아이콘이 생깁니다.</p>
-        </div>
-        <a class="btn btn-ghost" href="convert.html?mode=cia" data-i18n="out.ciaCta">게임 CIA 만들기</a>
-      </div>
-
       <div class="out-card out-card-launch">
         <p class="kicker" data-i18n="launch.kicker">여러 개를 모을 거라면</p>
         <h3 data-i18n="launch.h2">런처 앱 하나로 전부</h3>
@@ -299,6 +282,13 @@
           <a class="btn btn-ghost" href="convert.html?mode=pack" data-i18n="launch.cta2">런처용 파일 변환하기</a>
         </div>
       </div>
+      <div class="out-alt">
+        <div>
+          <h3 data-i18n="out.ciaH">게임 CIA</h3>
+          <p data-i18n="out.ciaP">게임 하나에 파일 하나. HOME 메뉴에 그 게임 아이콘이 생깁니다.</p>
+        </div>
+        <a class="btn btn-ghost" href="convert.html?mode=cia" data-i18n="out.ciaCta">게임 CIA 만들기</a>
+      </div>
     </div>
 
     <div class="prep">
@@ -306,10 +296,9 @@
       <ul class="check">
         <li><b data-i18n="prep.1b">3DS</b> <span data-i18n="prep.1d">구형 3DS / 2DS / New 3DS / New 2DS XL. Luma3DS와 FBI는 미리 설치해 둡니다.</span></li>
         <li><b data-i18n="prep.2b">웹 브라우저</b> <span data-i18n="prep.2d">Chrome, Edge, Firefox, Safari. 롬은 브라우저 안에서만 처리합니다.</span></li>
-        <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip과 neogeo.zip. 여기에는 없습니다.</span></li>
-        <li><b data-i18n="prep.4b">소리 파일</b> <span data-i18n="prep.4d">SD 카드에 <code>/3ds/dspfirm.cdc</code></span></li>
+        <li><b data-i18n="prep.3b">직접 가진 롬</b> <span data-i18n="prep.3d">MAME 롬셋 zip(neogeo.zip), 그리고 변환할 게임의 롬을 준비해주세요.</span></li>
+        <li><b data-i18n="prep.4b">소리 파일</b> <span data-i18n="prep.4d"><code>/3ds/dspfirm.cdc</code></span></li>
       </ul>
-      <p class="tiny" data-i18n="prep.note">롬셋 이름과 칩 CRC가 MAME 규격과 맞아야 합니다.<br>안 맞으면 변환기가 알아보지 못합니다.</p>
     </div>
   </div>
 </section>
@@ -317,7 +306,7 @@
 <!-- ── 호환성 ──────────────────────────────────────────────────────────── -->
 <section class="sec" id="games">
   <div class="wrap">
-    <h2 data-i18n="games.h2">되는 게임, 안 되는 게임</h2>
+    <h2 data-i18n="games.h2">호환 게임목록</h2>
     <p class="lede narrow" data-i18n="games.lede">롬셋 282종을 알아보고 그중 242종을 변환합니다. 26종은 구형 3DS 실기에서 돌려 봤습니다.</p>
     <p class="tiny" style="margin:8px 0 18px"><a href="compat.html" data-i18n="games.all">282종 전체 목록 보기</a></p>
 
@@ -387,7 +376,7 @@
 <!-- ── FAQ ────────────────────────────────────────────────────────────── -->
 <section class="sec" id="faq">
   <div class="wrap">
-    <h2 data-i18n="faq.h2">많이 묻는 것들</h2>
+    <h2 data-i18n="faq.h2">FAQ</h2>
     <div class="faq">
       <details>
         <summary data-i18n="faq.q1">롬은 어디서 받나요?</summary>

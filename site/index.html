@@ -102,14 +102,6 @@
       </div>
       <div class="hero-product">
         <p>Neo Geo is SNK's arcade board (MVS) and its home console (AES). neo3ds is a converter that turns those romsets into files a 3DS can install, plus an engine that runs the games on the 3DS.</p>
-        <p>The output comes in two shapes: a CIA installed per game, or a <code>.neo3ds</code> file that puts many games inside one launcher app. No roms or BIOS are included; you can only build from files you own.</p>
-        <p>The compatibility list marks every romset as played on real hardware, convertible, or not supported.</p>
-        <nav class="hero-links" aria-label="Shortcuts">
-          <a href="convert.html">Web converter</a>
-          <a href="compat.html">Full compatibility list</a>
-          <a href="#games">Series pages</a>
-          <a href="manual.html">3DS manual</a>
-        </nav>
       </div>
     </div>
 
@@ -276,16 +268,7 @@
       </li>
     </ol>
 
-    <h3 class="outputs-h">A CIA per game, or one launcher</h3>
     <div class="outputs">
-      <div class="out-alt">
-        <div>
-          <h3>Game CIA</h3>
-          <p>One file per game. Its own icon on the HOME menu.</p>
-        </div>
-        <a class="btn btn-ghost" href="convert.html?mode=cia">Build a game CIA</a>
-      </div>
-
       <div class="out-card out-card-launch">
         <p class="kicker">If you're collecting a few</p>
         <h3>One launcher for all of them</h3>
@@ -306,6 +289,13 @@
           <a class="btn btn-ghost" href="convert.html?mode=pack">Convert launcher files</a>
         </div>
       </div>
+      <div class="out-alt">
+        <div>
+          <h3>Game CIA</h3>
+          <p>One file per game. Its own icon on the HOME menu.</p>
+        </div>
+        <a class="btn btn-ghost" href="convert.html?mode=cia">Build a game CIA</a>
+      </div>
     </div>
 
     <div class="prep">
@@ -313,10 +303,9 @@
       <ul class="check">
         <li><b>A 3DS</b> <span>Old 3DS / 2DS / New 3DS / New 2DS XL, with Luma3DS and FBI already installed.</span></li>
         <li><b>A web browser</b> <span>Chrome, Edge, Firefox or Safari. Roms stay inside the browser.</span></li>
-        <li><b>Romsets you own</b> <span>A MAME romset zip and neogeo.zip. Neither is included here.</span></li>
-        <li><b>The sound file</b> <span><code>/3ds/dspfirm.cdc</code> on the SD card</span></li>
+        <li><b>Romsets you own</b> <span>Prepare neogeo.zip and the ROM for the game you want to convert.</span></li>
+        <li><b>The sound file</b> <span><code>/3ds/dspfirm.cdc</code></span></li>
       </ul>
-      <p class="tiny">The romset name and chip CRCs have to match the MAME set.<br>If they don't, the converter won't recognise the zip.</p>
     </div>
   </div>
 </section>
@@ -324,7 +313,7 @@
 
 <section class="sec" id="games">
   <div class="wrap">
-    <h2>What runs, what doesn't</h2>
+    <h2>Compatible games</h2>
     <p class="lede narrow">It recognises 282 romsets and converts 242 of them. 26 have been played on an Old 3DS.</p>
     <p class="tiny" style="margin:8px 0 18px"><a href="compat.html">See all 282 romsets</a></p>
 
@@ -394,7 +383,7 @@
 
 <section class="sec" id="faq">
   <div class="wrap">
-    <h2>Things people ask</h2>
+    <h2>FAQ</h2>
     <div class="faq">
       <details>
         <summary>Where do I get the ROMs?</summary>
