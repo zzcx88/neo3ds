@@ -141,16 +141,15 @@
 /* #375: static prerequisites, outputs and preflight blocking reasons */
 #guide h3{margin:34px 0 12px;font-size:19px;font-family:var(--text);font-weight:600}
 #guide h3:first-of-type{margin-top:26px}
+#feedback .lede{font-size:15.5px}
 .guide-lede{margin:0 0 14px;max-width:var(--prose);font-size:15.5px;line-height:1.7;color:#C9C9D2;word-break:keep-all;overflow-wrap:anywhere}
-.guide-req{max-width:var(--prose)}
 .guide-req li code{font-size:12px}
-.guide-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 10px;max-width:var(--prose)}
+.guide-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 10px}
 .guide-card{padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:0 3px 3px 0;background:var(--panel-2)}
 .guide-card h4{margin:0 0 6px;font:700 13px/1.4 var(--pixel);color:var(--paper)}
 .guide-card p{margin:0 0 10px;font-size:14.5px;line-height:1.65;color:#C9C9D2;word-break:keep-all;overflow-wrap:anywhere}
 .guide-card a{font-size:13.5px;color:var(--gold)}
 .guide-note{margin:0 0 4px;max-width:var(--prose)}
-.guide-table-wrap{max-width:var(--prose)}
 .guide-table{width:100%;border-collapse:collapse;font-size:14px}
 .guide-table th{font:400 10px/1.4 var(--pixel-sm);color:var(--gold);text-align:left;padding:0 0 8px;white-space:nowrap}
 .guide-table td{padding:10px 12px 10px 0;border-top:1px solid var(--line);color:#C9C9D2;line-height:1.6;vertical-align:top;word-break:keep-all;overflow-wrap:anywhere}
@@ -332,14 +331,14 @@
     <h2>What you need, what you get</h2>
     <p class="lede narrow">A converter that turns MAME romsets you own into 3DS install files. Roms and the BIOS are not provided here.</p>
 
-    <h3>Files a conversion needs</h3>
+    <h3>What you need</h3>
     <ul class="check guide-req">
       <li><b>A game romset zip</b> <span>A zip whose name is still the MAME romset name (for example mslug3.zip). Renaming it means the romset cannot be found.</span></li>
       <li><b>neogeo.zip (the BIOS)</b> <span>Needed for every conversion. Drop it with the game zip and leave the name alone.</span></li>
       <li><b>Files you already own</b> <span>Both have to be yours. This site does not let you download roms or a BIOS.</span></li>
     </ul>
 
-    <h3>Two kinds of output</h3>
+    <h3>Output</h3>
     <div class="guide-out">
       <div class="guide-card">
         <h4>Game CIA (.cia)</h4>
@@ -355,7 +354,7 @@
     <p class="tiny guide-note">The two are built separately. For the same game, the CIA copy and the launcher copy share key config, backup RAM and quick saves.</p>
     <p class="tiny guide-note">“Download all” asks where to save, because the bundle can be large. A browser without a save dialog (Firefox, Safari) downloads the ZIP in 1 GB parts instead; each part opens on its own.</p>
 
-    <h3>Why a zip is stopped before converting</h3>
+    <h3>Why conversion fails</h3>
     <p class="guide-lede">Dropping a game zip checks the romset and its chips before anything converts. With several games, each row in the list shows its own reason and only that game is skipped.</p>
     <div class="table-scroll guide-table-wrap" tabindex="0" role="region" aria-label="Pre-conversion blocking reasons">
       <table class="guide-table">
@@ -371,7 +370,6 @@
         </tbody>
       </table>
     </div>
-    <p class="guide-lede">A failure after the conversion starts is a different thing. It is usually the browser running out of memory or a conversion tool stopping, and the progress log shows the step. Do not swap the game: close other tabs or reload and try again, and if it keeps happening send a <a href="index.html#feedback">problem report</a> with the log.</p>
 
     <h3>Where your files go</h3>
     <p class="guide-lede">The game zips, neogeo.zip and the files you build are processed inside the browser tab and are not sent to a server. No account is needed. The site measures page views, conversion start, done, failure and download clicks, and report submissions; <a href="privacy.html">privacy</a> has the details.</p>
@@ -382,7 +380,7 @@
 <section class="sec" id="feedback">
   <div class="wrap">
     <h2>Something went wrong?</h2>
-    <p class="lede narrow">Reports go through the form on the intro page. The failed run's log and game details come along.</p>
+    <p class="lede narrow">The failed run's log and game details come along.</p>
     <a class="btn btn-primary btn-lg" id="gateReportGo" href="index.html#feedback" target="_blank" rel="noopener">Report</a>
   </div>
 </section>

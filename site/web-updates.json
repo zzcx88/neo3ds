@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-18",
+    "items": [
+      {
+        "t": {
+          "ko": "변환 안내 배치와 제보 문구 정리",
+          "en": "Clearer converter guide layout and reporting text"
+        },
+        "d": {
+          "ko": "준비물과 결과물, 변환 전 차단 이유를 넓은 화면에서 더 넓게 표시하고 안내 제목과 제보 문구를 간결하게 정리했습니다. (#395)",
+          "en": "The prerequisites, outputs and pre-conversion blocking reasons now use more space on wide screens, with shorter guide headings and reporting text. (#395)"
+        }
+      }
+    ],
+    "summary": {
+      "ko": "변환 안내 배치 정리",
+      "en": "A clearer converter guide"
+    }
+  },
+  {
     "date": "2026-11-17",
     "items": [
       {

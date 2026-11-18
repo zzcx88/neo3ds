@@ -1,5 +1,5 @@
 {
- "fingerprint": "f7745629357a5911",
+ "fingerprint": "61b473c4aaa77464",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -103,6 +103,7 @@
    "number:375",
    "number:388",
    "number:39",
+   "number:395",
    "number:4 GB",
    "number:4 KB",
    "number:40",
@@ -291,6 +292,7 @@
    "number:375",
    "number:388",
    "number:39",
+   "number:395",
    "number:40",
    "number:40.8MB",
    "number:4096",
