@@ -34,8 +34,6 @@
 .page-home #games .explorer { border: 1px solid var(--pressed); border-top: 4px solid var(--marquee); background: var(--ink); padding: 20px; }
 .page-home #games .ex-tools { border-top: 0; padding-top: 0; }
 .page-home #games .ex-detail { border-top: 2px solid var(--gold); }
-.page-home #faq .wrap, .page-home #feedback .wrap, .page-home #legal .wrap { max-width: 900px; }
-.page-home #faq .faq { max-width: 72ch; }
 .page-home #feedback { background: var(--ink-2); }
 .page-home #feedback .report { border-radius: 0; background: var(--panel-2); }
 .page-home #legal { border-bottom: 0; }
