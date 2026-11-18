@@ -233,6 +233,27 @@ KO 원본의 `data-i18n` 키가 모두 `app.js` EN 표에 존재 · 루트 7페�
 수동 실행: Actions → Pages → Run workflow.
 로컬 재현: `bash scripts/build_wasm.sh` (전제: §1 엔진 빌드 + emsdk) 후 `site/`를 정적 서버로.
 
+소개 페이지의 3D 모델을 바꾸면 문법 검사 외에 실제 브라우저의 그리기 검사도 돌린다 (#394).
+본체 배경이 버튼이나 화면을 가리는 문제는 문법·회전 수학 검사만으로 발견할 수 없다.
+설치물과 캡처는 `out/`에 두고 커밋하지 않는다.
+
+```sh
+npm install --prefix out/site-browser --no-save --package-lock=false playwright@1.65.0
+node out/site-browser/node_modules/playwright/cli.js install webkit chromium
+node scripts/test_intro_device_render.mjs
+BROWSER=chromium node scripts/test_intro_device_render.mjs
+WIDTH=320 node scripts/test_intro_device_render.mjs
+BROWSER=chromium WIDTH=1440 node scripts/test_intro_device_render.mjs
+```
+
+검사는 임시 로컬 서버를 직접 열고 종료하며, 기본 브라우저는 데스크톱 WebKit이다.
+한·영 소개 페이지에서 회전 각도별 하단 화면과 십자키·L/R·ABXY의 실제 그리기를 확인한다.
+L/R이 상판·힌지 뒤에 놓이는 극단 각도는 이웃 부품의 가림을 분리해, 자기 본체 배경에
+가려지는 문제와 구분해서 검사한다. 사이트의 상판·힌지나 회전 범위는 바꾸지 않는다.
+**이 검사가 통과해도 실제 iPhone 확인을 대신하지 않는다.** 자동 등장과 왼쪽 위 기울기를
+포함한 직접 회전 중 가림·깜빡임, 버튼 터치를 iPhone에서 재확인하고 기종·iOS·브라우저와
+결과를 이슈에 남긴다. 실기 확인 전에는 #394를 닫거나 수정 완료로 표시하지 않는다.
+
 검색 노출 기준선은 `python3 scripts/seo_baseline.py`로 배포 전후를 같은 형식으로 남긴다 (#377).
 네 랜딩 URL(`/`, `/ko/`, `/convert.html`, `/ko/convert.html`)의 HTTP 상태와 title·description·
 canonical·hreflang·JSON-LD, `sitemap.xml` 포함 여부를 JSON으로 출력하고, 하나라도 어긋나면

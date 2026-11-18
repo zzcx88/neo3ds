@@ -141,13 +141,14 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
 /* ── 3DS 본체 목업 (위 360×216, 아래 288×194 — hero 축소, #52) ─────────── */
 .device{--u:min(1px,calc((100vw - 24px)/480));width:calc(480*var(--u));display:flex;flex-direction:column;
   filter:drop-shadow(0 calc(18*var(--u)) calc(34*var(--u)) rgba(0,0,0,.5))}
-.shell{background:linear-gradient(180deg,#2D2D37,#24242C);border:1px solid #3A3A44;width:100%;
-  border-radius:calc(16*var(--u));position:relative;
+.shell{width:100%;border-radius:calc(16*var(--u));position:relative}
+.shell-front{background:linear-gradient(180deg,#2D2D37,#24242C);border:1px solid #3A3A44;
+  border-radius:inherit;position:relative;
   box-shadow:inset 0 calc(1*var(--u)) 0 rgba(255,255,255,.055)}
-.shell-top{display:grid;grid-template-columns:calc(24*var(--u)) calc(360*var(--u)) 1fr;
-  align-items:center;padding:calc(16*var(--u)) calc(16*var(--u));gap:calc(10*var(--u));
-  border-radius:calc(16*var(--u)) calc(16*var(--u)) calc(4*var(--u)) calc(4*var(--u))}
-.shell-top > .screen-outer{grid-column:2;grid-row:1}
+.shell-top{border-radius:calc(16*var(--u)) calc(16*var(--u)) calc(4*var(--u)) calc(4*var(--u))}
+.shell-front-top{display:grid;grid-template-columns:calc(24*var(--u)) calc(360*var(--u)) 1fr;
+  align-items:center;padding:calc(16*var(--u)) calc(16*var(--u));gap:calc(10*var(--u))}
+.shell-front-top > .screen-outer{grid-column:2;grid-row:1}
 .speaker{grid-column:1;grid-row:1;justify-self:center;width:calc(8*var(--u));height:calc(80*var(--u));
   background:radial-gradient(circle,#3A3A44 1px,transparent 1.2px) 0 0/calc(4*var(--u)) calc(4*var(--u))}
 .cam{position:absolute;top:calc(7*var(--u));left:50%;transform:translateX(-50%);width:calc(6*var(--u));
@@ -174,10 +175,10 @@ ul,ol,dl{margin:0;padding:0;list-style:none}
   background:linear-gradient(#2B2B35,#23232B);border:1px solid #3A3A44;border-bottom:0}
 .hinge span:first-child{left:calc(22*var(--u));border-radius:calc(8*var(--u)) calc(8*var(--u)) 0 0}
 .hinge span:last-child{right:calc(22*var(--u));border-radius:calc(8*var(--u)) calc(8*var(--u)) 0 0}
-.shell-bottom{padding:calc(16*var(--u)) calc(16*var(--u)) calc(10*var(--u));
+.shell-bottom{border-radius:calc(4*var(--u)) calc(4*var(--u)) calc(16*var(--u)) calc(16*var(--u))}
+.shell-front-bottom{padding:calc(16*var(--u)) calc(16*var(--u)) calc(10*var(--u));
   display:grid;grid-template-columns:calc(64*var(--u)) calc(288*var(--u)) calc(64*var(--u));
-  grid-template-rows:auto auto;justify-content:center;align-items:start;gap:calc(10*var(--u));
-  border-radius:calc(4*var(--u)) calc(4*var(--u)) calc(16*var(--u)) calc(16*var(--u))}
+  grid-template-rows:auto auto;justify-content:center;align-items:start;gap:calc(10*var(--u))}
 .pad-wrap{display:flex;flex-direction:column;align-items:center;gap:calc(10*var(--u));padding-top:calc(28*var(--u))}
 .circle-pad{width:calc(40*var(--u));height:calc(40*var(--u));border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#34343E,#1B1B22 72%);
@@ -457,8 +458,8 @@ section[id]{scroll-margin-top:64px}
   .ex-set{display:none}
   .ex-year{grid-column:2}
   .ex-size{grid-column:3}
-  .shell-top{padding:calc(14*var(--u)) calc(10*var(--u))}
-  .shell-bottom{padding:calc(14*var(--u)) calc(10*var(--u)) calc(8*var(--u))}
+  .shell-front-top{padding:calc(14*var(--u)) calc(10*var(--u))}
+  .shell-front-bottom{padding:calc(14*var(--u)) calc(10*var(--u)) calc(8*var(--u))}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important}
