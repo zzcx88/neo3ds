@@ -33,7 +33,13 @@ public sealed class MainForm : Form
     SendDialog? sendDialog;
     /// <summary>The zips picked together (two or more); empty when one game is picked.</summary>
     readonly List<CiaJob> batch = new();
+    /// <summary>#400: the log's lines; TextBox mirrors them and old ones drop off.</summary>
+    readonly List<string> logLines = new();
+    bool logTrimmed;
     Control? iconButtons, bannerButtons;
+
+    /// <summary>#400: lines kept in the log; older ones drop off so a long session stays quick.</summary>
+    const int MaxLogLines = 5000;
 
     /// <summary>Set when the window closed to reopen in the other language.</summary>
     public bool Restart { get; private set; }
@@ -118,6 +124,8 @@ public sealed class MainForm : Form
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         grid.RowCount++;
         Controls.Add(grid);
+        // #400: before a zip is picked (and for the launcher CIA) files go to Downloads, like Linux/macOS.
+        outBox.Text = OutputFolder.Default();
 
         DragEnter += (_, e) => e.Effect = DroppedZips(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
         DragDrop += (_, e) => LoadRoms(DroppedZips(e));
@@ -394,12 +402,15 @@ public sealed class MainForm : Form
         UseWaitCursor = true;
         try
         {
+            // #400: two or more games go into one timestamped folder so the roms' folder stays clean.
+            string outDir = jobs.Count > 1 ? OutputFolder.CreateBatch(outBox.Text) : outBox.Text;
+            if (jobs.Count > 1) Log(L("저장 폴더: ", "Saving to: ") + outDir);
             for (int i = 0; i < jobs.Count; i++)
             {
                 var j = jobs[i];
                 j.StartMvs = startMvs;
                 j.Region = SelectedRegion;
-                j.OutputDir = outBox.Text;
+                j.OutputDir = outDir;
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 Text = $"[{i + 1}/{jobs.Count}] {j.RomName} - {title}";
@@ -421,9 +432,15 @@ public sealed class MainForm : Form
             Log(L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
             if (!pack) Log(L("[3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.", "Use [Send to 3DS], or copy them to the SD card and install them with FBI."));
             string msg = (pack ? L($"런처용 파일 {done.Count}개를 만들었습니다. SD카드의 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files are ready. Copy them to /neo3ds/games/ on the SD card.")
-                : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]에서 보낼 CIA를 고르세요.", $"{done.Count} CIAs are ready. Pick the CIAs to send in [Send to 3DS].")) + $"\n\n{outBox.Text}";
+                : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]에서 보낼 CIA를 고르세요.", $"{done.Count} CIAs are ready. Pick the CIAs to send in [Send to 3DS].")) + $"\n\n{outDir}";
             if (failed.Count > 0) msg += "\n\n" + FailureText.Batch(failed);
             MessageBox.Show(this, msg, L("완료", "Done"), MessageBoxButtons.OK, failed.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+        }
+        catch (Exception e)
+        {
+            // A folder that cannot be made (permissions, a removed drive) must not crash the window.
+            Log(L("오류: ", "Error: ") + FailureText.LogLines(e));
+            MessageBox.Show(this, FailureText.Plain(e), L("실패", "Failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -460,5 +477,62 @@ public sealed class MainForm : Form
         dlg.Show(this);
     }
 
-    void Log(string msg) => logBox.AppendText(msg + Environment.NewLine);
+    /// <summary>#400: appends one line, keeps at most <see cref="MaxLogLines"/> of them, and follows
+    /// the end unless the reader scrolled up to read earlier lines.</summary>
+    void Log(string s)
+    {
+        // Both read before the text changes: afterwards the log is always at its end.
+        bool follow = AtLogEnd();
+        int firstVisible = FirstVisibleLine();
+        logLines.Add(s);
+        if (logLines.Count > MaxLogLines)
+        {
+            // The marker keeps line 0; once it is there, drop the oldest real line (index 1).
+            int dropped;
+            if (logTrimmed) { dropped = logLines.Count - MaxLogLines; logLines.RemoveRange(1, dropped); }
+            else
+            {
+                dropped = logLines.Count - (MaxLogLines - 1);
+                logLines.RemoveRange(0, dropped);
+                logTrimmed = true;
+                logLines.Insert(0, L("…앞부분 생략", "…earlier lines omitted"));
+                dropped--; // the marker takes one of the dropped slots
+            }
+            logBox.Text = string.Join("\r\n", logLines) + "\r\n";
+            // Rewriting resets the view, so a reader who scrolled up keeps their line at the top.
+            if (!follow) ScrollToLine(Math.Max(0, firstVisible - dropped));
+            return;
+        }
+        logBox.AppendText(s + Environment.NewLine);
+        if (follow) ScrollToLogEnd();
+    }
+
+    /// <summary>#400: true when the last line is inside the view, i.e. new lines should push it.
+    /// Asks the control which character is drawn at the bottom of the box, so wrapped lines and
+    /// the log's current height both count.</summary>
+    bool AtLogEnd()
+    {
+        if (!logBox.IsHandleCreated || logBox.TextLength == 0) return true;
+        var bottom = new Point(1, Math.Max(0, logBox.ClientSize.Height - 2));
+        return logBox.GetCharIndexFromPosition(bottom) >= logBox.TextLength - 1;
+    }
+
+    /// <summary>#400: 0-based index of the top line; the edit control scrolls in whole lines.</summary>
+    int FirstVisibleLine() => (int)SendMessage(logBox.Handle, EM_GETFIRSTVISIBLELINE, 0, 0);
+
+    /// <summary>#400: puts a line at the top of the log.</summary>
+    void ScrollToLine(int line) => SendMessage(logBox.Handle, EM_LINESCROLL, 0, line - FirstVisibleLine());
+
+    void ScrollToLogEnd()
+    {
+        logBox.SelectionStart = logBox.TextLength;
+        logBox.SelectionLength = 0;
+        logBox.ScrollToCaret();
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
+
+    const int EM_GETFIRSTVISIBLELINE = 0xCE;
+    const int EM_LINESCROLL = 0xB6;
 }
