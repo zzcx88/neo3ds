@@ -60,7 +60,7 @@ Chrome, Edge, Firefox, Safari에서 됩니다. 테스트 PC에서 KOF '98 변환
 1. 압축을 풀고 `Neo3dsConverter.exe`(Windows), `neo3ds-converter`(Linux), `neo3ds-converter.app`(macOS, `~/Downloads` 밖으로 먼저 옮김 — *OS별 첫 실행* 참고)을 실행합니다.
 2. 게임 zip을 창에 끌어 놓거나(`neogeo.zip`은 같은 폴더에) 찾아보기 버튼으로 엽니다.
 3. 롬셋이 인식되면 필요에 따라 이름·시스템·지역·아이콘·배너를 바꿉니다. 미리보기가 실제 HOME 메뉴 모양입니다.
-4. **CIA**, **런처용 파일**, **런처 CIA** 중 하나를 만듭니다. Windows는 zip 옆에, Linux·macOS는 `~/Downloads`에 저장합니다.
+4. **CIA**, **런처용 파일**, **런처 CIA** 중 하나를 만듭니다. 모든 OS에서 롬 zip 옆에 저장하고, 여러 개를 한꺼번에 만들면 그 옆의 `neo3ds-날짜-시각` 폴더에 모아 롬 폴더가 지저분해지지 않습니다.
 5. SD 카드 없이 설치하려면 CIA를 만든 뒤 **[3DS로 보내기]**를 누르고, 3DS에서 FBI(Remote Install)로 QR을 스캔합니다. **런처용 파일**(`.neo3ds`)도 같은 방식입니다: **[3DS로 보내기]**에서 파일을 고르거나 끌어다 놓고, 런처에서 **Y(QR)** 를 눌러 스캔합니다. CIA나 런처용 파일을 2~6개 고르면 QR 하나로 보내고, 두 종류를 섞을 수는 없습니다. 웹 변환기에서 만든 파일도 보낼 수 있습니다. PC와 3DS가 같은 공유기에 있어야 하고, 방화벽이 물으면 허용하세요. VPN이 켜져 있으면 실제 LAN 주소를 고르고, 3DS는 2.4GHz Wi-Fi만 됩니다.
 
 언어 버튼으로 한국어와 영어를 바꿉니다.
@@ -86,7 +86,7 @@ neo3ds-converter --launcher [out-dir]
 neo3ds-converter --help
 ```
 
-- zip 여러 개는 차례로 변환합니다(`--title`, `--icon`, `--banner`, `--set`은 zip 하나일 때만).
+- zip 여러 개는 차례로 변환합니다(`--title`, `--icon`, `--banner`, `--set`은 zip 하나일 때만). 명령줄은 지정한 `out-dir`에 그대로 저장하며, `neo3ds-날짜-시각` 폴더는 창에서만 씁니다.
 - `--set`: 합본 zip 안의 다른 판을 고릅니다(예: `kof98.zip --set kof98h`).
 - `--system`: 가정용 `aes` / 아케이드 `mvs`. 빼면 자동.
 - `--region`: 유럽·아시아 `eu`, 일본 `jp`, 미국 `us`. 빼면 `eu`.

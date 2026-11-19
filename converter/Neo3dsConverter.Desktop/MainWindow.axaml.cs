@@ -4,14 +4,23 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Neo3dsConverter.Desktop;
 
 /// <summary>Single + batch window: one zip -&gt; one CIA, or several zips in a row. KO/EN toggle is P2c.</summary>
 public partial class MainWindow : Window
 {
+    /// <summary>#400: lines kept in the log; older ones drop off so a long session stays quick.</summary>
+    const int MaxLogLines = 5000;
+
     CiaJob? job;
     readonly List<CiaJob> batch = new();
+    /// <summary>#400: the log's lines. The TextBox mirrors them; this list trims the old ones.</summary>
+    readonly List<string> logLines = new();
+    /// <summary>#400: lines waiting for the next UI pass, so a burst becomes one write.</summary>
+    readonly List<string> pendingLog = new();
+    bool logWriteQueued, logTrimmed;
     /// <summary>#255: CIAs built in this session, in build order; the dialog lists them first.</summary>
     readonly List<SessionCia> built = new();
     /// <summary>#306: the one send window, modeless so the converter stays usable while it serves.</summary>
@@ -25,7 +34,7 @@ public partial class MainWindow : Window
         if (OperatingSystem.IsLinux())
             FontFamily = new Avalonia.Media.FontFamily("fonts:NotoSansKR#Noto Sans KR");
         ApplyLang();
-        OutDirBox.Text = DefaultOutDir();
+        OutDirBox.Text = OutputFolder.Default();
         OpenButton.Click += OnOpenClicked;
         OutDirButton.Click += OnOutDirClicked;
         LangButton.Click += (_, _) => { Lang.Set(!Lang.Korean, remember: true); ApplyLang(); };
@@ -166,13 +175,6 @@ public partial class MainWindow : Window
     bool? SelectedMvs => SystemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
     Region SelectedRegion => RegionBox.SelectedIndex switch { 1 => Region.Japan, 2 => Region.Usa, _ => Region.Europe };
 
-    static string DefaultOutDir()
-    {
-        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string dl = Path.Combine(home, "Downloads");
-        return Directory.Exists(dl) ? dl : Path.Combine(home, "Documents");
-    }
-
     async void OnOpenClicked(object? sender, RoutedEventArgs e)
     {
         var type = new FilePickerFileType("ROM zip") { Patterns = ["*.zip"], AppleUniformTypeIdentifiers = ["public.zip-archive"] };
@@ -268,6 +270,8 @@ public partial class MainWindow : Window
             return;
         }
         TitleBox.Text = job.Title;
+        // #400: like Windows, the output folder follows the rom zip.
+        OutDirBox.Text = job.OutputDir;
         SetBuildEnabled(Buildable(job));
         RefreshState();
         Log(Lang.L("선택: ", "Selected: ") + $"{Path.GetFileName(path)}  (Title ID {job.TitleId})");
@@ -290,6 +294,8 @@ public partial class MainWindow : Window
         }
         int ok = batch.Count(Buildable);
         SetSingleFields(false);
+        // #400: a batch saves under the first zip's folder, the same one the output box shows.
+        OutDirBox.Text = batch[0].OutputDir;
         SetBuildEnabled(ok > 0);
         RefreshState();
         Log(Lang.L($"{batch.Count}개 선택: 변환 가능 {ok}개", $"{batch.Count} zips picked, {ok} can be converted"));
@@ -313,7 +319,7 @@ public partial class MainWindow : Window
 
     string OutDir()
     {
-        string dir = string.IsNullOrEmpty(OutDirBox.Text) ? DefaultOutDir() : OutDirBox.Text;
+        string dir = string.IsNullOrEmpty(OutDirBox.Text) ? OutputFolder.Default() : OutDirBox.Text;
         Directory.CreateDirectory(dir);
         return dir;
     }
@@ -362,13 +368,17 @@ public partial class MainWindow : Window
     async Task BuildBatchAsync(bool pack)
     {
         var jobs = batch.Where(Buildable).ToList();
-        string outDir = OutDir();
         string baseTitle = Title ?? "";
         var done = new List<string>();
         var failed = new List<FailureText.BatchFailure>();
+        string outDir = "";
         SetBusy(true);
         try
         {
+            // #400: two or more games go into one timestamped folder so the roms' folder stays clean.
+            string baseDir = OutDir();
+            outDir = jobs.Count > 1 ? OutputFolder.CreateBatch(baseDir) : baseDir;
+            if (jobs.Count > 1) Log(Lang.L("저장 폴더: ", "Saving to: ") + outDir);
             for (int i = 0; i < jobs.Count; i++)
             {
                 var j = jobs[i];
@@ -400,6 +410,12 @@ public partial class MainWindow : Window
             // #329: catalog names and plain words only; the per-game raw text is in the log.
             if (failed.Count > 0) msg += "\n\n" + FailureText.Batch(failed);
             await ShowDialog(Lang.L("완료", "Done"), msg);
+        }
+        catch (Exception ex)
+        {
+            // A folder that cannot be made (permissions, a removed drive) must not crash the window.
+            Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
+            await ShowDialog(Lang.L("실패", "Failed"), FailureText.Plain(ex));
         }
         finally
         {
@@ -506,5 +522,80 @@ public partial class MainWindow : Window
         await dlg.ShowDialog(this);
     }
 
-    void Log(string s) => Dispatcher.UIThread.Post(() => LogBox.Text += s + "\n");
+    /// <summary>#400: appends lines, keeps at most <see cref="MaxLogLines"/> of them, and follows the
+    /// end unless the reader scrolled up to read earlier lines. Lines are collected and written once
+    /// per UI pass: a big batch produces hundreds of lines, and each write relays out the whole text.</summary>
+    void Log(string s)
+    {
+        lock (pendingLog)
+        {
+            pendingLog.Add(s);
+            if (logWriteQueued) return;
+            logWriteQueued = true;
+        }
+        Dispatcher.UIThread.Post(WritePendingLog, DispatcherPriority.Background);
+    }
+
+    /// <summary>#400: the UI-thread half of <see cref="Log"/>; also what a test sees after RunJobs().</summary>
+    void WritePendingLog()
+    {
+        string[] lines;
+        lock (pendingLog)
+        {
+            logWriteQueued = false;
+            if (pendingLog.Count == 0) return;
+            lines = pendingLog.ToArray();
+            pendingLog.Clear();
+        }
+
+        // Both read before the text changes: afterwards the log is always at its end.
+        bool follow = LogAtEnd();
+        double fromEnd = LogScroll is { } s0 ? s0.ScrollBarMaximum.Y - s0.Offset.Y : 0;
+
+        logLines.AddRange(lines);
+        if (logLines.Count <= MaxLogLines)
+        {
+            LogBox.Text += string.Concat(lines.Select(l => l + "\n"));
+        }
+        else
+        {
+            // The marker takes line 0, so the first trim drops one line more than the overflow.
+            if (logTrimmed) logLines.RemoveRange(1, logLines.Count - MaxLogLines);
+            else
+            {
+                logLines.RemoveRange(0, logLines.Count - MaxLogLines + 1);
+                logTrimmed = true;
+                logLines.Insert(0, Lang.L("…앞부분 생략", "…earlier lines omitted"));
+            }
+            LogBox.Text = string.Join("\n", logLines) + "\n";
+            if (!follow) KeepLogDistanceFromEnd(fromEnd);
+        }
+        if (follow) FollowLogEnd();
+    }
+
+    /// <summary>#400: dropping old lines rewrites the text, which resets the view. A reader who
+    /// scrolled up keeps the same distance from the end, so the lines they were reading stay put.</summary>
+    void KeepLogDistanceFromEnd(double fromEnd) => Dispatcher.UIThread.Post(() =>
+    {
+        if (LogScroll is { } scroll) scroll.Offset = scroll.Offset.WithY(scroll.ScrollBarMaximum.Y - fromEnd);
+    }, DispatcherPriority.Background);
+
+    /// <summary>#400: the log's own scroll viewer, or null before the window is laid out.</summary>
+    ScrollViewer? LogScroll => LogBox.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+
+    /// <summary>#400: true when the log shows its last line, or when it is not laid out yet.</summary>
+    bool LogAtEnd()
+    {
+        var scroll = LogScroll;
+        if (scroll == null) return true;
+        return scroll.Offset.Y >= scroll.ScrollBarMaximum.Y - 1;
+    }
+
+    /// <summary>#400: scrolls after the new line has been laid out, so the offset is the new one.</summary>
+    void FollowLogEnd() => Dispatcher.UIThread.Post(() =>
+    {
+        if (LogScroll == null) return;
+        int lines = LogBox.GetLineCount();
+        if (lines > 0) LogBox.ScrollToLine(lines - 1);
+    }, DispatcherPriority.Background);
 }
