@@ -95,6 +95,7 @@ public sealed class MainForm : Form
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, Art.BannerH + 8));
         grid.RowCount++;
         AddRow(grid, L("저장 위치", "Save to"), outBox, browseOut);
+        outBox.Text = OutputFolder.DefaultDir(); // #404: until a zip is picked, and for the launcher CIA
         titleBox.TextChanged += (_, _) => UpdatePreview();
         // Either a CIA per game, or a .neo3ds file per game for the launcher
         var builds = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Margin = Padding.Empty };
@@ -214,7 +215,8 @@ public sealed class MainForm : Form
 
     void LoadRoms(string[] zips)
     {
-        var games = zips.Where(z => !IsBios(z)).OrderBy(z => Path.GetFileName(z), StringComparer.OrdinalIgnoreCase).ToArray();
+        // #404: the same zip picked twice converts once.
+        var games = OutputFolder.Distinct(zips.Where(z => !IsBios(z))).OrderBy(z => Path.GetFileName(z), StringComparer.OrdinalIgnoreCase).ToArray();
         if (games.Length == 1) LoadRom(games[0]);
         else if (games.Length > 1) LoadBatch(games);
         else if (zips.Length > 0) LoadRom(zips[0]); /* only neogeo.zip: says it is the BIOS */
@@ -331,7 +333,7 @@ public sealed class MainForm : Form
 
     async Task BuildLauncherAsync()
     {
-        string dir = string.IsNullOrWhiteSpace(outBox.Text) ? AppContext.BaseDirectory : outBox.Text;
+        string dir = string.IsNullOrWhiteSpace(outBox.Text) ? OutputFolder.DefaultDir() : outBox.Text;
         launcherButton.Enabled = false;
         SetBuilding(true);
         try
@@ -395,8 +397,10 @@ public sealed class MainForm : Form
         var jobs = batch.Where(Buildable).ToList();
         bool? startMvs = systemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
         var done = new List<string>();
+        var files = new List<string>();
         var failed = new List<FailureText.BatchFailure>();
         string title = Text;
+        string outDir = string.IsNullOrWhiteSpace(outBox.Text) ? OutputFolder.DefaultDir() : outBox.Text;
         SetBuildEnabled(false);
         SetBuilding(true);
         using var spare = ParallelLimit.ForBatch(); // #403: one core stays with the window
@@ -407,7 +411,7 @@ public sealed class MainForm : Form
                 var j = jobs[i];
                 j.StartMvs = startMvs;
                 j.Region = SelectedRegion;
-                j.OutputDir = outBox.Text;
+                j.OutputDir = outDir;
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 Text = $"[{i + 1}/{jobs.Count}] {j.RomName} - {title}";
@@ -416,6 +420,7 @@ public sealed class MainForm : Form
                     var builder = new CiaBuilder(msg => BeginInvoke(() => Log(msg)));
                     string file = await Task.Run(() => pack ? builder.BuildPack(j) : builder.Build(j));
                     if (!pack) AddBuilt(file, launcher: false);
+                    files.Add(file);
                     done.Add(j.RomName);
                 }
                 catch (Exception e)
@@ -425,13 +430,20 @@ public sealed class MainForm : Form
                     failed.Add(FailureText.BatchFailure.Of(j, e));
                 }
             }
+            // #404: two or more results go into one batch folder under the output folder.
+            var gathered = OutputFolder.Gather(outDir, files, DateTime.Now);
+            if (!pack) foreach (var file in gathered.Paths) AddBuilt(file, launcher: false); // the moved CIAs stay sendable
             Log("");
             Log(L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
+            if (gathered.Folder != null) Log(L("묶음 폴더: ", "Batch folder: ") + gathered.Folder);
+            if (gathered.Warning != null) Log(gathered.Warning);
             if (!pack) Log(L("[3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.", "Use [Send to 3DS], or copy them to the SD card and install them with FBI."));
             string msg = (pack ? L($"런처용 파일 {done.Count}개를 만들었습니다. SD카드의 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files are ready. Copy them to /neo3ds/games/ on the SD card.")
-                : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]에서 보낼 CIA를 고르세요.", $"{done.Count} CIAs are ready. Pick the CIAs to send in [Send to 3DS].")) + $"\n\n{outBox.Text}";
+                : L($"CIA {done.Count}개를 만들었습니다. [3DS로 보내기]에서 보낼 CIA를 고르세요.", $"{done.Count} CIAs are ready. Pick the CIAs to send in [Send to 3DS].")) + $"\n\n{gathered.Folder ?? outDir}";
+            if (gathered.Warning != null) msg += "\n\n" + gathered.Warning;
             if (failed.Count > 0) msg += "\n\n" + FailureText.Batch(failed);
-            MessageBox.Show(this, msg, L("완료", "Done"), MessageBoxButtons.OK, failed.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+            if (gathered.Folder != null) OutputFolder.Open(gathered.Folder);
+            ShowDone(msg, failed.Count > 0 || gathered.Warning != null, gathered.Folder);
         }
         finally
         {
@@ -439,6 +451,28 @@ public sealed class MainForm : Form
             SetBuildEnabled(true);
             SetBuilding(false);
         }
+    }
+
+    /// <summary>#404: the batch done window. With a batch folder it has [Open folder], which opens
+    /// the folder again and leaves the window up; OK closes it.</summary>
+    void ShowDone(string msg, bool warning, string? folder)
+    {
+        if (folder == null)
+        {
+            MessageBox.Show(this, msg, L("완료", "Done"), MessageBoxButtons.OK, warning ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+            return;
+        }
+        var open = new TaskDialogButton(L("폴더 열기", "Open folder")) { AllowCloseDialog = false };
+        open.Click += (_, _) => OutputFolder.Open(folder);
+        var page = new TaskDialogPage
+        {
+            Caption = L("완료", "Done"),
+            Text = msg,
+            Icon = warning ? TaskDialogIcon.Warning : TaskDialogIcon.Information,
+            Buttons = { open, TaskDialogButton.OK },
+            DefaultButton = TaskDialogButton.OK,
+        };
+        TaskDialog.ShowDialog(this, page);
     }
 
     /// <summary>#255: one window for the session's CIAs and a dropped or picked file.</summary>

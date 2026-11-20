@@ -61,8 +61,9 @@ public static class CommandLine
                         break;
                     default: positional.Add(args[i]); break;
                 }
-            var zips = positional.Where(a => a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
-            var outDir = positional.Except(zips).LastOrDefault();
+            var zipArgs = positional.Where(a => a.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
+            var outDir = positional.Except(zipArgs).LastOrDefault();
+            var zips = OutputFolder.Distinct(zipArgs).ToList(); // #404: the same zip twice converts once
             if (zips.Count == 0)
                 throw new ConverterException(FailureKind.Usage,
                     Lang.L("게임 zip이 없어요. 게임 zip 경로를 넣어 주세요.", "No game zip was given. Pass the path of a game zip."));
@@ -72,6 +73,7 @@ public static class CommandLine
                            "--title, --icon, --banner and --set need a single zip, but several were given."));
             int failed = 0;
             var failures = new List<FailureText.BatchFailure>();
+            var built = new List<string>();
             foreach (var zip in zips)
             {
                 CiaJob? job = null;
@@ -85,7 +87,9 @@ public static class CommandLine
                     job.StartMvs = startMvs;
                     job.Region = region;
                     var builder = new CiaBuilder(Console.WriteLine);
-                    Console.WriteLine($"OK {(pack ? builder.BuildPack(job) : builder.Build(job))}");
+                    string file = pack ? builder.BuildPack(job) : builder.Build(job);
+                    if (zips.Count == 1) Console.WriteLine($"OK {file}");
+                    else built.Add(file);
                 }
                 // #329: the console shows the same cause+action pair as the windows; the raw
                 // exception text stays behind NEO3DS_DEBUG (the CLI has no log window).
@@ -95,6 +99,15 @@ public static class CommandLine
                     failures.Add(job != null ? FailureText.BatchFailure.Of(job, e) : new FailureText.BatchFailure(null, FailureText.KindOf(e)));
                     failed++;
                 }
+            }
+            if (zips.Count > 1)
+            {
+                // #404: two or more results go into one batch folder; OK names where each file is now.
+                string baseDir = outDir != null ? Path.GetFullPath(outDir) : OutputFolder.ForZips(zips);
+                var gathered = OutputFolder.Gather(baseDir, built, DateTime.Now);
+                foreach (var file in gathered.Paths) Console.WriteLine($"OK {file}");
+                if (gathered.Warning != null) Console.Error.WriteLine("WARNING " + gathered.Warning);
+                if (gathered.Folder != null) Console.WriteLine($"DIR {gathered.Folder}");
             }
             if (failures.Count > 0) Console.Error.WriteLine(FailureText.Batch(failures, hasLog: false));
             return failed == 0 ? 0 : 1;
@@ -149,6 +162,7 @@ public static class CommandLine
               {exe} --help | -h                  이 도움말 출력
 
             입력: MAME 네오지오 롬셋 zip(롬셋 이름 그대로). MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.
+            출력: out-dir, 없으면 zip 폴더. zip 여러 개로 2개 이상 만들면 그 아래 neo3ds-batch-YYYYMMDD-HHMMSS 폴더에 모으고 마지막 줄에 DIR <폴더>를 출력합니다.
 
             옵션:
               --title "..."        타이틀 지정 (zip 1개만)
@@ -168,6 +182,7 @@ public static class CommandLine
               {exe} --help | -h                      show this help
 
             Input: MAME Neo Geo romset zips (keep the romset names). A romset that does not match MAME's names and chip CRCs will not convert.
+            Output: out-dir, else the zip's folder. When several zips build two or more files, they go into a neo3ds-batch-YYYYMMDD-HHMMSS folder there and the last line is DIR <folder>.
 
             Options:
               --title "..."        custom title (one zip only)
