@@ -60,7 +60,7 @@ The same converter as a program on your PC, with a window and a command line. It
 1. Unzip and run `Neo3dsConverter.exe` (Windows), `neo3ds-converter` (Linux) or `neo3ds-converter.app` (macOS; move it out of `~/Downloads` first, see *First run*).
 2. Drop game zips on the window (keep `neogeo.zip` in the same folder) or open them with the browse button.
 3. When the romset shows as recognized, change the title, system, region, icon or banner if you like; the preview shows the HOME menu art.
-4. Build a **CIA**, a **launcher file** or the **launcher CIA**. Windows saves next to the zip; Linux and macOS save to `~/Downloads`.
+4. Build a **CIA**, a **launcher file** or the **launcher CIA**. Results are saved next to the zip on every OS; before a zip is picked, and for the launcher CIA, the default is `~/Downloads` (`~/Documents` if there is none). When several zips build two or more files, they go into a `neo3ds-batch-YYYYMMDD-HHMMSS` folder there, which opens in Explorer or Finder; **Open folder** in the done window opens it again.
 5. To install without the SD card, build a CIA and press **Send to 3DS**, then scan the QR code in FBI (Remote Install). A **launcher file** (`.neo3ds`) is sent the same way: press **Send to 3DS**, pick or drop the file, then press **Y (QR)** in the launcher and scan it. Pick 2 to 6 CIAs or 2 to 6 launcher files to send them with one QR code; the two kinds cannot be mixed. Files made in the web converter can be sent too. The PC and 3DS must be on the same router: allow the converter through the firewall, and with a VPN on pick the real LAN address. The 3DS connects to 2.4 GHz Wi-Fi only.
 
 The language button switches between Korean and English.
@@ -86,7 +86,7 @@ neo3ds-converter --launcher [out-dir]
 neo3ds-converter --help
 ```
 
-- Several zips are converted one after the other (`--title`, `--icon`, `--banner` and `--set` need a single zip).
+- Several zips are converted one after the other (`--title`, `--icon`, `--banner` and `--set` need a single zip). Files go to `out-dir`, or next to the zip without it; two or more results are moved into a `neo3ds-batch-YYYYMMDD-HHMMSS` folder there, each `OK` line shows the final path and the last line is `DIR <folder>`.
 - `--set` picks another version inside a merged zip (e.g. `kof98.zip --set kof98h`).
 - `--system`: home `aes` / arcade `mvs`; automatic when left out.
 - `--region`: Europe/Asia `eu`, Japan `jp` or USA `us`; `eu` when left out.

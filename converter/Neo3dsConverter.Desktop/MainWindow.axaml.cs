@@ -180,12 +180,8 @@ public partial class MainWindow : Window
     bool? SelectedMvs => SystemBox.SelectedIndex switch { 1 => false, 2 => true, _ => null };
     Region SelectedRegion => RegionBox.SelectedIndex switch { 1 => Region.Japan, 2 => Region.Usa, _ => Region.Europe };
 
-    static string DefaultOutDir()
-    {
-        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string dl = Path.Combine(home, "Downloads");
-        return Directory.Exists(dl) ? dl : Path.Combine(home, "Documents");
-    }
+    /// <summary>#404: until a zip is picked, and for the launcher CIA.</summary>
+    static string DefaultOutDir() => OutputFolder.DefaultDir();
 
     async void OnOpenClicked(object? sender, RoutedEventArgs e)
     {
@@ -241,9 +237,10 @@ public partial class MainWindow : Window
     string? BannerImage => string.IsNullOrEmpty(BannerBox.Text) ? null : BannerBox.Text;
     string CurrentTitle => string.IsNullOrWhiteSpace(TitleBox.Text) ? job?.Title ?? "" : TitleBox.Text.Trim();
 
-    void LoadRoms(string[] zips)
+    internal void LoadRoms(string[] zips)
     {
-        var games = zips.Where(z => !IsBios(z)).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).ToArray();
+        // #404: the same zip picked twice converts once.
+        var games = OutputFolder.Distinct(zips.Where(z => !IsBios(z))).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).ToArray();
         if (games.Length == 1) LoadRom(games[0]);
         else if (games.Length > 1) LoadBatch(games);
         else if (zips.Length > 0) Log(Lang.L("neogeo.zip은 바이오스입니다. 게임 롬 zip을 선택하세요.", "neogeo.zip is the BIOS. Pick a game zip."));
@@ -282,6 +279,7 @@ public partial class MainWindow : Window
             return;
         }
         TitleBox.Text = job.Title;
+        OutDirBox.Text = job.OutputDir; // #404: results go next to the zip on every OS
         SetBuildEnabled(Buildable(job));
         RefreshState();
         Log(Lang.L("선택: ", "Selected: ") + $"{Path.GetFileName(path)}  (Title ID {job.TitleId})");
@@ -303,6 +301,7 @@ public partial class MainWindow : Window
             else Log($"  ✔ {j.RomName}: {j.Title}");
         }
         int ok = batch.Count(Buildable);
+        OutDirBox.Text = batch[0].OutputDir; // #404: the folder of the first zip by name
         SetSingleFields(false);
         SetBuildEnabled(ok > 0);
         RefreshState();
@@ -384,6 +383,7 @@ public partial class MainWindow : Window
         string outDir = OutDir();
         string baseTitle = Title ?? "";
         var done = new List<string>();
+        var files = new List<string>();
         var failed = new List<FailureText.BatchFailure>();
         SetBusy(true);
         using var spare = ParallelLimit.ForBatch(); // #403: one core stays with the window
@@ -402,6 +402,7 @@ public partial class MainWindow : Window
                 {
                     string file = await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
                     if (!pack) AddBuilt(file, launcher: false);
+                    files.Add(file);
                     done.Add(j.RomName);
                 }
                 catch (Exception ex)
@@ -411,15 +412,22 @@ public partial class MainWindow : Window
                     failed.Add(FailureText.BatchFailure.Of(j, ex));
                 }
             }
+            // #404: two or more results go into one batch folder under the output folder.
+            var gathered = OutputFolder.Gather(outDir, files, DateTime.Now);
+            if (!pack) foreach (var file in gathered.Paths) AddBuilt(file, launcher: false); // the moved CIAs stay sendable
             Log("");
             Log(Lang.L($"끝: 성공 {done.Count}개, 실패 {failed.Count}개", $"Finished: {done.Count} built, {failed.Count} failed"));
+            if (gathered.Folder != null) Log(Lang.L("묶음 폴더: ", "Batch folder: ") + gathered.Folder);
+            if (gathered.Warning != null) Log(gathered.Warning);
             string msg = (pack
                 ? Lang.L($"런처용 파일 {done.Count}개: SD카드 /neo3ds/games/에 복사하세요.", $"{done.Count} launcher files: copy to /neo3ds/games/ on the SD card.")
                 : Lang.L($"CIA {done.Count}개. [3DS로 보내기]로 바로 설치하거나, SD카드에 복사해 FBI로 설치하세요.", $"{done.Count} CIAs. Use [Send to 3DS], or copy them to the SD card and install with FBI."))
-                + $"\n\n{outDir}";
+                + $"\n\n{gathered.Folder ?? outDir}";
+            if (gathered.Warning != null) msg += "\n\n" + gathered.Warning;
             // #329: catalog names and plain words only; the per-game raw text is in the log.
             if (failed.Count > 0) msg += "\n\n" + FailureText.Batch(failed);
-            await ShowDialog(Lang.L("완료", "Done"), msg);
+            if (gathered.Folder != null) OpenFolder(gathered.Folder);
+            await ShowDialog(Lang.L("완료", "Done"), msg, gathered.Folder);
         }
         finally
         {
@@ -506,9 +514,30 @@ public partial class MainWindow : Window
         return dialog;
     }
 
-    async Task ShowDialog(string title, string message)
+    /// <summary>#404: opens a batch folder in Finder, Explorer or the file manager. A test replaces
+    /// it so a headless run does not start a file manager.</summary>
+    internal Action<string> OpenFolder { get; set; } = OutputFolder.Open;
+
+    /// <summary>#404: the window the next <see cref="ShowDialog"/> opens, for a test to read and close.</summary>
+    internal Window? LastDialog { get; private set; }
+
+    /// <param name="folder">#404: a batch folder; the window then also has [Open folder].</param>
+    internal async Task ShowDialog(string title, string message, string? folder = null)
     {
-        var ok = new Button { Content = "OK", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Padding = new Avalonia.Thickness(24, 4) };
+        var ok = new Button { Name = "DialogOk", Content = "OK", Padding = new Avalonia.Thickness(24, 4) };
+        var buttons = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            Spacing = 8,
+        };
+        if (folder != null)
+        {
+            var open = new Button { Name = "OpenFolderButton", Content = Lang.L("폴더 열기", "Open folder"), Padding = new Avalonia.Thickness(16, 4) };
+            open.Click += (_, _) => OpenFolder(folder);
+            buttons.Children.Add(open);
+        }
+        buttons.Children.Add(ok);
         var dlg = new Window
         {
             Title = title,
@@ -519,10 +548,11 @@ public partial class MainWindow : Window
             {
                 Margin = new Avalonia.Thickness(16),
                 Spacing = 12,
-                Children = { new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap }, ok },
+                Children = { new TextBlock { Name = "DialogText", Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap }, buttons },
             },
         };
         ok.Click += (_, _) => dlg.Close();
+        LastDialog = dlg;
         await dlg.ShowDialog(this);
     }
 
