@@ -121,7 +121,7 @@ static partial class Cmc
         var buf = new byte[rom.Length];
 
         // Data xor: bytes 0&3 and 1&2 of each longword, keyed by the (encrypted) address.
-        Parallel.For(0, words, rpos =>
+        Parallel.For(0, words, ParallelLimit.Options, rpos =>
         {
             Decrypt(buf, 4 * rpos + 0, 4 * rpos + 3, rom[4 * rpos + 0], rom[4 * rpos + 3], t03, t12, u03, a07, rpos,
                     (rpos >> 8) & 1);
@@ -130,7 +130,7 @@ static partial class Cmc
         });
 
         // Address xor
-        Parallel.For(0, words, rpos =>
+        Parallel.For(0, words, ParallelLimit.Options, rpos =>
         {
             int baser = rpos ^ extraXor;
             baser ^= a815x1[(baser >> 16) & 0xff] << 8;
@@ -219,7 +219,7 @@ static class Sma
 {
     static void DataSwap(byte[] p, params int[] bits)
     {
-        Parallel.For(0, 0x800000 / 2, i =>
+        Parallel.For(0, 0x800000 / 2, ParallelLimit.Options, i =>
         {
             int a = 0x100000 / 2 + i;
             Protection.SetWord(p, a, Protection.BitSwap(Protection.Word(p, a), bits));
