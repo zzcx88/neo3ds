@@ -386,6 +386,7 @@ public partial class MainWindow : Window
         var done = new List<string>();
         var failed = new List<FailureText.BatchFailure>();
         SetBusy(true);
+        using var spare = ParallelLimit.ForBatch(); // #403: one core stays with the window
         try
         {
             for (int i = 0; i < jobs.Count; i++)

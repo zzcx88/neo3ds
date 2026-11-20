@@ -399,6 +399,7 @@ public sealed class MainForm : Form
         string title = Text;
         SetBuildEnabled(false);
         SetBuilding(true);
+        using var spare = ParallelLimit.ForBatch(); // #403: one core stays with the window
         try
         {
             for (int i = 0; i < jobs.Count; i++)

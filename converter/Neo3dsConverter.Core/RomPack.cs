@@ -200,7 +200,7 @@ public static class RomPack
         // MAME's sprite region already has each C ROM pair byte-interleaved (odd chip -> even bytes).
         int tiles = gfx.Length / 128;
         var usage = new uint[(tiles + 15) / 16];
-        Parallel.For(0, tiles, t =>
+        Parallel.For(0, tiles, ParallelLimit.Options, t =>
         {
             if (ConvertTile(gfx, t))
                 Interlocked.Or(ref usage[t >> 4], 1u << ((t & 15) * 2)); // TILE_INVISIBLE = 1
@@ -209,7 +209,7 @@ public static class RomPack
         int blocks = gfx.Length / SpriteBlockSize;
         var packedBlocks = new byte[blocks][];
         using var compressors = new ThreadLocal<Compressor>(() => new Compressor(ZstdLevel), trackAllValues: true);
-        Parallel.For(0, blocks, i =>
+        Parallel.For(0, blocks, ParallelLimit.Options, i =>
         {
             packedBlocks[i] = compressors.Value!.Wrap(gfx.AsSpan(i * SpriteBlockSize, SpriteBlockSize)).ToArray();
         });
