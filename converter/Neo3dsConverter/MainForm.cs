@@ -34,6 +34,11 @@ public sealed class MainForm : Form
     /// <summary>The zips picked together (two or more); empty when one game is picked.</summary>
     readonly List<CiaJob> batch = new();
     Control? iconButtons, bannerButtons;
+    /// <summary>#402: lines waiting for the next 100ms batch, and the log's kept lines.</summary>
+    readonly LogBuffer logBuffer = new("\r\n");
+    readonly System.Windows.Forms.Timer logTimer;
+    /// <summary>#402: the log follows its end only while a build runs; afterwards the reader scrolls freely.</summary>
+    bool logFollowsEnd;
 
     /// <summary>Set when the window closed to reopen in the other language.</summary>
     public bool Restart { get; private set; }
@@ -121,7 +126,11 @@ public sealed class MainForm : Form
 
         DragEnter += (_, e) => e.Effect = DroppedZips(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
         DragDrop += (_, e) => LoadRoms(DroppedZips(e));
-        FormClosing += (_, _) => sendDialog?.Close();
+        // #402: one write per 100ms keeps a 150-game batch off the UI thread's critical path.
+        logTimer = new System.Windows.Forms.Timer { Interval = LogBuffer.FlushMilliseconds };
+        logTimer.Tick += (_, _) => FlushLog();
+        logTimer.Start();
+        FormClosing += (_, _) => { logTimer.Stop(); sendDialog?.Close(); };
 
         Log(L("MAME 네오지오 롬셋 zip(예: kof98.zip)을 이 창에 끌어다 놓거나 [찾아보기]를 누르세요.", "Drop a MAME Neo Geo romset zip (e.g. kof98.zip) on this window or press [Browse...]."));
         Log(L("MAME 롬셋 zip만 지원합니다. MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.", "Only MAME romset zips are supported. A romset whose names or chip CRCs differ from MAME's does not convert."));
@@ -324,7 +333,7 @@ public sealed class MainForm : Form
     {
         string dir = string.IsNullOrWhiteSpace(outBox.Text) ? AppContext.BaseDirectory : outBox.Text;
         launcherButton.Enabled = false;
-        UseWaitCursor = true;
+        SetBuilding(true);
         try
         {
             var builder = new CiaBuilder(msg => BeginInvoke(() => Log(msg)));
@@ -342,8 +351,7 @@ public sealed class MainForm : Form
         finally
         {
             launcherButton.Enabled = true;
-            UseWaitCursor = false;
-            RefreshSend();
+            SetBuilding(false);
         }
     }
 
@@ -358,7 +366,7 @@ public sealed class MainForm : Form
         job.Region = SelectedRegion;
         job.OutputDir = outBox.Text;
         SetBuildEnabled(false);
-        UseWaitCursor = true;
+        SetBuilding(true);
         try
         {
             var builder = new CiaBuilder(msg => BeginInvoke(() => Log(msg)));
@@ -378,8 +386,7 @@ public sealed class MainForm : Form
         finally
         {
             SetBuildEnabled(true);
-            UseWaitCursor = false;
-            RefreshSend();
+            SetBuilding(false);
         }
     }
 
@@ -391,7 +398,7 @@ public sealed class MainForm : Form
         var failed = new List<FailureText.BatchFailure>();
         string title = Text;
         SetBuildEnabled(false);
-        UseWaitCursor = true;
+        SetBuilding(true);
         try
         {
             for (int i = 0; i < jobs.Count; i++)
@@ -429,8 +436,7 @@ public sealed class MainForm : Form
         {
             Text = title;
             SetBuildEnabled(true);
-            UseWaitCursor = false;
-            RefreshSend();
+            SetBuilding(false);
         }
     }
 
@@ -460,5 +466,63 @@ public sealed class MainForm : Form
         dlg.Show(this);
     }
 
-    void Log(string msg) => logBox.AppendText(msg + Environment.NewLine);
+    /// <summary>#402: build work in progress: wait cursor on, and the log follows its end. On the way
+    /// out the last batch is written first, while it still follows, so the finished log shows the end.</summary>
+    internal void SetBuilding(bool on)
+    {
+        if (!on) FlushLog();
+        logFollowsEnd = on;
+        UseWaitCursor = on;
+        RefreshSend();
+    }
+
+    /// <summary>#402: appends one line to the next batch; any thread may call this.</summary>
+    internal void Log(string s) => logBuffer.Add(s);
+
+    /// <summary>#402: writes the lines collected since the last batch. The 100ms timer calls this;
+    /// a test calls it directly. One write per batch keeps a long batch off the UI thread.</summary>
+    internal void FlushLog()
+    {
+        var update = logBuffer.Drain();
+        if (update.Empty) return;
+
+        // Read before the text changes. AppendText moves the caret to the end, which the edit
+        // control may scroll into view, so a reader scrolled up gets their line put back either way;
+        // a trim moves every line up by TopShift.
+        int top = FirstVisibleLine();
+
+        if (update.Rewrite) logBox.Text = logBuffer.Text;
+        else logBox.AppendText(logBuffer.Batch(update.Added));
+
+        if (logFollowsEnd) ScrollToLogEnd();
+        else ScrollToLine(Math.Max(0, top - update.TopShift));
+    }
+
+    /// <summary>#402: 0-based index of the top visible line; the edit control scrolls in whole lines.
+    /// A box that has no handle yet has not been shown, so its top line is 0.</summary>
+    int FirstVisibleLine() => logBox.IsHandleCreated ? (int)SendMessage(logBox.Handle, EM_GETFIRSTVISIBLELINE, 0, 0) : 0;
+
+    /// <summary>#402: puts a line at the top of the log.</summary>
+    void ScrollToLine(int line)
+    {
+        if (logBox.IsHandleCreated) SendMessage(logBox.Handle, EM_LINESCROLL, 0, line - FirstVisibleLine());
+    }
+
+    const int EM_GETFIRSTVISIBLELINE = 0xCE;
+    const int EM_LINESCROLL = 0xB6;
+
+    /// <summary>#402: puts the caret after the last line, which scrolls the box to its end.</summary>
+    void ScrollToLogEnd()
+    {
+        if (!logBox.IsHandleCreated) return;
+        logBox.SelectionStart = logBox.TextLength;
+        logBox.SelectionLength = 0;
+        logBox.ScrollToCaret();
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
+
+    /// <summary>#402: the log box itself, so the Windows-only tests can read and scroll it.</summary>
+    internal TextBox LogBox => logBox;
 }

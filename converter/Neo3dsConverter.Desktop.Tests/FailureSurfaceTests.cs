@@ -29,7 +29,8 @@ public class FailureSurfaceTests
             var window = new MainWindow();
             window.Show();
             window.LoadRom(zip);
-            // Log() posts to the UI thread, so let the dispatcher drain before reading it.
+            // #402: the log is written in 100ms batches, so the test asks for the pending batch.
+            window.FlushLog();
             Dispatcher.UIThread.RunJobs();
 
             string status = window.FindControl<TextBlock>("StatusText")!.Text ?? "";
