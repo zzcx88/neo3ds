@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace Neo3dsConverter.Desktop;
 
@@ -17,6 +18,11 @@ public partial class MainWindow : Window
     /// <summary>#306: the one send window, modeless so the converter stays usable while it serves.</summary>
     SendDialog? sendDialog;
     bool busy;
+    /// <summary>#402: lines waiting for the next 100ms batch, and the log's kept lines.</summary>
+    readonly LogBuffer logBuffer = new("\n");
+    readonly DispatcherTimer logTimer;
+    /// <summary>#402: the log follows its end only while a build runs; afterwards the reader scrolls freely.</summary>
+    bool logFollowsEnd;
 
 
     public MainWindow()
@@ -40,7 +46,15 @@ public partial class MainWindow : Window
         TitleBox.TextChanged += (_, _) => RefreshPreview();
         DragDrop.SetAllowDrop(DropZone, true);
         DropZone.AddHandler(DragDrop.DropEvent, OnDrop);
-        Closed += (_, _) => sendDialog?.Window.Close();
+        // #402: one write per 100ms keeps a 150-game batch off the UI thread's critical path.
+        logTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(LogBuffer.FlushMilliseconds),
+            DispatcherPriority.Background, (_, _) => FlushLog());
+        logTimer.Start();
+        Closed += (_, _) =>
+        {
+            logTimer.Stop();
+            sendDialog?.Window.Close();
+        };
         Log(Lang.L("MAME 네오지오 롬셋 zip을 끌어다 놓거나 [롬 zip 열기]를 누르세요.", "Drop MAME Neo Geo romset zips here or press [Open]."));
         Log(Lang.L("MAME 롬셋 zip만 지원합니다. MAME 규격(롬셋 이름·칩 CRC)과 다른 롬셋은 변환되지 않습니다.",
                    "Only MAME romset zips are supported. A romset whose names or chip CRCs differ from MAME's does not convert."));
@@ -318,8 +332,13 @@ public partial class MainWindow : Window
         return dir;
     }
 
-    void SetBusy(bool on)
+    /// <summary>Build work in progress: controls off, wait cursor, and (#402) the log follows its end.</summary>
+    internal void SetBusy(bool on)
     {
+        // #402: the log only follows its end while build work runs. On the way out, the lines of
+        // the last batch are written first so the finished log still shows its end.
+        if (!on) FlushLog();
+        logFollowsEnd = on;
         busy = on;
         Cursor = on ? new Cursor(StandardCursorType.Wait) : null;
         OpenButton.IsEnabled = OutDirButton.IsEnabled = LauncherButton.IsEnabled = !on;
@@ -506,5 +525,85 @@ public partial class MainWindow : Window
         await dlg.ShowDialog(this);
     }
 
-    void Log(string s) => Dispatcher.UIThread.Post(() => LogBox.Text += s + "\n");
+    internal void Log(string s)
+    {
+        logBuffer.Add(s);
+    }
+
+    /// <summary>#402: writes the lines collected since the last batch. The timer calls this every
+    /// 100ms; a test calls it directly. One write per batch keeps a long batch off the UI thread.</summary>
+    internal void FlushLog()
+    {
+        var update = logBuffer.Drain();
+        if (update.Empty) return;
+
+        // Read before the text changes. Appending leaves a scrolled-up reader alone, but a trim
+        // rewrites the whole text, which moves every line up by TopShift.
+        int? top = !logFollowsEnd && update.Rewrite ? TopLine() : null;
+
+        if (update.Rewrite) LogBox.Text = logBuffer.Text;
+        else LogBox.Text += logBuffer.Batch(update.Added);
+
+        if (logFollowsEnd) FollowLogEnd();
+        else if (top is int line) ScrollLineToTop(Math.Max(0, line - update.TopShift));
+    }
+
+    /// <summary>#402: the log line at the top of the visible box (0 is the first line).</summary>
+    int? TopLine()
+    {
+        if (LogScroll is not { } scroll || LogPresenter?.TextLayout is not { } layout) return null;
+        double y = scroll.Offset.Y, top = 0;
+        foreach (var textLine in layout.TextLines)
+        {
+            if (top + textLine.Height > y)
+            {
+                string text = LogBox.Text ?? "";
+                int index = Math.Min(textLine.FirstTextSourceIndex, text.Length);
+                return text[..index].Count(c => c == '\n');
+            }
+            top += textLine.Height;
+        }
+        return null;
+    }
+
+    /// <summary>#402: scrolls one log line back to the top, wrapped lines included.</summary>
+    void ScrollLineToTop(int line)
+    {
+        if (LogScroll is not { } scroll) return;
+        LogBox.UpdateLayout();
+        if (LogPresenter?.TextLayout is not { } layout) return;
+        string text = LogBox.Text ?? "";
+        int start = 0;
+        for (int i = 0; i < line; i++)
+        {
+            int next = text.IndexOf('\n', start);
+            if (next < 0) break;
+            start = next + 1;
+        }
+        double top = 0;
+        foreach (var textLine in layout.TextLines)
+        {
+            if (textLine.FirstTextSourceIndex + textLine.Length > start)
+            {
+                scroll.Offset = scroll.Offset.WithY(top);
+                return;
+            }
+            top += textLine.Height;
+        }
+    }
+
+    /// <summary>#402: the log's text layout, which maps pixels to the lines a reader sees.</summary>
+    Avalonia.Controls.Presenters.TextPresenter? LogPresenter =>
+        LogBox.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().FirstOrDefault();
+
+    /// <summary>#402: the log's own scroll viewer, or null before the window is laid out.</summary>
+    ScrollViewer? LogScroll => LogBox.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+
+    /// <summary>#402: puts the last line in view after the new text has been laid out.</summary>
+    void FollowLogEnd()
+    {
+        if (LogScroll is not { } scroll) return;
+        LogBox.UpdateLayout();
+        scroll.Offset = scroll.Offset.WithY(scroll.ScrollBarMaximum.Y);
+    }
 }
