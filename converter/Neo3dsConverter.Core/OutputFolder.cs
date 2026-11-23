@@ -69,16 +69,19 @@ public static class OutputFolder
     /// <summary>The outcome of <see cref="Gather"/>.</summary>
     /// <param name="Folder">The batch folder, or null when the files stayed where they were built.</param>
     /// <param name="Paths">Where each file is now, in the order given.</param>
-    /// <param name="Warning">The plain line to show when the folder could not be made or filled.</param>
+    /// <param name="Warning">The message to show when the folder could not be made or filled.</param>
     public sealed record Result(string? Folder, IReadOnlyList<string> Paths, string? Warning);
 
     /// <summary>
     /// Moves the files a run built into a new batch folder under <paramref name="outDir"/> when
     /// there are two or more of them. One file, or none, stays where it is and no folder is made.
-    /// If the folder cannot be made or a move fails, every file is put back where it was built
-    /// and the folder is removed, so no result is lost; the warning names the output folder.
+    /// If a move fails, attempts to restore the files. Any failed restoration is reported along
+    /// with the last known location of every result.
     /// </summary>
-    public static Result Gather(string outDir, IReadOnlyList<string> built, DateTime time)
+    public static Result Gather(string outDir, IReadOnlyList<string> built, DateTime time) =>
+        Gather(outDir, built, time, File.Move);
+
+    internal static Result Gather(string outDir, IReadOnlyList<string> built, DateTime time, Action<string, string> move)
     {
         var files = built.Select(Path.GetFullPath).ToList();
         if (files.Count < 2) return new Result(null, files, null);
@@ -90,7 +93,7 @@ public static class OutputFolder
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return new Result(null, files, MoveWarning(outDir));
+            return new Result(null, files, MoveWarning(files, false));
         }
 
         var now = new List<string>(files);
@@ -99,20 +102,19 @@ public static class OutputFolder
             for (int i = 0; i < files.Count; i++)
             {
                 string dest = Path.Combine(folder, Path.GetFileName(files[i]));
-                File.Move(files[i], dest);
+                move(files[i], dest);
                 now[i] = dest;
             }
             return new Result(folder, now, null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // Put back what already moved; a file that cannot go back stays in the folder and
-            // its real path is reported, so nothing is lost either way.
+            bool restoreFailed = false;
             for (int i = 0; i < files.Count; i++)
             {
                 if (now[i] == files[i]) continue;
-                try { File.Move(now[i], files[i]); now[i] = files[i]; }
-                catch (Exception back) when (back is IOException or UnauthorizedAccessException) { }
+                try { move(now[i], files[i]); now[i] = files[i]; }
+                catch (Exception back) when (back is IOException or UnauthorizedAccessException) { restoreFailed = true; }
             }
             bool emptied = false;
             try
@@ -120,13 +122,15 @@ public static class OutputFolder
                 if (!Directory.EnumerateFileSystemEntries(folder).Any()) { Directory.Delete(folder); emptied = true; }
             }
             catch (Exception gone) when (gone is IOException or UnauthorizedAccessException) { }
-            return new Result(emptied ? null : folder, now, MoveWarning(outDir));
+            return new Result(emptied ? null : folder, now, MoveWarning(now, restoreFailed));
         }
     }
 
-    static string MoveWarning(string outDir) => Lang.L(
-        $"결과를 묶음 폴더로 옮기지 못해 저장 위치에 그대로 두었어요: {outDir}",
-        $"The results could not be moved into a batch folder, so they stay in the output folder: {outDir}");
+    static string MoveWarning(IReadOnlyList<string> paths, bool restoreFailed) =>
+        (restoreFailed
+            ? Lang.L("결과를 묶음 폴더로 옮기지 못했고 일부 파일의 복구에도 실패했어요. 현재 결과 위치:", "The batch move failed and some files could not be restored. Current result locations:")
+            : Lang.L("결과를 묶음 폴더로 옮기지 못했어요. 현재 결과 위치:", "The batch move failed. Current result locations:"))
+        + "\n" + string.Join("\n", paths);
 
     /// <summary>Shows the folder in Explorer, Finder or the Linux file manager. A failure is quiet:
     /// the path is already in the log and the done window.</summary>

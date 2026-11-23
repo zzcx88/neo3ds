@@ -108,6 +108,29 @@ public sealed class OutputFolderTests : IDisposable
     }
 
     [Fact]
+    public void AFailedRollbackReportsEveryActualResultPath()
+    {
+        string first = Built("mslug.cia");
+        string second = Built("mslug2.cia");
+        int attempts = 0;
+
+        var result = OutputFolder.Gather(dir, [first, second], At, (from, to) =>
+        {
+            if (++attempts > 1) throw new IOException("injected move failure");
+            File.Move(from, to);
+        });
+
+        string moved = Path.Combine(result.Folder!, "mslug.cia");
+        Assert.Equal([moved, second], result.Paths);
+        Assert.True(File.Exists(moved));
+        Assert.True(File.Exists(second));
+        Assert.NotNull(result.Warning);
+        Assert.Contains(moved, result.Warning);
+        Assert.Contains(second, result.Warning);
+        Assert.True(result.Warning.Contains("복구") || result.Warning.Contains("restor", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void TheSameZipTwiceIsKeptOnce()
     {
         string zip = Path.Combine(dir, "mslug.zip");
