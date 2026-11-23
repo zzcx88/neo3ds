@@ -72,7 +72,9 @@ public sealed class BatchFolderTests : IDisposable
         string folder = Assert.Single(Directory.GetDirectories(dir), p => Path.GetFileName(p).StartsWith(OutputFolder.Prefix));
         Assert.Equal(first, File.ReadAllText(Path.Combine(folder, "mslug" + extension)));
         Assert.Equal(second, File.ReadAllText(Path.Combine(folder, "mslug-2" + extension)));
-        Assert.Contains("2", window.LastDialog!.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "DialogText").Text);
+        string message = window.LastDialog!.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "DialogText").Text!;
+        Assert.Contains(folder, message);
+        Assert.True(message.Contains("2개") || message.Contains("2 CIAs") || message.Contains("2 launcher files"));
         window.LastDialog.Close();
         window.Close();
     }

@@ -95,6 +95,7 @@ public static class CommandLine
             foreach (var zip in zips)
             {
                 CiaJob? job = null;
+                bool completed = false;
                 try
                 {
                     job = CiaJob.FromRomZip(zip, set);
@@ -107,6 +108,7 @@ public static class CommandLine
                     job.StartMvs = startMvs;
                     job.Region = region;
                     string file = build(job, pack);
+                    completed = true;
                     if (zips.Count == 1) Console.WriteLine($"OK {file}");
                     else built.Add(file);
                 }
@@ -114,6 +116,7 @@ public static class CommandLine
                 // exception text stays behind NEO3DS_DEBUG (the CLI has no log window).
                 catch (Exception e) when (zips.Count > 1)
                 {
+                    if (!completed && job?.OutputName != null) reservedNames.Remove(job.OutputName);
                     WriteFailure(e);
                     failures.Add(job != null ? FailureText.BatchFailure.Of(job, e) : new FailureText.BatchFailure(null, FailureText.KindOf(e)));
                     failed++;

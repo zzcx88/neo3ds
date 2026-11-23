@@ -418,16 +418,19 @@ public sealed class MainForm : Form
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 Text = $"[{i + 1}/{jobs.Count}] {j.RomName} - {title}";
+                bool completed = false;
                 try
                 {
                     var builder = new CiaBuilder(msg => BeginInvoke(() => Log(msg)));
                     string file = await Task.Run(() => pack ? builder.BuildPack(j) : builder.Build(j));
+                    completed = true;
                     if (!pack) AddBuilt(file, launcher: false);
                     files.Add(file);
                     done.Add(j.RomName);
                 }
                 catch (Exception e)
                 {
+                    if (!completed && j.OutputName != null) reservedNames.Remove(j.OutputName);
                     // #329: the summary names the catalog romset and the code; raw goes to the log.
                     Log(L("오류: ", "Error: ") + FailureText.LogLines(e));
                     failed.Add(FailureText.BatchFailure.Of(j, e));

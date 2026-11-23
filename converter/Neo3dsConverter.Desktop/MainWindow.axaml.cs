@@ -404,17 +404,20 @@ public partial class MainWindow : Window
                 Title = ProgressTitle(i + 1, jobs.Count, j.RomName, baseTitle);
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
+                bool completed = false;
                 try
                 {
                     string file = await Task.Run(() => BuildBatchJob != null
                         ? BuildBatchJob(j, pack)
                         : pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+                    completed = true;
                     if (!pack) AddBuilt(file, launcher: false);
                     files.Add(file);
                     done.Add(j.RomName);
                 }
                 catch (Exception ex)
                 {
+                    if (!completed && j.OutputName != null) reservedNames.Remove(j.OutputName);
                     // #329: the row keeps the catalog name and code; the raw line is the log's.
                     Log(Lang.L("오류: ", "Error: ") + FailureText.LogLines(ex));
                     failed.Add(FailureText.BatchFailure.Of(j, ex));
