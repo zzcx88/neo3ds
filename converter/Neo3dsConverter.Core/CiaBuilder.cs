@@ -52,7 +52,7 @@ public sealed class CiaJob
         string dir = Path.GetDirectoryName(full)!;
         string name = Path.GetFileNameWithoutExtension(full).ToLowerInvariant();
         string bios = Path.Combine(dir, "neogeo.zip");
-        var (game, problem, failure) = PickGame(name, dir, set);
+        var (game, problem, failure) = PickGame(name, full, set);
         return new CiaJob
         {
             RomZip = full,
@@ -68,9 +68,14 @@ public sealed class CiaJob
     }
 
     /// <summary>Zips a romset's chips may come from: its own, its parent's, and the zip named after the parent.</summary>
-    public static string[] ZipsFor(MameGame g, string dir, string zipName)
+    public static string[] ZipsFor(MameGame g, string dir, string zipName) =>
+        ZipsFor(g, Path.Combine(dir, zipName + ".zip"));
+
+    /// <summary>Search the selected ZIP first, preserving its actual path and case.</summary>
+    public static string[] ZipsFor(MameGame g, string selectedZip)
     {
-        var paths = new List<string> { Path.Combine(dir, zipName + ".zip"), Path.Combine(dir, g.Name + ".zip") };
+        string dir = Path.GetDirectoryName(selectedZip)!;
+        var paths = new List<string> { selectedZip, Path.Combine(dir, g.Name + ".zip") };
         if (g.Parent != null) paths.Add(Path.Combine(dir, g.Parent + ".zip"));
         return paths.ToArray();
     }
@@ -80,7 +85,7 @@ public sealed class CiaJob
     /// otherwise a supported clone whose chips the (merged) zip holds, e.g. kof98.zip -> kof98h.
     /// Returns the raw detail for the log and the coded failure for the plain text (#328).
     /// </summary>
-    static (MameGame?, string?, ConverterException?) PickGame(string name, string dir, string? set)
+    static (MameGame?, string?, ConverterException?) PickGame(string name, string selectedZip, string? set)
     {
         var exact = GameDb.Find(set ?? name);
         if (exact == null)
@@ -104,7 +109,7 @@ public sealed class CiaJob
                 continue;
             }
             RomSet zips;
-            try { zips = new RomSet(ZipsFor(g, dir, name)); }
+            try { zips = new RomSet(ZipsFor(g, selectedZip)); }
             catch (ConverterException e)
             {
                 // A zip the archiver cannot open is the failure itself; keep the first verdict.
@@ -369,7 +374,7 @@ public sealed class CiaBuilder
         if (def.Name != job.RomName) log(L($"  롬셋: {def.Name} ({def.Desc})", $"  Romset: {def.Name} ({def.Desc})"));
 
         string romfs = Path.Combine(work, "romfs");
-        using var rom = new RomSet(CiaJob.ZipsFor(def, Path.GetDirectoryName(job.RomZip)!, job.RomName));
+        using var rom = new RomSet(CiaJob.ZipsFor(def, job.RomZip));
         var stats = RomPack.Write(def, rom, job.BiosZip!, Path.Combine(romfs, "game"), log, job.StartMvs, job.Region);
         // shown at the top of the bottom screen (the 3DS font has ASCII only)
         File.WriteAllText(Path.Combine(romfs, "game", "title.txt"), job.Title, new System.Text.UTF8Encoding(false));

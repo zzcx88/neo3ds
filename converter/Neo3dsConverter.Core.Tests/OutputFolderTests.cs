@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Xunit;
 
 namespace Neo3dsConverter.Tests;
@@ -153,6 +154,34 @@ public sealed class OutputFolderTests : IDisposable
         File.WriteAllText(upper, "upper");
 
         Assert.Equal([lower, upper], OutputFolder.Distinct([lower, upper]));
+    }
+
+    [Fact]
+    public void RomSearchUsesTheExactSelectedZipPath()
+    {
+        string selected = Path.Combine(dir, "MSLUG.ZIP");
+
+        var paths = CiaJob.ZipsFor(GameDb.Find("mslug")!, selected);
+
+        Assert.Equal(selected, paths[0]);
+    }
+
+    [Fact]
+    public void RomSearchReadsTheSelectedZipWhenCaseDistinctNamesCoexist()
+    {
+        string lower = Path.Combine(dir, "mslug.zip");
+        string upper = Path.Combine(dir, "MSLUG.ZIP");
+        using (var zip = ZipFile.Open(lower, ZipArchiveMode.Create))
+        using (var writer = new StreamWriter(zip.CreateEntry("chip.bin").Open()))
+            writer.Write("lower");
+        if (File.Exists(upper)) return; // The test directory must be on a case-sensitive volume.
+        using (var zip = ZipFile.Open(upper, ZipArchiveMode.Create))
+        using (var writer = new StreamWriter(zip.CreateEntry("chip.bin").Open()))
+            writer.Write("upper");
+
+        using var rom = new RomSet(CiaJob.ZipsFor(GameDb.Find("mslug")!, upper));
+
+        Assert.Equal("upper", System.Text.Encoding.UTF8.GetString(rom.Read("chip.bin", null, "mslug")));
     }
 
     [Fact]
