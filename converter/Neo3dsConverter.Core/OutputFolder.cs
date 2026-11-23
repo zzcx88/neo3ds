@@ -50,8 +50,8 @@ public static class OutputFolder
     static extern void free(IntPtr pointer);
 
     /// <summary>
-    /// Reserves the usual romset filename for this batch. Only a second, different input with
-    /// the same romset name is suffixed; an existing usual filename remains replaceable on rebuild.
+    /// Reserves the usual romset filename for this batch. A name already reserved by another input
+    /// is suffixed; an existing usual filename remains replaceable on rebuild.
     /// </summary>
     public static string ReserveBatchOutputName(CiaJob job, string outDir, string extension, HashSet<string> reserved)
     {

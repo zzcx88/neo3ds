@@ -22,7 +22,6 @@ public static class CommandLine
         return args.Where((_, i) => i != li && i != li + 1).ToArray();
     }
 
-    /// <summary>Runs one command (arguments without --lang); returns the process exit code.</summary>
     static string Build(CiaJob job, bool pack)
     {
         var builder = new CiaBuilder(Console.WriteLine);
@@ -31,6 +30,7 @@ public static class CommandLine
 
     static string BuildLauncher(string directory) => new CiaBuilder(Console.WriteLine).BuildLauncher(directory);
 
+    /// <summary>Runs one command (arguments without --lang); returns the process exit code.</summary>
     public static int Run(string[] args) => Run(args, Build, BuildLauncher, () => OutputFolder.DefaultDir());
 
     internal static int Run(string[] args, Func<CiaJob, bool, string> build) =>
