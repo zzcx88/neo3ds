@@ -23,7 +23,11 @@ public static class CommandLine
     }
 
     /// <summary>Runs one command (arguments without --lang); returns the process exit code.</summary>
-    public static int Run(string[] args)
+    public static int Run(string[] args) => Run(args,
+        directory => new CiaBuilder(Console.WriteLine).BuildLauncher(directory),
+        () => OutputFolder.DefaultDir());
+
+    internal static int Run(string[] args, Func<string, string> buildLauncher, Func<string> defaultDir)
     {
         try
         {
@@ -31,7 +35,7 @@ public static class CommandLine
             if (args[0] == "--art-sheet") { ArtSheet(args[1]); return 0; }
             if (args[0] == "--launcher")
             {
-                var launcher = new CiaBuilder(Console.WriteLine).BuildLauncher(args.Length > 1 ? args[1] : ".");
+                var launcher = buildLauncher(args.Length > 1 ? args[1] : defaultDir());
                 Console.WriteLine($"OK {launcher}");
                 return 0;
             }
