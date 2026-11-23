@@ -112,9 +112,24 @@ public sealed class OutputFolderTests : IDisposable
     {
         string zip = Path.Combine(dir, "mslug.zip");
         string other = Path.Combine(dir, "mslug2.zip");
-        string again = OperatingSystem.IsLinux() ? zip : zip.ToUpperInvariant();
+        File.WriteAllText(zip, "");
+        File.WriteAllText(other, "");
+        string upper = Path.Combine(dir, "MSLUG.ZIP");
+        string again = File.Exists(upper) ? upper : zip;
 
         Assert.Equal([zip, other], OutputFolder.Distinct([zip, other, again, Path.Combine(dir, ".", "mslug.zip")]));
+    }
+
+    [Fact]
+    public void DifferentlyCasedNamesAreKeptWhenTheyAreDifferentFiles()
+    {
+        string lower = Path.Combine(dir, "game.zip");
+        string upper = Path.Combine(dir, "GAME.zip");
+        File.WriteAllText(lower, "lower");
+        if (File.Exists(upper)) return; // This test directory is on a case-insensitive volume.
+        File.WriteAllText(upper, "upper");
+
+        Assert.Equal([lower, upper], OutputFolder.Distinct([lower, upper]));
     }
 
     [Fact]

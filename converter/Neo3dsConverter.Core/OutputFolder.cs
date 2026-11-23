@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace Neo3dsConverter;
 
@@ -26,10 +27,27 @@ public static class OutputFolder
             zips.OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).First()))!;
 
     /// <summary>Each zip once, in the order given: the same path picked twice converts once.</summary>
-    public static string[] Distinct(IEnumerable<string> zips) =>
-        zips.Select(Path.GetFullPath)
-            .Distinct(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+    public static string[] Distinct(IEnumerable<string> zips)
+    {
+        var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        return zips.Select(Path.GetFullPath).Where(path => seen.Add(OperatingSystem.IsMacOS() ? RealPath(path) : path)).ToArray();
+    }
+
+    // macOS volumes may independently be case-sensitive or case-insensitive. realpath uses
+    // the actual filesystem spelling, unlike a comparison based on the operating system.
+    static string RealPath(string path)
+    {
+        IntPtr resolved = realpath(path, IntPtr.Zero);
+        if (resolved == IntPtr.Zero) return path; // Never discard a potentially distinct input on failure.
+        try { return Marshal.PtrToStringUTF8(resolved) ?? path; }
+        finally { free(resolved); }
+    }
+
+    [DllImport("/usr/lib/libSystem.B.dylib", SetLastError = true)]
+    static extern IntPtr realpath([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr resolved);
+
+    [DllImport("/usr/lib/libSystem.B.dylib")]
+    static extern void free(IntPtr pointer);
 
     /// <summary>The batch folder name for a run started at <paramref name="time"/>.</summary>
     public static string FolderName(DateTime time) =>
