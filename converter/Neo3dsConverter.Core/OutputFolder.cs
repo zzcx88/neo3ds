@@ -49,6 +49,24 @@ public static class OutputFolder
     [DllImport("/usr/lib/libSystem.B.dylib")]
     static extern void free(IntPtr pointer);
 
+    /// <summary>
+    /// Reserves the usual romset filename for this batch. Only a second, different input with
+    /// the same romset name is suffixed; an existing usual filename remains replaceable on rebuild.
+    /// </summary>
+    public static string ReserveBatchOutputName(CiaJob job, string outDir, string extension, HashSet<string> reserved)
+    {
+        string name = job.RomName;
+        if (reserved.Add(name)) return name;
+
+        for (int suffix = 2; ; suffix++)
+        {
+            string candidate = $"{job.RomName}-{suffix}";
+            if (reserved.Contains(candidate) || File.Exists(Path.Combine(outDir, candidate + extension))) continue;
+            reserved.Add(candidate);
+            return candidate;
+        }
+    }
+
     /// <summary>The batch folder name for a run started at <paramref name="time"/>.</summary>
     public static string FolderName(DateTime time) =>
         Prefix + time.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);

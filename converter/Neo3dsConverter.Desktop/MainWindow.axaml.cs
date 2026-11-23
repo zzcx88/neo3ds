@@ -287,6 +287,9 @@ public partial class MainWindow : Window
         RefreshPreview();
     }
 
+    internal Func<string, CiaJob> CreateBatchJob { get; set; } = path => CiaJob.FromRomZip(path);
+    internal Func<CiaJob, bool, string>? BuildBatchJob { get; set; }
+
     void LoadBatch(string[] zips)
     {
         job = null;
@@ -294,7 +297,7 @@ public partial class MainWindow : Window
         Log("");
         foreach (var zip in zips)
         {
-            var j = CiaJob.FromRomZip(zip);
+            var j = CreateBatchJob(zip);
             batch.Add(j);
             if (j.Game == null) Log($"  ✘ {j.ProblemText}" + (j.Failure != null ? $" ({FailureText.Raw(j.Failure)})" : ""));
             else if (j.BiosZip == null) Log($"  ✘ {j.RomName}: " + Lang.L("같은 폴더에 neogeo.zip 없음", "no neogeo.zip in the same folder"));
@@ -385,6 +388,8 @@ public partial class MainWindow : Window
         var done = new List<string>();
         var files = new List<string>();
         var failed = new List<FailureText.BatchFailure>();
+        var reservedNames = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        string extension = pack ? ".neo3ds" : ".cia";
         SetBusy(true);
         using var spare = ParallelLimit.ForBatch(); // #403: one core stays with the window
         try
@@ -395,12 +400,15 @@ public partial class MainWindow : Window
                 j.StartMvs = SelectedMvs;
                 j.Region = SelectedRegion;
                 j.OutputDir = outDir;
+                j.OutputName = OutputFolder.ReserveBatchOutputName(j, outDir, extension, reservedNames);
                 Title = ProgressTitle(i + 1, jobs.Count, j.RomName, baseTitle);
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 try
                 {
-                    string file = await Task.Run(() => pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
+                    string file = await Task.Run(() => BuildBatchJob != null
+                        ? BuildBatchJob(j, pack)
+                        : pack ? new CiaBuilder(Log).BuildPack(j) : new CiaBuilder(Log).Build(j));
                     if (!pack) AddBuilt(file, launcher: false);
                     files.Add(file);
                     done.Add(j.RomName);

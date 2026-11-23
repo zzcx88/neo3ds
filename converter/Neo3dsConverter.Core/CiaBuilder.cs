@@ -23,6 +23,8 @@ public sealed class CiaJob
     public required string Title { get; set; }
     public string Publisher { get; set; } = "SNK";
     public required string OutputDir { get; set; }
+    /// <summary>Optional batch-only filename stem; it does not affect the installed Title ID.</summary>
+    public string? OutputName { get; set; }
     /// <summary>Optional pictures for the HOME menu; generated from the title when null.</summary>
     public string? IconImage { get; set; }
     public string? BannerImage { get; set; }
@@ -208,7 +210,7 @@ public sealed class CiaBuilder
             log(L($"[3/4] CIA 생성 (Title ID {job.TitleId})", $"[3/4] Building CIA (Title ID {job.TitleId})"));
             job.OutputDir = Path.GetFullPath(job.OutputDir);
             Directory.CreateDirectory(job.OutputDir);
-            string cia = Path.Combine(job.OutputDir, job.RomName + ".cia");
+            string cia = Path.Combine(job.OutputDir, (job.OutputName ?? job.RomName) + ".cia");
             string product = ("NEO3DS-" + job.RomName.ToUpperInvariant());
             if (product.Length > 16) product = product[..16];
             MakeCia(cia, product, job.UniqueId, icon, banner, romfs, work);
@@ -288,7 +290,7 @@ public sealed class CiaBuilder
 
             job.OutputDir = Path.GetFullPath(job.OutputDir);
             Directory.CreateDirectory(job.OutputDir);
-            string pack = Path.Combine(job.OutputDir, job.RomName + ".neo3ds");
+            string pack = Path.Combine(job.OutputDir, (job.OutputName ?? job.RomName) + ".neo3ds");
             log(L($"[2/2] {Path.GetFileName(pack)} 만들기", $"[2/2] Writing {Path.GetFileName(pack)}"));
             var files = Directory.GetFiles(game).OrderBy(f => f, StringComparer.Ordinal).ToArray();
             using (var w = new BinaryWriter(File.Create(pack)))

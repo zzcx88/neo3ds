@@ -171,4 +171,44 @@ public sealed class OutputFolderTests : IDisposable
         Directory.CreateDirectory(Path.Combine(dir, "Downloads"));
         Assert.Equal(Path.Combine(dir, "Downloads"), OutputFolder.DefaultDir(dir));
     }
+
+    [Fact]
+    public void BatchOutputNamesDisambiguateOnlyRepeatedRomNames()
+    {
+        var reserved = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        var first = CiaJob.FromRomZip(Path.Combine(dir, "one", "mslug.zip"));
+        var second = CiaJob.FromRomZip(Path.Combine(dir, "two", "mslug.zip"));
+        var other = CiaJob.FromRomZip(Path.Combine(dir, "kof98.zip"));
+
+        Assert.Equal("mslug", OutputFolder.ReserveBatchOutputName(first, dir, ".cia", reserved));
+        Assert.Equal("mslug-2", OutputFolder.ReserveBatchOutputName(second, dir, ".cia", reserved));
+        Assert.Equal("kof98", OutputFolder.ReserveBatchOutputName(other, dir, ".cia", reserved));
+    }
+
+    [Fact]
+    public void BatchCollisionNameSkipsAnExistingFileAndKeepsTitleId()
+    {
+        File.WriteAllText(Path.Combine(dir, "mslug-2.neo3ds"), "existing result");
+        var reserved = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        var first = CiaJob.FromRomZip(Path.Combine(dir, "one", "mslug.zip"));
+        var second = CiaJob.FromRomZip(Path.Combine(dir, "two", "mslug.zip"));
+        string titleId = second.TitleId;
+
+        OutputFolder.ReserveBatchOutputName(first, dir, ".neo3ds", reserved);
+
+        Assert.Equal("mslug-3", OutputFolder.ReserveBatchOutputName(second, dir, ".neo3ds", reserved));
+        Assert.Equal(titleId, second.TitleId);
+        Assert.Equal("existing result", File.ReadAllText(Path.Combine(dir, "mslug-2.neo3ds")));
+    }
+
+    [Fact]
+    public void RebuildingTheSameInputKeepsItsUsualOutputName()
+    {
+        File.WriteAllText(Path.Combine(dir, "mslug.cia"), "existing result");
+        var reserved = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        var sameInput = CiaJob.FromRomZip(Path.Combine(dir, "mslug.zip"));
+
+        Assert.Equal("mslug", OutputFolder.ReserveBatchOutputName(sameInput, dir, ".cia", reserved));
+        Assert.Equal("existing result", File.ReadAllText(Path.Combine(dir, "mslug.cia")));
+    }
 }

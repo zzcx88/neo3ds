@@ -401,6 +401,8 @@ public sealed class MainForm : Form
         var failed = new List<FailureText.BatchFailure>();
         string title = Text;
         string outDir = string.IsNullOrWhiteSpace(outBox.Text) ? OutputFolder.DefaultDir() : outBox.Text;
+        var reservedNames = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        string extension = pack ? ".neo3ds" : ".cia";
         SetBuildEnabled(false);
         SetBuilding(true);
         using var spare = ParallelLimit.ForBatch(); // #403: one core stays with the window
@@ -412,6 +414,7 @@ public sealed class MainForm : Form
                 j.StartMvs = startMvs;
                 j.Region = SelectedRegion;
                 j.OutputDir = outDir;
+                j.OutputName = OutputFolder.ReserveBatchOutputName(j, outDir, extension, reservedNames);
                 Log("");
                 Log($"[{i + 1}/{jobs.Count}] {j.RomName} - {j.Title}");
                 Text = $"[{i + 1}/{jobs.Count}] {j.RomName} - {title}";

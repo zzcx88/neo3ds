@@ -23,11 +23,23 @@ public static class CommandLine
     }
 
     /// <summary>Runs one command (arguments without --lang); returns the process exit code.</summary>
-    public static int Run(string[] args) => Run(args,
-        directory => new CiaBuilder(Console.WriteLine).BuildLauncher(directory),
-        () => OutputFolder.DefaultDir());
+    static string Build(CiaJob job, bool pack)
+    {
+        var builder = new CiaBuilder(Console.WriteLine);
+        return pack ? builder.BuildPack(job) : builder.Build(job);
+    }
 
-    internal static int Run(string[] args, Func<string, string> buildLauncher, Func<string> defaultDir)
+    static string BuildLauncher(string directory) => new CiaBuilder(Console.WriteLine).BuildLauncher(directory);
+
+    public static int Run(string[] args) => Run(args, Build, BuildLauncher, () => OutputFolder.DefaultDir());
+
+    internal static int Run(string[] args, Func<CiaJob, bool, string> build) =>
+        Run(args, build, BuildLauncher, () => OutputFolder.DefaultDir());
+
+    internal static int Run(string[] args, Func<string, string> buildLauncher, Func<string> defaultDir) =>
+        Run(args, Build, buildLauncher, defaultDir);
+
+    static int Run(string[] args, Func<CiaJob, bool, string> build, Func<string, string> buildLauncher, Func<string> defaultDir)
     {
         try
         {
@@ -78,6 +90,8 @@ public static class CommandLine
             int failed = 0;
             var failures = new List<FailureText.BatchFailure>();
             var built = new List<string>();
+            string batchDir = outDir != null ? Path.GetFullPath(outDir) : OutputFolder.ForZips(zips);
+            var reservedNames = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
             foreach (var zip in zips)
             {
                 CiaJob? job = null;
@@ -85,13 +99,14 @@ public static class CommandLine
                 {
                     job = CiaJob.FromRomZip(zip, set);
                     if (outDir != null) job.OutputDir = Path.GetFullPath(outDir);
+                    if (zips.Count > 1)
+                        job.OutputName = OutputFolder.ReserveBatchOutputName(job, job.OutputDir, pack ? ".neo3ds" : ".cia", reservedNames);
                     if (title != null) job.Title = title;
                     job.IconImage = icon;
                     job.BannerImage = banner;
                     job.StartMvs = startMvs;
                     job.Region = region;
-                    var builder = new CiaBuilder(Console.WriteLine);
-                    string file = pack ? builder.BuildPack(job) : builder.Build(job);
+                    string file = build(job, pack);
                     if (zips.Count == 1) Console.WriteLine($"OK {file}");
                     else built.Add(file);
                 }
@@ -107,7 +122,7 @@ public static class CommandLine
             if (zips.Count > 1)
             {
                 // #404: two or more results go into one batch folder; OK names where each file is now.
-                string baseDir = outDir != null ? Path.GetFullPath(outDir) : OutputFolder.ForZips(zips);
+                string baseDir = batchDir;
                 var gathered = OutputFolder.Gather(baseDir, built, DateTime.Now);
                 foreach (var file in gathered.Paths) Console.WriteLine($"OK {file}");
                 if (gathered.Warning != null) Console.Error.WriteLine("WARNING " + gathered.Warning);

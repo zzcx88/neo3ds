@@ -39,6 +39,44 @@ public sealed class BatchFolderTests : IDisposable
         }
     }
 
+    [AvaloniaTheory]
+    [InlineData(false, ".cia")]
+    [InlineData(true, ".neo3ds")]
+    public void SameNamedInputsProduceTwoResultsInTheDoneFolder(bool pack, string extension)
+    {
+        var window = new MainWindow();
+        window.OpenFolder = _ => { };
+        window.CreateBatchJob = path => new CiaJob
+        {
+            RomZip = path, RomName = "mslug", Title = "Metal Slug",
+            OutputDir = dir, BiosZip = Path.Combine(dir, "neogeo.zip"), Game = GameDb.Find("mslug")
+        };
+        window.BuildBatchJob = (job, isPack) =>
+        {
+            Assert.Equal(pack, isPack);
+            string result = Path.Combine(job.OutputDir, job.OutputName + extension);
+            File.WriteAllText(result, job.RomZip);
+            return result;
+        };
+        window.Show();
+        string first = Zip("one", "mslug.zip");
+        string second = Zip("two", "mslug.zip");
+        window.LoadRoms([first, second]);
+        window.FindControl<TextBox>("OutDirBox")!.Text = dir;
+
+        window.FindControl<Button>(pack ? "PackButton" : "BuildButton")!
+            .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump(() => window.LastDialog?.IsVisible == true);
+
+        Assert.NotNull(window.LastDialog);
+        string folder = Assert.Single(Directory.GetDirectories(dir), p => Path.GetFileName(p).StartsWith(OutputFolder.Prefix));
+        Assert.Equal(first, File.ReadAllText(Path.Combine(folder, "mslug" + extension)));
+        Assert.Equal(second, File.ReadAllText(Path.Combine(folder, "mslug-2" + extension)));
+        Assert.Contains("2", window.LastDialog!.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "DialogText").Text);
+        window.LastDialog.Close();
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void PickingAZipPutsItsFolderInTheOutputBox()
     {
