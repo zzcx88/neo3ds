@@ -536,7 +536,7 @@ function batchArtEligible() {
 function artProblemText() {
   if (!artProblem) return '';
   if (artProblem.kind === 'unknown') return t('게임을 인식하지 못해 아이콘/배너 미리보기를 만들 수 없습니다.',
-    'Game not recognized, so the icon and banner preview cannot be built.');
+    'The game was not recognized, so the icon and banner preview cannot be built.');
   if (artProblem.kind === 'blocked') return t(`변환할 수 없습니다: ${artProblem.detail}`,
     `Cannot convert: ${artProblem.detail}`);
   if (artProblem.kind === 'preview') return t('아이콘/배너 미리보기를 만들지 못했습니다.',
@@ -552,7 +552,7 @@ function renderArtMsg(text = artProblemText()) {
 
 /* ── #76 per-game art panel (one row at a time) ─────────────────────────── */
 function artBadgeText(label) {
-  if (label === 'icon+banner') return t('아이콘/배너 지정', 'Custom art');
+  if (label === 'icon+banner') return t('아이콘/배너 지정', 'Custom icon and banner');
   if (label === 'icon') return t('아이콘 지정', 'Custom icon');
   return t('배너 지정', 'Custom banner');
 }
@@ -817,16 +817,16 @@ function stepLabel(step) {
   if (step === 'load') return t('롬셋 확인', 'Checking romset');
   if (step === 'romfs') return t('그래픽 압축', 'Compressing graphics');
   if (step === 'art') return t('아이콘/배너', 'Icon and banner');
-  if (step === 'cia') return t('결과물 묶기', 'Packing output');
+  if (step === 'cia') return t('결과물 묶기', 'Packing the output');
   return step ?? '';
 }
 
 function statusLabel(row) {
-  if (row.status === STATUS.BLOCKED) return t('변환 불가', 'Not convertible');
+  if (row.status === STATUS.BLOCKED) return t('변환 불가', 'Unsupported');
   if (row.status === STATUS.RUNNING) return t('변환 중', 'Converting');
   if (row.status === STATUS.DONE) return t('완료', 'Done');
   if (row.status === STATUS.FAILED) return t('실패', 'Failed');
-  return batchStarted ? t('대기', 'Pending') : t('변환 가능', 'Convertible');
+  return batchStarted ? t('대기', 'Pending') : t('변환 가능', 'Converts');
 }
 
 // #327: blocked and failed rows show the plain cause+action pair; the stable
@@ -860,10 +860,10 @@ function detailText(row, index) {
 }
 
 function summaryText(s) {
-  const blocked = s.blocked ? t(`, 변환 불가 ${s.blocked}`, `, ${s.blocked} not convertible`) : '';
+  const blocked = s.blocked ? t(`, 변환 불가 ${s.blocked}`, `, ${s.blocked} unsupported`) : '';
   return t(
     `변환 가능 ${s.ready}개 중 성공 ${s.done}, 실패 ${s.failed}${blocked}`,
-    `${s.done} done, ${s.failed} failed of ${s.ready} convertible${blocked}`,
+    `${s.done} done, ${s.failed} failed of ${s.ready} that convert${blocked}`,
   );
 }
 
@@ -916,7 +916,7 @@ function makeRow(row, index) {
   titleRow.className = 'batch-row-title';
   const title = document.createElement('span');
   title.className = 'batch-title';
-  title.textContent = row.title ?? t('게임을 인식하지 못함', 'Game not recognized');
+  title.textContent = row.title ?? t('게임을 인식하지 못함', 'Unrecognized game');
   const art = document.createElement('span');
   art.className = 'batch-art hidden'; // paintRow shows it when the row has custom art
   titleRow.append(title, art);
@@ -946,13 +946,13 @@ function paintBatchHeader() {
   const hint = $('gateBatchHint');
   hint.textContent = batchArtEligible()
     ? t('변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘/배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
-      'Check before converting. Select a game row to change that game\'s icon and banner. Games that cannot be converted show why and are skipped.')
+      'Check before converting. Select a game row to change that game\'s icon and banner. Unsupported games show the reason and are skipped.')
     : t('변환하기 전에 확인하세요. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.',
-      'Check before converting. Games that cannot be converted show why and are skipped.');
+      'Check before converting. Unsupported games show the reason and are skipped.');
   batchCount.textContent = checking
     ? t('확인 중…', 'Checking…')
     : batch
-      ? t(`${s.ready}/${s.total} 변환 가능`, `${s.ready}/${s.total} convertible`)
+      ? t(`${s.ready}/${s.total} 변환 가능`, `${s.ready}/${s.total} convert`)
       : checkError ? t('확인 실패', 'Check failed') : '';
   batchMsg.textContent = checking
     ? t('롬셋과 바이오스를 확인하는 중…', 'Checking romsets and BIOS…')
@@ -1063,7 +1063,7 @@ async function downloadParts(parts, base, seq, onProgress) {
     if (seq !== bundleSeq) return false;
     done = start + parts[i].bytes;
     clickDownload(blob, name);
-    logEvent('', `[ZIP] ${name} ${(blob.size / 1048576).toFixed(1)}MB`, 'meta');
+    logEvent('', `[ZIP] ${name} ${(blob.size / 1048576).toFixed(1)} MB`, 'meta');
     // Give the browser a moment to register the first download before handing it
     // the next one. The exact gap is untested; it only has to be short enough not
     // to dominate a many-part bundle (8 parts cost ~2 s at 300 ms).
@@ -1123,7 +1123,7 @@ async function downloadBatchZip() {
   } catch (err) {
     if (seq !== bundleSeq) return;
     // Closing the save dialog is a decision, not a failure.
-    if (err?.name === 'AbortError') logEvent('', t('[ZIP] 저장을 취소했습니다', '[ZIP] Save cancelled'), 'meta');
+    if (err?.name === 'AbortError') logEvent('', t('[ZIP] 저장을 취소했습니다', '[ZIP] Save canceled'), 'meta');
     else logEvent('', t(`[ZIP 실패] ${err?.message ?? err}`, `[ZIP failed] ${err?.message ?? err}`), 'fail');
   } finally {
     if (seq === bundleSeq) {
@@ -1237,7 +1237,7 @@ function refreshRun() {
     if (summary(batch ?? []).ready === 0) {
       disabled = true;
       hint = t('변환 가능한 게임이 없습니다. 목록의 이유를 확인하세요.',
-        'No convertible game. Check the reason in the list.');
+        'No game here can be converted. Check the reason in the list.');
     }
   } else if (!singleRow?.ok) {
     disabled = true;
@@ -1248,7 +1248,7 @@ function refreshRun() {
     });
   }
   if (running) hint = '';
-  else if (artBusy) hint = t('이미지 확인 중…', 'Checking the picture…');
+  else if (artBusy) hint = t('이미지 확인 중…', 'Checking the image…');
   const hintEl = $('gateRunHint');
   hintEl.textContent = hint;
   hintEl.classList.toggle('hidden', !hint);
@@ -1317,7 +1317,7 @@ function renderOverall(textOnly = false) {
   const f = Math.max(0, Math.min(1, Number(overallView.fraction) || 0));
   const pct = percentText(f);
   let label;
-  if (overallView.end === 'cancel') label = t(`취소됨, ${pct}`, `Cancelled, ${pct}`);
+  if (overallView.end === 'cancel') label = t(`취소됨, ${pct}`, `Canceled, ${pct}`);
   else if (overallView.end === 'error') label = t(`중단됨, ${pct}`, `Stopped, ${pct}`);
   else if (overallView.kind === 'batch') {
     const total = Math.max(1, overallView.ready);
@@ -1720,7 +1720,7 @@ function onSingleMessage(m) {
     logGameDone(-1, downloadName(m.stats), m.stats.ciaMB, m.stats.secs);
     if (m.stats.tiles) logEvent('   ', t(
       `타일 ${m.stats.tiles.toLocaleString()}개, 그래픽 ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`,
-      `${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB}MB → ${m.stats.spritePackedMB}MB`), 'info');
+      `${m.stats.tiles.toLocaleString()} tiles, graphics ${m.stats.spriteRawMB} MB → ${m.stats.spritePackedMB} MB`), 'info');
   } else if (m.type === 'error') {
     markRunningRowsFailed(m.message);
     singleFail = { code: m.code ?? null, stage: singleStage };
@@ -1843,6 +1843,6 @@ cancelBtn.addEventListener('click', () => {
   }
   endOverall('cancel');
   finish();
-  logEvent('', t('취소됨', 'Cancelled'), 'meta');
+  logEvent('', t('취소됨', 'Canceled'), 'meta');
 });
 

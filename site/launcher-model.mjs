@@ -1,7 +1,7 @@
 import { LAUNCHER_PREVIEWS } from './launcher-previews.mjs';
 
 // The launcher UI is English only, like the real one (#361): the page language never changes it.
-const STATUS = ['Buildable', 'Verified on hardware', 'Unsupported'];
+const STATUS = ['Converts', 'Verified', 'Unsupported'];
 const PAGE_SIZE = 8;
 const TURBO = ['off', 'A', 'B', 'X', 'Y'];
 const SLOTS = 3;

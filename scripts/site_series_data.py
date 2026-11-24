@@ -34,7 +34,7 @@ SERIES = [
         'en': {
             'name': 'Metal Slug',
             'title': 'Metal Slug on 3DS — {count} romsets as CIAs | neo3ds',
-            'desc': 'Every Metal Slug romset neo3ds recognises — {count} of them — with 3DS conversion status. {ok} convert to installable CIAs; bootlegs are marked as such.',
+            'desc': 'Every Metal Slug romset neo3ds recognizes — {count} of them — with 3DS conversion status. {ok} convert to installable CIAs; bootlegs are marked as such.',
             'h1': 'Metal Slug on the 3DS',
             'lede': 'Five numbered games, X, and the bootleg and revision sets beside them, {count} romsets in the game database.',
             'prose': [
@@ -65,12 +65,12 @@ SERIES = [
         'en': {
             'name': 'The King of Fighters',
             'title': 'The King of Fighters on 3DS — {count} romsets | neo3ds',
-            'desc': 'Every King of Fighters romset from 94 to 2003 — {count} of them — with 3DS conversion status. {ok} convert to installable CIAs.',
+            'desc': "Every King of Fighters romset from '94 to 2003 — {count} of them — with 3DS conversion status. {ok} convert to installable CIAs.",
             'h1': 'The King of Fighters on the 3DS',
-            'lede': 'Ten yearly entries, their revisions, the Korean releases and the bootlegs, {count} sets in the database.',
+            'lede': 'Eleven yearly entries, their revisions, the Korean releases and the bootlegs, {count} sets in the database.',
             'prose': [
                 'KOF shipped every year from 1994 to 2003 on the same MVS board, so the mainline series is here in full. The later carts carry CMC50-era protection, which the converter decrypts in the browser tab.',
-                'The MVS kof98.zip does not convert because of its protection chip; kof98h.zip is the home set of the same game and does. This list holds five 98 revisions. neogeo.zip (BIOS) is needed for every conversion, decryption or not, so put it in the batch.',
+                'The MVS kof98.zip does not convert because of its protection chip; kof98h.zip is the home set of the same game and does. This list holds five \'98 revisions. neogeo.zip (the BIOS) is needed for every conversion, decryption or not, so put it in the batch.',
             ],
         },
     },
@@ -125,7 +125,7 @@ SERIES = [
             'h1': 'Fatal Fury and Garou on the 3DS',
             'lede': 'The 1991 original, three sequels, three Real Bout games and Garou: Mark of the Wolves, {count} sets including revisions and bootlegs.',
             'prose': [
-                "Fatal Fury put SNK's two-lane fighting on the map in 1991, Real Bout rebuilt it in 1995, and Garou closed the line in 1999 with a new cast and a time skip.",
+                "Fatal Fury put SNK's two-plane fighting on the map in 1991, Real Bout rebuilt it in 1995, and Garou closed the line in 1999 with a new cast and a time skip.",
                 'The Real Bout sets carry no protection and convert as they are. SMA protection belongs to the Garou carts, garou.zip among them. neogeo.zip is needed for every set, so keep it in the batch either way.',
             ],
         },
@@ -151,7 +151,7 @@ SERIES = [
             'h1': 'Art of Fighting on the 3DS',
             'lede': 'Three games, and {count} sets once the Korean release and the alternate board are counted.',
             'prose': [
-                'All five sets carry no protection chip, so they convert without a decryption step. neogeo.zip is needed for every one of them. The smallest is aof.zip at 13.3MB and the largest is aof3.zip at 37.3MB. aof2.zip sits alongside its aof2a.zip revision, and aof3k.zip is the Korean release of the third game.',
+                'All five sets carry no protection chip, so they convert without a decryption step. neogeo.zip is needed for every one of them. The smallest is aof.zip at 13.3 MB and the largest is aof3.zip at 37.3 MB. aof2.zip sits alongside its aof2a.zip revision, and aof3k.zip is the Korean release of the third game.',
                 'Art of Fighting arrived in 1992 with a spirit gauge and a zooming camera that Neo Geo hardware could do without faking. The third game shipped in 1996 and ended the line; its Korean release sits in the list as its own set.',
             ],
         },
@@ -227,9 +227,9 @@ SERIES = [
             'title': "Sengoku on 3DS — the beat-'em-up trilogy | neo3ds",
             'desc': "Sengoku, Sengoku 2 and Sengoku 3 with their revisions — {count} romsets, {ok} converting to installable 3DS CIAs.",
             'h1': 'Sengoku on the 3DS',
-            'lede': 'Three beat-em-ups from 1991, 1993 and 2001, {count} sets with revisions.',
+            'lede': "Three beat-'em-up games from 1991, 1993 and 2001, {count} sets with revisions.",
             'prose': [
-                'Only the third game carries CMC42 protection, and the converter decrypts it, so sengoku3.zip converts like the rest. neogeo.zip is needed for every set, protected or not. sengoku.zip is the smallest set at 7.3MB.',
+                'Only the third game carries CMC42 protection, and the converter decrypts it, so sengoku3.zip converts like the rest. neogeo.zip is needed for every set, protected or not. sengoku.zip is the smallest set at 7.3 MB.',
                 'Sengoku put two players against undead armies in a feudal-Japan setting, and the third game arrived a decade later on the same hardware with a different art style from the first two.',
             ],
         },
@@ -255,7 +255,7 @@ SERIES = [
             'h1': 'Puzzle Bobble on the 3DS',
             'lede': "Taito's bubble puzzler and the Puzzle De Pon sets Visco built on the same board, {count} romsets.",
             'prose': [
-                'All five sets carry no protection chip, so they convert without a decryption step. neogeo.zip is needed for every one of them. puzzledp.zip is the lightest at 3.8MB and converts the fastest.',
+                'All five sets carry no protection chip, so they convert without a decryption step. neogeo.zip is needed for every one of them. puzzledp.zip is the lightest at 3.8 MB and converts the fastest.',
                 'pbobblen.zip is the parent set. pbobblenb.zip is the bootleg and converts on its own, without the parent. Puzzle Bobble reached the Neo Geo in 1994, a year after the arcade original, and Bust-A-Move Again followed in 1999.',
             ],
         },
@@ -307,7 +307,7 @@ SERIES = [
             'h1': 'Super Sidekicks on the 3DS',
             'lede': 'Four football games from 1992 to 1996, {count} romsets.',
             'prose': [
-                'ssideki.zip, the first game, does not convert because of its protection chip. The other three carry no protection and convert as they are; ssideki4.zip is the largest at 28.3MB.',
+                'ssideki.zip, the first game, does not convert because of its protection chip. The other three carry no protection and convert as they are; ssideki4.zip is the largest at 28.3 MB.',
                 "Super Sidekicks was SNK's answer to arcade football: short halves, no fouls, and a card system that decided shots. The fourth game, The Ultimate 11, closed the series in 1996.",
             ],
         },
