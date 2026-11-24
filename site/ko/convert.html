@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>네오지오 3DS 변환기 — 롬 zip을 CIA·런처 파일로 | neo3ds</title>
-<meta name="description" content="게임 롬 zip과 neogeo.zip(바이오스)을 올리면 브라우저 안에서 CIA나 런처용 파일로 변환합니다. 설치·계정 없이 파일은 외부로 전송되지 않습니다. 롬셋 282종 중 242종 지원.">
+<title>네오지오 3DS 변환기 — 게임 zip을 CIA·런처용 파일로 | neo3ds</title>
+<meta name="description" content="게임 zip과 neogeo.zip(바이오스)을 올리면 브라우저 안에서 CIA나 런처용 파일로 변환합니다. 설치·계정 없이 파일은 외부로 전송되지 않습니다. 롬셋 282종 중 242종 지원.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#16161C">
 <link rel="canonical" href="https://zzcx88.github.io/neo3ds/ko/convert.html">
@@ -13,7 +13,7 @@
 <link rel="alternate" hreflang="x-default" href="https://zzcx88.github.io/neo3ds/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="neo3ds">
-<meta property="og:title" content="네오지오 3DS 변환기 — 롬 zip을 CIA·런처 파일로 | neo3ds">
+<meta property="og:title" content="네오지오 3DS 변환기 — 게임 zip을 CIA·런처용 파일로 | neo3ds">
 <meta property="og:description" content="게임 zip과 neogeo.zip을 올리면 브라우저 안에서 CIA나 런처용 파일로 변환합니다. 설치 없음, 파일은 외부로 나가지 않습니다.">
 <meta property="og:url" content="https://zzcx88.github.io/neo3ds/ko/convert.html">
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og-ko.png?v=2">
@@ -174,11 +174,11 @@
     <div class="hero-copy">
       <p class="kicker" data-i18n="gate.kicker">웹 변환기</p>
       <h1 data-i18n="gate.h1">브라우저에서<br>변환하기</h1>
-      <p class="lede" data-i18n="gate.lede">게임 zip 여러 개와 neogeo.zip을 올리면 이 탭 안에서 차례로 변환합니다. 롬도 결과물도 외부로 나가지 않습니다.</p>
+      <p class="lede" data-i18n="gate.lede">게임 zip 여러 개와 neogeo.zip을 올리면 이 탭 안에서 차례로 변환하며 롬도 결과물도 외부로 나가지 않습니다.</p>
       <ul class="gate-facts" data-i18n-attr="aria-label:gate.factLabel" aria-label="변환 전 확인">
         <li><b data-i18n="gate.biosT">neogeo.zip(바이오스) 필수</b> <span data-i18n="gate.biosD">게임 zip과 함께 올리세요. 모든 변환에 필요합니다.</span></li>
-        <li><b data-i18n="gate.batchT">여러 게임 한 번에</b> <span data-i18n="gate.batchD">게임 zip을 여러 개 올리면 차례로 변환합니다. 게임마다 새로고침할 필요 없습니다.</span></li>
-        <li><b data-i18n="gate.onlyT">MAME 네오지오 롬셋 zip만</b> <span data-i18n="gate.onlyD">롬셋 이름과 칩 CRC가 MAME 규격과 같아야 변환됩니다. 합본 롬은 부모 zip도 함께 올리세요 (kof98h.zip + kof98.zip).</span></li>
+        <li><b data-i18n="gate.batchT">여러 게임 한 번에</b> <span data-i18n="gate.batchD">게임 zip을 여러 개 올리면 차례로 변환하므로 게임마다 새로고침할 필요가 없습니다.</span></li>
+        <li><b data-i18n="gate.onlyT">MAME 네오지오 롬셋 zip만</b> <span data-i18n="gate.onlyD">롬셋 이름과 칩 CRC가 MAME 규격과 같아야 변환됩니다. 합본 롬은 부모 롬셋도 함께 올리세요 (kof98h.zip + kof98.zip).</span></li>
       </ul>
     </div>
 
@@ -186,14 +186,14 @@
       <span class="conv-file hidden" id="gateFile"></span>
       <label class="drop" id="gateDrop">
         <input type="file" id="gateZips" accept=".zip" multiple>
-        <b data-i18n="gate.dropT">롬 zip 올리기</b>
+        <b data-i18n="gate.dropT">게임 zip 올리기</b>
         <span class="tiny" data-i18n="gate.dropD">클릭하거나 끌어다 놓으세요. 게임 zip과 neogeo.zip을 한 번에 넣을 수 있습니다.</span>
         <span class="drop-meta" id="gateMeta"></span>
       </label>
       <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0">
         <label class="tiny"><span data-i18n="gate.region">지역</span>
           <select id="gateRegion">
-            <option value="Europe" data-i18n="gate.eu">유럽/아시아</option>
+            <option value="Europe" data-i18n="gate.eu">유럽·아시아</option>
             <option value="Japan" data-i18n="gate.jp">일본</option>
             <option value="Usa" data-i18n="gate.us">미국</option>
           </select>
@@ -220,7 +220,7 @@
           <h3 id="gateBatchH" data-i18n="gate.listH">인식된 게임</h3>
           <span class="batch-count" id="gateBatchCount"></span>
         </div>
-        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘/배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 건너뜁니다.</p>
+        <p class="tiny batch-hint" id="gateBatchHint" data-i18n="gate.listHint">변환하기 전에 확인하세요. 게임 줄을 누르면 그 게임의 아이콘/배너를 바꿀 수 있습니다. 변환 불가인 게임은 이유가 표시되고 그 게임만 건너뜁니다.</p>
         <p class="tiny batch-msg hidden" id="gateBatchMsg" role="status"></p>
         <div class="recog hidden" id="gateBatchProg">
           <span class="recog-text" id="gateBatchProgText" data-i18n="gate.recog">인식 중…</span>
@@ -237,7 +237,7 @@
           <span class="art-title" id="gateArtTitle"></span>
           <button type="button" class="btn btn-ghost btn-sm art-back hidden" id="gateArtBack" data-i18n="gate.artBack">목록으로</button>
         </div>
-        <p class="tiny art-hint" data-i18n="gate.artHint">고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞춥니다. 변환을 시작하면 바꿀 수 없습니다.</p>
+        <p class="tiny art-hint" data-i18n="gate.artHint">고른 그림은 가운데를 기준으로 잘라 48×48 / 256×128로 맞추며 변환을 시작하면 바꿀 수 없습니다.</p>
         <p class="tiny art-lock hidden" id="gateArtLock" role="status" data-i18n="gate.artLock">변환 중에는 아이콘/배너를 바꿀 수 없습니다.</p>
         <div class="art-row" data-art="icon">
           <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>
@@ -306,7 +306,7 @@
       </ol>
       <div class="conv-side">
         <pre class="log" id="gateLog" aria-label="게이트 로그" data-i18n-attr="aria-label:gate.logLabel"></pre>
-        <p class="tiny" data-i18n="gate.logNote">로그 한 줄마다 경과 시간, 게임, 단계가 표시됩니다. 결과물은 보통 수십 MB입니다.</p>
+        <p class="tiny" data-i18n="gate.logNote">로그 한 줄마다 경과 시간, 게임, 단계가 표시되고 결과물은 보통 수십 MB입니다.</p>
       </div>
     </div>
   </div>
@@ -316,42 +316,42 @@
 <section class="sec" id="guide">
   <div class="wrap">
     <h2 data-i18n="gate.guideH2">준비물과 결과물</h2>
-    <p class="lede narrow" data-i18n="gate.guideLede">직접 가진 MAME 롬셋을 3DS 설치 파일로 바꾸는 변환기입니다. 롬과 바이오스는 제공하지 않습니다.</p>
+    <p class="lede narrow" data-i18n="gate.guideLede">직접 가진 MAME 롬셋을 3DS 설치 파일로 바꾸는 변환기이며 롬과 바이오스는 제공하지 않습니다.</p>
 
     <h3 data-i18n="gate.reqH3">준비물</h3>
     <ul class="check guide-req">
-      <li><b data-i18n="gate.req1b">게임 롬셋 zip</b> <span data-i18n="gate.req1d">MAME 롬셋 이름을 그대로 둔 zip입니다(예: mslug3.zip). 이름을 바꾸면 롬셋을 찾지 못합니다.</span></li>
+      <li><b data-i18n="gate.req1b">게임 롬셋 zip</b> <span data-i18n="gate.req1d">MAME 롬셋 이름을 그대로 둔 zip이고(예: mslug3.zip) 이름을 바꾸면 롬셋을 찾지 못합니다.</span></li>
       <li><b data-i18n="gate.req2b">neogeo.zip(바이오스)</b> <span data-i18n="gate.req2d">모든 변환에 필요합니다. 게임 zip과 함께 올리고 이름을 바꾸지 마세요.</span></li>
-      <li><b data-i18n="gate.req3b">직접 보유한 파일</b> <span data-i18n="gate.req3d">두 파일 모두 직접 가진 것이어야 합니다. 이 사이트는 롬이나 바이오스를 내려받게 해 주지 않습니다.</span></li>
+      <li><b data-i18n="gate.req3b">직접 보유한 파일</b> <span data-i18n="gate.req3d">두 파일 모두 직접 가진 것이어야 합니다. 이 사이트는 롬이나 바이오스를 내려받게 하지 않습니다.</span></li>
     </ul>
 
     <h3 data-i18n="gate.outH3">결과물</h3>
     <div class="guide-out">
       <div class="guide-card">
         <h4 data-i18n="gate.outCiaT">게임 CIA (.cia)</h4>
-        <p data-i18n="gate.outCiaD">게임 하나에 파일 하나입니다. FBI로 설치하면 HOME 메뉴에 그 게임 아이콘이 생깁니다.</p>
+        <p data-i18n="gate.outCiaD">게임 하나에 파일 하나이고 FBI로 설치하면 HOME 메뉴에 그 게임 아이콘이 생깁니다.</p>
         <a href="download.html#game-cia" data-i18n="gate.outCiaLink">게임별 CIA 설치 안내</a>
       </div>
       <div class="guide-card">
         <h4 data-i18n="gate.outPackT">런처용 파일 (.neo3ds)</h4>
-        <p data-i18n="gate.outPackD">런처 앱 하나에 여러 게임을 넣습니다. 파일은 SD 카드 /neo3ds/games/에 두고 목록에서 고릅니다.</p>
+        <p data-i18n="gate.outPackD">런처 앱 하나에 여러 게임을 넣고 파일은 SD 카드 /neo3ds/games/에 두고 목록에서 고릅니다.</p>
         <a href="download.html#launcher" data-i18n="gate.outPackLink">런처 설치 안내</a>
       </div>
     </div>
-    <p class="tiny guide-note" data-i18n="gate.outNote">두 결과물은 따로 만듭니다. 같은 게임이면 CIA판과 런처판이 키 설정, 백업 RAM, 퀵세이브를 함께 씁니다.</p>
+    <p class="tiny guide-note" data-i18n="gate.outNote">두 결과물은 따로 만들며 같은 게임이면 CIA판과 런처판이 키 설정, 백업 RAM, 퀵세이브를 함께 씁니다.</p>
     <p class="tiny guide-note" data-i18n="gate.saveNote">“전체 다운로드”는 결과 크기가 클 수 있어 저장 위치를 묻는 창이 뜹니다. 브라우저가 저장 창을 지원하지 않으면(파이어폭스·사파리) ZIP을 1GB씩 나눠 받습니다. 나눈 ZIP도 각각 열립니다.</p>
 
-    <h3 data-i18n="gate.blockH3">변환이 안되는 이유</h3>
-    <p class="guide-lede" data-i18n="gate.blockLede">게임 zip을 올리면 변환을 시작하기 전에 롬셋과 칩을 확인합니다. 게임이 여러 개면 목록의 게임 줄마다 이유가 표시되고, 그 게임만 건너뜁니다.</p>
+    <h3 data-i18n="gate.blockH3">변환이 안 되는 이유</h3>
+    <p class="guide-lede" data-i18n="gate.blockLede">게임 zip을 올리면 변환을 시작하기 전에 롬셋과 칩을 확인합니다. 게임이 여러 개면 목록의 게임 줄마다 이유가 표시되고 그 게임만 건너뜁니다.</p>
     <div class="table-scroll guide-table-wrap" tabindex="0" role="region" aria-label="변환 전 확인 사유" data-i18n-attr="aria-label:gate.blockLabel">
       <table class="guide-table">
         <thead><tr><th scope="col" data-i18n="gate.blockTh1">표시되는 이유</th><th scope="col" data-i18n="gate.blockTh2">다음 행동</th></tr></thead>
         <tbody>
           <tr><td data-i18n="gate.block1c">zip 이름이 롬셋 이름과 다름</td><td data-i18n="gate.block1a">원본 zip 이름을 그대로 둡니다. kof98h.zip이면 kof98h.zip으로 올립니다.</td></tr>
           <tr><td data-i18n="gate.block2c">칩 CRC가 기대한 버전과 다름</td><td data-i18n="gate.block2a">다른 버전의 롬셋입니다. MAME 롬셋 원본 zip으로 다시 올립니다.</td></tr>
-          <tr><td data-i18n="gate.block3c">롬 파일이 빠졌거나 부모 롬셋이 필요함</td><td data-i18n="gate.block3a">같은 버전의 zip을 모두 올립니다. 합본이면 부모 zip도 함께 올립니다(kof98h.zip + kof98.zip).</td></tr>
+          <tr><td data-i18n="gate.block3c">롬 파일이 빠졌거나 부모 롬셋이 필요함</td><td data-i18n="gate.block3a">같은 버전의 zip을 모두 올립니다. 합본이면 부모 롬셋도 함께 올립니다(kof98h.zip + kof98.zip).</td></tr>
           <tr><td data-i18n="gate.block4c">neogeo.zip(바이오스)이 없음</td><td data-i18n="gate.block4a">게임 zip과 함께 neogeo.zip을 올립니다. 모든 변환에 필요합니다.</td></tr>
-          <tr><td data-i18n="gate.block5c">neogeo.zip에 필요한 칩이 없음</td><td data-i18n="gate.block5a">다른 neogeo.zip으로 바꿉니다. 칩이 빠진 파일은 변환에 쓸 수 없습니다.</td></tr>
+          <tr><td data-i18n="gate.block5c">neogeo.zip에 필요한 칩이 없음</td><td data-i18n="gate.block5a">다른 neogeo.zip으로 바꾸세요. 칩이 빠진 파일은 변환에 쓸 수 없습니다.</td></tr>
           <tr><td data-i18n="gate.block6c">지원하지 않는 카트리지</td><td data-i18n="gate.block6a">보호 칩이 있거나 트랙볼 전용, 해적판인 롬셋입니다. <a href="compat.html">호환 목록</a>에서 변환 가능한 게임을 고릅니다.</td></tr>
           <tr><td data-i18n="gate.block7c">zip을 읽지 못함</td><td data-i18n="gate.block7a">zip이 손상되지 않았는지 확인하고 다시 올립니다.</td></tr>
         </tbody>
@@ -359,7 +359,7 @@
     </div>
 
     <h3 data-i18n="gate.privacyH3">파일은 어디로 가나요</h3>
-    <p class="guide-lede" data-i18n="gate.privacyP">게임 zip, neogeo.zip, 만든 결과물은 브라우저 탭 안에서만 처리되고 서버로 전송되지 않습니다. 계정도 필요 없습니다. 사이트가 재는 것은 페이지 조회, 변환 시작·완료·실패·다운로드 클릭, 제보 전송이며 자세한 내용은 <a href="privacy.html">개인정보</a>에 있습니다.</p>
+    <p class="guide-lede" data-i18n="gate.privacyP">게임 zip, neogeo.zip, 만든 결과물은 브라우저 탭 안에서만 처리되고 서버로 전송되지 않습니다. 계정도 필요 없습니다. 사이트가 재는 것은 페이지뷰, 변환 시작·완료·실패·다운로드 클릭, 신고 전송이며 자세한 내용은 <a href="privacy.html">개인정보</a>에 있습니다.</p>
   </div>
 </section>
 

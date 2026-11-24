@@ -58,7 +58,7 @@ export async function preflight(db, RomSet, files, { lang = 'en', onProgress = n
       if (known) { row.set = known.name; row.title = db.title(known); }
       const message = String(err?.message ?? err);
       row.code = pickFailureCode(err);
-      row.problem = L(lang, `롬 zip을 읽지 못했습니다: ${message}`, message);
+      row.problem = L(lang, `게임 zip을 읽지 못했습니다: ${message}`, message);
     }
     rows.push(row);
     onProgress?.(rows.length, games.length, f.name);
