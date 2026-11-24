@@ -45,7 +45,7 @@ const PAGES = {
     ogTitle: 'Neo Geo 3DS converter | neo3ds',
     ogDescription: 'A game zip and neogeo.zip become an installable 3DS CIA or a launcher file, and the conversion stays in the browser tab.',
     twitterDescription: 'A romset zip becomes a 3DS CIA or launcher file inside the browser. Nothing is uploaded.',
-    ogImageAlt: 'neo3ds — convert roms to CIA in the browser',
+    ogImageAlt: 'neo3ds — convert romsets to CIA in the browser',
     jsonld: {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
@@ -99,7 +99,7 @@ const PAGES = {
     file: 'manual.html',
     url: 'manual.html',
     title: '3DS manual — launcher, controls, key config | neo3ds',
-    description: 'Launcher controls, the 3DS button layout, bottom-screen buttons, key config, turbo, quick saves and save paths — all on one page.',
+    description: 'Launcher controls, the 3DS button layout, bottom-screen buttons, key config, turbo, quick saves and save paths, all on one page.',
     ogTitle: '3DS manual — launcher, controls, key config | neo3ds',
     ogDescription: 'Launcher controls, button layout, bottom-screen buttons and where saves live.',
     twitterDescription: 'Launcher controls, 3DS buttons, key config and save paths.',

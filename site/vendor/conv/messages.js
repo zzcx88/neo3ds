@@ -93,7 +93,7 @@ const EN = {
         : 'Drop the original MAME romset zip.');
   },
   'bios-read': () => 'neogeo.zip is missing a required BIOS chip. Drop neogeo.zip again with the game zip.',
-  'game-db': (n) => `Something went wrong while processing ${n} graphics. Try again; if it keeps happening, send a report.`,
+  'game-db': (n) => `The ${n} graphics could not be read from the game database. Try again; if it keeps happening, send a report.`,
 };
 
 const TABLES = Object.freeze({ ko: KO, en: EN });

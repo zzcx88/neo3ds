@@ -32,7 +32,7 @@ TEXT = {
     'en': {
         'th': ['Game', 'Romset', 'Year', 'ROM MB', 'Status'],
         'stats': '{count} romsets, {ok} convert, {verified} verified on hardware',
-        'caption': 'Verified first, then convertible, then unsupported',
+        'caption': 'Verified first, then the rest that convert, then unsupported',
         'table_label': 'Game table, scrolls sideways',
         'all': 'All {total} romsets',
         'convert': 'Convert a romset',
@@ -41,7 +41,7 @@ TEXT = {
         'sections': 'Sections',
         'lang_label': 'Language',
         'foot': ['Intro', 'Compatibility', '3DS manual', 'Changelog', 'Repository', 'Report a problem'],
-        'note': 'Game footage and trademarks belong to their respective owners.',
+        'note': 'Game screens and trademarks belong to their respective owners.',
         'series': 'More series',
     },
     'ko': {

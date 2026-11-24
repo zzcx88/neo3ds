@@ -8,7 +8,7 @@
 
 ## Pages
 
-- [Intro](https://zzcx88.github.io/neo3ds/): what neo3ds is, the three-step set-up, and a compatibility summary.
+- [Intro](https://zzcx88.github.io/neo3ds/): what neo3ds is, the three-step setup, and a compatibility summary.
 - [Compatibility list](https://zzcx88.github.io/neo3ds/compat.html): every one of the 282 romsets with its conversion status, generated from the game database.
 - [Web converter](https://zzcx88.github.io/neo3ds/convert.html): turns a game romset zip plus neogeo.zip into a CIA or a launcher (.neo3ds) file inside the browser tab. Nothing is uploaded; the page also lists which zips are stopped before converting and why.
 - [Download and install](https://zzcx88.github.io/neo3ds/download.html): launcher CIA QR, FBI install and update steps, SD card fallback, and per-game CIA installation. The home page links to the Windows/Linux/macOS offline converter downloads.
@@ -33,7 +33,7 @@
 
 ## Facts
 
-- Requirements: a Neo Geo romset zip (MAME set names) plus `neogeo.zip` for encrypted carts.
+- Requirements: a Neo Geo romset zip (MAME set names) plus `neogeo.zip` (the BIOS) for every conversion.
 - Output: one CIA per game, installed with FBI on the 3DS.
 - Conversion is done locally. The browser converter uses WebAssembly in a worker and never uploads the rom.
 - The engine targets Old 3DS, New 3DS, 2DS and 3DS XL.

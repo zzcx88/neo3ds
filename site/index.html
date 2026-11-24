@@ -79,7 +79,7 @@
 </header>
 
 <main id="main">
-<noscript><p style="padding:12px 24px">This page needs JavaScript. The game list and the converter demo will not run.</p></noscript>
+<noscript><p style="padding:12px 24px">This page needs JavaScript. The game list and the launcher demo will not run.</p></noscript>
 
 
 <section class="hero" id="top">
@@ -317,8 +317,8 @@
 
 <section class="sec" id="games">
   <div class="wrap">
-    <h2>Compatible games</h2>
-    <p class="lede narrow">It recognises 282 romsets and converts 242 of them. 26 have been played on an Old 3DS.</p>
+    <h2>Game compatibility</h2>
+    <p class="lede narrow">It recognizes 282 romsets and converts 242 of them. 26 have been played on an Old 3DS.</p>
     <p class="tiny" style="margin:8px 0 18px"><a href="compat.html">See all 282 romsets</a></p>
 
     
@@ -346,14 +346,14 @@
         </label>
         <div class="filters" id="exFilters" role="group" aria-label="Filters">
           <button type="button" data-filter="all" aria-pressed="true"><span>All</span> <b id="cAll">—</b></button>
-          <button type="button" data-filter="verified" aria-pressed="false"><span>On hardware</span> <b id="cVerified">—</b></button>
-          <button type="button" data-filter="ok" aria-pressed="false"><span>Buildable</span> <b id="cOk">—</b></button>
-          <button type="button" data-filter="no" aria-pressed="false"><span>Not supported</span> <b id="cNo">—</b></button>
+          <button type="button" data-filter="verified" aria-pressed="false"><span>Verified</span> <b id="cVerified">—</b></button>
+          <button type="button" data-filter="ok" aria-pressed="false"><span>Converts</span> <b id="cOk">—</b></button>
+          <button type="button" data-filter="no" aria-pressed="false"><span>Unsupported</span> <b id="cNo">—</b></button>
         </div>
         <label class="sort">
           <span>Sort</span>
           <select id="exSort">
-            <option value="default">Hardware first</option>
+            <option value="default">Verified first</option>
             <option value="name">Title</option>
             <option value="year">Year</option>
             <option value="size">ROM size</option>
@@ -375,7 +375,7 @@
       <h3>Worth knowing</h3>
       <ul>
         <li>When a romset is tight for memory, the converter warns you first.</li>
-        <li>Some decryption is implemented but never played, because we lack the ROMs.</li>
+        <li>Some decryption schemes are implemented but have never run, because we lack the ROMs.</li>
         <li>Metal Slug 2, X and 3 slow down in the same scenes the original board did. The <a href="#faq">FAQ</a> says where.</li>
         <li>Games we could not check because we don't have the ROMs are listed in the <a href="https://github.com/zzcx88/neo3ds/blob/main/README.md">README</a>.</li>
         <li>KOF '98 doesn't convert: the MVS version has a protection chip. If the home set (kof98h) is in the zip, it's picked automatically.</li>
@@ -396,7 +396,7 @@
       <details>
         <summary>Is it really 60 fps on an Old 3DS?</summary>
         <p>These ran at full speed on hardware: KOF '95-'99, 2000, 2002, Metal Slug 1, X, 3 and 5, Neo Turf Masters, Neo Drift Out, SVC Chaos and Samurai Shodown V Special. Metal Slug 2, X and 3 slow down in the same scenes the original board did, and Aero Fighters 3 stays playable.</p>
-        <p class="perf"><b>Measured:</b> <span>KOF '98 went from 64.0MB to 20.3MB. A frame takes 16.7ms; 59.8fps.</span> <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.md">Technical notes</a></p>
+        <p class="perf"><b>Measured:</b> <span>KOF '98 went from 64.0 MB to 20.3 MB. A frame takes 16.7 ms (59.8 fps).</span> <a href="https://github.com/zzcx88/neo3ds/blob/main/docs/TECHNICAL.md">Technical notes</a></p>
       </details>
       <details>
         <summary>No sound?</summary>
@@ -448,7 +448,7 @@
             <option value="old-3ds">Old 3DS</option>
             <option value="new-3ds">New 3DS</option>
             <option value="2ds">2DS</option>
-            <option value="new-2ds">New 2DS</option>
+            <option value="new-2ds">New 2DS XL</option>
           </select>
         </label>
         <label class="report-field">
@@ -512,10 +512,10 @@
       <a href="index.html#feedback">Report a problem</a>
       <a href="https://github.com/zzcx88/neo3ds">Repository</a>
       <a href="https://github.com/zzcx88/neo3ds/releases">Releases</a>
-      <a href="https://github.com/zzcx88/neo3ds/blob/main/LICENSE">Licence</a>
+      <a href="https://github.com/zzcx88/neo3ds/blob/main/LICENSE">License</a>
       <a href="privacy.html">Privacy</a>
     </nav>
-    <p class="tiny">Game screens and trademarks belong to their owners.</p>
+    <p class="tiny">Game screens and trademarks belong to their respective owners.</p>
   </div>
 </footer>
 

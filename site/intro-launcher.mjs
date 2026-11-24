@@ -46,7 +46,7 @@ if (screen && window.NEO3DS_DB) {
 
   // The catalog note repeats the status ("verified · full speed") under a fixed status line;
   // when the first segment is that status word, the rest is what the panel should show (#361).
-  const STATUS_WORDS = new Set(['verified', 'buildable', 'unsupported', 'plays fine']);
+  const STATUS_WORDS = new Set(['verified', 'converts', 'unsupported', 'plays fine']);
   const noteBody = game => {
     if (!game?.note) return '';
     const [head, ...rest] = game.note.split('·').map(part => part.trim());

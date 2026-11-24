@@ -10,10 +10,10 @@ const row = (set, title, status = 0, noteKo = '', noteEn = '') =>
 // Four installed games (the screenshots) plus catalog entries that are not installed (#361).
 const catalog = { games: [
   row('kof98h', "The King of Fighters '98 - The Slugfest", 1, '실기 확인 · 풀 스피드', 'verified · full speed'),
-  row('kof98', 'The King of Fighters 98 (MVS)', 0, '변환 가능 · 보호 칩', 'buildable · protection chip'),
+  row('kof98', 'The King of Fighters 98 (MVS)', 0, '변환 가능 · 보호 칩', 'converts · protection chip'),
   row('mslug3', 'Metal Slug 3', 1, '실기 확인 · 풀 스피드', 'verified · full speed'),
   row('sonicwi3', 'Aero Fighters 3', 2, '변환 불가 · 메모리', 'unsupported · memory'),
-  row('samsh5sp', 'Samurai Shodown V Special', 0, '변환 가능', 'buildable'),
+  row('samsh5sp', 'Samurai Shodown V Special', 0, '변환 가능', 'converts'),
   row('garou', 'Garou - Mark of the Wolves', 0, '', ''),
 ] };
 

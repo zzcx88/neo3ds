@@ -19,7 +19,7 @@
 <meta property="og:image" content="https://zzcx88.github.io/neo3ds/media/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="neo3ds — convert roms to CIA in the browser">
+<meta property="og:image:alt" content="neo3ds — convert romsets to CIA in the browser">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
@@ -189,9 +189,9 @@
       <h1>Convert<br>in the browser</h1>
       <p class="lede">Drop several game zips plus neogeo.zip and this tab converts them one after another. Neither the rom nor the result ever leaves it.</p>
       <ul class="gate-facts" aria-label="Before you convert">
-        <li><b>neogeo.zip (BIOS) is required</b> <span>Drop it together with the game zip. Every conversion needs it.</span></li>
+        <li><b>neogeo.zip (the BIOS) is required</b> <span>Drop it together with the game zip. Every conversion needs it.</span></li>
         <li><b>Many games at once</b> <span>Drop several game zips and they convert one after another. No refresh between games.</span></li>
-        <li><b>MAME Neo Geo romset zips only</b> <span>The romset name and chip CRCs must match the MAME set. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</span></li>
+        <li><b>MAME Neo Geo romset zips only</b> <span>The romset name and chip CRCs must match the MAME set. For a split set, add the parent zip too (kof98h.zip + kof98.zip).</span></li>
       </ul>
     </div>
 
@@ -199,7 +199,7 @@
       <span class="conv-file hidden" id="gateFile"></span>
       <label class="drop" id="gateDrop">
         <input type="file" id="gateZips" accept=".zip" multiple>
-        <b>Drop rom zips</b>
+        <b>Drop game zips</b>
         <span class="tiny">Click or drag files here. You can add several at once, including neogeo.zip.</span>
         <span class="drop-meta" id="gateMeta"></span>
       </label>
@@ -250,7 +250,7 @@
           <span class="art-title" id="gateArtTitle"></span>
           <button type="button" class="btn btn-ghost btn-sm art-back hidden" id="gateArtBack">Back to list</button>
         </div>
-        <p class="tiny art-hint">A picture you pick is centre-cropped to 48×48 / 256×128. It cannot be changed once conversion starts.</p>
+        <p class="tiny art-hint">A picture you pick is center-cropped to 48×48 / 256×128. It cannot be changed once conversion starts.</p>
         <p class="tiny art-lock hidden" id="gateArtLock" role="status">The icon and banner cannot be changed while converting.</p>
         <div class="art-row" data-art="icon">
           <div class="art-shot art-shot-icon"><img class="art-img" alt=""></div>
@@ -313,7 +313,7 @@
     <div class="conv-grid">
       <ol class="pipe" id="gatePipe">
         <li data-step="load"><span class="pipe-no">1</span><div><h3>Checking romset</h3><p>Find the romset by zip name and check chips by CRC.</p></div></li>
-        <li data-step="romfs"><span class="pipe-no">2</span><div><h3>Compressing graphics</h3><p>Pack sprites into 16KB zstd blocks.</p></div></li>
+        <li data-step="romfs"><span class="pipe-no">2</span><div><h3>Compressing graphics</h3><p>Pack sprites into 16 KB zstd blocks.</p></div></li>
         <li data-step="art"><span class="pipe-no">3</span><div><h3>Icon and banner</h3><p>Icon (48×48) and banner (256×128) from the title or from a picture you pick.</p></div></li>
         <li data-step="cia"><span class="pipe-no">4</span><div><h3>Packing the output</h3><p>Bundle the output with WASM tooling.</p></div></li>
       </ol>
@@ -360,11 +360,11 @@
       <table class="guide-table">
         <thead><tr><th scope="col">Reason shown</th><th scope="col">What to do</th></tr></thead>
         <tbody>
-          <tr><td>The zip name is not a romset name</td><td>Leave the original zip name as it was. If it is kof98h.zip, drop kof98h.zip.</td></tr>
+          <tr><td>The zip name is not a romset name</td><td>Keep the original zip name. For kof98h.zip, drop kof98h.zip as it is.</td></tr>
           <tr><td>A chip CRC differs from the expected version</td><td>That is a different romset version. Drop the original MAME romset zip instead.</td></tr>
-          <tr><td>ROM files are missing, or the parent romset is needed</td><td>Drop every zip of the same version. For a merged set, add the parent zip too (kof98h.zip + kof98.zip).</td></tr>
+          <tr><td>ROM files are missing, or the parent romset is needed</td><td>Drop every zip of the same version. For a split set, add the parent zip too (kof98h.zip + kof98.zip).</td></tr>
           <tr><td>neogeo.zip (the BIOS) is missing</td><td>Drop neogeo.zip together with the game zip. Every conversion needs it.</td></tr>
-          <tr><td>neogeo.zip lacks a required chip</td><td>Use a different neogeo.zip. A file missing chips cannot be converted with.</td></tr>
+          <tr><td>neogeo.zip lacks a required chip</td><td>Use a different neogeo.zip; conversion cannot run without the chip.</td></tr>
           <tr><td>A cartridge the converter does not support</td><td>The romset has a protection chip, needs a trackball, or is bootleg. Pick a convertible game from the <a href="compat.html">compatibility list</a>.</td></tr>
           <tr><td>The zip could not be read</td><td>Check that the zip is not damaged and drop it again.</td></tr>
         </tbody>
@@ -396,10 +396,10 @@
       <a href="manual.html">3DS manual</a>
       <a href="changelog.html">Changelog</a>
       <a href="index.html#feedback">Report a problem</a>
-      <a href="index.html">Intro page</a>
+      <a href="index.html">Intro</a>
       <a href="privacy.html">Privacy</a>
     </nav>
-    <p class="tiny">Game screens and trademarks belong to their owners.</p>
+    <p class="tiny">Game screens and trademarks belong to their respective owners.</p>
   </div>
 </footer>
 
