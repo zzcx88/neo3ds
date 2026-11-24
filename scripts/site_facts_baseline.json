@@ -1,5 +1,5 @@
 {
- "fingerprint": "ceacc6aec43fc40c",
+ "fingerprint": "6912a5a36b72fed2",
  "pages": {
   "site/changelog.html": [
    "acronym:BIOS",
@@ -184,7 +184,7 @@
    "number:64.0 MB",
    "number:68000",
    "number:80",
-   "number:804MHz",
+   "number:804 MHz",
    "number:95",
    "number:98",
    "number:99",
