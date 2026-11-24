@@ -67,7 +67,7 @@ if (form) {
       return;
     }
     if (!ENDPOINT) {
-      msg.textContent = t('지금은 제보를 받을 수 없습니다.', 'Reporting is not available right now.');
+      msg.textContent = t('지금은 신고를 받을 수 없습니다.', 'Reporting is not available right now.');
       return;
     }
     // Guard before the first await: the version import may hit the network,
