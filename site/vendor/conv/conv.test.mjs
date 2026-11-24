@@ -1476,7 +1476,7 @@ await t('messages/batch-alert-uses-catalog-names-and-plain-words', async () => {
     throw new Error('plain cause/action missing: ' + text);
   if (!text.includes(failureMessage('unknown', { lang: 'ko' })))
     throw new Error('unknown guidance missing: ' + text);
-  if (!text.includes('제보')) throw new Error('report guidance missing: ' + text);
+  if (!text.includes('신고')) throw new Error('report guidance missing: ' + text);
   if (text.includes('game —')) throw new Error('invented catalog name: ' + text);
   const named = batchFailureText([{ set: 'kof98h', code: 'zip' }], { lang: 'en' });
   if ((named.match(/kof98h/g) ?? []).length !== 1)
@@ -1506,7 +1506,7 @@ await t('messages/retry-and-report-guidance', async () => {
       }
     }
     const unknown = failureMessage('unknown', { lang });
-    if (!/(제보|send a report)/i.test(unknown)) throw new Error(`${lang}: no report guidance: ${unknown}`);
+    if (!/(신고|send a report)/i.test(unknown)) throw new Error(`${lang}: no report guidance: ${unknown}`);
   }
 });
 
